@@ -793,3 +793,51 @@
 0.0.0.0 assets.adobedtm.com
 0.0.0.0 p.typekit.net
 0.0.0.0 app.adjust.io
+
+
+
+
+
+
+
+0.0.0.0 mtalk.google.com
+0.0.0.0 userlocation.googleapis.com
+0.0.0.0 web-sdk.aptrinsic.com
+0.0.0.0 c.pki.goog
+0.0.0.0 tracking.modafinilusa.com
+0.0.0.0 pixel.watch
+0.0.0.0 shepherd.avcdn.net
+0.0.0.0 eas.outlook.com.hsd1.fl.comcast.net
+0.0.0.0 safebrowsing.brave.com
+0.0.0.0 a.tampermonkey.net
+0.0.0.0 android.apis.google.com
+0.0.0.0 airlytics.airlock.twcmobile.weather.com
+0.0.0.0 firebase-settings.crashlytics.com
+0.0.0.0 beacons5.gvt3.com
+0.0.0.0 beacons.gvt2.com
+0.0.0.0 crashlyticsreports-pa.googleapis.com
+0.0.0.0 insights-collector.newrelic.com
+0.0.0.0 dir-apis.samsungdm.com
+0.0.0.0 cdn-v6.amp-endpoint3.com
+0.0.0.0 cdn-v4.amp-endpoint3.com
+0.0.0.0 ngx-v6.amp-endpoint2.com
+0.0.0.0 ngx-v4.amp-endpoint2.com
+0.0.0.0 dc.dqa.samsung.com
+0.0.0.0 googleads.g.doubleclick.net
+0.0.0.0 upsx.weather.com
+0.0.0.0 dc.di.atlas.samsung.com
+0.0.0.0 ddf.di.atlas.samsung.com
+0.0.0.0 diagmon-serviceapi.samsungdm.com
+0.0.0.0 beacons.gcp.gvt2.com
+0.0.0.0 dvs.samsungmobile.com
+0.0.0.0 app-measurement.com
+0.0.0.0 mcxvl96p2dzmhsr3j162tjrsn478.device.marketingcloudapis.com
+0.0.0.0 geller-pa.googleapis.com
+0.0.0.0 searchlabspartnerservice-pa.googleapis.com
+0.0.0.0 voilatile-pa.googleapis.com
+0.0.0.0 clienttracing-pa.googleapis.com
+0.0.0.0 xgapromomanager-pa.googleapis.com
+0.0.0.0 telemetry.api.swiftkey.com
+0.0.0.0 dpm.demdex.net
+0.0.0.0 assets.adobedtm.com
+0.0.0.0 location-v6-ttp2.tiktokv.us
