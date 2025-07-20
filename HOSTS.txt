@@ -1008,3 +1008,639 @@
 0.0.0.0 dpm.demdex.net
 0.0.0.0 assets.adobedtm.com
 0.0.0.0 location-v6-ttp2.tiktokv.us
+
+
+0.0.0.0 tnc-boot.tiktokv.com
+
+
+0.0.0.0 www.fosshub.com
+
+
+0.0.0.0 www.qbittorrent.org
+
+
+0.0.0.0 clients.config.office.net
+
+
+0.0.0.0 omex.cdn.office.net
+
+
+0.0.0.0 kms.loli.best
+
+
+0.0.0.0 cc-api-teamprojects.adobe.io
+
+
+0.0.0.0 prod.adobeccstatic.com
+
+
+0.0.0.0 www.hltv.org
+
+
+0.0.0.0 static-ecst.licdn.com
+
+
+0.0.0.0 bx-ring.msedge.net
+
+
+0.0.0.0 startpage.com
+
+
+0.0.0.0 lf16-effectcdn.byteeffecttos-g.com
+
+
+0.0.0.0 adobess.com
+
+
+0.0.0.0 adobesc.com
+
+
+0.0.0.0 android.apis.google.com
+
+
+0.0.0.0 adobe.io
+
+
+0.0.0.0 d1swly8pgrbhu5.cloudfront.net
+
+
+0.0.0.0 arm-ring.msedge.net
+
+
+0.0.0.0 p-ring.msedge.net
+
+
+0.0.0.0 windows.net
+
+
+0.0.0.0 codeberg.org
+
+
+0.0.0.0 www.voidtools.com
+
+
+0.0.0.0 upgrade.scdn.co
+
+
+0.0.0.0 ecs.office.com
+
+
+0.0.0.0 ipv6.msftconnecttest.com
+
+
+0.0.0.0 chromium.org
+
+
+0.0.0.0 harbor.rodeo
+
+
+0.0.0.0 netnod.se
+
+
+0.0.0.0 digiboy.ir
+
+
+0.0.0.0 brave.com
+
+
+0.0.0.0 ntp.org
+
+
+0.0.0.0 mb-cosmos.com
+
+
+0.0.0.0 perfops-bench.sos-ch-gva-2.exoscale-cdn.com
+
+
+0.0.0.0 byte-test.com
+
+
+0.0.0.0 perfopsrum.akamaized.net
+
+
+0.0.0.0 test-perfops.blazingcdn.com
+
+
+0.0.0.0 perfops.net
+
+
+0.0.0.0 scrubbingcenter.com
+
+
+0.0.0.0 bitgravity.com
+
+
+0.0.0.0 dns-finder.com
+
+
+0.0.0.0 rapidedge.io
+
+
+0.0.0.0 temu.com
+
+
+0.0.0.0 ethicalads.blob.core.windows.net
+
+
+0.0.0.0 start.me
+
+
+0.0.0.0 avcdn.net
+
+
+0.0.0.0 puzmo.blob.core.windows.net
+
+
+0.0.0.0 puzzmo.com
+
+
+0.0.0.0 amp-endpoint2.com
+
+
+0.0.0.0 amp-endpoint3.com
+
+
+0.0.0.0 hstatic.io
+
+
+0.0.0.0 settingshelper.com
+
+
+0.0.0.0 oneclient.sfx.ms
+
+
+0.0.0.0 location-v6-ttp2.tiktokv.us
+
+
+0.0.0.0 uci.cdn.office.net
+
+
+0.0.0.0 global.discourse-cdn.com
+
+
+0.0.0.0 sea1.discourse-cdn.com
+
+
+0.0.0.0 rsms.me
+
+
+0.0.0.0 avatars.discourse-cdn.com
+
+
+0.0.0.0 code-cktn.org
+
+
+0.0.0.0 visitors.live
+
+
+0.0.0.0 emoji.discourse-cdn.com
+
+
+0.0.0.0 techsmith.com
+
+
+0.0.0.0 api.consentdesk.com
+
+
+0.0.0.0 loki.delve.office.com
+
+
+0.0.0.0 metadata.templates.cdn.office.net
+
+
+0.0.0.0 codesector.com
+
+
+0.0.0.0 api.topaz-labs.net
+
+
+0.0.0.0 et.topazlabs.com
+
+
+0.0.0.0 api.topazlabs.com
+
+
+0.0.0.0 hatscripts.github.io
+
+
+0.0.0.0 nist.gov
+
+
+0.0.0.0 platinumai.net
+
+
+0.0.0.0 my.nalpeiron.com
+
+
+0.0.0.0 updater.techsmith.com
+
+
+0.0.0.0 library-api.cloud.techsmith.com
+
+
+0.0.0.0 tscassetmanageliveeast.blob.core.windows.net
+
+
+0.0.0.0 mobile.pipe.aria.microsoft.com
+
+
+0.0.0.0 mobile.events.data.microsoft.com
+
+
+0.0.0.0 ws-us3.pusher.com
+
+
+0.0.0.0 safebrowsing.googleapis.com
+
+
+0.0.0.0 assets.mozilla.net
+
+
+0.0.0.0 versioncheck.addons.mozilla.org
+
+
+0.0.0.0 time.windows.com
+
+
+0.0.0.0 licensing.mp.microsoft.com
+
+
+0.0.0.0 firefox-settings-attachments.cdn.mozilla.net
+
+
+0.0.0.0 content-signature-2.cdn.mozilla.net
+
+
+0.0.0.0 services.addons.mozilla.org
+
+
+0.0.0.0 detectportal.firefox.com
+
+
+0.0.0.0 f.c2r.ts.cdn.office.net
+
+
+0.0.0.0 ntp.se
+
+
+0.0.0.0 bixbyllm.com
+
+
+0.0.0.0 firefox.settings.services.mozilla.com
+
+
+0.0.0.0 safebrowsing.brave.com
+
+
+0.0.0.0 dns.msftncsi.com
+
+
+0.0.0.0 ccleaner.com
+
+
+0.0.0.0 limeiptv.to
+
+
+0.0.0.0 crackshash.com
+
+
+0.0.0.0 helpshift.com
+
+
+0.0.0.0 livechatinc.com
+
+
+0.0.0.0 geover.prod.do.dsp.mp.microsoft.com
+
+
+0.0.0.0 c.pki.goog
+
+
+0.0.0.0 x1.c.lencr.org
+
+
+0.0.0.0 haxnode.net
+
+
+0.0.0.0 geo.prod.do.dsp.mp.microsoft.com
+
+
+0.0.0.0 kv601.prod.do.dsp.mp.microsoft.com
+
+
+0.0.0.0 example.org
+
+
+0.0.0.0 www.android.com
+
+
+0.0.0.0 www.ieee.org
+
+
+0.0.0.0 client.smartthings.com
+
+
+0.0.0.0 roughtime.sandbox.google.com
+
+
+0.0.0.0 roughtime.int08h.com
+
+
+0.0.0.0 www.ecosia.org
+
+
+0.0.0.0 lpa.live.esimdiscovery.com
+
+
+0.0.0.0 www.cambridge.org
+
+
+0.0.0.0 pinning-02.secb2b.com
+
+
+0.0.0.0 www.acm.org
+
+
+0.0.0.0 dcg.microsoft.com
+
+
+0.0.0.0 us-api.samsungpositioning.com
+
+
+0.0.0.0 www.code.org
+
+
+0.0.0.0 bibo-clsprd-f0brh4ebgebjdaf7.z01.azurefd.net
+
+
+0.0.0.0 lawnchair.app
+
+
+0.0.0.0 nts.xtracloud.net
+
+
+0.0.0.0 www.tizen.org
+
+
+0.0.0.0 www.rfa.org
+
+
+0.0.0.0 gsl.samsunggsl.com
+
+
+0.0.0.0 swiftkey.com
+
+
+0.0.0.0 login.wikimedia.org
+
+
+0.0.0.0 auth.wikimedia.org
+
+
+0.0.0.0 comcast.net
+
+
+0.0.0.0 inhumanity.com
+
+
+0.0.0.0 alrincon.com
+
+
+0.0.0.0 npr.org
+
+
+0.0.0.0 accounts.tampermonkey.net
+
+
+0.0.0.0 tigr1234566.github.io
+
+
+0.0.0.0 nav-edge.smartscreen.microsoft.com
+
+
+0.0.0.0 data-edge.smartscreen.microsoft.com
+
+
+0.0.0.0 us-gslu.samsunggsl.com
+
+
+0.0.0.0 dvs.samsungmobile.com
+
+
+0.0.0.0 change.org
+
+
+0.0.0.0 rezvorck.ru
+
+
+0.0.0.0 samsungdis.com
+
+
+0.0.0.0 glarysoft.com
+
+
+0.0.0.0 samsungcloudplatform.com
+
+
+0.0.0.0 merino.services.mozilla.com
+
+
+0.0.0.0 dmca.com
+
+
+0.0.0.0 picpick.org
+
+
+0.0.0.0 picpick.app
+
+
+0.0.0.0 samsungdm.com
+
+
+0.0.0.0 samsungapps.com
+
+
+0.0.0.0 adobe.com
+
+
+0.0.0.0 service.account.adobe.com
+
+
+0.0.0.0 na1e-acc.services.adobe.com
+
+
+0.0.0.0 rezvorck.github.io
+
+
+0.0.0.0 p13n.adobe.io
+
+
+0.0.0.0 cctypekit.adobe.io
+
+
+0.0.0.0 cc-cdn.adobe.com
+
+
+0.0.0.0 lcs-cops.adobe.io
+
+
+0.0.0.0 rushinfo.adobe.com
+
+
+0.0.0.0 cclibraries-defaults-cdn.adobe.com
+
+
+0.0.0.0 stock.adobe.io
+
+
+0.0.0.0 www.revouninstaller.com
+
+
+0.0.0.0 www.bing.com
+
+
+0.0.0.0 cozy.tv
+
+
+0.0.0.0 mtalk.google.com
+
+
+0.0.0.0 www.samsungsds.com
+
+
+0.0.0.0 dl.4kdownload.com
+
+
+0.0.0.0 sensorsdata.com
+
+
+0.0.0.0 crm-static.wondershare.cc
+
+
+0.0.0.0 dc-static.wondershare.cc
+
+
+0.0.0.0 neveragain.allstatics.com
+
+
+0.0.0.0 api-web.wondershare.cc
+
+
+0.0.0.0 msg.wondershare.cc
+
+
+0.0.0.0 dc.wondershare.cc
+
+
+0.0.0.0 ori-myphone-download.wondershare.cc
+
+
+0.0.0.0 dc.wondershare.com
+
+
+0.0.0.0 vcu-api.300624.com
+
+
+0.0.0.0 www.samsung.com
+
+
+0.0.0.0 abtest-aws-us-east-01.saas.sensorsdata.com
+
+
+0.0.0.0 mozilla.cloudflare-dns.com
+
+
+0.0.0.0 api.samsungconsent.com
+
+
+0.0.0.0 credit.cyberlink.com
+
+
+0.0.0.0 app.cyberlink.com
+
+
+0.0.0.0 app-content.cyberlink.com
+
+
+0.0.0.0 genesis.cyberlink.com
+
+
+0.0.0.0 mauth.cyberlink.com
+
+
+0.0.0.0 thumbs.chance.surf
+
+
+0.0.0.0 boards.chance.surf
+
+
+0.0.0.0 acroipm2.adobe.com
+
+
+0.0.0.0 armmf.adobe.com
+
+
+0.0.0.0 darkreader.org
+
+
+0.0.0.0 premium.mapmyfitness.com
+
+
+0.0.0.0 wondershare.com
+
+
+0.0.0.0 wondershare.cc
+
+
+0.0.0.0 prod-web.wondershare.cc
+
+
+0.0.0.0 samsung.com
+
+
+0.0.0.0 samsungosp.com
+
+
+0.0.0.0 samsungcloud.com
+
+
+0.0.0.0 wu2z-api.samsungcloud.com
+
+
+0.0.0.0 play.samsungcloud.com
+
+
+0.0.0.0 es11.samsung-sm-ds.com
+
+
+0.0.0.0 push.chance.surf
+
+
+0.0.0.0 www.honestbleeps.com
+
+
+0.0.0.0 www.4chan-x.net
+
+
+0.0.0.0 socialfixer.com
+
+
+0.0.0.0 update.9mod.com
+
+
+0.0.0.0 csdkapi-policy.adobe.com
+
+
+0.0.0.0 prod.adobegenuine.com.hsd1.fl.comcast.net
+
+
+0.0.0.0 prod.adobegenuine.com.fl.comcast.net
+
+
+0.0.0.0 prod.adobegenuine.com.comcast.net
+
+
+0.0.0.0 binisoft.org
+
+
+0.0.0.0 catalog.gamepass.com
