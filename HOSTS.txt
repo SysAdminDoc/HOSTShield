@@ -1,35 +1,36 @@
-
-
+0.0.0.0 a.mgid.com
+0.0.0.0 a5tfzk-p.doordash.com
+0.0.0.0 aax-us-east-retail-direct.amazon.com
 0.0.0.0 aircall-dataplane.rudderstack.com
+0.0.0.0 android-context-data.googleapis.com
+0.0.0.0 device-api.urbanairship.com
+0.0.0.0 gateway.facebook.com
+0.0.0.0 location-v6-ttp2.tiktokv.us
+0.0.0.0 registeridm.com
+0.0.0.0 remote-data.urbanairship.com
+0.0.0.0 spidersense.bendingspoons.com
+0.0.0.0 spot-pa.googleapis.com
+0.0.0.0 static.cloudflareinsights.com
+0.0.0.0 use1-turn.fpjs.io
+
 0.0.0.0 analytics.avcdn.net
 0.0.0.0 aps_mobile_client_config.json.hsd1.fl.comcast.net
 0.0.0.0 cdn.darkreader.app
 0.0.0.0 cuow9t.cdn-settings.appsflyersdk.com
 0.0.0.0 cuow9t.launches.appsflyersdk.com
-0.0.0.0 device-api.urbanairship.com
 0.0.0.0 e.reddit.com
 0.0.0.0 ers.twilio.com
 0.0.0.0 eventgw.twilio.com
 0.0.0.0 global.stun.twilio.com.hsd1.fl.comcast.net
 0.0.0.0 global.turn.twilio.com.hsd1.fl.comcast.net
 0.0.0.0 kpmxctoffa.hsd1.fl.comcast.net
-0.0.0.0 location-v6-ttp2.tiktokv.us
 0.0.0.0 nzwdbbfaurgj.hsd1.fl.comcast.net
 0.0.0.0 pubads.g.doubleclick.net
-0.0.0.0 remote-data.urbanairship.com
 0.0.0.0 safebrowsing.googleapis.com
 0.0.0.0 sdk-api-v1.singular.net
-0.0.0.0 spidersense.bendingspoons.com
 0.0.0.0 traffic-nts-ip-assoc.xy.fbcdn.net.hsd1.fl.comcast.net
 0.0.0.0 vsblobprodscussu5shard66.blob.core.windows.net
 0.0.0.0 www.youtube-nocookie.com
-
-
-
-
-
-
-
 0.0.0.0 3fbe5db693.8fbfeb27e6.com
 0.0.0.0 a.pub.network
 0.0.0.0 an.yandex.ru
@@ -88,7 +89,6 @@
 0.0.0.0 safebrowsing.brave.com
 0.0.0.0 send.hsbrowserreports.com
 0.0.0.0 sourcepoint.theguardian.com
-0.0.0.0 static.cloudflareinsights.com
 0.0.0.0 static.doubleclick.net
 0.0.0.0 static-mon.yandex.net
 0.0.0.0 t97.nudevista.com
@@ -100,10 +100,6 @@
 0.0.0.0 www.googleadservices.com
 0.0.0.0 www.google-analytics.com
 0.0.0.0 www.msftncsi.com
-
-
-
-
 0.0.0.0 _ldap._tcp.dc._msdcs.hsd1.fl.comcast.net
 0.0.0.0 _ldap._tcp.dc._msdcs.workgroup.hsd1.fl.comcast.net
 0.0.0.0 0.datadog.pool.ntp.org
@@ -378,7 +374,6 @@
 0.0.0.0 a.magsrv.com
 0.0.0.0 a.nytimes.com
 0.0.0.0 a.omappapi.com
-0.0.0.0 a.pub.network
 0.0.0.0 a.tampermonkey.net
 0.0.0.0 a.teads.tv
 0.0.0.0 a.tribalfusion.com
@@ -487,7 +482,6 @@
 0.0.0.0 ah5otkl8ie.adobestats.io
 0.0.0.0 aidemsrv.com
 0.0.0.0 aimersoft.com
-0.0.0.0 aircall-dataplane.rudderstack.com
 0.0.0.0 airlytics.airlock.twcmobile.weather.com
 0.0.0.0 ajs31fsy2t.adobestats.io
 0.0.0.0 ak1ow4e0u3.adobestats.io
@@ -509,7 +503,6 @@
 0.0.0.0 amp-endpoint3.com
 0.0.0.0 amplitude.com
 0.0.0.0 analytics.ahrefs.com
-0.0.0.0 analytics.avcdn.net
 0.0.0.0 analytics.githubassets.com
 0.0.0.0 analytics.google.com
 0.0.0.0 analytics.pandadoc.com
@@ -535,7 +528,6 @@
 0.0.0.0 api.amplitude.com
 0.0.0.0 api.chance.surf.hsd1.fl.comcast.net
 0.0.0.0 api.company-target.com
-0.0.0.0 api.consentdesk.com
 0.0.0.0 api.glia.com
 0.0.0.0 api.ipify.org
 0.0.0.0 api.iterable.com
@@ -544,7 +536,6 @@
 0.0.0.0 api.mixpanel.com
 0.0.0.0 api.msn.com
 0.0.0.0 api.onesignal.com
-0.0.0.0 api.pubfinity.com
 0.0.0.0 api.queryly.com
 0.0.0.0 api.rlcdn.com
 0.0.0.0 api.rudderlabs.com
@@ -553,7 +544,6 @@
 0.0.0.0 api.samsungconsent.com
 0.0.0.0 api.segment.io
 0.0.0.0 api.settingshelper.com
-0.0.0.0 api.sprig.com
 0.0.0.0 api.topazlabs.com
 0.0.0.0 api.topaz-labs.net
 0.0.0.0 api.wondershare.cc
@@ -564,7 +554,6 @@
 0.0.0.0 api64.ipify.org
 0.0.0.0 api-geico-prod.formotiv.com
 0.0.0.0 api-js.mixpanel.com
-0.0.0.0 api-na1.hubapi.com
 0.0.0.0 api-ssp.spot.im
 0.0.0.0 api-tvclient-sc1.azurewebsites.net
 0.0.0.0 apiv2.piaproxy.net
@@ -588,12 +577,9 @@
 0.0.0.0 appsettings.apalon.com.hsd1.fl.comcast.net
 0.0.0.0 appsflyer.com
 0.0.0.0 appsflyersdk.com
-0.0.0.0 appsgrowthpromo-pa.clients6.google.com
 0.0.0.0 app-static.turtl.co
-0.0.0.0 aps_mobile_client_config.json.hsd1.fl.comcast.net
 0.0.0.0 ar1hqm61sk.adobestats.io
 0.0.0.0 ar3zpq1idw.adobestats.io
-0.0.0.0 arc.msn.com
 0.0.0.0 arclight.vimeo.com
 0.0.0.0 ardownload2.adobe.com
 0.0.0.0 a-ring-fallback.msedge.net
@@ -603,7 +589,6 @@
 0.0.0.0 as15ffplma.adobestats.io
 0.0.0.0 as73qhl83n.adobestats.io
 0.0.0.0 assemblyexchange.com
-0.0.0.0 assets.adobedtm.com
 0.0.0.0 assets.churnkey.co
 0.0.0.0 assets.mozilla.net
 0.0.0.0 assets.msn.com
@@ -617,7 +602,6 @@
 0.0.0.0 authclient.config-cdn.a.intuit.com
 0.0.0.0 auth-cloudfront.prod.ims.adobejanus.com
 0.0.0.0 avatars.discourse-cdn.com
-0.0.0.0 avatars.hubspot.net
 0.0.0.0 avcdn.net
 0.0.0.0 ay8wypezvi.adobestats.io
 0.0.0.0 azure.com
@@ -678,7 +662,6 @@
 0.0.0.0 bqbvmlmtmo.adobestats.io
 0.0.0.0 branch.io
 0.0.0.0 b-ring.msedge.net
-0.0.0.0 browser.events.data.microsoft.com
 0.0.0.0 browser.events.data.msn.com
 0.0.0.0 browser.pipe.aria.microsoft.com
 0.0.0.0 browser.sentry-cdn.com
@@ -697,7 +680,6 @@
 0.0.0.0 c.bing.com
 0.0.0.0 c.mgid.com
 0.0.0.0 c.msn.com
-0.0.0.0 c.paypal.com
 0.0.0.0 c.pki.goog
 0.0.0.0 c.pub.network
 0.0.0.0 c.riskified.com
@@ -745,7 +727,6 @@
 0.0.0.0 cdn.branch.io
 0.0.0.0 cdn.callrail.com
 0.0.0.0 cdn.confiant-integrations.net
-0.0.0.0 cdn.cookielaw.org
 0.0.0.0 cdn.dropboxexperiment.com
 0.0.0.0 cdn.evgnet.com
 0.0.0.0 cdn.fortune.com
@@ -759,7 +740,6 @@
 0.0.0.0 cdn.pushmessage.samsung.com
 0.0.0.0 cdn.quantummetric.com
 0.0.0.0 cdn.rudderlabs.com
-0.0.0.0 cdn.segment.com
 0.0.0.0 cdn.sift.com
 0.0.0.0 cdn.staticaly.com
 0.0.0.0 cdn.usefathom.com
@@ -793,10 +773,7 @@
 0.0.0.0 client.protechts.net
 0.0.0.0 client.px-cloud.net
 0.0.0.0 client.smartthings.com
-0.0.0.0 client.teamviewer.com
-0.0.0.0 client.wns.windows.com
 0.0.0.0 client-logger.glia.com
-0.0.0.0 clients.config.office.net
 0.0.0.0 clientservices.googleapis.com
 0.0.0.0 clienttracing-pa.googleapis.com
 0.0.0.0 cloudflare-dns.com
@@ -811,7 +788,6 @@
 0.0.0.0 co9sg87h3h.adobestats.io
 0.0.0.0 codeberg.org
 0.0.0.0 code-cktn.org
-0.0.0.0 codesector.com
 0.0.0.0 col.eum-appdynamics.com
 0.0.0.0 collect.riskid.security
 0.0.0.0 collector.github.com
@@ -873,7 +849,6 @@
 0.0.0.0 csoqxjutolsg.hsd1.fl.comcast.net
 0.0.0.0 csp.intuit.com
 0.0.0.0 csp.secureserver.net
-0.0.0.0 csp.withgoogle.com
 0.0.0.0 csync.copper6.com
 0.0.0.0 csync.loopme.me
 0.0.0.0 csync.smilewanted.com
@@ -915,7 +890,6 @@
 0.0.0.0 daftporn.com
 0.0.0.0 damgmyphbofnw.hsd1.fl.comcast.net
 0.0.0.0 dap.digitalgov.gov
-0.0.0.0 darkreader.org
 0.0.0.0 data.microsoft.com
 0.0.0.0 datadoghq.com
 0.0.0.0 data-edge.smartscreen.microsoft.com
@@ -932,7 +906,6 @@
 0.0.0.0 ddf.di.atlas.samsung.com
 0.0.0.0 de.tynt.com
 0.0.0.0 deepintent.com
-0.0.0.0 default.exp-tas.com
 0.0.0.0 dellprod.analytics.org.coveo.com
 0.0.0.0 demdex.net
 0.0.0.0 detectportal.firefox.com
@@ -989,7 +962,6 @@
 0.0.0.0 dyv9axahup.adobestats.io
 0.0.0.0 dyxqwgsdkkrzn.hsd1.fl.comcast.net
 0.0.0.0 dyzt55url8.adobe.io
-0.0.0.0 e.reddit.com
 0.0.0.0 e.serverbid.com
 0.0.0.0 e.zg-api.com
 0.0.0.0 e1tyeiimw3.adobestats.io
@@ -1002,7 +974,6 @@
 0.0.0.0 ecn.dev.virtualearth.net
 0.0.0.0 ecn-us.dev.virtualearth.net
 0.0.0.0 ecom.wix.com
-0.0.0.0 ecs.office.com
 0.0.0.0 edgeassetservice.azureedge.net
 0.0.0.0 edgeproxy-irl1.cloud.adobe.io
 0.0.0.0 editor-platform-sdk-types.hsd1.fl.comcast.net
@@ -1067,7 +1038,6 @@
 0.0.0.0 experience.ninetailed.co
 0.0.0.0 exp-tas.com
 0.0.0.0 eyiu19jd5w.adobestats.io
-0.0.0.0 f.c2r.ts.cdn.office.net
 0.0.0.0 f02.myftpupload.com
 0.0.0.0 f3.34.9905.ip4.static.sl-reverse.com
 0.0.0.0 f7ul6vs4ha.adobestats.io
@@ -1153,8 +1123,6 @@
 0.0.0.0 genesis.cyberlink.com
 0.0.0.0 genuine.adobe.com
 0.0.0.0 geo.prod.do.dsp.mp.microsoft.com
-0.0.0.0 geo2.adobe.com
-0.0.0.0 geolocation.onetrust.com
 0.0.0.0 geover.prod.do.dsp.mp.microsoft.com
 0.0.0.0 getclicky.com
 0.0.0.0 getpocket.com
@@ -1254,7 +1222,6 @@
 0.0.0.0 iap.samsungapps.com
 0.0.0.0 ib.3lift.com
 0.0.0.0 ib.adnxs.com
-0.0.0.0 ic.adobe.io
 0.0.0.0 id.crwdcntrl.net
 0.0.0.0 id.fortune.com
 0.0.0.0 id.hadron.ad.gt
@@ -1411,7 +1378,6 @@
 0.0.0.0 library-api.cloud.techsmith.com
 0.0.0.0 license.adobe.com
 0.0.0.0 licenses.adobe.com
-0.0.0.0 licensing.mp.microsoft.com
 0.0.0.0 lijit.com
 0.0.0.0 limeiptv.to
 0.0.0.0 live.net
@@ -1430,7 +1396,6 @@
 0.0.0.0 location.services.mozilla.com
 0.0.0.0 locationhistory-pa.googleapis.com
 0.0.0.0 location-inference-westus.cloudapp.net
-0.0.0.0 location-v6-ttp2.tiktokv.us
 0.0.0.0 log.getdropbox.com
 0.0.0.0 log16-normal-useast8.tiktokv.us
 0.0.0.0 login.wikimedia.org
@@ -1480,7 +1445,6 @@
 0.0.0.0 media.net
 0.0.0.0 medianet-match.dotomi.com
 0.0.0.0 merino.services.mozilla.com
-0.0.0.0 metadata.templates.cdn.office.net
 0.0.0.0 mfadsrvr.com
 0.0.0.0 mge8tcrsbr.adobestats.io
 0.0.0.0 mgid.com
@@ -1489,7 +1453,6 @@
 0.0.0.0 mid2473ggd.adobestats.io
 0.0.0.0 minutemedia-prebid.com
 0.0.0.0 mme5z7vvqy.adobestats.io
-0.0.0.0 mobile.events.data.microsoft.com
 0.0.0.0 mobile.pipe.aria.microsoft.com
 0.0.0.0 mobilego.wondershare.com
 0.0.0.0 moderate.cleantalk.org
@@ -1517,7 +1480,6 @@
 0.0.0.0 msg.wondershare.cc
 0.0.0.0 msn.com
 0.0.0.0 mssdk16-normal-useast8.tiktokv.us
-0.0.0.0 mtalk.google.com
 0.0.0.0 mtalk.google.com.hsd1.fl.comcast.net
 0.0.0.0 mucp.api.account.microsoft.com
 0.0.0.0 mumdtcbrhczzit.hsd1.fl.comcast.net
@@ -1548,7 +1510,6 @@
 0.0.0.0 newrelic.com
 0.0.0.0 nextdoor.com
 0.0.0.0 nexus.dell.com
-0.0.0.0 nexusrules.officeapps.live.com
 0.0.0.0 ngx-v4.amp-endpoint2.com
 0.0.0.0 ngx-v6.amp-endpoint2.com
 0.0.0.0 nh74wam2qd9.adobestats.io
@@ -1618,7 +1579,6 @@
 0.0.0.0 om2h3oklke.adobestats.io
 0.0.0.0 om52ny8l9s.adobestats.io
 0.0.0.0 omappapi.com
-0.0.0.0 omex.cdn.office.net
 0.0.0.0 omnitagjs.com
 0.0.0.0 oneclient.sfx.ms
 0.0.0.0 onetag-sys.com
@@ -1745,7 +1705,6 @@
 0.0.0.0 ptd-secops-02.hsd1.fl.comcast.net
 0.0.0.0 pub.doubleverify.com
 0.0.0.0 pub.network
-0.0.0.0 pubads.g.doubleclick.net
 0.0.0.0 pubmatic.com
 0.0.0.0 pull-g5-tt03.tiktokcdn-us.com.hsd1.fl.comcast.net
 0.0.0.0 pull-g5-tt04.tiktokcdn-us.com.hsd1.fl.comcast.net
@@ -1880,8 +1839,6 @@
 0.0.0.0 sa4visje3j.adobestats.io
 0.0.0.0 safeBrowse.brave.com
 0.0.0.0 safeBrowse.googleapis.com
-0.0.0.0 safebrowsing.brave.com
-0.0.0.0 safebrowsing.googleapis.com
 0.0.0.0 samsung.com
 0.0.0.0 samsungapps.com
 0.0.0.0 samsungcloud.com
@@ -1921,7 +1878,6 @@
 0.0.0.0 seg.ad.gt
 0.0.0.0 self.events.data.microsoft.com
 0.0.0.0 semanticlocation-pa.googleapis.com
-0.0.0.0 send.hsbrowserreports.com
 0.0.0.0 sendvsfeedback2.azurewebsites.net
 0.0.0.0 sensorsdata.com
 0.0.0.0 sentry.infrastructure.pandadoc.com
@@ -2009,7 +1965,6 @@
 0.0.0.0 static.adsafeprotected.com
 0.0.0.0 static.chartbeat.com
 0.0.0.0 static.criteo.net
-0.0.0.0 static.doubleclick.net
 0.0.0.0 static.getclicky.com
 0.0.0.0 static.hotjar.com
 0.0.0.0 static.klaviyo.com
@@ -2129,7 +2084,6 @@
 0.0.0.0 tracker.iionads.com
 0.0.0.0 tracking.g2crowd.com
 0.0.0.0 tracking.modafinilusa.com
-0.0.0.0 traffic-nts-ip-assoc.xy.fbcdn.net.hsd1.fl.comcast.net
 0.0.0.0 traffic-nts-ip-assoc.xz.fbcdn.net
 0.0.0.0 trc.taboola.com
 0.0.0.0 trc2fpy0j4.adobestats.io
@@ -2209,7 +2163,6 @@
 0.0.0.0 vabzsooenipxyf.hsd1.fl.comcast.net
 0.0.0.0 vaicore.site
 0.0.0.0 vajcbj9qgq.adobe.io
-0.0.0.0 variations.brave.com
 0.0.0.0 vas.samsungapps.com
 0.0.0.0 vcorzsld2a.adobe.io
 0.0.0.0 vcu-api.300624.com
@@ -2303,7 +2256,6 @@
 0.0.0.0 wondershare.net
 0.0.0.0 wootric-eligibility.herokuapp.com
 0.0.0.0 workflow-ui-prod.licensingstack.com
-0.0.0.0 wpad.hsd1.fl.comcast.net
 0.0.0.0 wp-content.hsd1.fl.comcast.net
 0.0.0.0 wps.com
 0.0.0.0 wptd-k2svr1.hsd1.fl.comcast.net
@@ -2425,8 +2377,6 @@
 0.0.0.0 www.ecosia.org
 0.0.0.0 www.fastly-insights.com
 0.0.0.0 www.fosshub.com
-0.0.0.0 www.googleadservices.com
-0.0.0.0 www.google-analytics.com
 0.0.0.0 www.googleapis.com.hsd1.fl.comcast.net
 0.0.0.0 www.googleoptimize.com
 0.0.0.0 www.googletagmanager.com
@@ -2535,4 +2485,3 @@
 0.0.0.0 zu8yy3jkaz.adobestats.io
 0.0.0.0 zz8r2o83on.adobestats.io
 0.0.0.0 zzsnsutxiyga.hsd1.fl.comcast.net
-0.0.0.0 comcast.net
