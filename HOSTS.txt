@@ -1,509 +1,1886 @@
-0.0.0.0 _ldap._tcp.dc._msdcs.hsd1.fl.comcast.net
-0.0.0.0 _ldap._tcp.dc._msdcs.workgroup.hsd1.fl.comcast.net
-0.0.0.0 0.datadog.pool.ntp.org
-0.0.0.0 0.pool.ntp.org
-0.0.0.0 1.datadog.pool.ntp.org
-0.0.0.0 1.pool.ntp.org
-0.0.0.0 1d.tlu.dl.delivery.mp.microsoft.com
-0.0.0.0 2.datadog.pool.ntp.org
-0.0.0.0 3.datadog.pool.ntp.org
-0.0.0.0 3.pool.ntp.org
-0.0.0.0 32197.api.swrve.com
-0.0.0.0 32197.content.swrve.com
-0.0.0.0 5aa25954e40ffb18984989b59487dfe054549e213a2e64a12187f8deb5a4cb5.us-east-1.prod.service.minerva.devices.a2z.com
-0.0.0.0 8hptrzgm7.mw1i8.adobestats.io
-0.0.0.0 a.ads.rmbl.ws
-0.0.0.0 a.tiktokmod.pro
-0.0.0.0 a5tfzk-p.doordash.com
-0.0.0.0 aa.online-metrix.net
-0.0.0.0 aax-us-east-retail-direct.amazon.com
-0.0.0.0 abtest-aws-us-east-01.saas.sensorsdata.com
-0.0.0.0 acmeaom.pubfinity.com
-0.0.0.0 acroipm2.adobe.com
-0.0.0.0 ads.mozilla.org
-0.0.0.0 ads.pubmatic.com
-0.0.0.0 ads-api.x.com
-0.0.0.0 adsassets.waze.com
-0.0.0.0 adservice.google.com
-0.0.0.0 ads-img.mozilla.org
-0.0.0.0 aepxlg.adobe.com
-0.0.0.0 aes.us-east.ono.axp.amazon-adsystem.com
-0.0.0.0 aircall-dataplane.rudderstack.com
-0.0.0.0 alt7-mtalk.google.com
-0.0.0.0 alt8-mtalk.google.com
-0.0.0.0 analytics.avcdn.net
-0.0.0.0 analytics.glarysoft.com
-0.0.0.0 analytics.twitter.com
-0.0.0.0 android-context-data.googleapis.com
-0.0.0.0 android-safebrowsing.google.com
-0.0.0.0 api.account.samsung.com
-0.0.0.0 api.apptentive.com
-0.0.0.0 api.consentdesk.com
-0.0.0.0 api.iterable.com
-0.0.0.0 api.mixpanel.com
-0.0.0.0 api.pico.bendingspoonsapps.com
-0.0.0.0 api.pubfinity.com
-0.0.0.0 api.rudderlabs.com
-0.0.0.0 api.samsungconsent.com
-0.0.0.0 api.segment.io
-0.0.0.0 api.sprig.com
-0.0.0.0 api2.branch.io
-0.0.0.0 api-ad-adapter.wps.com
-0.0.0.0 api-js.mixpanel.com
-0.0.0.0 api-web.wondershare.cc
-0.0.0.0 app.cyberlink.com
-0.0.0.0 app.usercentrics.eu
-0.0.0.0 app-content.cyberlink.com
-0.0.0.0 app-measurement.com
-0.0.0.0 appsgrowthpromo-pa.clients6.google.com
-0.0.0.0 arc.msn.com
-0.0.0.0 armmf.adobe.com
-0.0.0.0 assets.adobedtm.com
-0.0.0.0 assets.mozilla.net
-0.0.0.0 assets.sitescdn.net
-0.0.0.0 aus5.mozilla.org
-0.0.0.0 auth.wikimedia.org
-0.0.0.0 beacons.gcp.gvt2.com
-0.0.0.0 beacons.gvt2.com
-0.0.0.0 beacons5.gvt3.com
-0.0.0.0 bendingspoons.com
-0.0.0.0 bibo.api.swiftkey.com
-0.0.0.0 binisoft.org
-0.0.0.0 bixbyllm.com
-0.0.0.0 blacklist.tampermonkey.net
-0.0.0.0 boards.chance.surf
-0.0.0.0 bolt.dropbox.com
-0.0.0.0 browser-intake-datadoghq.com
-0.0.0.0 bzqvtx3g.r.us-east-1.awstrack.me
-0.0.0.0 c.paypal.com
-0.0.0.0 capi.samsungcloud.com
-0.0.0.0 catalog.gamepass.com
-0.0.0.0 cc-api-data.adobe.io
-0.0.0.0 cc-api-teamprojects.adobe.io
-0.0.0.0 cc-cdn.adobe.com
-0.0.0.0 ccleaner.piriform.com
-0.0.0.0 ccleaner.tools.avcdn.net
-0.0.0.0 cclibraries-defaults-cdn.adobe.com
-0.0.0.0 cctypekit.adobe.io
-0.0.0.0 cd05-04.na1.hs-sales-engage.com
-0.0.0.0 cdn.amcharts.com
-0.0.0.0 cdn.cookielaw.org
-0.0.0.0 cdn.optimizely.com
-0.0.0.0 cdn.quantummetric.com
-0.0.0.0 cdn.system1.com
-0.0.0.0 cdn-fc.com
-0.0.0.0 cdnftrdoornp-fagccygrcfhmegf0.z01.azurefd.net
-0.0.0.0 cdn-settings.segment.com
-0.0.0.0 cdn-v4.amp-endpoint3.com
-0.0.0.0 cdn-v6.amp-endpoint3.com
-0.0.0.0 census-app.scorecardresearch.com
-0.0.0.0 change.org
-0.0.0.0 client.wns.windows.com
-0.0.0.0 clients.config.office.net
-0.0.0.0 clientservices.googleapis.com
-0.0.0.0 clienttracing-pa.googleapis.com
-0.0.0.0 cloud.wpscdn.com
-0.0.0.0 cloudservice14.kingsoft-office-service.com
-0.0.0.0 cloudservice24.kingsoft-office-service.com
-0.0.0.0 codesector.com
-0.0.0.0 collector.brandmetrics.com
-0.0.0.0 comcast.net
-0.0.0.0 config.edge.skype.com
-0.0.0.0 content2.instacart.com
-0.0.0.0 content-signature-2.cdn.mozilla.net
-0.0.0.0 crashlyticsreports-pa.googleapis.com
-0.0.0.0 credit.cyberlink.com
-0.0.0.0 crl3.digicert.com
-0.0.0.0 crl4.digicert.com
-0.0.0.0 crm-static.wondershare.cc
-0.0.0.0 crs.cr.adobe.com
-0.0.0.0 cs.dds.microsoft.com
-0.0.0.0 csdkapi-policy.adobe.com
-0.0.0.0 csp.withgoogle.com
-0.0.0.0 cuow9t.cdn-settings.appsflyersdk.com
-0.0.0.0 cuow9t.inapps.appsflyersdk.com
-0.0.0.0 cuow9t.launches.appsflyersdk.com
-0.0.0.0 cx.atdmt.com
-0.0.0.0 d.dropbox.com
-0.0.0.0 d17o3jbj1j3xk8.cloudfront.net
-0.0.0.0 d1nruqhae353qc.cloudfront.net
-0.0.0.0 d1swly8pgrbhu5.cloudfront.net
-0.0.0.0 d2h8zr0m6mus4x.cloudfront.net
-0.0.0.0 d2lkfej1dceit9.cloudfront.net
-0.0.0.0 d2w3zkq33l1i26.cloudfront.net
-0.0.0.0 d37rwvwgfzyjhn.cloudfront.net
-0.0.0.0 darkreader.org
-0.0.0.0 dc.wondershare.cc
-0.0.0.0 dc.wondershare.com
-0.0.0.0 dc-static.wondershare.cc
-0.0.0.0 defraggler.piriform.com
-0.0.0.0 detectportal.firefox.com
-0.0.0.0 device-api.urbanairship.com
-0.0.0.0 device-metrics-us.amazon.com
-0.0.0.0 dfpyblxnkavkk.hsd1.fl.comcast.net
-0.0.0.0 displaycatalog.mp.microsoft.com
-0.0.0.0 dk1.cdnnetwork.fun
-0.0.0.0 dl.4kdownload.com
-0.0.0.0 dl.delivery.mp.microsoft.com
-0.0.0.0 dl-debug.dropbox.com
-0.0.0.0 dlnwzkim0wron.cloudfront.net
-0.0.0.0 dns.msftncsi.com
-0.0.0.0 download.db-ip.com
-0.0.0.0 dpm.demdex.net
-0.0.0.0 driver-updater.ff.avast.com
-0.0.0.0 dtjsystab5p0r.cloudfront.net
-0.0.0.0 dvs.samsungmobile.com
-0.0.0.0 e.reddit.com
-0.0.0.0 e44177b6b805.cdn4.forter.com
-0.0.0.0 ecs.office.com
-0.0.0.0 edge.microsoft.com
-0.0.0.0 ematrix.filmipop.com
-0.0.0.0 emoji.redditmedia.com
-0.0.0.0 emupdate.avcdn.net
-0.0.0.0 engagements.appsflyer.com
-0.0.0.0 es11.samsung-sm-ds.com
-0.0.0.0 example.org
-0.0.0.0 exbd.ex.co
-0.0.0.0 fe2cr.update.microsoft.com
-0.0.0.0 fe3cr.delivery.mp.microsoft.com
-0.0.0.0 feaa820f280-uevmivnp1755836651-sonar.xz.fbcdn.net
-0.0.0.0 feedback-pa.clients6.google.com
-0.0.0.0 feedback-pa.googleapis.com
-0.0.0.0 ffc-static-cdn.oobesaas.adobe.com
-0.0.0.0 firebase.googleapis.com
-0.0.0.0 firebaseinstallations.googleapis.com
-0.0.0.0 firebaselogging.googleapis.com
-0.0.0.0 firebaselogging-pa.googleapis.com
-0.0.0.0 firebase-settings.crashlytics.com
-0.0.0.0 firefox.settings.services.mozilla.com
-0.0.0.0 fls-na.amazon.com
-0.0.0.0 footprints-pa.googleapis.com
-0.0.0.0 frontier.tiktokv.us
-0.0.0.0 frontiercomm.tt.omtrdc.net
-0.0.0.0 frontier-ttp2.tiktokv.us
-0.0.0.0 ftr-codepush-frontdoor-endpoint-prod-f7cshxdre8aqd6fb.a02.azurefd.net
-0.0.0.0 gannett-player.ex.co
-0.0.0.0 gateway-outlook.bingviz.com
-0.0.0.0 geller-pa.googleapis.com
-0.0.0.0 genesis.cyberlink.com
-0.0.0.0 geo.cookie-script.com
-0.0.0.0 geo.prod.do.dsp.mp.microsoft.com
-0.0.0.0 geo2.adobe.com
-0.0.0.0 geoapi.indiatimes.com
-0.0.0.0 geomobileservices-pa.googleapis.com
-0.0.0.0 geover.prod.do.dsp.mp.microsoft.com
-0.0.0.0 getgreenshot.org
-0.0.0.0 global.localizecdn.com
-0.0.0.0 go.glarysoft.com
-0.0.0.0 googleads.g.doubleclick.net
-0.0.0.0 googletagmanager.com
-0.0.0.0 gtaphruzdxtya.hsd1.fl.comcast.net
-0.0.0.0 gu.glarysoft.com
-0.0.0.0 haxnode.net
-0.0.0.0 hbc.adobe.io
-0.0.0.0 hbrcv.adobe.com
-0.0.0.0 http-intake.logs.datadoghq.com
-0.0.0.0 ic.adobe.io
-0.0.0.0 icpublic.com
-0.0.0.0 image.email.eero.com
-0.0.0.0 img-getpocket.cdn.mozilla.net
-0.0.0.0 ims-prod06.adobelogin.com
-0.0.0.0 in.appcenter.ms
-0.0.0.0 incoming.telemetry.mozilla.org
-0.0.0.0 insights-collector.newrelic.com
-0.0.0.0 ip6.frontiernet.net
-0.0.0.0 ip-info.ff.avast.com
-0.0.0.0 ipm-provider.ff.avast.com
-0.0.0.0 ipv6.msftconnecttest.com
-0.0.0.0 ipv6.msftncsi.com
-0.0.0.0 jarvis.indiatimes.com
-0.0.0.0 js.adsrvr.org
-0.0.0.0 js.hubspotfeedback.com
-0.0.0.0 jssocdn.indiatimes.com
-0.0.0.0 kms.digiboy.ir
-0.0.0.0 kore.ai
-0.0.0.0 lamssettings-pa.googleapis.com
-0.0.0.0 lcs-cops.adobe.io
-0.0.0.0 lencr.org
-0.0.0.0 lens-pa.googleapis.com
-0.0.0.0 license.piriform.com
-0.0.0.0 license-api.ccleaner.com
-0.0.0.0 licenses-content.acmeaom.com
-0.0.0.0 licensing.mp.microsoft.com
-0.0.0.0 locate.indiatimes.com
-0.0.0.0 location.services.mozilla.com
-0.0.0.0 locationhistory-pa.googleapis.com
-0.0.0.0 locationhistoryplacedetails-pa.googleapis.com
-0.0.0.0 location-v6-ttp2.tiktokv.us
-0.0.0.0 log16-normal-useast8.tiktokv.us
-0.0.0.0 login.live.com
-0.0.0.0 login.microsoftonline.com
-0.0.0.0 login.wikimedia.org
-0.0.0.0 mads.amazon-adsystem.com
-0.0.0.0 mail-ads.google.com
-0.0.0.0 maps.wikimedia.org
-0.0.0.0 mauth.cyberlink.com
-0.0.0.0 merino.services.mozilla.com
-0.0.0.0 metrics.media-amazon.com
-0.0.0.0 mobile.events.data.microsoft.com
-0.0.0.0 mobileconfiguration-pa.googleapis.com
-0.0.0.0 mobilesdk-us.kampyle.com
-0.0.0.0 mon16-normal-useast8.tiktokv.us
-0.0.0.0 mon-boot.tiktokv.com
-0.0.0.0 movip.wps.com
-0.0.0.0 mozilla.cloudflare-dns.com
-0.0.0.0 mpsnare.iesnare.com
-0.0.0.0 mrodevicemgr.officeapps.live.com
-0.0.0.0 msdl.microsoft.com
-0.0.0.0 msedge.b.tlu.dl.delivery.mp.microsoft.com
-0.0.0.0 msft-ssp.adnxs.com
-0.0.0.0 msg.wondershare.cc
-0.0.0.0 mtalk.google.com
-0.0.0.0 myaccount.glarysoft.com
-0.0.0.0 na1e-acc.services.adobe.com
-0.0.0.0 ncc.avast.com
-0.0.0.0 nearbypresence-pa.googleapis.com
-0.0.0.0 nearbysharing-pa.googleapis.com
-0.0.0.0 nebula-cdn.kampyle.com
-0.0.0.0 netify.ai
-0.0.0.0 neveragain.allstatics.com
-0.0.0.0 nexusrules.officeapps.live.com
-0.0.0.0 ngx-v4.amp-endpoint2.com
-0.0.0.0 ngx-v6.amp-endpoint2.com
-0.0.0.0 nl281.edgeaccelerator.website
-0.0.0.0 npr.org
-0.0.0.0 o1069899.ingest.sentry.io
-0.0.0.0 o1383653.ingest.sentry.io
-0.0.0.0 o17585.ingest.sentry.io
-0.0.0.0 o33249.ingest.sentry.io
-0.0.0.0 o502263.ingest.sentry.io
-0.0.0.0 o80279.ingest.sentry.io
-0.0.0.0 ocsp.digicert.com
-0.0.0.0 ocsp.usertrust.com
-0.0.0.0 officeclient.microsoft.com
-0.0.0.0 ogads-pa.clients6.google.com
-0.0.0.0 ogads-pa.googleapis.com
-0.0.0.0 oneocsp.microsoft.com
-0.0.0.0 ori-myphone-download.wondershare.cc
-0.0.0.0 otheve.beacon.qq.com
-0.0.0.0 oveuls-cdn-settings.appsflyersdk.com
-0.0.0.0 oveuls-launches.appsflyersdk.com
-0.0.0.0 p11.techlab-cdn.com
-0.0.0.0 p13n.adobe.io
-0.0.0.0 pagead2.googlesyndication.com
-0.0.0.0 passwordsleakcheck-pa.googleapis.com
-0.0.0.0 pay-users-pa.googleapis.com
-0.0.0.0 people-pa.googleapis.com
-0.0.0.0 peoplestackwebexperiments-pa.clients6.google.com
-0.0.0.0 pixel.watch
-0.0.0.0 pixel-api.pfsrvs.com
-0.0.0.0 play.google.com
-0.0.0.0 play.samsungcloud.com
-0.0.0.0 players.brightcove.net
-0.0.0.0 plugin-server.wps.com
-0.0.0.0 plus.timesofindia.com
-0.0.0.0 premium.mapmyfitness.com
-0.0.0.0 prod.adobeccstatic.com
-0.0.0.0 prod.adobegenuine.com.comcast.net
-0.0.0.0 prod.adobegenuine.com.fl.comcast.net
-0.0.0.0 prod.adobegenuine.com.hsd1.fl.comcast.net
-0.0.0.0 prod-rel-ffc-ccm.oobesaas.adobe.com
-0.0.0.0 prod-web.wondershare.cc
-0.0.0.0 proxy-roulette-roulette.icpublic.com
-0.0.0.0 pubads.g.doubleclick.net
-0.0.0.0 push.chance.surf
-0.0.0.0 r.bing.com
-0.0.0.0 r10.c.lencr.org
-0.0.0.0 r11.c.lencr.org
-0.0.0.0 r63ecapkj5yg.mw1i8.adobestats.io
-0.0.0.0 recuva.piriform.com
-0.0.0.0 redirect.prod.experiment.routing.cloudfront.aws.a2z.com
-0.0.0.0 registeridm.com
-0.0.0.0 remote-data.urbanairship.com
-0.0.0.0 reqhfg-cdn-settings.appsflyersdk.com
-0.0.0.0 reqhfg-launches.appsflyersdk.com
-0.0.0.0 resources.licenses.adobe.com
-0.0.0.0 returnyoutubedislikeapi.com
-0.0.0.0 rezvorck.github.io
-0.0.0.0 rpc-rise-config-data-eng.icpublic.com
-0.0.0.0 rtlog16-normal-useast8.tiktokv.us
-0.0.0.0 rushinfo.adobe.com
-0.0.0.0 s2s.adjust.com
-0.0.0.0 safebrowsing.brave.com
-0.0.0.0 safebrowsing.googleapis.com
-0.0.0.0 samsung.com
-0.0.0.0 samsungcloud.com
-0.0.0.0 samsungmobile.com
-0.0.0.0 samsungosp.com
-0.0.0.0 scone-pa.googleapis.com
-0.0.0.0 scripts.demandbase.com
-0.0.0.0 scs-use2.bixbyllm.com
-0.0.0.0 sdk.iad-03.braze.com
-0.0.0.0 sdk.pushmessage.samsung.com
-0.0.0.0 sdk-api-v1.singular.net
-0.0.0.0 sdx.microsoft.com
-0.0.0.0 searchlabspartnerservice-pa.googleapis.com
-0.0.0.0 searchpromo-pa.googleapis.com
-0.0.0.0 securepubads.g.doubleclick.net
-0.0.0.0 sensorsdata.com
-0.0.0.0 service.account.adobe.com
-0.0.0.0 session.mshopbugsnag.irm.amazon.dev
-0.0.0.0 sessions.bugsnag.com
-0.0.0.0 settingshelper.com
-0.0.0.0 shepherd.avcdn.net
-0.0.0.0 shepherd.ff.avast.com
-0.0.0.0 slscr.update.microsoft.com
-0.0.0.0 socialfixer.com
-0.0.0.0 social-magazines-prod.storage.googleapis.com
-0.0.0.0 social-na.waze.com
-0.0.0.0 solutions.invocacdn.com
-0.0.0.0 speccy.piriform.com
-0.0.0.0 spidersense.bendingspoons.com
-0.0.0.0 spot-pa.googleapis.com
-0.0.0.0 ssp-api.pfsrvs.com
-0.0.0.0 static.cloudflareinsights.com
-0.0.0.0 static.doubleclick.net
-0.0.0.0 static.klaviyo.com
-0.0.0.0 static.netify.ai
-0.0.0.0 static.pfsrvs.com
-0.0.0.0 stm-keyid-1adb994ab58be57a0cc9b900e7851e1a43c08660.microsoftaik.azure.net
-0.0.0.0 stock.adobe.io
-0.0.0.0 storecatalogrevocation.storequality.microsoft.com
-0.0.0.0 storeedgefd.dsx.mp.microsoft.com
-0.0.0.0 sts.us-west-2.amazonaws.com
-0.0.0.0 styles.redditmedia.com
-0.0.0.0 substrate.office.com
-0.0.0.0 suggestqueries.google.com
-0.0.0.0 swiftkey.com
-0.0.0.0 syndication.twitter.com
-0.0.0.0 t7.noreply.fpl.com
-0.0.0.0 tags.tiqcdn.com
-0.0.0.0 taskassist-pa.clients6.google.com
-0.0.0.0 telemetry.api.swiftkey.com
-0.0.0.0 telemetry.malwarebytes.com
-0.0.0.0 thumbs.chance.surf
-0.0.0.0 tigger-citadel.touchtype-fluency.com
-0.0.0.0 tiktokmod.pro
-0.0.0.0 time.google.com
-0.0.0.0 time.windows.com
-0.0.0.0 tnc16-normal-useast5.tiktokv.us
-0.0.0.0 tnc19-normal-useast8.tiktokv.us
-0.0.0.0 tnc-boot.tiktokv.com
-0.0.0.0 toifeeds.indiatimes.com
-0.0.0.0 trace.mshopbugsnag.irm.amazon.dev
-0.0.0.0 track.paubox.com
-0.0.0.0 tracker.zer0day.to
-0.0.0.0 traffic-nts-ip-assoc.xy.fbcdn.net
-0.0.0.0 traffic-nts-ip-assoc.xz.fbcdn.net
-0.0.0.0 trib.al
-0.0.0.0 trustlist.adobe.com
-0.0.0.0 u6876189.ct.sendgrid.net
-0.0.0.0 udp.ping.teamviewer.com
-0.0.0.0 ulp1p-pa.googleapis.com
-0.0.0.0 unagi.amazon.com
-0.0.0.0 unagi-na.amazon.com
-0.0.0.0 unified.adsafeprotected.com
-0.0.0.0 update.9mod.com
-0.0.0.0 update.filepuma.com
-0.0.0.0 upload.wikimedia.org
-0.0.0.0 ups.tt.omtrdc.net
-0.0.0.0 us-auth2.samsungosp.com
-0.0.0.0 use.typekit.net
-0.0.0.0 use1-turn.fpjs.io
-0.0.0.0 userlocation.googleapis.com
-0.0.0.0 uxh52u.cdn-settings.appsflyersdk.com
-0.0.0.0 uxh52u.inapps.appsflyersdk.com
-0.0.0.0 uxh52u.launches.appsflyersdk.com
-0.0.0.0 variations.brave.com
-0.0.0.0 vas.samsungapps.com
-0.0.0.0 vast.doubleverify.com
-0.0.0.0 vcu-api.300624.com
-0.0.0.0 versioncheck-bg.addons.mozilla.org
-0.0.0.0 voilatile-pa.googleapis.com
-0.0.0.0 vsblobprodscussu5shard56.blob.core.windows.net
-0.0.0.0 vsblobprodscussu5shard66.blob.core.windows.net
-0.0.0.0 vsblobprodscussu5shard76.blob.core.windows.net
-0.0.0.0 w3-reporting.reddit.com
-0.0.0.0 weatherlive.info
-0.0.0.0 web.vortex.data.microsoft.com
-0.0.0.0 web-chat.global.assistant.watson.appdomain.cloud
-0.0.0.0 wondershare.cc
-0.0.0.0 wondershare.com
-0.0.0.0 wpad.hsd1.fl.comcast.net
-0.0.0.0 wps.com
-0.0.0.0 ws2-cache.aptoide.com
-0.0.0.0 wtpbfmxfpcjxozc.hsd1.fl.comcast.net
-0.0.0.0 wu2z-api.samsungcloud.com
-0.0.0.0 www.4chan-x.net
-0.0.0.0 www.adobe.com
-0.0.0.0 www.bing.com
-0.0.0.0 www.ccleaner.com
-0.0.0.0 www.ccleaner.piriform.com
-0.0.0.0 www.clarity.ms
-0.0.0.0 www.defraggler.piriform.com
-0.0.0.0 www.dezistyle.com
-0.0.0.0 www.glarysoft.com
-0.0.0.0 www.googleadservices.com
-0.0.0.0 www.google-analytics.com
-0.0.0.0 www.googletagmanager.com
-0.0.0.0 www.honestbleeps.com
-0.0.0.0 www.license.piriform.com
-0.0.0.0 www.mikrolabor.com
-0.0.0.0 www.msftconnecttest.com
-0.0.0.0 www.msftncsi.com
-0.0.0.0 www.qbittorrent.org
-0.0.0.0 www.recuva.piriform.com
-0.0.0.0 www.revouninstaller.com
-0.0.0.0 www.samsung.com
-0.0.0.0 www.samsungsds.com
-0.0.0.0 www.speccy.piriform.com
-0.0.0.0 x1.c.lencr.org
-0.0.0.0 xgapromomanager-pa.googleapis.com
-0.0.0.0 zapier.com
-0.0.0.0 zgeviwddm.hsd1.fl.comcast.net
-0.0.0.0 znaw3ph0vjadustaj-tiaa2.siteintercept.qualtrics.com
-0.0.0.0 znoghknj.emltrk.com
-
-
-
-
-
-
-
-#Android Phone
-0.0.0.0 es11.samsung-sm-ds.com
-0.0.0.0 in.appcenter.ms
-0.0.0.0 sdk-api-v1.singular.net
-0.0.0.0 cdn.adpushup.com
-0.0.0.0 stats.g.doubleclick.net
-0.0.0.0 www.google-analytics.com
-0.0.0.0 www.googletagmanager.com
-0.0.0.0 ogads-pa.clients6.google.com
-0.0.0.0 track.amazon.com
-0.0.0.0 3.datadog.pool.ntp.org
-0.0.0.0 spot-pa.googleapis.com
-0.0.0.0 detectportal.firefox.com
-0.0.0.0 example.org
-0.0.0.0 2.datadog.pool.ntp.org
-0.0.0.0 ads-img.mozilla.org
-0.0.0.0 img-getpocket.cdn.mozilla.net
-0.0.0.0 ads.mozilla.org
-0.0.0.0 1.datadog.pool.ntp.org
-0.0.0.0 safebrowsing.googleapis.com
-0.0.0.0 incoming.telemetry.mozilla.org
-0.0.0.0 o1069899.ingest.sentry.io
-0.0.0.0 0.datadog.pool.ntp.org
-0.0.0.0 s.amazon-adsystem.com
-0.0.0.0 mon16-normal-useast8.tiktokv.us
-0.0.0.0 d1nruqhae353qc.cloudfront.net
-0.0.0.0 redirect.prod.experiment.routing.cloudfront.aws.a2z.com
-0.0.0.0 app-measurement.com
-0.0.0.0 aax-us-east-retail-direct.amazon.com
-0.0.0.0 aes.us-east.ono.axp.amazon-adsystem.com
-0.0.0.0 fls-na.amazon.com
-0.0.0.0 unagi.amazon.com
-0.0.0.0 unagi-na.amazon.com
-0.0.0.0 session.mshopbugsnag.irm.amazon.dev
-0.0.0.0 trace.mshopbugsnag.irm.amazon.dev
-0.0.0.0 xgapromomanager-pa.googleapis.com
-0.0.0.0 rezvorck.github.io
+_ldap._tcp.dc._msdcs.hsd1.fl.comcast.net 
+_ldap._tcp.dc._msdcs.workgroup.hsd1.fl.comcast.net 
+1d.tlu.dl.delivery.mp.microsoft.com 
+1oavsblobprodcus350.blob.core.windows.net 
+2a902e87833a56b921042261df4daa5f.fp.measure.office.com 
+37bvsblobprodcus311.blob.core.windows.net 
+427a4618c6071d83f190e0fef8a227a5.fp.measure.office.com 
+48ba180cc92365fe54a23eb307a2c179.fp.measure.office.com 
+4dc9ebe9c1cc5c22af2f665fea03f28b.fp.measure.office.com 
+4e83215548583efc70931bb7da7ddd61.fp.measure.office.com 
+5385e4eeb25e6494ad77c248126f8a27.fp.measure.office.com 
+5aa25954e40ffb18984989b59487dfe054549e213a2e64a12187f8deb5a4cb5.us-east-1.prod.service.minerva.devices.a2z.com 
+a-0001.a-msedge.net 
+a-0002.a-msedge.net 
+a-0003.a-msedge.net 
+a-0004.a-msedge.net 
+a-0005.a-msedge.net 
+a-0006.a-msedge.net 
+a-0007.a-msedge.net 
+a-0008.a-msedge.net 
+a-0009.a-msedge.net 
+a4.bing.com 
+a5tfzk-p.doordash.com 
+a978.i6g1.akamai.net 
+academycourses.bingads.microsoft.com 
+acroipm2.adobe.com 
+acs-events.trafficmanager.net 
+activity.windows.com 
+agps.location.live.net 
+agps-location-livenet.trafficmanager.net 
+aka-cdn-ns.adtech.de 
+alcdn.msauth.net 
+alt7-mtalk.google.com 
+alt8-mtalk.google.com 
+americas2.notify.windows.com.akadns.net 
+a-msedge.net 
+android-safebrowsing.google.com 
+any.edge.bing.com 
+apac.events.data.microsoft.com 
+apac.events.data.trafficmanager.net 
+api.account.samsung.com 
+api.ads.microsoft.com 
+api.ads-act.trafficmanager.net 
+api.ads-act-test.trafficmanager.net 
+api.applicationinsights.azure.com 
+api.apptentive.com 
+api.beta.ads.microsoft.com 
+api.bingads.microsoft.com 
+api.clientcenter.ads-int.microsoft.com 
+api.consentdesk.com 
+api.cortana.ai 
+api.diagnostics.office.com 
+api.diagnostics-eudb.office.com 
+api.edgeoffer.microsoft.com 
+api.iterable.com 
+api.mixpanel.com 
+api.msa.diagnostics.office.com 
+api.pico.bendingspoonsapps.com 
+api.pubfinity.com 
+api.rudderlabs.com 
+api.rudderstack.com 
+api.samsungconsent.com 
+api.sandbox.ads.microsoft.com 
+api.segment.io 
+api.sprig.com 
+api.tip.ads.microsoft.com 
+api2.branch.io 
+api-ad-adapter.wps.com 
+api-js.mixpanel.com 
+api-web.wondershare.cc 
+app.cyberlink.com 
+app.link 
+app-content.cyberlink.com 
+apps.skype.com 
+appsgrowthpromo-pa.clients6.google.com 
+a-ring.msedge.net 
+a-ring-fallback.msedge.net 
+a-ring-ipv6only.msedge.net 
+assets.activity.windows.com 
+assets.mozilla.net 
+assets.sitescdn.net 
+au-v20.events.data.microsoft.com 
+aus5.mozilla.org 
+auth.wikimedia.org 
+az361816.vo.msecnd.net 
+az512334.vo.msecnd.net 
+az667904.vo.msecnd.net 
+azsc-bingads-centralus.centralus.cloudapp.azure.com 
+azsc-bingads-westus.westus.cloudapp.azure.com 
+azsc-edge-bingads-southeastasia.southeastasia.cloudapp.azure.com 
+azsc-edge-bingads-westeurope.westeurope.cloudapp.azure.com 
+azure.bingads.microsoft.com 
+azure.bingads.trafficmanager.net 
+azurewatson.microsoft.com 
+azwancan.trafficmanager.net 
+bag.itunes.apple.com 
+bc.bingads.microsoft.com 
+bcp.bingads.microsoft.com 
+bcp-ldc1.grafana.ads.trafficmanager.net 
+bcp-ldc1.ingress.ads.trafficmanager.net 
+bcp-ldc2.grafana.ads.trafficmanager.net 
+bcp-ldc2.ingress.ads.trafficmanager.net 
+bcp-wus-ldc1.grafana.ads.trafficmanager.net 
+bcp-wus-ldc2.grafana.ads.trafficmanager.net 
+bendingspoons.com 
+beta.bingads.microsoft.com 
+beta.dmc.ads-int.microsoft.com 
+bing.com 
+bingads.glbdns2.microsoft.com 
+bingads.microsoft.com 
+bingads.trafficmanager.net 
+bingadseditor.microsoft.com 
+bingadsresources.trafficmanager.net 
+bixbyllm.com 
+bl3302.storage.live.com 
+bl3302geo.storage.dkyprod.akadns.net 
+blacklist.tampermonkey.net 
+BN1WNS2011508.wns.windows.com 
+bn2wns1.wns.windows.com 
+bn3sch020010558.wns.windows.com 
+bn3sch020010560.wns.windows.com 
+bn3sch020010618.wns.windows.com 
+bn3sch020010629.wns.windows.com 
+bn3sch020010631.wns.windows.com 
+bn3sch020010635.wns.windows.com 
+bn3sch020010636.wns.windows.com 
+bn3sch020010650.wns.windows.com 
+bn3sch020011727.wns.windows.com 
+bn3sch020012850.wns.windows.com 
+bn3sch020020322.wns.windows.com 
+bn3sch020020749.wns.windows.com 
+bn3sch020022328.wns.windows.com 
+bn3sch020022335.wns.windows.com 
+bn3sch020022361.wns.windows.com 
+bn4sch101120814.wns.windows.com 
+bn4sch101120818.wns.windows.com 
+bn4sch101120911.wns.windows.com 
+bn4sch101120913.wns.windows.com 
+bn4sch101121019.wns.windows.com 
+bn4sch101121109.wns.windows.com 
+bn4sch101121118.wns.windows.com 
+bn4sch101121223.wns.windows.com 
+bn4sch101121407.wns.windows.com 
+bn4sch101121618.wns.windows.com 
+bn4sch101121704.wns.windows.com 
+bn4sch101121709.wns.windows.com 
+bn4sch101121714.wns.windows.com 
+bn4sch101121908.wns.windows.com 
+bn4sch101122117.wns.windows.com 
+bn4sch101122310.wns.windows.com 
+bn4sch101122312.wns.windows.com 
+bn4sch101122421.wns.windows.com 
+bn4sch101123108.wns.windows.com 
+bn4sch101123110.wns.windows.com 
+bn4sch101123202.wns.windows.com 
+bn4sch102110124.wns.windows.com 
+bolt.dropbox.com 
+b-ring.msedge.net 
+b-ring-fallback.msedge.net 
+bulk.api.bingads.microsoft.com 
+bulk.api.sandbox.bingads.microsoft.com 
+c.ar.msn.com 
+c.at.msn.com 
+c.be.msn.com 
+c.bing.com 
+c.bingapis.com 
+c.br.msn.com 
+c.ca.msn.com 
+c.cl.msn.com 
+c.de.msn.com 
+c.dk.msn.com 
+c.es.msn.com 
+c.fi.msn.com 
+c.fr.msn.com 
+c.gr.msn.com 
+c.hk.msn.com 
+c.id.msn.com 
+c.ie.msn.com 
+c.il.msn.com 
+c.in.msn.com 
+c.it.msn.com 
+c.jp.msn.com 
+c.latam.msn.com 
+c.live.com 
+c.msn.com 
+c.my.msn.com 
+c.nl.msn.com 
+c.no.msn.com 
+c.paypal.com 
+c.ph.msn.com 
+c.prodigy.msn.com 
+c.pt.msn.com 
+c.ru.msn.com 
+c.se.msn.com 
+c.sg.msn.com 
+c.th.msn.com 
+c.tr.msn.com 
+c.tw.msn.com 
+c.uk.msn.com 
+c.xbox.com 
+c.za.msn.com 
+c1.microsoft.com 
+c81e9147f87f90bf61c9ceac0580ed07.fp.measure.office.com 
+cab.watson.microsoft.com 
+cache.datamart.windows.com 
+campaign.api.bingads.microsoft.com 
+campaign.api.sandbox.bingads.microsoft.com 
+capi.samsungcloud.com 
+catalog.gamepass.com 
+c-bingapis-com.dual-a-0034.a-msedge.net 
+cc-api-data.adobe.io 
+cc-api-teamprojects.adobe.io 
+cc-cdn.adobe.com 
+cclibraries-defaults-cdn.adobe.com 
+ccmt-aks-cus-prod-ldc1.ingress.ads.trafficmanager.net 
+ccmt-aks-cus-prod-ldc2.ingress.ads.trafficmanager.net 
+ccmt-aks-eus-si-ldc1.ingress.ads.trafficmanager.net 
+ccmt-aks-eus-si-ldc2.ingress.ads.trafficmanager.net 
+ccmt-aks-wus-bcp-ldc1.ingress.ads.trafficmanager.net 
+ccmt-aks-wus-bcp-ldc2.ingress.ads.trafficmanager.net 
+cctypekit.adobe.io 
+cd05-04.na1.hs-sales-engage.com 
+cdn-fc.com 
+cdnftrdoornp-fagccygrcfhmegf0.z01.azurefd.net 
+cds1.stn.llnw.net 
+cds10.stn.llnw.net 
+cds1203.lon.llnw.net 
+cds1204.lon.llnw.net 
+cds1209.lon.llnw.net 
+cds1219.lon.llnw.net 
+cds1228.lon.llnw.net 
+cds1244.lon.llnw.net 
+cds1257.lon.llnw.net 
+cds1265.lon.llnw.net 
+cds1269.lon.llnw.net 
+cds1273.lon.llnw.net 
+cds1285.lon.llnw.net 
+cds1287.lon.llnw.net 
+cds1289.lon.llnw.net 
+cds1293.lon.llnw.net 
+cds1307.lon.llnw.net 
+cds1310.lon.llnw.net 
+cds1325.lon.llnw.net 
+cds1327.lon.llnw.net 
+cds177.dus.llnw.net 
+cds20005.stn.llnw.net 
+cds20404.lcy.llnw.net 
+cds20411.lcy.llnw.net 
+cds20415.lcy.llnw.net 
+cds20416.lcy.llnw.net 
+cds20417.lcy.llnw.net 
+cds20424.lcy.llnw.net 
+cds20425.lcy.llnw.net 
+cds20431.lcy.llnw.net 
+cds20435.lcy.llnw.net 
+cds20440.lcy.llnw.net 
+cds20443.lcy.llnw.net 
+cds20445.lcy.llnw.net 
+cds20450.lcy.llnw.net 
+cds20452.lcy.llnw.net 
+cds20457.lcy.llnw.net 
+cds20461.lcy.llnw.net 
+cds20469.lcy.llnw.net 
+cds20475.lcy.llnw.net 
+cds20482.lcy.llnw.net 
+cds20485.lcy.llnw.net 
+cds20495.lcy.llnw.net 
+cds21205.lon.llnw.net 
+cds21207.lon.llnw.net 
+cds21225.lon.llnw.net 
+cds21229.lon.llnw.net 
+cds21233.lon.llnw.net 
+cds21238.lon.llnw.net 
+cds21244.lon.llnw.net 
+cds21249.lon.llnw.net 
+cds21256.lon.llnw.net 
+cds21257.lon.llnw.net 
+cds21258.lon.llnw.net 
+cds21261.lon.llnw.net 
+cds21267.lon.llnw.net 
+cds21278.lon.llnw.net 
+cds21281.lon.llnw.net 
+cds21293.lon.llnw.net 
+cds21309.lon.llnw.net 
+cds21313.lon.llnw.net 
+cds21321.lon.llnw.net 
+cds26.ams9.msecn.net 
+cds27.ory.llnw.net 
+cds299.lcy.llnw.net 
+cds30027.stn.llnw.net 
+cds308.lcy.llnw.net 
+cds310.lcy.llnw.net 
+cds38.ory.llnw.net 
+cds405.lcy.llnw.net 
+cds406.lcy.llnw.net 
+cds407.fra.llnw.net 
+cds416.lcy.llnw.net 
+cds421.lcy.llnw.net 
+cds422.lcy.llnw.net 
+cds425.lcy.llnw.net 
+cds426.lcy.llnw.net 
+cds447.lcy.llnw.net 
+cds458.lcy.llnw.net 
+cds459.lcy.llnw.net 
+cds46.ory.llnw.net 
+cds461.lcy.llnw.net 
+cds468.lcy.llnw.net 
+cds469.lcy.llnw.net 
+cds471.lcy.llnw.net 
+cds483.lcy.llnw.net 
+cds484.lcy.llnw.net 
+cds489.lcy.llnw.net 
+cds493.lcy.llnw.net 
+cds494.lcy.llnw.net 
+cds54.ory.llnw.net 
+cds812.lon.llnw.net 
+cds815.lon.llnw.net 
+cds818.lon.llnw.net 
+cds832.lon.llnw.net 
+cds836.lon.llnw.net 
+cds840.lon.llnw.net 
+cds843.lon.llnw.net 
+cds857.lon.llnw.net 
+cds868.lon.llnw.net 
+cds869.lon.llnw.net 
+ceuswatcab01.blob.core.windows.net 
+ceuswatcab02.blob.core.windows.net 
+ch1b.bingads.microsoft.com 
+change.org 
+choice.microsoft.com 
+cjs.diagnostics.office.com 
+cjs-diagnostics-office-com-gvdhgwfwbbfsd9g3.z01.azurefd.net 
+client.wns.windows.com 
+clientcenter.ads-int.microsoft.com 
+clientcenter.api.bingads.microsoft.com 
+clientcenter.api.sandbox.bingads.microsoft.com 
+clients.config.office.net 
+clientservices.googleapis.com 
+clienttracing-pa.googleapis.com 
+cloud.wpscdn.com 
+cloudservice14.kingsoft-office-service.com 
+cloudservice24.kingsoft-office-service.com 
+cmmt-aks-cus-prod-ldc1.ingress.ads.trafficmanager.net 
+cmmt-aks-cus-prod-ldc2.ingress.ads.trafficmanager.net 
+cmmt-aks-cus-tip-ldc3.ingress.ads.trafficmanager.net 
+cmmt-aks-eus-si-ldc1.ingress.ads.trafficmanager.net 
+cmmt-aks-eus-si-ldc2.ingress.ads.trafficmanager.net 
+cmmt-aks-wus-bcp-ldc1.ingress.ads.trafficmanager.net 
+cmmt-aks-wus-bcp-ldc2.ingress.ads.trafficmanager.net 
+collection.location.live.net 
+collection-location-livenet.trafficmanager.net 
+collector.azure.cn 
+collector.azure.eaglex.ic.gov 
+collector.azure.microsoft.cloud 
+collector.azure.microsoft.scloud 
+comcast.net 
+commerce.bing.com 
+community.advertising.microsoft.com 
+community.bingads.microsoft.com 
+compatexchange.cloudapp.net 
+compatexchange1.trafficmanager.net 
+confiant.msn.com 
+config.edge.skype.com 
+config.fp.measure.office.com 
+content2.instacart.com 
+content-signature-2.cdn.mozilla.net 
+copilot.ads.trafficmanager.net 
+copilot-si.ads.trafficmanager.net 
+corp.sts.microsoft.com 
+corpext.msitadfs.glbdns2.microsoft.com 
+credit.cyberlink.com 
+c-ring.msedge.net 
+c-ring-fallback.msedge.net 
+crl3.digicert.com 
+crl4.digicert.com 
+crm-static.wondershare.cc 
+crs.cr.adobe.com 
+cs.dds.microsoft.com 
+cs1.wpc.v0cdn.net 
+csdkapi-policy.adobe.com 
+cse.google.com 
+csp.withgoogle.com 
+cy2.vortex.data.microsoft.com.akadns.net 
+d.dropbox.com 
+d17o3jbj1j3xk8.cloudfront.net 
+d1nruqhae353qc.cloudfront.net 
+d1swly8pgrbhu5.cloudfront.net 
+d2h8zr0m6mus4x.cloudfront.net 
+d2lkfej1dceit9.cloudfront.net 
+d2w3zkq33l1i26.cloudfront.net 
+d37rwvwgfzyjhn.cloudfront.net 
+db3wns2011111.wns.windows.com 
+db5.settings.data.microsoft.com.akadns.net 
+db5.settings-win.data.microsoft.com.akadns.net 
+db5.vortex.data.microsoft.com.akadns.net 
+db5-eap.settings-win.data.microsoft.com.akadns.net 
+dc.wondershare.cc 
+dc.wondershare.com 
+dc-static.wondershare.cc 
+defraggler.piriform.com 
+detectportal.brave-http-only.com 
+detectportal.firefox.com 
+dev.acs-events.trafficmanager.net 
+developers.ads.microsoft.com 
+developers.bingads.microsoft.com 
+device-api.urbanairship.com 
+dfpyblxnkavkk.hsd1.fl.comcast.net 
+diagnostics.office.com 
+diagnostics.support.microsoft.com 
+diagnostics-eudb.office.com 
+directory.services.live.com 
+directory.services.live.com.akadns.net 
+displaycatalog.mp.microsoft.com 
+dk1.cdnnetwork.fun 
+dl.delivery.mp.microsoft.com 
+dl-debug.dropbox.com 
+dlnwzkim0wron.cloudfront.net 
+dm3.track.mp.microsoft.com 
+dmc.ads.microsoft.com 
+dmc.ads-int.microsoft.com 
+dmgmediaprivacy.co.uk 
+dns.msftncsi.com 
+download.db-ip.com 
+dricopilot.copilot.ads.trafficmanager.net 
+dricopilot-si.copilot-si.ads.trafficmanager.net 
+driver-updater.ff.avast.com 
+ds.ssw.live.com 
+dsp-ad-cache-tm.trafficmanager.net 
+dtjsystab5p0r.cloudfront.net 
+dual-s-ring.msedge.net 
+dvs.samsungmobile.com 
+eaus2watcab01.blob.core.windows.net 
+eaus2watcab02.blob.core.windows.net 
+ecs.office.com 
+edge.activity.windows.com 
+edge.microsoft.com 
+edge-enterprise.activity.windows.com 
+emoji.redditmedia.com 
+emupdate.avcdn.net 
+enterprise.activity.windows.com 
+enterprise-eudb.activity.windows.com 
+entitlement.diagnostics.office.com 
+entitlement.diagnostics-eudb.office.com 
+en-us.appex-rf.msn.com 
+ers.samsungcloud.com 
+es11.samsung-sm-ds.com 
+espresso-pa.clients6.google.com 
+experiments.apple.com 
+express.bingads.microsoft.com 
+fc53f7abe6bfaaaff37f98c4298f7030.fp.measure.office.com 
+fd.bingads.microsoft.com 
+fe2.update.microsoft.com.akadns.net 
+fe2cr.update.microsoft.com 
+fe3.delivery.dsp.mp.microsoft.com.nsatc.net 
+fe3.delivery.mp.microsoft.com 
+fe3cr.delivery.mp.microsoft.com 
+feaa820f280-uevmivnp1755836651-sonar.xz.fbcdn.net 
+feedback.bingads.microsoft.com 
+feedback.microsoft-hohm.com 
+feedback.search.microsoft.com 
+feedback.windows.com 
+ffc-static-cdn.oobesaas.adobe.com 
+firefox.settings.services.mozilla.com 
+flex.msn.com 
+fp.measure.office.com.akamaized.net 
+frontier.tiktokv.us 
+frontiercomm.tt.omtrdc.net 
+frontier-ttp2.tiktokv.us 
+fsad.trafficmanager.net 
+ftr-codepush-frontdoor-endpoint-prod-f7cshxdre8aqd6fb.a02.azurefd.net 
+g.bing.com 
+g.msn.com 
+g00.msn.com 
+genesis.cyberlink.com 
+geo.prod.do.dsp.mp.microsoft.com 
+geo.settings.data.microsoft.com.akadns.net 
+geo.settings-win.data.microsoft.com.akadns.net 
+geo.vortex.data.microsoft.com.akadns.net 
+geo2.adobe.com 
+geoapi.indiatimes.com 
+geomobileservices-pa.googleapis.com 
+geover.prod.do.dsp.mp.microsoft.com 
+geover-prod.do.dsp.mp.microsoft.com 
+getgreenshot.org 
+ghochv3eng.trafficmanager.net 
+global.localizecdn.com 
+go.glarysoft.com 
+gtaphruzdxtya.hsd1.fl.comcast.net 
+gu.glarysoft.com 
+gvt2.com 
+gvt3.com 
+h.msn.com 
+h1.msn.com 
+h2.msn.com 
+h4g3z1-native.winoffice.web.app 
+h6.msn.com 
+haxnode.net 
+help.ads.microsoft.com 
+help.bingads.microsoft.com 
+hk2.settings.data.microsoft.com.akadns.net 
+hk2.wns.windows.com 
+hk2sch130020721.wns.windows.com 
+hk2sch130020723.wns.windows.com 
+hk2sch130020726.wns.windows.com 
+hk2sch130020729.wns.windows.com 
+hk2sch130020732.wns.windows.com 
+hk2sch130020824.wns.windows.com 
+hk2sch130020843.wns.windows.com 
+hk2sch130020851.wns.windows.com 
+hk2sch130020854.wns.windows.com 
+hk2sch130020855.wns.windows.com 
+hk2sch130020924.wns.windows.com 
+hk2sch130020936.wns.windows.com 
+hk2sch130020940.wns.windows.com 
+hk2sch130020956.wns.windows.com 
+hk2sch130020958.wns.windows.com 
+hk2sch130020961.wns.windows.com 
+hk2sch130021017.wns.windows.com 
+hk2sch130021029.wns.windows.com 
+hk2sch130021035.wns.windows.com 
+hk2sch130021137.wns.windows.com 
+hk2sch130021142.wns.windows.com 
+hk2sch130021153.wns.windows.com 
+hk2sch130021217.wns.windows.com 
+hk2sch130021246.wns.windows.com 
+hk2sch130021249.wns.windows.com 
+hk2sch130021260.wns.windows.com 
+hk2sch130021264.wns.windows.com 
+hk2sch130021322.wns.windows.com 
+hk2sch130021323.wns.windows.com 
+hk2sch130021329.wns.windows.com 
+hk2sch130021334.wns.windows.com 
+hk2sch130021360.wns.windows.com 
+hk2sch130021432.wns.windows.com 
+hk2sch130021433.wns.windows.com 
+hk2sch130021435.wns.windows.com 
+hk2sch130021437.wns.windows.com 
+hk2sch130021440.wns.windows.com 
+hk2sch130021450.wns.windows.com 
+hk2sch130021518.wns.windows.com 
+hk2sch130021523.wns.windows.com 
+hk2sch130021526.wns.windows.com 
+hk2sch130021527.wns.windows.com 
+hk2sch130021544.wns.windows.com 
+hk2sch130021554.wns.windows.com 
+hk2sch130021618.wns.windows.com 
+hk2sch130021634.wns.windows.com 
+hk2sch130021638.wns.windows.com 
+hk2sch130021646.wns.windows.com 
+hk2sch130021652.wns.windows.com 
+hk2sch130021654.wns.windows.com 
+hk2sch130021657.wns.windows.com 
+hk2sch130021723.wns.windows.com 
+hk2sch130021726.wns.windows.com 
+hk2sch130021727.wns.windows.com 
+hk2sch130021730.wns.windows.com 
+hk2sch130021731.wns.windows.com 
+hk2sch130021754.wns.windows.com 
+hk2sch130021829.wns.windows.com 
+hk2sch130021830.wns.windows.com 
+hk2sch130021833.wns.windows.com 
+hk2sch130021840.wns.windows.com 
+hk2sch130021842.wns.windows.com 
+hk2sch130021851.wns.windows.com 
+hk2sch130021852.wns.windows.com 
+hk2sch130021927.wns.windows.com 
+hk2sch130021928.wns.windows.com 
+hk2sch130021929.wns.windows.com 
+hk2sch130021958.wns.windows.com 
+hk2sch130022035.wns.windows.com 
+hk2sch130022041.wns.windows.com 
+hk2sch130022049.wns.windows.com 
+hk2sch130022135.wns.windows.com 
+hk2wns1.wns.windows.com 
+hk2wns1b.wns.windows.com 
+i1.services.social.microsoft.com 
+i1.services.social.microsoft.com.nsatc.net 
+ic.adobe.io 
+icpublic.com 
+identity.nel.measure.office.net 
+ieonline.microsoft.com 
+ieonlinews.microsoft.com 
+ieonlinews.trafficmanager.net 
+img-getpocket.cdn.mozilla.net 
+ims-prod06.adobelogin.com 
+inference.location.live.net 
+inference-app-gateway.eastus2.cloudapp.azure.com 
+inference-app-gateway.koreacentral.cloudapp.azure.com 
+inference-app-gateway.northeurope.cloudapp.azure.com 
+inference-location-livenet.trafficmanager.net 
+ingress.ads.trafficmanager.net 
+insideruser.trafficmanager.net 
+install.toolbar.msn.com 
+ip6.frontiernet.net 
+ip-info.ff.avast.com 
+ipm-provider.ff.avast.com 
+ipv6.msftconnecttest.com 
+ipv6.msftncsi.com 
+irreverselookuptm.trafficmanager.net 
+jssocdn.indiatimes.com 
+kms.digiboy.ir 
+kore.ai 
+k-ring.msedge.net 
+k-ring-fallback.msedge.net 
+lb1.www.ms.akadns.net 
+lcs-cops.adobe.io 
+learninglab.about.ads.microsoft.com 
+learninglab.ads.microsoft.com 
+legacywatson.trafficmanager.net 
+license.piriform.com 
+license-api.ccleaner.com 
+licenses-content.acmeaom.com 
+licensing.mp.microsoft.com 
+lightboxcdn.com 
+liveperson.net 
+ln-ring.msedge.net 
+ln-ring-fallback.msedge.net 
+locate.indiatimes.com 
+location.live.net 
+location.microsoft.com 
+location.services.mozilla.com 
+location-microsoft-com.b-0005.b-msedge.net 
+location-v6-ttp2.tiktokv.us 
+login.wikimedia.org 
+m.bingads.microsoft.com 
+m.hotmail.com 
+maps.wikimedia.org 
+mauth.cyberlink.com 
+measure.office.com.akamaized.net 
+measure.office.net.edgesuite.net 
+mem.gfx.ms 
+merino.services.mozilla.com 
+mmcapi.ads.microsoft.com 
+modern.watson.data.microsoft.com.akadns.net 
+movip.wps.com 
+mozilla.cloudflare-dns.com 
+mrodevicemgr.officeapps.live.com 
+msadsscale.azureedge.net 
+msadsscale.microsoft.com 
+msdl.microsoft.com 
+msedge.b.tlu.dl.delivery.mp.microsoft.com 
+msedge.net 
+msftncsi.com 
+msg.wondershare.cc 
+msnbot-207-46-194-33.search.msn.com 
+msnbot-65-55-108-23.search.msn.com 
+musicstatus.itunes.apple.com 
+myaccount.glarysoft.com 
+na1.hs-sales-engage.com 
+na1e-acc.services.adobe.com 
+ncc.avast.com 
+nearbypresence-pa.googleapis.com 
+nearbysharing-pa.googleapis.com 
+nebula-cdn.kampyle.com 
+nel.measure.office.net.edgesuite.net 
+nelsdf.measure.office.net.edgesuite.net 
+nexus.officeapps.live.com 
+nexusrules.live.com 
+nexusrules.officeapps.live.com 
+nirvana.bingads.microsoft.com 
+nl281.edgeaccelerator.website 
+npr.org 
+o365diagtelemetry.trafficmanager.net 
+oca.microsoft.com 
+oca.telemetry.microsoft.com.nsatc.net 
+ocsp.digicert.com 
+ocsp.usertrust.com 
+officeclient.microsoft.com 
+onecollector.cloudapp.aria.akadns.net 
+oneocsp.microsoft.com 
+OneSettings-bn2.metron.live.com.nsatc.net 
+ori-myphone-download.wondershare.cc 
+par02p.wns.windows.com 
+partiality.itunes.apple.com 
+partner.api.bingads.microsoft.com 
+passwordsleakcheck-pa.googleapis.com 
+pay-users-pa.googleapis.com 
+people-pa.googleapis.com 
+peoplestackwebexperiments-pa.clients6.google.com 
+play.samsungcloud.com 
+players.brightcove.net 
+plugin-server.wps.com 
+plus.timesofindia.com 
+popup.msn.com 
+ppe.activity.windows.com 
+premium.mapmyfitness.com 
+presence.teams.live.com 
+preview.msn.com 
+preview-services.bingads.microsoft.com 
+pricelist.skype.com 
+prod.adobeccstatic.com 
+prod.adobegenuine.com.comcast.net 
+prod.adobegenuine.com.fl.comcast.net 
+prod.adobegenuine.com.hsd1.fl.comcast.net 
+prod-cus-ldc1.grafana.ads.trafficmanager.net 
+prod-cus-ldc1.ingress.ads.trafficmanager.net 
+prod-cus-ldc2.grafana.ads.trafficmanager.net 
+prod-eh-v1-analytics.servicebus.windows.net 
+prod-eventhub-analytics.servicebus.windows.net 
+prod-ldc1.grafana.ads.trafficmanager.net 
+prod-ldc1.ingress.ads.trafficmanager.net 
+prod-ldc2.grafana.ads.trafficmanager.net 
+prod-ldc2.ingress.ads.trafficmanager.net 
+prod-rel-ffc-ccm.oobesaas.adobe.com 
+prod-web.wondershare.cc 
+protechts.net 
+proxy-roulette-roulette.icpublic.com 
+qualtrics.com 
+r.bing.com 
+r.msn.com 
+raka.bing.com 
+recuva.piriform.com 
+redir.metaservices.microsoft.com 
+redirect.prod.experiment.routing.cloudfront.aws.a2z.com 
+register.mesh.com 
+registeridm.com 
+rel.msn.com 
+remote-data.urbanairship.com 
+reporting.api.bingads.microsoft.com 
+reporting.api.sandbox.bingads.microsoft.com 
+reportingapi.bingads.microsoft.com 
+resources.azure.bingads.trafficmanager.net 
+resources.licenses.adobe.com 
+returnyoutubedislikeapi.com 
+rezvorck.github.io 
+romeccs.microsoft.com 
+rpc-rise-config-data-eng.icpublic.com 
+rushinfo.adobe.com 
+s.gateway.messenger.live.com 
+sa.windows.com 
+sa-aks-si-eastus2.ingress.ads.trafficmanager.net 
+sa-aks-si-ncus.ingress.ads.trafficmanager.net 
+safebrowsing.brave.com 
+safebrowsing.googleapis.com 
+sam.msn.com 
+samsung.com 
+samsungcloud.com 
+samsungmobile.com 
+samsungosp.com 
+sandbox.ads.microsoft.com 
+sandbox.bingads.microsoft.com 
+schemas.microsoft.akadns.net 
+scone-pa.googleapis.com 
+sconsentit9.trafficmanager.net 
+scs-use2.bixbyllm.com 
+sdk.pushmessage.samsung.com 
+sdx.microsoft.com 
+searchlabspartnerservice-pa.googleapis.com 
+searchpromo-pa.googleapis.com 
+secure.azure.bingads.microsoft.com 
+secure.bc.bingads.microsoft.com 
+secure.bingads.microsoft.com 
+secure.sandbox.bingads.microsoft.com 
+service.account.adobe.com 
+settings.data.glbdns2.microsoft.com 
+settings.data.microsof.com 
+settingsfd-geo.trafficmanager.net 
+settings-win.data.microsoft.com 
+settings-win-ppe.data.microsoft.com 
+sg2p.wns.windows.com 
+shepherd.avcdn.net 
+shepherd.ff.avast.com 
+si.bingads.glbdns2.microsoft.com 
+si.bingads.microsoft.com 
+si-ldc1.grafana.ads.trafficmanager.net 
+si-ldc1.ingress.ads.trafficmanager.net 
+si-ldc2.grafana.ads.trafficmanager.net 
+si-ldc2.ingress.ads.trafficmanager.net 
+si-mock.grafana.ads.trafficmanager.net 
+si-mock.ingress.ads.trafficmanager.net 
+skyapi.live.net 
+skyapi.skyprod.akadns.net 
+skydrive.wns.windows.com 
+sls.update.microsoft.com.akadns.net 
+slscr.update.microsoft.com 
+social-magazines-prod.storage.googleapis.com 
+social-na.waze.com 
+s-ring.msedge.net 
+s-ring-fallback.msedge.net 
+srtb.msn.com 
+ssw.live.com 
+ssw.live.com.nsatc.net 
+statsfe1.ws.microsoft.com 
+statsfe2.update.microsoft.com.akadns.net 
+statsfe2.ws.microsoft.com 
+status.ads.microsoft.com 
+stjjp.msn.com 
+stm-keyid-1adb994ab58be57a0cc9b900e7851e1a43c08660.microsoftaik.azure.net 
+stock.adobe.io 
+storecatalogrevocation.storequality.microsoft.com 
+storeedgefd.dsx.mp.microsoft.com 
+sts.advertising.microsoft.com 
+sts.us-west-2.amazonaws.com 
+styles.redditmedia.com 
+substrate.office.com 
+suggestqueries.google.com 
+support.ads.microsoft.com 
+supportexperience.diagnostics.office.com
+swiftkey.com 
+sync-v2.brave.com 
+t7.noreply.fpl.com 
+tar.microsoft.com 
+teredo.ipv6.microsoft.com 
+thumbs.chance.surf 
+tigger-citadel.touchtype-fluency.com 
+time.google.com 
+time.windows.com 
+tip.ads.microsoft.com 
+tip.bingads.microsoft.com 
+tip-ldc3.grafana.ads.trafficmanager.net 
+tip-ldc3.ingress.ads.trafficmanager.net 
+toifeeds.indiatimes.com 
+toolbar.msn.com 
+traffic-nts-ip-assoc.xy.fbcdn.net 
+traffic-nts-ip-assoc.xz.fbcdn.net 
+travel.tile.appex.bing.com 
+t-ring.msedge.net 
+t-ring-fallback.msedge.net 
+t-ring-fallbacks1.msedge.net 
+t-ring-fallback-s2.msedge.net 
+t-ring-s.msedge.net 
+t-ring-s2.msedge.net 
+trustlist.adobe.com 
+t-s1-ring.msedge.net 
+u6876189.ct.sendgrid.net 
+ucm.ads.microsoft.com 
+ucm.bingads.microsoft.com 
+udp.ping.teamviewer.com 
+ui.ads.microsoft.com 
+ui.ads-int.microsoft.com 
+ui.bcp.bingads.microsoft.com 
+ui.bingads.microsoft.com 
+ui.si.bingads.microsoft.com 
+ui.skype.com 
+uks.b.prd.ags.trafficmanager.net 
+unagi.amazon.com 
+unagi-na.amazon.com 
+unitedhealthcare.app.link 
+update.filepuma.com 
+upload2.fp.measure.office.com.akamaized.net 
+us-auth2.samsungosp.com 
+v10.vortex-win.data.metron.life.com.nsatc.net 
+v10-win.vortex.data.microsoft.com.akadns.net 
+v10-win.vortex.data.trafficmanager.net 
+variations.brave.com 
+vas.samsungapps.com 
+versioncheck-bg.addons.mozilla.org 
+viafoura.net 
+vortex.data.glbdns2.microsoft.com 
+vortex-bn2.metron.live.com.nsatc.net 
+vortex-cy2.metron.live.com.nsatc.net 
+vsblobprodscussu5shard56.blob.core.windows.net 
+vsblobprodscussu5shard66.blob.core.windows.net 
+vsblobprodscussu5shard76.blob.core.windows.net 
+wcpstatic.microsoft.com 
+web-chat.global.assistant.watson.appdomain.cloud 
+weus2watcab01.blob.core.windows.net 
+weus2watcab02.blob.core.windows.net 
+whatsnew.teamviewer.com 
+wildcard.appex-rf.msn.com.edgesuite.net 
+win10.ipv6.microsoft.com 
+win10.ipv6.microsoft.com.nsatc.net 
+win10-trt.msedge.net 
+win1710.ipv6.microsoft.com 
+win8.ipv6.microsoft.com 
+win-global-asimov-leafs-events-data.trafficmanager.net 
+wns.notify.windows.com.akadns.net 
+wondershare.cc 
+wondershare.com 
+wpad.hsd1.fl.comcast.net 
+wps.com 
+ws2-cache.aptoide.com 
+wtpbfmxfpcjxozc.hsd1.fl.comcast.net 
+wu2z-api.samsungcloud.com 
+www.advertise.bingads.microsoft.com 
+www.bing.com 
+www.bingads.microsoft.com 
+www.c.bing.com 
+www.defraggler.piriform.com 
+www.dezistyle.com 
+www.honestbleeps.com 
+www.license.piriform.com 
+www.mikrolabor.com 
+www.msftconnecttest.com 
+www.msftncsi.com 
+www.samsung.com 
+www.samsungsds.com 
+xblgdvrassets3010.blob.core.windows.net 
+xp.apple.com 
+zapier.com 
+zgeviwddm.hsd1.fl.comcast.net 
+zn0neqx1dggrrlv4y-uhgenterprise.siteintercept.qualtrics.com 
+znaw3ph0vjadustaj-tiaa2.siteintercept.qualtrics.com 
+0247249a2d484d3caa88a3e0d8423620.fp.measure.office.com 
+06f81209b4e54270be29e85180093759.fp.measure.office.com 
+07ed657abd4c420da50f118758490565.fp.measure.office.com 
+095efbfe491e4c71a2bde1fe02db9e42.fp.measure.office.com 
+0a43c3fe503f46dbaabdb12741bf3c34.fp.measure.office.com 
+0b3576be2b734f15b5cae4e2c937d4e7.fp.measure.office.com 
+0badc329d39448128d2bae5dc306a657.fp.measure.office.com 
+0da55c79a994467ea94b56edee2dab05.fp.measure.office.com 
+0f8b590118ca41daa529af70c1cff9b4.fp.measure.office.com 
+1086edb010464fe18f014f9d7178d980.fp.measure.office.com 
+10b569e657e84d8a8a60258553520985.fp.measure.office.com 
+1358ef53a36a48d9ba90e6c3465771ca.fp.measure.office.com 
+147fd508d1d941b8d924e6094ed21867.fp.measure.office.com 
+170c3319eee4461e9f3c2ad5d393a3f9.fp.measure.office.com 
+183302a6ba0e4eb89979b0bf050fe6d1.fp.measure.office.com 
+18a0546999cf483db6954bc740ec108e.fp.measure.office.com 
+18fc549efb534a93afc529d071684741.fp.measure.office.com 
+1b1ce16da8a34882bfecd121e39f75b3.fp.measure.office.com 
+1c1cfa04ce384c5c8a51b9f2a93b4148.fp.measure.office.com 
+1c51448c79814755b4c8c53b134d4888.fp.measure.office.com 
+1d6792726542428dbf5b4dec142d8aef.fp.measure.office.com 
+1f17ef4a3a474b3abbb452c9d9ae9aeb.fp.measure.office.com 
+22dae1f09cc64c82ae0f9c1daf912900.fp.measure.office.com 
+2539951.r.bat.bing.com 
+2a897b2ef1594c99938a582fa17ff1f6.fp.measure.office.com 
+2d0e4f08387948a58d63341917cedb68.fp.measure.office.com 
+2f08429e301a47afb1a14ff1484c6076.fp.measure.office.com 
+32197.api.swrve.com 
+32197.content.swrve.com 
+34a99c2b00644dd4a082e93758e692c6.fp.measure.office.com 
+36176aaf724a521cead6988b0bf21970.fp.measure.office.com 
+367f2c566d4f41649ee7672ab256853c.fp.measure.office.com 
+39b569e7b3ea4298b0a1f7d860307905.fp.measure.office.com 
+3a0f69689f16499692b77098df7469a3.fp.measure.office.com 
+3b3f72136851429e910a430e7c11b2e2.fp.measure.office.com 
+3ce78729ea37488f810e436a37398165.fp.measure.office.com 
+41420f95d6944758a92ac95a31d7a41b.fp.measure.office.com 
+41de1a76e998497a9303b47f9de1d1c5.fp.measure.office.com 
+431b9713786e4a0e85248ae7c612645b.fp.measure.office.com 
+43d7f09b65844fdaa320d78ac95bceb8.fp.measure.office.com 
+477c9e54bfd7471e9d46bac99a8ed20b.fp.measure.office.com 
+4b7240c903b446d2b8fc11f0c840ea65.fp.measure.office.com 
+4b8e02bae7ab44848322c930676cd3ec.fp.measure.office.com 
+4d51c4bb1bd34d00a515bf451cba309f.fp.measure.office.com 
+4dc016e1bcdc4432815a4adc62aa367f.fp.measure.office.com 
+4ed9485ed9904f4ba53b19f9791015e8.fp.measure.office.com 
+4f82633b9fc24041ae6088b39f7dbcc6.fp.measure.office.com 
+502c00ac5e594bf686fd1e9c78ab0a57.fp.measure.office.com 
+520d1b392933450ea23a69a7ac5f6ac3.fp.measure.office.com 
+53653736b47a4464ac69d83bce9d8240.fp.measure.office.com 
+5681f1949b0649958eea1018be48d1e5.fp.measure.office.com 
+58589bc1bbd74d658a400ce24eb91cf0.fp.measure.office.com 
+5a2e32e1122a46b5accc5f4017dd08d8.fp.measure.office.com 
+5ae445fa92f049ad8023a715860402c1.fp.measure.office.com 
+5ccbdccedd0a4dbbaebfb7b6f1186ca2.fp.measure.office.com 
+5ff7acbdc1ab45b39775897b0600b38a.fp.measure.office.com 
+6005b6bc5cce4d4e9fb34d94968ffed9.fp.measure.office.com 
+60cf08b2090f4fae98736eaa2895c3c5.fp.measure.office.com 
+66ed06ba24d0447d99be625dc7a80b00.fp.measure.office.com 
+689a50f350e14240881e8a6d2966b4d2.fp.measure.office.com 
+6e165936fad74f32a1c1e32ae430c8ec.fp.measure.office.com 
+6e2a724cad7e47acb50462911e5e8bbd.fp.measure.office.com 
+745c71681d5b4743a435c5158ed8b0df.fp.measure.office.com 
+7e3563a7dca745983b093039e1fd6edd.fp.measure.office.com 
+7e4b337028c9432ea63e996b5369ac22.fp.measure.office.com 
+805c2c45e63f4a8abcce8d1637522c41.fp.measure.office.com 
+836aaf2032bf4fb08ff9ba1559816ba2.fp.measure.office.com 
+83bf270c914449dea02e03eba882a51c.fp.measure.office.com 
+8858f4f0a2964b81b0a32c84e5035f80.fp.measure.office.com 
+8877ed9abb2840d2b3744bed3a4e101d.fp.measure.office.com 
+8a3c0e244f6b4768bc2be0d91c25d1b8.fp.measure.office.com 
+8cf7554b821a46949cbdc2b755e3abc6.fp.measure.office.com 
+8hptrzgm7.mw1i8.adobestats.io 
+918b9ff977e74dbaa15b359f3f547a69.fp.measure.office.com 
+95ecc66f73184cb48e0a81aea05e9da5.fp.measure.office.com 
+97e5e613b3b04e6284ba12b0d3dc2735.fp.measure.office.com 
+9930829c4f6d46db9ce7f84510c9958c.fp.measure.office.com 
+99807693f7014b4b974b78998562e967.fp.measure.office.com 
+9a67098b0fe14191968518c95414085a.fp.measure.office.com 
+9c140835e80f4f8e9d344847d9349744.fp.measure.office.com 
+a.ads.rmbl.ws 
+a.ads1.msn.com 
+a.ads2.msads.net 
+a.ads2.msn.com 
+a.imput.net 
+a.rad.msn.com 
+a.tiktokmod.pro 
+a.userscript.zone 
+a12ba26cec7b4af09adc358061367357.fp.measure.office.com 
+a72a033ceec53e2e93c1c4be47451232.fp.measure.office.com 
+aa.online-metrix.net 
+aa2b6ccea20b4fa59d5830e97ec547a4.fp.measure.office.com 
+aax.amazon-adsystem.com 
+aax-us-east-retail-direct.amazon.com 
+about.ads.microsoft.com 
+about-test.ads.microsoft.com 
+about-test-deploy.ads.microsoft.com 
+abtest-aws-us-east-01.saas.sensorsdata.com 
+ac2.msn.com 
+ac20468c935c4e599a36fc64de38437b.fp.measure.office.com 
+ac3.msn.com 
+ac39141e44bb4d709b7718e693d68553.fp.measure.office.com 
+ac58f74623cf4be19c35f29296ca7dd2.fp.measure.office.com 
+acmeaom.pubfinity.com 
+ad.doubleclick.net 
+ad.msn.com 
+adevents.msn.com 
+adhs.events.data.microsoft.com 
+adinquiry.bcp.bingads.microsoft.com 
+adinquiry.bingads.microsoft.com 
+adinsight.api.bingads.microsoft.com 
+adinsight.api.sandbox.bingads.microsoft.com 
+adlibrary.ads.microsoft.com 
+adnexus.net 
+adnxs.com 
+ads.bing.com 
+ads.bingads.microsoft.com 
+ads.eu.msn.com 
+ads.jp.msn.com 
+ads.microsoft.com 
+ads.mozilla.org 
+ads.msn.com 
+ads.pubmatic.com 
+ads.trafficmanager.net 
+ads1.msads.net 
+ads1.msn.com 
+ads2.msads.net 
+ads2.msn.com 
+ads-act.trafficmanager.net 
+ads-act-test.trafficmanager.net 
+ads-api.x.com 
+adsassets.waze.com 
+adsdemandcatalog.trafficmanager.net 
+adsdemandcatalogapi.trafficmanager.net 
+adsdisplay.glbdns2.microsoft.com 
+adsdk.microsoft.com 
+adsdk.trafficmanager.net 
+adsdktelemetry-prod.servicebus.windows.net 
+adserver.bing.com 
+adservice.google.com 
+ads-img.mozilla.org 
+adsl.trafficmanager.net 
+ads-msn-com-profile.trafficmanager.net 
+adsstatic.microsoft.com 
+adsstatic-int.microsoft.com 
+adstore.response.gcp.eastus.trafficmanager.net 
+adstudio-assets.scdn.co 
+adsyndication.msn.com 
+advertise.bingads.microsoft.com 
+advertising.bingads.microsoft.com 
+advertising.jp.msn.com 
+advertising.microsoft.com 
+aefd.nelreports.net 
+aepxlg.adobe.com 
+aes.us-east.ono.axp.amazon-adsystem.com 
+aidps.atdmt.com 
+aimon.applicationinsights.azure.com 
+aircall-dataplane.rudderstack.com 
+aisefs.adsdisplay.glbdns2.microsoft.com 
+alpha.telemetry.microsoft.com 
+amazon-adsystem.com 
+analysis.insights.cloud.microsoft 
+analytics.avcdn.net 
+analytics.glarysoft.com 
+analytics.live.com 
+analytics.msn.com 
+analytics.msnbc.msn.com 
+analytics.pstnhub.microsoft.com 
+analytics.trafficmanager.net 
+analytics.twitter.com 
+analytics-dev-lleap-events.servicebus.windows.net 
+analytics-dev-simpad-events.servicebus.windows.net 
+analyticsehnwe.privatelink.servicebus.windows.net 
+analyticsehnwe.servicebus.windows.net 
+analyticsiot-prod-simpad-ehn.servicebus.windows.net 
+analytics-listener.trafficmanager.net 
+analyticspixel.microsoft.com 
+android-context-data.googleapis.com 
+app.usercentrics.eu 
+app-analytics-services.com 
+applicationinsights.azure.com 
+applicationinsights.microsoft.com 
+app-measurement.com 
+appsflyersdk.com 
+aptrinsic.com 
+arc.msn.com 
+arc1.msn.com 
+arc2.msn.com 
+arc3.msn.com 
+arc9.msn.com 
+arc-emea.msn.com 
+aria.events.data.trafficmanager.net 
+armmf.adobe.com 
+asimov.events.data.trafficmanager.net 
+asimov.vortex.data.trafficmanager.net 
+asimov-win.vortex.data.trafficmanager.net 
+assets.adobedtm.com 
+atm.fraudeventsvc-ppe.trafficmanager.net 
+au.events.data.trafficmanager.net 
+au.vortex.data.trafficmanager.net 
+au.vortex-win.data.microsoft.com 
+auc-visio-telemetry.officeapps.live.com 
+au-mobile.events.data.microsoft.com 
+australiaeast-0.in.applicationinsights.azure.com 
+australiaeast-1.in.applicationinsights.azure.com 
+australiaeast-global.in.applicationinsights.azure.com 
+australiasoutheast-0.in.applicationinsights.azure.com 
+au-v10.events.data.microsoft.com 
+au-v10c.events.data.microsoft.com 
+au-v20.events.data.microsoft.com 
+avdab-p-corniche-events-relay.trafficmanager.net 
+avdab-s-corniche-events-relay.trafficmanager.net 
+avdab-t-corniche-events-relay.trafficmanager.net 
+azurewatsontest.microsoft.com 
+b.ads1.msn.com 
+b.ads2.msads.net 
+b.rad.msn.com 
+b71786fb5d324e04808f429dbb828ca0.fp.measure.office.com 
+b783d52e520d426995d47c8b269d81b1.fp.measure.office.com 
+b88cad5ec8318e6fc903305721b96fc3.fp.measure.office.com 
+bat.bing.com 
+bat.r.msn.com 
+bcdd052a201048218a970548fdcbb271.fp.measure.office.com 
+bcp.ads.microsoft.com 
+beacons.gcp.gvt2.com 
+beacons.gvt2.com 
+beacons.trafficmanager.net 
+beacons.xboxlive.com 
+beacons5.gvt3.com 
+beta.ads.microsoft.com 
+beta.adsstatic.microsoft.com 
+beta.toolbar.msn.com 
+beta-about.ads.microsoft.com 
+bf4827bd97e7415fab62c9b46e7bf828.fp.measure.office.com 
+bf-analytics-tracker-tm.trafficmanager.net 
+bibo.api.swiftkey.com 
+blobcollector.events.data.trafficmanager.net 
+bn2-ris-ap-prod-atm.trafficmanager.net 
+bn2-ris-prod-atm.trafficmanager.net 
+brazilsouth-0.in.applicationinsights.azure.com 
+brazilsouth-1.in.applicationinsights.azure.com 
+brc-visio-telemetry.officeapps.live.com 
+browser.events.data.microsoft.com 
+browser.events.data.msn.cn 
+browser.events.data.msn.com 
+browser.events.data.trafficmanager.net 
+browser.pipe.aria.microsoft.com 
+browser-intake-datadoghq.com 
+bs.serving-sys.com 
+btv-du-dev-eventhub-streamanalytics.servicebus.windows.net 
+btv-du-prod-eventhub-streamanalytics.servicebus.windows.net 
+bzib.nelreports.net 
+bzqvtx3g.r.us-east-1.awstrack.me 
+c.amazon-adsystem.com 
+c.atdmt.com 
+c235e54023f488f00e58459d16ad0548.fp.measure.office.com 
+c2c157efe8454071a78bc7457a1f6767.fp.measure.office.com 
+c486bd1a70a148fc96522d295e5e4b17.fp.measure.office.com 
+c4ae4c8d0d394dd2bbeea400428e24f8.fp.measure.office.com 
+c6c0121bb16b409b97b3747317e373fa.fp.measure.office.com 
+c6edc4f518c44cd3a8f53536861fcc96.fp.measure.office.com 
+c9521ce60e174c514d5da31433ad2734.fp.measure.office.com 
+c9bb9c517ee1ccb61c0fc91cc6840001.fp.measure.office.com 
+ca.telemetry.microsoft.com 
+ca8f0cde32ba42f3974070826f5f04d7.fp.measure.office.com 
+cac-visio-telemetry.officeapps.live.com 
+canadacentral-0.in.applicationinsights.azure.com 
+canadacentral-1.in.applicationinsights.azure.com 
+canadaeast-0.in.applicationinsights.azure.com 
+canary.activity.windows.com 
+cc63775c88e1472fa2a27450851c316f.fp.measure.office.com 
+ccleaner.tools.avcdn.net 
+cdn.adpushup.com 
+cdn.amcharts.com 
+cdn.atdmt.com 
+cdn.cookielaw.org 
+cdn.optimizely.com 
+cdn.quantummetric.com 
+cdn.system1.com 
+cdn.viafoura.net 
+cdn-settings.segment.com 
+cdn-v4.amp-endpoint3.com 
+cdn-v6.amp-endpoint3.com 
+ce2617d2a3a1a6b03e6b908e5fde808f.fp.measure.office.com 
+ce358ac4398d47b5beaaf3ca37291ea5.fp.measure.office.com 
+census-app.scorecardresearch.com 
+centralindia-0.in.applicationinsights.azure.com 
+centralus.in.applicationinsights.azure.com 
+centralus-0.in.applicationinsights.azure.com 
+centralus-2.in.applicationinsights.azure.com 
+centralus-3.in.applicationinsights.azure.com 
+chc-visio-telemetry.officeapps.live.com 
+chem4wordtelemetry.servicebus.windows.net 
+chinaeast2-0.in.applicationinsights.azure.cn 
+chinaeast3-global.in.applicationinsights.azure.cn 
+chinanorth3-0.in.applicationinsights.azure.cn 
+citrixanalyticseh.servicebus.windows.net 
+citrixanalyticseh2.servicebus.windows.net 
+citrixanalyticseh2-alias.servicebus.windows.net 
+citrixanalyticseh-alias.servicebus.windows.net 
+citrixanalyticsehaps.servicebus.windows.net 
+citrixanalyticsehaps-alias.servicebus.windows.net 
+citrixanalyticseheu.servicebus.windows.net 
+citrixanalyticseheu-alias.servicebus.windows.net 
+citrixtelemetryeh.servicebus.windows.net 
+citrixtelemetryeh-alias.servicebus.windows.net 
+citrixtelemetryeheu.servicebus.windows.net 
+citrixtelemetryeheu-alias.servicebus.windows.net 
+clarity.microsoft.com 
+client-analytics.braintreegateway.com 
+cloudflareinsights.com 
+collector.brandmetrics.com 
+collector.github.com 
+collector-main.trafficmanager.net 
+conversions-config.reddit.com 
+crashlyticsreports-pa.googleapis.com 
+cuow9t.cdn-settings.appsflyersdk.com 
+cuow9t.inapps.appsflyersdk.com 
+cuow9t.launches.appsflyersdk.com 
+cx.atdmt.com 
+d0c22df657a5dba50d3b68f6dc52aab8.fp.measure.office.com 
+d21624b6363c4338b026d71ccfbebc55.fp.measure.office.com 
+dad1d94c372b4817bc7389ca138926af.fp.measure.office.com 
+datadoghq-browser-agent.com 
+db3aqu.atdmt.com 
+dc.applicationinsights.azure.cn 
+dc.applicationinsights.azure.com 
+dc.applicationinsights.azure.us 
+dc.applicationinsights.microsoft.com 
+dc.services.visualstudio.com 
+ddaee865404c42948492cf2ebd9a6c17.fp.measure.office.com 
+de2d66dd5ac36a2b06aa35b1f6b7398e.fp.measure.office.com 
+dec-visio-telemetry.officeapps.live.com 
+device-metrics-us.amazon.com 
+df.telemetry.microsoft.com 
+digg.analytics.live.com 
+dnsbl.test.a.ads.rmbl.ws 
+dnsbl.test.adminlogin.liveperson.net 
+dnsbl.test.api.liveperson.net 
+dnsbl.test.api.rudderlabs.com 
+dnsbl.test.app.satismeter.com 
+dnsbl.test.app-analytics-services.com 
+dnsbl.test.app-measurement.com 
+dnsbl.test.assets-jpcust.jwpsrv.com 
+dnsbl.test.beacon.riskified.com 
+dnsbl.test.beacons.gvt2.com 
+dnsbl.test.beacons5.gvt3.com 
+dnsbl.test.browser.events.data.microsoft.com 
+dnsbl.test.browser.pipe.aria.microsoft.com 
+dnsbl.test.cdn.cookielaw.org 
+dnsbl.test.cdn.segment.com 
+dnsbl.test.cdn.sift.com 
+dnsbl.test.cdn-scripts.signifyd.com 
+dnsbl.test.cf.iadsdk.apple.com 
+dnsbl.test.client-analytics.braintreegateway.com 
+dnsbl.test.cmp.dmgmediaprivacy.co.uk 
+dnsbl.test.crta.dailymail.co.uk 
+dnsbl.test.csi.gstatic.com 
+dnsbl.test.cstat.cdn-apple.com 
+dnsbl.test.d30qdagvt44524.cloudfront.net 
+dnsbl.test.dap.digitalgov.gov 
+dnsbl.test.dev.visualwebsiteoptimizer.com 
+dnsbl.test.entitlements.jwplayer.com 
+dnsbl.test.error-tracking.reddit.com 
+dnsbl.test.eventgw.twilio.com 
+dnsbl.test.events.mapbox.com 
+dnsbl.test.fp.msedge.net 
+dnsbl.test.genesis.malwarebytes.com 
+dnsbl.test.global.ketchcdn.com 
+dnsbl.test.googleads.g.doubleclick.net 
+dnsbl.test.gtm.udemy.com 
+dnsbl.test.iguazu.doordash.com 
+dnsbl.test.js.hscollectedforms.net 
+dnsbl.test.js.sentry-cdn.com 
+dnsbl.test.lpcdn.lpsnmedia.net 
+dnsbl.test.mail-ads.google.com 
+dnsbl.test.mc.webvisor.org 
+dnsbl.test.mc.yandex.com 
+dnsbl.test.metrics.icloud.com 
+dnsbl.test.news.iadsdk.apple.com 
+dnsbl.test.o22381.ingest.sentry.io 
+dnsbl.test.p.typekit.net 
+dnsbl.test.pixel-config.reddit.com 
+dnsbl.test.plausible.io 
+dnsbl.test.rba-screen.healthsafe-id.com 
+dnsbl.test.static.cloudflareinsights.com 
+dnsbl.test.static.doubleclick.net 
+dnsbl.test.stats.wp.com 
+dnsbl.test.syndication.twitter.com 
+dnsbl.test.t.ghostboard.io 
+dnsbl.test.uhf.microsoft.com 
+dnsbl.test.verify.authorize.net 
+dnsbl.test.visit.mxrimaging.com 
+dnsbl.test.w3-reporting.reddit.com 
+dnsbl.test.www.datadoghq-browser-agent.com 
+dnsbl.test.www.google-analytics.com 
+dnsbl.test.www.lightboxcdn.com 
+dnsbl.test.www.newsbreak.com 
+doubleclick.net 
+dpm.demdex.net 
+e.reddit.com 
+e095a1bbf4c34292874c9346fbeb4c17.fp.measure.office.com 
+e44177b6b805.cdn4.forter.com 
+e4a6cd50e0aa4990aa78247bcbd905fc.fp.measure.office.com 
+e76d5908abb548d1b6848230f25b144f.fp.measure.office.com 
+e8031a3b9fc84a9ca486a996638623b4.fp.measure.office.com 
+e838f22f9a114b6b9525601617e914c6.fp.measure.office.com 
+eastasia-0.in.applicationinsights.azure.com 
+eastus-0.in.applicationinsights.azure.com 
+eastus-1.in.applicationinsights.azure.com 
+eastus-2.in.applicationinsights.azure.com 
+eastus2-0.in.applicationinsights.azure.com 
+eastus2-3.in.applicationinsights.azure.com 
+eastus2-4.in.applicationinsights.azure.com 
+eastus-3.in.applicationinsights.azure.com 
+eastus-4.in.applicationinsights.azure.com 
+eastus-5.in.applicationinsights.azure.com 
+eastus-6.in.applicationinsights.azure.com 
+eastus-8.in.applicationinsights.azure.com 
+eastus-global.in.applicationinsights.azure.com 
+eb0869c7f47645688d19d068ec0ea7a7.fp.measure.office.com 
+eb37bf7da8a3457da32ea2fb1dc43c5e.fp.measure.office.com 
+ec.atdmt.com 
+ecbcb911049b482e972586a6c0c5bceb.fp.measure.office.com 
+ecs.nel.measure.office.net 
+ef3701701d1f4731b5dc6f3992e5aed7.fp.measure.office.com 
+ematrix.filmipop.com 
+emea.events.data.microsoft.com 
+emea.events.data.trafficmanager.net 
+engagements.appsflyer.com 
+ers.twilio.com 
+eu.aria.events.data.trafficmanager.net 
+eu.blobcollector.events.data.trafficmanager.net 
+eu.events.data.trafficmanager.net 
+eu.pipe.aria.microsoft.com 
+eu.vortex.data.microsoft.com 
+eu.vortex-win.data.microsoft.com 
+euc-excel-telemetry.officeapps.live.com 
+euc-excel-telemetry.wac.trafficmanager.net 
+euc-onenote-telemetry.officeapps.live.com 
+euc-powerpoint-telemetry.officeapps.live.com 
+euc-powerpoint-telemetry.wac.trafficmanager.net 
+euc-visio-telemetry.officeapps.live.com 
+euc-word-telemetry.officeapps.live.com 
+euc-word-telemetry.wac.trafficmanager.net 
+eudfmeventsapiprod.trafficmanager.net 
+eu-ic3.events.data.microsoft.com 
+eu-mobile.events.data.microsoft.com 
+eu-office.events.data.microsoft.com 
+eurffc-word-telemetry.officeapps.live.com 
+eu-r-mobile.events.data.microsoft.com 
+eurppc-excel-telemetry.officeapps.live.com 
+eurppc-powerpoint-telemetry.officeapps.live.com 
+eurppc-word-telemetry.officeapps.live.com 
+eu-r-teams.events.data.microsoft.com 
+eu-teams.events.data.microsoft.com 
+eu-v10.events.data.microsoft.com 
+eu-v10c.events.data.microsoft.com 
+eu-v20.events.data.microsoft.com 
+eu-watsonc.events.data.microsoft.com 
+events.data.microsoft.com 
+events.data.msn.cn 
+events.data.msn.com 
+events.data.trafficmanager.net 
+eventservice.trafficmanager.net 
+events-sandbox.data.microsoft.com 
+events-sandbox.data.msn.com 
+exbd.ex.co 
+excelonline.nel.measure.office.net 
+excel-telemetry.officeapps.live.com 
+excel-telemetry.wac.trafficmanager.net 
+exo.nel.measure.office.net 
+exo.nelsdf.measure.office.net 
+fa6f7864d40f41f9909329277c89b48d.fp.measure.office.com 
+fac2ffd6867c41dfb1adf37138983588.fp.measure.office.com 
+fc2c7ce1e2514b3787433b488420bf83.fp.measure.office.com 
+fe39653332994916a0e6c9dbe06d9a78.fp.measure.office.com 
+feedback-pa.clients6.google.com 
+feedback-pa.googleapis.com 
+ff1f40b4adb5db9618f04eadf1981106.fp.measure.office.com 
+ffc-excel-telemetry.officeapps.live.com 
+ffc-word-telemetry.officeapps.live.com 
+ffg-analyticsk3nvxfne4dp4s.servicebus.windows.net 
+firebase.googleapis.com 
+firebaseinstallations.googleapis.com 
+firebaselogging.googleapis.com 
+firebaselogging-pa.googleapis.com 
+firebase-settings.crashlytics.com 
+fls-na.amazon.com 
+footprints-pa.googleapis.com 
+forms-na1.hsforms.com 
+fp.measure.office.com 
+fp.msedge.net 
+fpjs.io 
+francecentral-0.in.applicationinsights.azure.com 
+francecentral-1.in.applicationinsights.azure.com 
+fraudeventsvc-ppe.trafficmanager.net 
+frc-visio-telemetry.officeapps.live.com 
+functional.events.data.microsoft.com 
+gannett-player.ex.co 
+gateway.bingviz.microsoftapp.net 
+gateway-outlook.bingviz.com 
+geller-pa.googleapis.com 
+genesis.malwarebytes.com 
+geo.cookie-script.com 
+geo.hub.analytics.trafficmanager.net 
+germanywestcentral-0.in.applicationinsights.azure.com 
+germanywestcentral-1.in.applicationinsights.azure.com 
+ghostboard.io 
+glance-analytics.trafficmanager.net 
+global.aria.events.data.trafficmanager.net 
+global.asimov.events.data.trafficmanager.net 
+googleads.g.doubleclick.net 
+google-analytics.com 
+googletagmanager.com 
+grafana.ads.trafficmanager.net 
+graph-next.fp.measure.office.com 
+gtm.udemy.com 
+hbc.adobe.io 
+hbrcv.adobe.com 
+hk-tracker.trafficmanager.net 
+hme-live-loganalytics-namespace.servicebus.windows.net 
+hsbrowserreports.com 
+hscollectedforms.net 
+hsforms.com 
+http-intake.logs.datadoghq.com 
+hub.analytics.trafficmanager.net 
+hubble.mb-cosmos.com 
+ic3.events.data.microsoft.com 
+idsync.anm.co.uk 
+iguazu.doordash.com 
+image.email.eero.com 
+in.aimon.applicationinsights.azure.com 
+in.appcenter.ms 
+in.applicationinsights.azure.cn 
+in.applicationinsights.azure.com 
+in.applicationinsights.azure.com.albertk12.org 
+in.applicationinsights.azure.us 
+incidents.diagnostics.office.com 
+incidents.diagnostics-eudb.office.com 
+incoming.telemetry.mozilla.org 
+inc-visio-telemetry.officeapps.live.com 
+ingest.appcenter.ms 
+in-mobile.events.data.microsoft.com 
+insights.cloud.microsoft 
+insights-collector.newrelic.com 
+in-v20.events.data.microsoft.com 
+ir-tracking.trafficmanager.net 
+ism-telemetry.trafficmanager.net 
+italynorth-0.in.applicationinsights.azure.com 
+japaneast-0.in.applicationinsights.azure.com 
+japaneast-1.in.applicationinsights.azure.com 
+japanwest-0.in.applicationinsights.azure.com 
+jarvis.indiatimes.com 
+jenson.api.swiftkey.com 
+jetanalytics.servicebus.windows.net 
+jp.events.data.trafficmanager.net 
+jpc-visio-telemetry.officeapps.live.com 
+jp-mobile.events.data.microsoft.com 
+jp-v10.events.data.microsoft.com 
+jp-v10c.events.data.microsoft.com 
+jp-v20.events.data.microsoft.com 
+js.adsrvr.org 
+js.cdn.applicationinsights.io 
+js.hubspotfeedback.com 
+js.monitor.azure.com 
+js0.cdn.applicationinsights.io 
+js0.tst.applicationinsights.io 
+js1.cdn.applicationinsights.io 
+js1.tst.applicationinsights.io 
+js2.cdn.applicationinsights.io 
+js2.tst.applicationinsights.io 
+kmwatson.events.data.microsoft.com 
+kmwatsonc.events.data.microsoft.com 
+l4.tb.events.data.trafficmanager.net 
+l5.pf.events.data.trafficmanager.net 
+lamssettings-pa.googleapis.com 
+launchpad-wrapper.privacymanager.io 
+lens-pa.googleapis.com 
+li.protechts.net 
+live.applicationinsights.azure.cn 
+live.applicationinsights.azure.com 
+live.rads.msn.com 
+locationhistory-pa.googleapis.com 
+locationhistoryplacedetails-pa.googleapis.com 
+log16-normal-useast8.tiktokv.us 
+logging.diagnostics.office.com 
+logging.diagnostics-eudb.office.com 
+lpsnmedia.net 
+m.adnxs.com 
+m365cdn.nel.measure.office.net 
+m365cdn.nelsdf.measure.office.net 
+mads.amazon-adsystem.com 
+mail-ads.google.com 
+mbam-c-5-3-7.telemetry.malwarebytes.com 
+measure.office.com 
+measure.office.net 
+metric.appex-rf.msn.com 
+metrics.media-amazon.com 
+mobile.events.data.microsoft.com 
+mobile.events.data.trafficmanager.net 
+mobile.events-sandbox.data.microsoft.com 
+mobile.launchdarkly.com 
+mobile.pipe.aria.microsoft.com 
+mobileads.msn.com 
+mobileconfiguration-pa.googleapis.com 
+mobilesdk-us.kampyle.com 
+mon16-normal-useast8.tiktokv.us 
+mon-boot.tiktokv.com 
+mpsnare.iesnare.com 
+ms.analytics.live.com 
+msa.diagnostics.office.com 
+msads.net 
+msft-ssp.adnxs.com 
+msntest.serving-sys.com 
+nel.measure.office.net 
+nelreports.net 
+nelsdf.measure.office.net 
+neveragain.allstatics.com 
+nexxtv-events.servicebus.windows.net 
+ngx-v4.amp-endpoint2.com 
+ngx-v6.amp-endpoint2.com 
+noam.events.data.microsoft.com 
+noam.events.data.trafficmanager.net 
+noc-visio-telemetry.officeapps.live.com 
+northcentralus-0.in.applicationinsights.azure.com 
+northeurope-0.in.applicationinsights.azure.com 
+northeurope-2.in.applicationinsights.azure.com 
+northeurope-3.in.applicationinsights.azure.com 
+northeurope-4.in.applicationinsights.azure.com 
+northeurope-5.in.applicationinsights.azure.com 
+northeurope-global.in.applicationinsights.azure.com 
+norwayeast-0.in.applicationinsights.azure.com 
+ns1.fp.measure.office.com 
+ns2.fp.measure.office.com 
+nw-umwatson.events.data.microsoft.com 
+o1069899.ingest.sentry.io 
+o1080420.ingest.sentry.io 
+o1383653.ingest.sentry.io 
+o17585.ingest.sentry.io 
+o17585.ingest.us.sentry.io 
+o33249.ingest.sentry.io 
+o502263.ingest.sentry.io 
+o80279.ingest.sentry.io 
+oca.telemetry.microsoft.com 
+oca.telemetry.microsoft.us 
+office.events.data.microsoft.com 
+office.pipe.aria.microsoft.com 
+office-c.events.data.microsoft.com 
+office-events-data.trafficmanager.net 
+office-g.events.data.microsoft.com 
+officehub.nel.measure.office.net 
+ogads-pa.clients6.google.com 
+ogads-pa.googleapis.com 
+oms-analytics.trafficmanager.net 
+onenoteonline.nel.measure.office.net 
+otheve.beacon.qq.com 
+outlookads.live.com 
+oveuls-cdn-settings.appsflyersdk.com 
+oveuls-launches.appsflyersdk.com 
+p.sardine.ai 
+p11.techlab-cdn.com 
+p13n.adobe.io 
+pagead2.googlesyndication.com 
+partnerfraudevents.trafficmanager.net 
+pf.events.data.microsoft.com 
+pf.events.data.trafficmanager.net 
+pf.pipe.aria.microsoft.com 
+pgtbr1-excel-telemetry-vip.officeapps.live.com 
+pgtbr1-powerpoint-telemetry-vip.officeapps.live.com 
+pgtbr1-word-telemetry-vip.officeapps.live.com 
+pgtbr2-excel-telemetry-vip.officeapps.live.com 
+pgtbr2-powerpoint-telemetry-vip.officeapps.live.com 
+pgtbr2-word-telemetry-vip.officeapps.live.com 
+pgtca1-excel-telemetry-vip.officeapps.live.com 
+pgtca1-powerpoint-telemetry-vip.officeapps.live.com 
+pgtca1-word-telemetry-vip.officeapps.live.com 
+pgteu1-excel-telemetry-vip.officeapps.live.com 
+pgteu1-powerpoint-telemetry-vip.officeapps.live.com 
+pgteu1-word-telemetry-vip.officeapps.live.com 
+pgteu2-excel-telemetry-vip.officeapps.live.com 
+pgteu2-powerpoint-telemetry-vip.officeapps.live.com 
+pgteu2-word-telemetry-vip.officeapps.live.com 
+pgteu3-excel-telemetry-vip.officeapps.live.com 
+pgteu3-powerpoint-telemetry-vip.officeapps.live.com 
+pgteu3-word-telemetry-vip.officeapps.live.com 
+pgteu4-excel-telemetry-vip.officeapps.live.com 
+pgteu4-powerpoint-telemetry-vip.officeapps.live.com 
+pgteu4-word-telemetry-vip.officeapps.live.com 
+pgteu5-excel-telemetry-vip.officeapps.live.com 
+pgteu5-powerpoint-telemetry-vip.officeapps.live.com 
+pgteu5-word-telemetry-vip.officeapps.live.com 
+pgtmx1-excel-telemetry-vip.officeapps.live.com 
+pgtmx1-powerpoint-telemetry-vip.officeapps.live.com 
+pgtmx1-word-telemetry-vip.officeapps.live.com 
+pgtsg1-excel-telemetry-vip.officeapps.live.com 
+pgtsg1-powerpoint-telemetry-vip.officeapps.live.com 
+pgtsg1-word-telemetry-vip.officeapps.live.com 
+pgtus1-excel-telemetry-vip.officeapps.live.com 
+pgtus1-powerpoint-telemetry-vip.officeapps.live.com 
+pgtus1-word-telemetry-vip.officeapps.live.com 
+pgtus2-excel-telemetry-vip.officeapps.live.com 
+pgtus2-powerpoint-telemetry-vip.officeapps.live.com 
+pgtus2-word-telemetry-vip.officeapps.live.com 
+pgtus3-excel-telemetry-vip.officeapps.live.com 
+pgtus3-powerpoint-telemetry-vip.officeapps.live.com 
+pgtus3-word-telemetry-vip.officeapps.live.com 
+pgtus4-excel-telemetry-vip.officeapps.live.com 
+pgtus4-powerpoint-telemetry-vip.officeapps.live.com 
+pgtus4-word-telemetry-vip.officeapps.live.com 
+pgtus5-excel-telemetry-vip.officeapps.live.com 
+pgtus5-powerpoint-telemetry-vip.officeapps.live.com 
+pgtus5-word-telemetry-vip.officeapps.live.com 
+pgtus6-excel-telemetry-vip.officeapps.live.com 
+pgtus6-powerpoint-telemetry-vip.officeapps.live.com 
+pgtus6-word-telemetry-vip.officeapps.live.com 
+pipe.aria.microsoft.com 
+pixel.watch 
+pixel-api.pfsrvs.com 
+pixel-sync.trafficmanager.net 
+plausible.io 
+powerpointonline.nelsdf.measure.office.net 
+powerpoint-telemetry.officeapps.live.com 
+powerpoint-telemetry.wac.trafficmanager.net 
+ppc-excel-telemetry.officeapps.live.com 
+ppc-excel-telemetry.wac.trafficmanager.net 
+ppc-onenote-telemetry.officeapps.live.com 
+ppc-powerpoint-telemetry.officeapps.live.com 
+ppc-powerpoint-telemetry.wac.trafficmanager.net 
+ppc-word-telemetry.officeapps.live.com 
+ppc-word-telemetry.wac.trafficmanager.net 
+ppe.telemetry.microsoft.com 
+ppm-licensingtelemetry.servicebus.windows.net 
+pre.footprintpredict.com 
+production-jobactivity-analytics.servicebus.windows.net 
+pubads.g.doubleclick.net 
+qatarcentral-0.in.applicationinsights.azure.com 
+r.bat.bing.com 
+r.g.bing.com 
+r63ecapkj5yg.mw1i8.adobestats.io 
+rad.live.com 
+rad.microsoft.com 
+rad.msn.com 
+rads.msn.com 
+rawtelemetry-east.servicebus.windows.net 
+rawtelemetry-west.servicebus.windows.net 
+rba-screen.healthsafe-id.com 
+rdm-trafficmanager-ticketscenter-metrics.trafficmanager.net 
+reports.wes.df.telemetry.microsoft.com 
+reqhfg-cdn-settings.appsflyersdk.com 
+reqhfg-launches.appsflyersdk.com 
+responses.df.telemetry.microsoft.com 
+riskified.com 
+rmads.eu.msn.com 
+rmads.msn.com 
+rt.applicationinsights.microsoft.com 
+rtlog16-normal-useast8.tiktokv.us 
+rudderlabs.com 
+rudderstack.com 
+s.amazon-adsystem.com 
+s0.2mdn.net 
+s2s.adjust.com 
+sandbox.vortex.data.trafficmanager.net 
+satismeter.com 
+scripts.demandbase.com 
+sdk.iad-03.braze.com 
+sdk-api-v1.singular.net 
+sdwan.measure.office.com 
+secure.adnxs.com 
+secure.flashtalking.com 
+securepubads.g.doubleclick.net 
+segment.com 
+self.events.data.microsoft.com 
+self-events-data.trafficmanager.net 
+send.hsbrowserreports.com 
+sensorsdata.com 
+sentry.io 
+sentry-cdn.com 
+server.events.data.microsoft.com 
+server.events.data.trafficmanager.net 
+server1.pipe.aria.microsoft.com 
+server2.pipe.aria.microsoft.com 
+server3.pipe.aria.microsoft.com 
+server4.pipe.aria.microsoft.com 
+server5.pipe.aria.microsoft.com 
+server6.pipe.aria.microsoft.com 
+server7.pipe.aria.microsoft.com 
+server8.pipe.aria.microsoft.com 
+services.wes.df.telemetry.microsoft.com 
+session.mshopbugsnag.irm.amazon.dev 
+sessions.bugsnag.com 
+settings-sandbox.data.microsoft.com 
+sgtus1-excel-telemetry-vip.officeapps.live.com 
+sgtus1-powerpoint-telemetry-vip.officeapps.live.com 
+sgtus1-word-telemetry-vip.officeapps.live.com 
+sift.com 
+signifyd.com 
+smetric.ads.microsoft.com 
+sO.2mdn.net 
+solutions.invocacdn.com 
+southafricanorth-0.in.applicationinsights.azure.com 
+southafricanorth-1.in.applicationinsights.azure.com 
+southcentralus-0.in.applicationinsights.azure.com 
+southcentralus-3.in.applicationinsights.azure.com 
+southeastasia-0.in.applicationinsights.azure.com 
+southeastasia-1.in.applicationinsights.azure.com 
+spidersense.bendingspoons.com 
+spo.nel.measure.office.net 
+spot-pa.googleapis.com 
+spynet2.microsoft.com 
+spynetalt.microsoft.com 
+sqm.df.telemetry.microsoft.com 
+sqm.telemetry.microsoft.com 
+ssp-api.pfsrvs.com 
+ssp-prod-eastus-nonmutt.trafficmanager.net 
+ss-telemetry.servicebus.windows.net 
+static.2mdn.net 
+static.cloudflareinsights.com 
+static.doubleclick.net 
+static.klaviyo.com 
+static.netify.ai 
+static.pfsrvs.com 
+stats.g.doubleclick.net 
+stats-partner.trafficmanager.net 
+survey.watson.microsoft.com 
+swedencentral-0.in.applicationinsights.azure.com 
+swiftanalyticsprod.servicebus.windows.net 
+switzerlandnorth-0.in.applicationinsights.azure.com 
+syndication.twitter.com 
+tags.tiqcdn.com 
+taskassist-pa.clients6.google.com 
+tb.events.data.microsoft.com 
+tb.events.data.trafficmanager.net 
+tb.pipe.aria.microsoft.com 
+teams.events.data.microsoft.com 
+teams.nel.measure.office.net 
+teams-events-data.trafficmanager.net 
+tele.trafficmanager.net 
+telecommand.telemetry.microsoft.com 
+telecommandsvc.microsoft.com 
+telem-edge.smartscreen.microsoft.com 
+telemetry.api.swiftkey.com 
+telemetry.appex.bing.net 
+telemetry.eastus.trafficmanager.net 
+telemetry.malwarebytes.com 
+telemetry.microsoft.com 
+telemetry.remoteapp.windowsazure.com 
+telemetry.urs.microsoft.com 
+telemetry.visualstudio.microsoft.com 
+telemetrycollector.microsoft.com 
+telemetry-lcp.trafficmanager.net 
+tenmax-ads.trafficmanager.net 
+test.activity.windows.com 
+tfl.nel.measure.office.net 
+tgtus1-excel-telemetry-vip.officeapps.live.com 
+tgtus1-powerpoint-telemetry-vip.officeapps.live.com 
+tgtus1-word-telemetry-vip.officeapps.live.com 
+tiktokmod.pro 
+tm-analytics-pr.trafficmanager.net 
+tm-enrollment-telemetry-datacore.trafficmanager.net 
+tnc16-normal-useast5.tiktokv.us 
+tnc19-normal-useast8.tiktokv.us 
+tnc-boot.tiktokv.com 
+trace.mshopbugsnag.irm.amazon.dev 
+track.amazon.com 
+track.mp.microsoft.com 
+track.notif.careersppe.microsoft.com 
+track.paubox.com 
+tracker.flightview.com.trafficmanager.net 
+tracker.zer0day.to 
+traf-fraudevents-int.trafficmanager.net 
+trib.al 
+uaecentral-0.in.applicationinsights.azure.com 
+uaenorth-0.in.applicationinsights.azure.com 
+udc.msn.com 
+uk.events.data.trafficmanager.net 
+uk.vortex-win.data.microsoft.com 
+ukc-onenote-telemetry.officeapps.live.com 
+ukc-visio-telemetry.officeapps.live.com 
+uk-mobile.events.data.microsoft.com 
+uksouth-0.in.applicationinsights.azure.com 
+uksouth-1.in.applicationinsights.azure.com 
+uk-v20.events.data.microsoft.com 
+ukwest-0.in.applicationinsights.azure.com 
+ukwest-0.in.applicationinsights.azure.com.albertk12.org 
+ulp1p-pa.googleapis.com 
+umwatson.events.data.microsoft.com 
+umwatsonc.events.data.microsoft.com 
+umwatsonc.telemetry.microsoft.us 
+unified.adsafeprotected.com 
+upload.fp.measure.office.com 
+upload2.fp.measure.office.com 
+ups.tt.omtrdc.net 
+us.aria.events.data.trafficmanager.net 
+us.events.data.trafficmanager.net 
+us.pipe.aria.microsoft.com 
+us.vortex-win.data.microsoft.com 
+us4-v20.events.data.microsoft.com 
+us5-v20.events.data.microsoft.com 
+usc-onenote-telemetry.officeapps.live.com 
+usc-visio-telemetry.officeapps.live.com 
+use.typekit.net 
+use1-turn.fpjs.io 
+userlocation.googleapis.com 
+usgovarizona-0.in.applicationinsights.azure.us 
+usgovarizona-global.in.applicationinsights.azure.us 
+usgovtexas-0.in.applicationinsights.azure.us 
+usgovvirginia-0.in.applicationinsights.azure.us 
+usgovvirginia-1.in.applicationinsights.azure.us 
+usgovvirginia-global.in.applicationinsights.azure.us 
+us-ic3.events.data.microsoft.com 
+us-mesh.events.data.microsoft.com 
+us-mesh-events-data-leafs.trafficmanager.net 
+us-mobile.events.data.microsoft.com 
+us-teams.events.data.microsoft.com 
+us-v10.events.data.microsoft.com 
+us-v10c.events.data.microsoft.com 
+us-v20.events.data.microsoft.com 
+us-v20.events.data.trafficmanager.net 
+utm.sankei.jp.msn.com 
+uxh52u.cdn-settings.appsflyersdk.com 
+uxh52u.inapps.appsflyersdk.com 
+uxh52u.launches.appsflyersdk.com 
+v10.events.data.microsoft.com 
+v10.vortex-win.data.microsoft.com 
+v10c.events.data.microsoft.com 
+v20.events.data.microsoft.com 
+v20.vortex-win.data.microsoft.com 
+v20-asimov-win.vortex.data.trafficmanager.net 
+vast.doubleverify.com 
+vc.ads.dailymail.co.uk 
+vcu-api.300624.com 
+view.atdmt.com 
+visioonline.nel.measure.office.net 
+visio-telemetry.officeapps.live.com 
+visualwebsiteoptimizer.com 
+voilatile-pa.googleapis.com 
+vortex.data.microsoft.com 
+vortex.data.trafficmanager.net 
+vortex-sandbox.data.microsoft.com 
+vortex-win.data.microsoft.com 
+vortex-win-sandbox.data.microsoft.com 
+vstelemetry.trafficmanager.net 
+w3-reporting.reddit.com 
+watson.alpha.telemetry.microsoft.com 
+watson.df.telemetry.microsoft.com 
+watson.events.data.microsoft.com 
+watson.live.com 
+watson.microsoft.com 
+watson.officeint.microsoft.com 
+watson.ppe.telemetry.microsoft.com 
+watson.telemetry.microsoft.com 
+watsonc.events.data.microsoft.com 
+wayfinderanalytics.servicebus.windows.net 
+web.vortex.data.microsoft.com 
+web-sdk.aptrinsic.com 
+webvisor.org 
+wes.df.telemetry.microsoft.com 
+westcentralus-0.in.aimon.applicationinsights.azure.com 
+westcentralus-global.in.aimon.applicationinsights.azure.com 
+westeurope.in.applicationinsights.azure.com 
+westeurope-0.in.applicationinsights.azure.com 
+westeurope-1.in.applicationinsights.azure.com 
+westeurope-2.in.applicationinsights.azure.com 
+westeurope-3.in.applicationinsights.azure.com 
+westeurope-4.in.applicationinsights.azure.com 
+westeurope-5.in.applicationinsights.azure.com 
+westeurope-global.in.applicationinsights.azure.com 
+westus-0.in.applicationinsights.azure.com 
+westus2-0.in.applicationinsights.azure.com 
+westus2-1.in.applicationinsights.azure.com 
+westus2-2.in.applicationinsights.azure.com 
+westus2-4.in.applicationinsights.azure.com 
+westus2-5.in.applicationinsights.azure.com 
+westus2-global.in.applicationinsights.azure.com 
+westus3.in.applicationinsights.azure.com 
+westus3-1.in.applicationinsights.azure.com 
+widgets.wp.com 
+wordonline.nel.measure.office.net 
+word-telemetry.officeapps.live.com 
+word-telemetry.wac.trafficmanager.net 
+wttwebsiteprodapi-liveevents.trafficmanager.net 
+www.clarity.ms 
+www.dc.applicationinsights.azure.com 
+www.googleadservices.com 
+www.google-analytics.com 
+www.googletagmanager.com 
+www.live.applicationinsights.azure.com 
+www.msads.net 
+www.telecommandsvc.microsoft.com 
+xgapromomanager-pa.googleapis.com 
+zmetrics.msn.com 
+znoghknj.emltrk.com 
