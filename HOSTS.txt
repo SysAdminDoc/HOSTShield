@@ -7320,6 +7320,7 @@
 0.0.0.0 anolysis.privacy.cliqz.com
 0.0.0.0 anon.doubleclick.speedera.net
 0.0.0.0 anonymous-net.com
+0.0.0.0 anonymous.ads.brave.com
 0.0.0.0 anonymousdemographics.com
 0.0.0.0 anonymousstats.keefox.org
 0.0.0.0 anoopsankar.com
@@ -7660,6 +7661,7 @@
 0.0.0.0 api.doubles.click
 0.0.0.0 api.doumob.com
 0.0.0.0 api.eagllwin.com
+0.0.0.0 api.edgeoffer.microsoft.com
 0.0.0.0 api.ent.mobileanjian.com
 0.0.0.0 api.eqmob.com
 0.0.0.0 api.ero-advertising.com
@@ -7813,6 +7815,7 @@
 0.0.0.0 api.smartechmetrics.com
 0.0.0.0 api.smartnews-ads.com
 0.0.0.0 api.smbeat.jp
+0.0.0.0 api.smoot.apple.com
 0.0.0.0 api.sociaplus.com
 0.0.0.0 api.soclminer.com.br
 0.0.0.0 api.speedshiftmedia.com
@@ -9022,6 +9025,7 @@
 0.0.0.0 auth.cityads.com
 0.0.0.0 auth.follow-apps.com
 0.0.0.0 auth.livejasmin.com
+0.0.0.0 auth.services.adobe.com
 0.0.0.0 auth.split.io
 0.0.0.0 auth.wikimedia.org
 0.0.0.0 auth2.cityads.com
@@ -14602,6 +14606,7 @@
 0.0.0.0 collector-main.trafficmanager.net
 0.0.0.0 collector-px8fcgygk4.px-cloud.net
 0.0.0.0 collector-pxel3l4xih.perimeterx.net
+0.0.0.0 collector.bsg.brave.com
 0.0.0.0 collector.bughd.com
 0.0.0.0 collector.capturly.com
 0.0.0.0 collector.cdp.cnn.com
@@ -14873,6 +14878,8 @@
 0.0.0.0 config1.veinteractive.com
 0.0.0.0 config2.mparticle.com
 0.0.0.0 configuration-api.mapmyfitness.com
+0.0.0.0 configuration.apple.com
+0.0.0.0 configuration.ls.apple.com
 0.0.0.0 configuration.ls.v.aaplimg.com
 0.0.0.0 configure-tcp-android.mtgglobals.com
 0.0.0.0 configure-tcp.rayjump.com
@@ -15138,6 +15145,7 @@
 0.0.0.0 coordinatedlemon.lat
 0.0.0.0 coordino.com
 0.0.0.0 cootlogix.com
+0.0.0.0 copilot.microsoft.com
 0.0.0.0 coppertopchimney.com
 0.0.0.0 copririgge.pro
 0.0.0.0 copycarpenter.com
@@ -16954,6 +16962,7 @@
 0.0.0.0 deviantart.crwdcntrl.net
 0.0.0.0 device-api.asnapieu.com
 0.0.0.0 device-api.urbanairship.com
+0.0.0.0 device-config.pcms.apple.com
 0.0.0.0 device-metrics-us-2.amazon.com
 0.0.0.0 device-metrics-us.amazon.com
 0.0.0.0 device.4seeresults.com
@@ -17328,6 +17337,7 @@
 0.0.0.0 dl.1003b.56a.com
 0.0.0.0 dl.aginjector.com
 0.0.0.0 dl.asis.io
+0.0.0.0 dl.dell.com
 0.0.0.0 dl.dzqzd.com
 0.0.0.0 dl.fotoable.com
 0.0.0.0 dl.gameplaylabs.com
@@ -17455,6 +17465,7 @@
 0.0.0.0 dogpile.112.2o7.net
 0.0.0.0 dogry.fr
 0.0.0.0 dogtrace.fr
+0.0.0.0 doh.dns.apple.com
 0.0.0.0 doheth.co.uk
 0.0.0.0 dohgernonber.com
 0.0.0.0 dohobed.top
@@ -19579,6 +19590,7 @@
 0.0.0.0 experianservicescorp.122.2o7.net
 0.0.0.0 experience.tinypass.com
 0.0.0.0 experiment.appadhoc.com
+0.0.0.0 experiments.apple.com
 0.0.0.0 expert-development.com
 0.0.0.0 expertbike.pl
 0.0.0.0 expertfx.net
@@ -20000,6 +20012,7 @@
 0.0.0.0 fblgcu.cyou
 0.0.0.0 fblinker.com
 0.0.0.0 fbpodgladacz.wordpress.com
+0.0.0.0 fbs.smoot.apple.com
 0.0.0.0 fbsecurity.co
 0.0.0.0 fbtoken.evai.pl
 0.0.0.0 fbuser.ovp.vn
@@ -20019,6 +20032,8 @@
 0.0.0.0 fckme.chat
 0.0.0.0 fcksedicic.baby
 0.0.0.0 fclb.fr
+0.0.0.0 fd-api-iris.trafficmanager.net
+0.0.0.0 fd.api.iris.microsoft.com
 0.0.0.0 fd1.eye.to
 0.0.0.0 fd2.eye.to
 0.0.0.0 fd4.eye.to
@@ -21792,6 +21807,7 @@
 0.0.0.0 geo.moatads.com
 0.0.0.0 geo.nbcsports.com
 0.0.0.0 geo.offermatica.com
+0.0.0.0 geo.prod.do.dsp.mp.microsoft.com
 0.0.0.0 geo.qualaroo.com
 0.0.0.0 geo.query.yahoo.com
 0.0.0.0 geo.rlcdn.com
@@ -21800,6 +21816,7 @@
 0.0.0.0 geo.xxxblackbook.com
 0.0.0.0 geo.yahoo.com
 0.0.0.0 geo.ziffdavis.com
+0.0.0.0 geo2.adobe.com
 0.0.0.0 geoaddicted.net
 0.0.0.0 geoads.com
 0.0.0.0 geoads.eurorevenue.com
@@ -25422,6 +25439,7 @@
 0.0.0.0 inhousedsp.com
 0.0.0.0 inimage.carambo.la
 0.0.0.0 inirbinion.com
+0.0.0.0 init.push.apple.com
 0.0.0.0 init.sh
 0.0.0.0 init.sms.mob.com
 0.0.0.0 init.startappexchange.com
@@ -28086,6 +28104,7 @@
 0.0.0.0 lice.award-haven.com
 0.0.0.0 license.piriform.com
 0.0.0.0 licensing.bitmovin.com
+0.0.0.0 licensing.mp.microsoft.com
 0.0.0.0 licensingstack.com
 0.0.0.0 lichtbitspire.com
 0.0.0.0 liczniki.org
@@ -28587,7 +28606,6 @@
 0.0.0.0 log-tienphong.zadn.vn
 0.0.0.0 log-tinnhanhchungkhoan.epicdn.me
 0.0.0.0 log-tinnhanhchungkhoan.zadn.vn
-0.0.0.0 log-va.tiktokv.com
 0.0.0.0 log-video.baotintuc.vn
 0.0.0.0 log-vietnamdaily.zadn.vn
 0.0.0.0 log-vietnamplus-vn.cdn.ampproject.org
@@ -29949,8 +29967,6 @@
 0.0.0.0 mcnt.jp
 0.0.0.0 mcntrlsales.com
 0.0.0.0 mcount.easebar.com
-0.0.0.0 mcs-va.tiktok.com
-0.0.0.0 mcs-va.tiktokv.com
 0.0.0.0 mcsgrp.com
 0.0.0.0 mcsoft365.com
 0.0.0.0 mcstats.org
@@ -31142,11 +31158,9 @@
 0.0.0.0 mon-conertisseur.fr
 0.0.0.0 mon-huile-essentielle.online
 0.0.0.0 mon-va.byteoversea.com
-0.0.0.0 mon-va.tiktokv.com
 0.0.0.0 mon.adx.vn
 0.0.0.0 mon.byteoversea.com
 0.0.0.0 mon.isnssdk.com
-0.0.0.0 mon.tiktokv.com
 0.0.0.0 monacdisag.news
 0.0.0.0 monacia.online
 0.0.0.0 monarchads.com
@@ -34867,6 +34881,7 @@
 0.0.0.0 part-0012.t-0009.fb-t-msedge.net
 0.0.0.0 part-0013.t-0009.t-msedge.net
 0.0.0.0 part.gxqu.top
+0.0.0.0 partiality.itunes.apple.com
 0.0.0.0 participants.evolv.ai
 0.0.0.0 particularsvaried.my
 0.0.0.0 partner-ads.com
@@ -42358,6 +42373,7 @@
 0.0.0.0 slowmacfaster.trade
 0.0.0.0 slowrunners.digital
 0.0.0.0 slowsgreats.com
+0.0.0.0 slscr.update.microsoft.com
 0.0.0.0 sltravelcom.112.2o7.net
 0.0.0.0 slyszbakurierska24.com
 0.0.0.0 slywebhosting.net
@@ -43843,6 +43859,7 @@
 0.0.0.0 star-finance.xyz
 0.0.0.0 star-iptv.fr
 0.0.0.0 star-kids.top
+0.0.0.0 star-randsrv.bsg.brave.com
 0.0.0.0 star.pulseonclick.com
 0.0.0.0 starbuckssurvey.life
 0.0.0.0 starbulletins.com
@@ -44578,6 +44595,7 @@
 0.0.0.0 storecatalogrevocation.storequality.microsoft.com
 0.0.0.0 storeconfig.mistat.intl.xiaomi.com
 0.0.0.0 storecor.net
+0.0.0.0 storeedgefd.dsx.mp.microsoft.com
 0.0.0.0 storeedgefd.xbetservices.akadns.net
 0.0.0.0 storeen.ldmnq.com
 0.0.0.0 storelive.co
@@ -51777,6 +51795,7 @@
 0.0.0.0 usachoice.net
 0.0.0.0 usacpu.net
 0.0.0.0 usadserver.com
+0.0.0.0 usage-ping.brave.com
 0.0.0.0 usage.trackjs.com
 0.0.0.0 usapglobal.usapglobal.org
 0.0.0.0 usapolice.com
