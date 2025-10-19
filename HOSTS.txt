@@ -1,7 +1,10 @@
 0.0.0.0 209-34-83-73.ood.opsource.net
 0.0.0.0 32197.api.swrve.com
 0.0.0.0 32197.content.swrve.com
+0.0.0.0 4chenz.github.io
+0.0.0.0 4d.condenastdigital.com
 0.0.0.0 5196634.hs1.hscontentproxy-na1.net
+0.0.0.0 5aa25954e40ffb18984989b59487dfe054549e213a2e64a12187f8deb5a4cb5.us-east-1.prod.service.minerva.devices.a2z.com
 0.0.0.0 9plyrnbx.r.us-west-2.awstrack.me
 0.0.0.0 a-ring-fallback.msedge.net
 0.0.0.0 a.ads.rmbl.ws
@@ -20,6 +23,8 @@
 0.0.0.0 addons.mozilla.org
 0.0.0.0 adnxs.com
 0.0.0.0 adobe.activate.com
+0.0.0.0 adobe.com
+0.0.0.0 adobe.io
 0.0.0.0 adobe.tt.omtrdc.net
 0.0.0.0 adobedc.demdex.net
 0.0.0.0 adobedtm.com
@@ -38,6 +43,7 @@
 0.0.0.0 adtech.de
 0.0.0.0 adzerk.net
 0.0.0.0 aerilon.graphql.aspire-ebm.com
+0.0.0.0 aes.us-east.ono.axp.amazon-adsystem.com
 0.0.0.0 afdxtest.z01.azurefd.net
 0.0.0.0 aircall-dataplane.rudderstack.com
 0.0.0.0 airlytics.airlock.twcmobile.weather.com
@@ -82,6 +88,7 @@
 0.0.0.0 apigtwb2c.us.dell.com
 0.0.0.0 app-analytics-services.com
 0.0.0.0 app-measurement.com
+0.0.0.0 app.adjust.io
 0.0.0.0 app.satismeter.com
 0.0.0.0 appdomain.cloud
 0.0.0.0 apple.com
@@ -155,14 +162,19 @@
 0.0.0.0 cdn.adsninja.ca
 0.0.0.0 cdn.amcharts.com
 0.0.0.0 cdn.cohesionapps.com
+0.0.0.0 cdn.cookiehub.eu
 0.0.0.0 cdn.cookielaw.org
+0.0.0.0 cdn.darkreader.app
 0.0.0.0 cdn.dropboxexperiment.com
 0.0.0.0 cdn.dynamicyield.com
+0.0.0.0 cdn.mwbsys.com
 0.0.0.0 cdn.neverbounce.com
 0.0.0.0 cdn.quantummetric.com
 0.0.0.0 cdn.rudderlabs.com
 0.0.0.0 cdn.segment.com
+0.0.0.0 cdn.shopify.com
 0.0.0.0 cdn.tagcommander.com
+0.0.0.0 cdn.tolt.io
 0.0.0.0 cdn.wootric.com
 0.0.0.0 cdnftrdoor-adh9b9h2agemepcx.z01.azurefd.net
 0.0.0.0 cdnjs.buymeacoffee.com
@@ -190,6 +202,7 @@
 0.0.0.0 collector.github.com
 0.0.0.0 comcast.net
 0.0.0.0 community.steamstatic.com
+0.0.0.0 componentupdater.brave.com
 0.0.0.0 config-edge-skype.ln-0007.ln-msedge.net
 0.0.0.0 config-factory.com
 0.0.0.0 config.config-factory.com
@@ -197,6 +210,7 @@
 0.0.0.0 config.officeapps.live.com
 0.0.0.0 configuration-api.mapmyfitness.com
 0.0.0.0 configuration.ls.v.aaplimg.com
+0.0.0.0 connect.facebook.net
 0.0.0.0 consent.mapmyfitness.com
 0.0.0.0 consentdesk.com
 0.0.0.0 console.nineapp.net
@@ -204,15 +218,19 @@
 0.0.0.0 content-autofill.googleapis.com
 0.0.0.0 content-signature-2.cdn.mozilla.net
 0.0.0.0 cookie-script.com
+0.0.0.0 cookiehub.eu
 0.0.0.0 cookielaw.org
 0.0.0.0 cortana.ai
 0.0.0.0 cr-online.de
+0.0.0.0 crackshash.com
 0.0.0.0 crashlytics.com
 0.0.0.0 crashlyticsreports-pa.googleapis.com
 0.0.0.0 creativecdn.com
 0.0.0.0 crl.verisign.net
 0.0.0.0 cse.google.com
 0.0.0.0 csp.withgoogle.com
+0.0.0.0 cstat-lb.apple.com.akadns.net
+0.0.0.0 cstat.cdn-apple.com
 0.0.0.0 cuow9t.cdn-settings.appsflyersdk.com
 0.0.0.0 cuow9t.inapps.appsflyersdk.com
 0.0.0.0 cuow9t.launches.appsflyersdk.com
@@ -221,6 +239,7 @@
 0.0.0.0 cyberlink.com
 0.0.0.0 cyclones.acmeaom.com
 0.0.0.0 d.dropbox.com
+0.0.0.0 d1swly8pgrbhu5.cloudfront.net
 0.0.0.0 d21gpk1vhmjuf5.cloudfront.net
 0.0.0.0 d30qdagvt44524.cloudfront.net
 0.0.0.0 d9owkidwx4k9e.cloudfront.net
@@ -247,6 +266,8 @@
 0.0.0.0 dmgmediaprivacy.co.uk
 0.0.0.0 dms.ospserver.net
 0.0.0.0 dns.msftncsi.com
+0.0.0.0 dnsbl.test.api.amplitude.com
+0.0.0.0 dnsbl.test.c.bing.com
 0.0.0.0 doubleclick.net
 0.0.0.0 doubleverify.com
 0.0.0.0 dpm.demdex.net
@@ -259,6 +280,7 @@
 0.0.0.0 edge.fullstory.com
 0.0.0.0 edgeassetservice.afd.azureedge.net
 0.0.0.0 edgeassetservice.azureedge.net
+0.0.0.0 eerospeedtests.com
 0.0.0.0 embed.polymarket.com
 0.0.0.0 emltrk.com
 0.0.0.0 emoji.redditmedia.com
@@ -268,6 +290,7 @@
 0.0.0.0 ers.twilio.com
 0.0.0.0 es11.samsung-sm-ds.com
 0.0.0.0 espresso-pa.clients6.google.com
+0.0.0.0 et.topazlabs.com
 0.0.0.0 ethos.ethos02-prod-irl1.ethos.adobe.net
 0.0.0.0 eus2-azsc-000.odc.officeapps.live.com
 0.0.0.0 event.arte.tv
@@ -277,6 +300,8 @@
 0.0.0.0 evt.cameo.com
 0.0.0.0 ex.co
 0.0.0.0 example.org
+0.0.0.0 f.c2r.ts.cdn.office.net
+0.0.0.0 fa000000110.resources.office.net
 0.0.0.0 fast.wistia.net
 0.0.0.0 favicon.yandex.net
 0.0.0.0 fe-pew1-ext-openapi-lb-547958838.eu-west-1.elb.amazonaws.com
@@ -304,6 +329,7 @@
 0.0.0.0 fp-afd-nocache-ccp.azureedge.net
 0.0.0.0 fpjs.io
 0.0.0.0 fpl.com
+0.0.0.0 fpt.dfp.microsoft.com
 0.0.0.0 fscdn.eppo.cloud
 0.0.0.0 fullstory.com
 0.0.0.0 futureradar.acmeaom.com
@@ -319,7 +345,10 @@
 0.0.0.0 glarysoft.com
 0.0.0.0 global.dev.cftls.t.co
 0.0.0.0 global.ketchcdn.com
+0.0.0.0 globalservices.conde.digital
 0.0.0.0 gmscompliance-pa.googleapis.com
+0.0.0.0 go-updater-1830831421.us-west-2.elb.amazonaws.com
+0.0.0.0 go-updater.brave.com
 0.0.0.0 gocart-web-prod-ue1-alb-1461435473.us-east-1.elb.amazonaws.com
 0.0.0.0 google-analytics.com
 0.0.0.0 googleads.g.doubleclick.net
@@ -341,6 +370,7 @@
 0.0.0.0 healthsafe-id.com
 0.0.0.0 helpexamples.com
 0.0.0.0 hexagon-analytics.com
+0.0.0.0 holocron.mwbsys.com
 0.0.0.0 hotjar.com
 0.0.0.0 hotmail.com
 0.0.0.0 hrd.svc.cloud.microsoft
@@ -368,10 +398,12 @@
 0.0.0.0 ims-na1.adobelogin.com.cdn.cloudflare.net
 0.0.0.0 in.appcenter.ms
 0.0.0.0 inbox-na.waze.com
+0.0.0.0 incapdns.net
 0.0.0.0 incoming.telemetry.mozilla.org
 0.0.0.0 indiatimes.com
 0.0.0.0 ingress.linktr.ee
 0.0.0.0 insights-collector.newrelic.com
+0.0.0.0 insights.microsoft.com
 0.0.0.0 installs-content.acmeaom.com
 0.0.0.0 installs.acmeaom.com
 0.0.0.0 installsfx-ep-wus2.azurewebsites.net
@@ -397,6 +429,7 @@
 0.0.0.0 js.hubspotfeedback.com
 0.0.0.0 js.intercomcdn.com
 0.0.0.0 js.monitor.azure.com
+0.0.0.0 js.stripe.com
 0.0.0.0 jtvnw.net
 0.0.0.0 k-ring.msedge.net
 0.0.0.0 kampyle.com
@@ -406,8 +439,10 @@
 0.0.0.0 kvaedit.site
 0.0.0.0 l-ring.msedge.net
 0.0.0.0 lamssettings-pa.googleapis.com
+0.0.0.0 licenses-content.acmeaom.com
 0.0.0.0 licensingstack.com
 0.0.0.0 lightboxcdn.com
+0.0.0.0 limeiptv.to
 0.0.0.0 llnw.net
 0.0.0.0 ln-ring.msedge.net
 0.0.0.0 localizecdn.com
@@ -416,15 +451,19 @@
 0.0.0.0 locationhistoryplacedetails-pa.googleapis.com
 0.0.0.0 logging.api.intuit.com
 0.0.0.0 lpsnmedia.net
+0.0.0.0 m.stripe.network
 0.0.0.0 mail-ads.google.com
 0.0.0.0 mailchimp.com
 0.0.0.0 majorgeekscom.disqus.com
 0.0.0.0 malwarebytes.com
 0.0.0.0 map1.whatismyipaddress.com
+0.0.0.0 mask-api.icloud.com
+0.0.0.0 mbam-c-5-4-1-215.v2.tel.malwarebytes.com
 0.0.0.0 mbam-c-5-4-1.telemetry.malwarebytes.com
 0.0.0.0 micro.rubiconproject.com
 0.0.0.0 mikrolabor.com
 0.0.0.0 mixpanel.com
+0.0.0.0 mobile.events.data.microsoft.com
 0.0.0.0 mobile.l.google.com
 0.0.0.0 mobileconfiguration-pa.googleapis.com
 0.0.0.0 movies.discoveryftp.net
@@ -437,6 +476,7 @@
 0.0.0.0 msft-ssp.adnxs.com
 0.0.0.0 msn.cn
 0.0.0.0 msn.com
+0.0.0.0 mwbsys.com
 0.0.0.0 nam.fxgateway.svc.cloud.microsoft
 0.0.0.0 nearbysharing-pa.googleapis.com
 0.0.0.0 nelreports.net
@@ -459,6 +499,8 @@
 0.0.0.0 o17585.ingest.us.sentry.io
 0.0.0.0 o418887.ingest.sentry.io
 0.0.0.0 o4504270633959424.ingest.sentry.io
+0.0.0.0 o4506898046976000.ingest.us.sentry.io
+0.0.0.0 o4508134825000960.ingest.us.sentry.io
 0.0.0.0 o987771.ingest.us.sentry.io
 0.0.0.0 oauth-tax.platform.intuit.com
 0.0.0.0 obs.acmeaom.com
@@ -477,6 +519,7 @@
 0.0.0.0 onedrive.live.com
 0.0.0.0 onenote.net
 0.0.0.0 oneocsp-microsoft-com.a-0003.a-msedge.net
+0.0.0.0 oneocsp.microsoft.com
 0.0.0.0 onetrust.com
 0.0.0.0 online-metrix.net
 0.0.0.0 ood.opsource.net
@@ -508,6 +551,7 @@
 0.0.0.0 pfsrvs.com
 0.0.0.0 phonedeviceverification-pa.googleapis.com
 0.0.0.0 piaproxy.net
+0.0.0.0 picassostaticassetsstg.azureedge.net
 0.0.0.0 piriform.com
 0.0.0.0 pixel-api.pfsrvs.com
 0.0.0.0 pixel-static.spotify.com
@@ -526,6 +570,8 @@
 0.0.0.0 prdv4a.aadg.msidentity.com
 0.0.0.0 prebid.media.net
 0.0.0.0 premium.mapmyfitness.com
+0.0.0.0 privacy.acmeaom.com
+0.0.0.0 privacy.condenastdigital.com
 0.0.0.0 privacymanager.io
 0.0.0.0 privateinternetaccess.com
 0.0.0.0 prod-lt-playstoregatewayadapter-pa.googleapis.com
@@ -536,6 +582,7 @@
 0.0.0.0 prod.ivs-device-config.live-video.net
 0.0.0.0 prodigy.msn.com
 0.0.0.0 protechts.net
+0.0.0.0 ptr.the-sun.com
 0.0.0.0 pub.network
 0.0.0.0 pubfinity.com
 0.0.0.0 pubmatic.com
@@ -550,11 +597,14 @@
 0.0.0.0 quake-pa.googleapis.com
 0.0.0.0 qualtrics.com
 0.0.0.0 quantummetric.com
+0.0.0.0 r.wdfl.co
 0.0.0.0 r0.mradx.net
 0.0.0.0 rad.msn.com
 0.0.0.0 radar.io
 0.0.0.0 react-video-browser.acmeaom.com
+0.0.0.0 redirector.brave.com
 0.0.0.0 redventures.io
+0.0.0.0 region-eu.cookiehub.net
 0.0.0.0 registeridm.com
 0.0.0.0 remote-data.urbanairship.com
 0.0.0.0 reqhfg-cdn-settings.appsflyersdk.com
@@ -564,6 +614,7 @@
 0.0.0.0 res.public.onecdn.static.microsoft
 0.0.0.0 rewards.bing.com
 0.0.0.0 rezvorck.github.io
+0.0.0.0 rileyrichter.github.io
 0.0.0.0 riskified.com
 0.0.0.0 rlcdn.com
 0.0.0.0 roaming.officeapps.live.com
@@ -612,6 +663,7 @@
 0.0.0.0 sentry-cdn.com
 0.0.0.0 sentry.infrastructure.pandadoc.com
 0.0.0.0 sentry.io
+0.0.0.0 services.addons.mozilla.org
 0.0.0.0 services.prod.ims.adobejanus.com
 0.0.0.0 serving-sys.com
 0.0.0.0 session.mshopbugsnag.irm.amazon.dev
@@ -622,6 +674,7 @@
 0.0.0.0 signaler-pa.youtube.com
 0.0.0.0 signifyd.com
 0.0.0.0 singular.net
+0.0.0.0 sirius.mwbsys.com
 0.0.0.0 siteintercept.qualtrics.com
 0.0.0.0 sitescdn.net
 0.0.0.0 skype.com
@@ -649,6 +702,7 @@
 0.0.0.0 store.steampowered.com
 0.0.0.0 storeedgefd.xbetservices.akadns.net
 0.0.0.0 styles.redditmedia.com
+0.0.0.0 submit.backtrace.io
 0.0.0.0 support.brave.app
 0.0.0.0 swiftkey.com
 0.0.0.0 swrve.com
@@ -679,6 +733,8 @@
 0.0.0.0 ticker.polymarket.com
 0.0.0.0 tigger-citadel.touchtype-fluency.com
 0.0.0.0 time.android.com
+0.0.0.0 time.apple.com
+0.0.0.0 time.google.com
 0.0.0.0 time.windows.com
 0.0.0.0 time.xtracloud.net
 0.0.0.0 timesofindia.com
@@ -688,6 +744,8 @@
 0.0.0.0 tools.thatwind.com
 0.0.0.0 touchtype-fluency.com
 0.0.0.0 trace.mshopbugsnag.irm.amazon.dev
+0.0.0.0 traffic-nts-ip-assoc.xy.fbcdn.net
+0.0.0.0 traffic-nts-ip-assoc.xz.fbcdn.net
 0.0.0.0 trc.taboola.com
 0.0.0.0 trib.al
 0.0.0.0 trust-provider.com
@@ -698,6 +756,7 @@
 0.0.0.0 twitch.tv
 0.0.0.0 twitchcdn.net
 0.0.0.0 udp.ping.teamviewer.com
+0.0.0.0 uhc00i-66.myshopify.com
 0.0.0.0 ulp1p-pa.googleapis.com
 0.0.0.0 umc-cdn.secb2b.com
 0.0.0.0 unagi-na.amazon.com
@@ -726,6 +785,7 @@
 0.0.0.0 vas.samsungapps.com
 0.0.0.0 vast.build
 0.0.0.0 vc.hotjar.io
+0.0.0.0 versioncheck-bg.addons.mozilla.org
 0.0.0.0 viafoura.net
 0.0.0.0 visualwebsiteoptimizer.com
 0.0.0.0 vo.msecnd.net
@@ -760,6 +820,7 @@
 0.0.0.0 www.collegeboard.org
 0.0.0.0 www.collegeboard.org.edgekey.net
 0.0.0.0 www.dmv.org
+0.0.0.0 www.fastly-insights.com
 0.0.0.0 www.google-analytics.com
 0.0.0.0 www.googleadservices.com
 0.0.0.0 www.googletagmanager.com
@@ -778,8 +839,10 @@
 0.0.0.0 www.tm.lg.prod.aadmsa.akadns.net
 0.0.0.0 www.tm.v4.a.prd.aadg.akadns.net
 0.0.0.0 www.wikipedia.org
+0.0.0.0 xgapromomanager-pa.googleapis.com
 0.0.0.0 xtracloud.net
 0.0.0.0 z01.azurefd.net
 0.0.0.0 zapier.com
+0.0.0.0 zendesk.com
 0.0.0.0 zer0day.to
 0.0.0.0 zn_77ycxjaq1e0122v-cbs.siteintercept.qualtrics.com
