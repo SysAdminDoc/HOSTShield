@@ -20733,10 +20733,6 @@
 0.0.0.0 folosmensh.com
 0.0.0.0 fomonews.net
 0.0.0.0 fondprof.oewabox.at
-0.0.0.0 fontostudni.club
-0.0.0.0 fonts.ad.admitad.com
-0.0.0.0 fonts.googleapis.com
-0.0.0.0 fonts.gstatic.com
 0.0.0.0 foo.cosmocode.de
 0.0.0.0 food-offer.com
 0.0.0.0 food.vivovien.com
@@ -31157,9 +31153,7 @@
 0.0.0.0 momoxxio.com
 0.0.0.0 mon-conertisseur.fr
 0.0.0.0 mon-huile-essentielle.online
-0.0.0.0 mon-va.byteoversea.com
 0.0.0.0 mon.adx.vn
-0.0.0.0 mon.byteoversea.com
 0.0.0.0 mon.isnssdk.com
 0.0.0.0 monacdisag.news
 0.0.0.0 monacia.online
@@ -38465,7 +38459,6 @@
 0.0.0.0 rarinrotee.com
 0.0.0.0 rasensbiso.org
 0.0.0.0 rashedulislam.com
-0.0.0.0 rasikaoverseas.com
 0.0.0.0 raskrutka.ucoz.com
 0.0.0.0 rasmas.inmar.com
 0.0.0.0 rasnabd.org
@@ -51810,7 +51803,6 @@
 0.0.0.0 use-tor.adsrvr.org
 0.0.0.0 use.account-business-page-center.cfd
 0.0.0.0 use.convertglobal.com
-0.0.0.0 use.fontawesome.com
 0.0.0.0 use.typekit.net
 0.0.0.0 use.verify-support-fanpage-center.cfd
 0.0.0.0 use1-turn.fpjs.io
@@ -54987,7 +54979,6 @@
 0.0.0.0 wtsdc.worldnow.com
 0.0.0.0 wtvertnet.com
 0.0.0.0 wu.gyj-0.ru
-0.0.0.0 wu.idismfonts.com
 0.0.0.0 wuqidui.live
 0.0.0.0 wurren.iad-03.braze.com
 0.0.0.0 wus-azsc-config.officeapps.live.com
@@ -70129,7 +70120,6 @@
 0.0.0.0 www.rarinrotee.com
 0.0.0.0 www.rasensbiso.org
 0.0.0.0 www.rashedulislam.com
-0.0.0.0 www.rasikaoverseas.com
 0.0.0.0 www.rasnabd.org
 0.0.0.0 www.rassebisbo.pro
 0.0.0.0 www.rastino.cfd
