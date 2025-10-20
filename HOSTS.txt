@@ -227,9 +227,6 @@
 0.0.0.0 crashlytics.com
 0.0.0.0 crashlyticsreports-pa.googleapis.com
 0.0.0.0 creativecdn.com
-0.0.0.0 crl.verisign.net
-0.0.0.0 cse.google.com
-0.0.0.0 csp.withgoogle.com
 0.0.0.0 cstat-lb.apple.com.akadns.net
 0.0.0.0 cstat.cdn-apple.com
 0.0.0.0 cuow9t.cdn-settings.appsflyersdk.com
@@ -810,3 +807,4 @@
 0.0.0.0 zendesk.com
 0.0.0.0 zer0day.to
 0.0.0.0 zn_77ycxjaq1e0122v-cbs.siteintercept.qualtrics.com
+
