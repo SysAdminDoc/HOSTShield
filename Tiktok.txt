@@ -16,6 +16,7 @@ lf16-tiktok-common.tiktokcdn-us.com
 lf16-tiktok-web.tiktokcdn-us.com
 lf19-gecko-source.tiktokcdn-us.com
 libra16-normal-useast5.tiktokv.us
+p19-oec-va.ibyteimg.com
 libraweb.tiktokw.us
 location-v6.tiktokv.us
 log16-normal-useast5.tiktokv.us
