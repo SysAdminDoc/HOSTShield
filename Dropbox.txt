@@ -1,0 +1,15 @@
+api.dropbox.com
+api-env.dropbox-dns.com
+client.dropbox.com
+client-env.dropbox-dns.com
+dnsbl.test.bolt.dropbox.com
+dnsbl.test.bolt.dropbox.com.home.arpa
+dnsbl.test.d.dropbox.com
+edge-block-previews-env.dropbox-dns.com
+netmon-control.dropbox.com
+nsf-3.dropbox.com
+nsf-env-3.dropbox-dns.com
+photos-thumb.dropbox.com
+t8.dropbox.com
+www.dropbox.com
+www-env.dropbox-dns.com
