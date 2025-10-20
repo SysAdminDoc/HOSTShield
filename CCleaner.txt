@@ -1,0 +1,7 @@
+ncc.avast.com
+ncc.avast.com.edgesuite.net
+license.piriform.com
+ipm-provider.ff.avast.com
+shepherd.ff.avast.com
+ip-info.ff.avast.com
+analytics.ff.avast.com
