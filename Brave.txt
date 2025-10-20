@@ -1,0 +1,14 @@
+anonymous.ads.brave.com
+brave-core-ext.s3.brave.com
+brave-production-proxy-238320562.us-west-2.elb.amazonaws.com
+cdn.search.brave.com
+componentupdater.brave.com
+crxdownload.brave.com
+go-updater.brave.com
+redirector.brave.com
+safebrowsing.brave.com
+sb-ssl.brave.com
+star-randsrv.bsg.brave.com
+translate.brave.com
+usage-ping.brave.com
+variations.brave.com
