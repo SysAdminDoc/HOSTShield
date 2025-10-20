@@ -1,0 +1,15 @@
+5196634.cdnp1.hubspotusercontent-na1.net
+api-app.hubspot.com
+api-na1.hubspot.com
+api.hubspot.com
+app.hubspot.com
+avatars.hubspot.net
+dnsbl.test.js.hubspotfeedback.com
+dnsbl.test.js.hubspotfeedback.com.home.arpa
+exceptions.hubspot.com
+hubspot-na1-realtime.ably.io
+hubspot-na1-rest.ably.io
+hubspot-na1.realtime.ably.net
+na1.hubspot-logos.com
+wtcfns.hubspot.com
+www.hubspot.com
