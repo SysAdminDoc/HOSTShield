@@ -14,7 +14,6 @@
 0.0.0.0 a.tampermonkey.net
 0.0.0.0 a.tiktokmod.pro
 0.0.0.0 a1815.dscr.akamai.net
-0.0.0.0 aax-us-east-retail-direct.amazon.com
 0.0.0.0 ably-realtime.com
 0.0.0.0 ably.net
 0.0.0.0 acdn.adnxs.com
@@ -92,6 +91,7 @@
 0.0.0.0 app.adjust.io
 0.0.0.0 app.satismeter.com
 0.0.0.0 appdomain.cloud
+0.0.0.0 applepay.cdn-apple.com
 0.0.0.0 applicationinsights.azure.cn
 0.0.0.0 applicationinsights.azure.us
 0.0.0.0 applicationinsights.io
@@ -110,7 +110,6 @@
 0.0.0.0 assets.adobedtm.com
 0.0.0.0 assets.mozilla.net
 0.0.0.0 assets.msn.com
-0.0.0.0 assets.orb.alkamitech.com
 0.0.0.0 at.cbsi.com
 0.0.0.0 atdmt.com
 0.0.0.0 auth-cloudfront.prod.ims.adobejanus.com
@@ -173,6 +172,7 @@
 0.0.0.0 cdn.mwbsys.com
 0.0.0.0 cdn.neverbounce.com
 0.0.0.0 cdn.quantummetric.com
+0.0.0.0 cdn.rollbar.com
 0.0.0.0 cdn.rudderlabs.com
 0.0.0.0 cdn.segment.com
 0.0.0.0 cdn.shopify.com
@@ -284,6 +284,7 @@
 0.0.0.0 dnsbl.test.api.braintreegateway.com
 0.0.0.0 dnsbl.test.api.content-ad.net
 0.0.0.0 dnsbl.test.api.content-ad.net.home.arpa
+0.0.0.0 dnsbl.test.api.glia.com
 0.0.0.0 dnsbl.test.api.privateinternetaccess.com
 0.0.0.0 dnsbl.test.api.privateinternetaccess.com.home.arpa
 0.0.0.0 dnsbl.test.api.rudderlabs.com
@@ -303,11 +304,13 @@
 0.0.0.0 dnsbl.test.auth.split.io
 0.0.0.0 dnsbl.test.bat.bing.com
 0.0.0.0 dnsbl.test.bat.bing.net
+0.0.0.0 dnsbl.test.bcdn-god.we-stats.com
 0.0.0.0 dnsbl.test.beacon.riskified.com
 0.0.0.0 dnsbl.test.browser-intake-datadoghq.com
 0.0.0.0 dnsbl.test.browser-intake-datadoghq.com.home.arpa
 0.0.0.0 dnsbl.test.c.bing.com
 0.0.0.0 dnsbl.test.cdn-scripts.signifyd.com
+0.0.0.0 dnsbl.test.cdn.optimizely.com
 0.0.0.0 dnsbl.test.cdn.prod.metrics.imdb.com
 0.0.0.0 dnsbl.test.clienttracing-pa.googleapis.com
 0.0.0.0 dnsbl.test.collector.github.com.home.arpa
@@ -339,6 +342,7 @@
 0.0.0.0 dnsbl.test.googleads.g.doubleclick.net.home.arpa
 0.0.0.0 dnsbl.test.growthbook-api.production.aircall.tech
 0.0.0.0 dnsbl.test.growthbook-api.production.aircall.tech.home.arpa
+0.0.0.0 dnsbl.test.h.online-metrix.net
 0.0.0.0 dnsbl.test.hexagon-analytics.com
 0.0.0.0 dnsbl.test.hub.samsungapps.com
 0.0.0.0 dnsbl.test.hub.samsungapps.com.home.arpa
@@ -346,7 +350,9 @@
 0.0.0.0 dnsbl.test.incoming.telemetry.mozilla.org
 0.0.0.0 dnsbl.test.insights-collector.newrelic.com
 0.0.0.0 dnsbl.test.insights-collector.newrelic.com.home.arpa
+0.0.0.0 dnsbl.test.jelly.mdhv.io
 0.0.0.0 dnsbl.test.jnn-pa.googleapis.com
+0.0.0.0 dnsbl.test.js.alpixtrack.com
 0.0.0.0 dnsbl.test.js.hubspotfeedback.com
 0.0.0.0 dnsbl.test.location.services.mozilla.com
 0.0.0.0 dnsbl.test.locationhistoryplacedetails-pa.googleapis.com
@@ -386,7 +392,9 @@
 0.0.0.0 dnsbl.test.sdk.fra-01.braze.eu
 0.0.0.0 dnsbl.test.sdk.mrf.io
 0.0.0.0 dnsbl.test.sdk.split.io
+0.0.0.0 dnsbl.test.seal-westflorida.bbb.org
 0.0.0.0 dnsbl.test.shepherd.avcdn.net
+0.0.0.0 dnsbl.test.snowplow-collector.dataplatform.appfolio.net
 0.0.0.0 dnsbl.test.sponge.creditkarma.com
 0.0.0.0 dnsbl.test.spot-pa.googleapis.com
 0.0.0.0 dnsbl.test.star-randsrv.bsg.brave.com
@@ -398,6 +406,7 @@
 0.0.0.0 dnsbl.test.styles.redditmedia.com.home.arpa
 0.0.0.0 dnsbl.test.telemetry.split.io
 0.0.0.0 dnsbl.test.telemetry.split.io.home.arpa
+0.0.0.0 dnsbl.test.tenant-content.apm.appfolio-analytics.com
 0.0.0.0 dnsbl.test.underarmourhelp.zendesk.com
 0.0.0.0 dnsbl.test.update.googleapis.com
 0.0.0.0 dnsbl.test.update.googleapis.com.home.arpa
@@ -423,6 +432,7 @@
 0.0.0.0 dnsbl.test.www.bing.com
 0.0.0.0 dnsbl.test.www.clarity.ms
 0.0.0.0 dnsbl.test.www.clarity.ms.home.arpa
+0.0.0.0 dnsbl.test.www.datadoghq-browser-agent.com
 0.0.0.0 dnsbl.test.www.googleadservices.com
 0.0.0.0 dnsbl.test.www.googletagmanager.com
 0.0.0.0 dnsbl.test.www.msn.com
@@ -446,6 +456,7 @@
 0.0.0.0 edgeassetservice.afd.azureedge.net
 0.0.0.0 edgeassetservice.azureedge.net
 0.0.0.0 eerospeedtests.com
+0.0.0.0 emails.achievacu.com
 0.0.0.0 embed.polymarket.com
 0.0.0.0 emltrk.com
 0.0.0.0 emoji.redditmedia.com
@@ -478,13 +489,11 @@
 0.0.0.0 firebaseinstallations.googleapis.com
 0.0.0.0 firebaselogging-pa.googleapis.com
 0.0.0.0 firebaselogging.googleapis.com
-0.0.0.0 firebaseremoteconfig.googleapis.com
 0.0.0.0 firefox-settings-attachments.cdn.mozilla.net
 0.0.0.0 firefox.com
 0.0.0.0 firefox.settings.services.mozilla.com
 0.0.0.0 flashtalking.com
 0.0.0.0 flightview.com
-0.0.0.0 fls-na.amazon.com
 0.0.0.0 footprints-pa.googleapis.com
 0.0.0.0 forter.com
 0.0.0.0 fpjs.io
@@ -579,9 +588,9 @@
 0.0.0.0 ipv6.msftncsi.com
 0.0.0.0 iris-de-prod-azsc-v2-neu.northeurope.cloudapp.azure.com
 0.0.0.0 iris-ro.mwbsys-prod.com
-0.0.0.0 iris.alkamitech.com
 0.0.0.0 iris.mwbsys.com
 0.0.0.0 iterable.com
+0.0.0.0 jelly.mdhv.io
 0.0.0.0 js-agent.newrelic.com
 0.0.0.0 js-sec.indexww.com
 0.0.0.0 js.chilipiper.com
@@ -649,6 +658,7 @@
 0.0.0.0 ngx.download.nvidia.com
 0.0.0.0 nineapp.net
 0.0.0.0 npr.org
+0.0.0.0 nrw3iqu.x.incapdns.net
 0.0.0.0 o1069899.ingest.sentry.io
 0.0.0.0 o1383653.ingest.sentry.io
 0.0.0.0 o17585.ingest.sentry.io
@@ -749,6 +759,8 @@
 0.0.0.0 res-1.public.onecdn.static.microsoft
 0.0.0.0 res-ocdi-stls-prod.edgesuite.net
 0.0.0.0 res.public.onecdn.static.microsoft
+0.0.0.0 resource.digitalinsight.com
+0.0.0.0 resource.digitalinsight.com.cdn.cloudflare.net
 0.0.0.0 rewards.bing.com
 0.0.0.0 rezvorck.github.io
 0.0.0.0 rileyrichter.github.io
@@ -793,6 +805,7 @@
 0.0.0.0 sdk-api-v1.singular.net
 0.0.0.0 sdk.privacy-center.org
 0.0.0.0 sdk.waze.com
+0.0.0.0 seal-westflorida.bbb.org
 0.0.0.0 secure.gravatar.com
 0.0.0.0 securepubads.g.doubleclick.net
 0.0.0.0 segment.com
