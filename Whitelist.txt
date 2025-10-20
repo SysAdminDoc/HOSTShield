@@ -1,593 +1,684 @@
-
-
-0.0.0.0 1337x.to
-0.0.0.0 1a-1791.com
-0.0.0.0 2-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com
-0.0.0.0 2.tlu.dl.delivery.mp.microsoft.com
-0.0.0.0 5-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com
-0.0.0.0 5196634.cdnp1.hubspotusercontent-na1.net
-0.0.0.0 6-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com
-0.0.0.0 a.4cdn.org
-0.0.0.0 a.thumbs.redditmedia.com
-0.0.0.0 aapi.shouldianswer.net
-0.0.0.0 ab.chatgpt.com
-0.0.0.0 abs-0.twimg.com
-0.0.0.0 abs.twimg.com
-0.0.0.0 accounts.google.com
-0.0.0.0 accounts.spotify.com
-0.0.0.0 accounts.youtube.com
-0.0.0.0 activision.com
-0.0.0.0 adaway.org
-0.0.0.0 addons-pa.clients6.google.com
-0.0.0.0 addons-pa.googleapis.com
-0.0.0.0 aircall.io
-0.0.0.0 airspace-cdn.acmeaom.com
-0.0.0.0 ajax.googleapis.com
-0.0.0.0 amazonaws.com
-0.0.0.0 amd-infra.itunes.apple.com
-0.0.0.0 amp-api-edge.apps.apple.com
-0.0.0.0 amp-api-search-edge.apps.apple.com
-0.0.0.0 amp-api-updates.apps.apple.com
-0.0.0.0 amp-api.apps.apple.com
-0.0.0.0 amp-api.media.apple.com
-0.0.0.0 android.apis.google.com
-0.0.0.0 android.googleapis.com
-0.0.0.0 api-edge.apps.apple.com
-0.0.0.0 api-env.dropbox-dns.com
-0.0.0.0 api-na1.hubspot.com
-0.0.0.0 api-partner.spotify.com
-0.0.0.0 api-tvclient-sc1.azurewebsites.net
-0.0.0.0 api-user.e2ro.com
-0.0.0.0 api.amazon.com
-0.0.0.0 api.apps.apple.com
-0.0.0.0 api.artlist.io
-0.0.0.0 api.bitwarden.com
-0.0.0.0 api.cdnplanet.com
-0.0.0.0 api.dropbox.com
-0.0.0.0 api.github.com
-0.0.0.0 api.hubspot.com
-0.0.0.0 api.jdownloader.org
-0.0.0.0 api.nextdns.io
-0.0.0.0 api.revanced.app
-0.0.0.0 api.steampowered.com
-0.0.0.0 api.topaz-labs.net
-0.0.0.0 api.topazlabs.com
-0.0.0.0 api.twitter.com
-0.0.0.0 api.twitter.com.cdn.cloudflare.net
-0.0.0.0 api.x.com
-0.0.0.0 api.x.com.cdn.cloudflare.net
-0.0.0.0 api2.hcaptcha.com
-0.0.0.0 apis.google.com
-0.0.0.0 app-api-us.dreo-tech.com
-0.0.0.0 app-site-association.cdn-apple.com
-0.0.0.0 app.adaway.org
-0.0.0.0 app.hubspot.com
-0.0.0.0 apple-relay.cloudflare.com
-0.0.0.0 apps.itunes-nocookie.com
-0.0.0.0 appsgenaiserver-pa.clients6.google.com
-0.0.0.0 appsgenaiserver-pa.googleapis.com
-0.0.0.0 appx.transient.amazon.com
-0.0.0.0 apt.izzysoft.de
-0.0.0.0 archive.org
-0.0.0.0 artgrid.imgix.net
-0.0.0.0 artlist-content-images.imgix.net
-0.0.0.0 artlist-dev.imgix.net
-0.0.0.0 artlist.io
-0.0.0.0 assets.aircall.io
-0.0.0.0 audio-cf.spotifycdn.com
-0.0.0.0 audio-cf.spotifycdn.com.cdn.cloudflare.net
-0.0.0.0 auth.split.io
-0.0.0.0 avatars.githubusercontent.com
-0.0.0.0 avatars.hubspot.net
-0.0.0.0 azorult-tracker.net
-0.0.0.0 b-graph.facebook.com
-0.0.0.0 b.thumbs.redditmedia.com
-0.0.0.0 bag.itunes.apple.com
-0.0.0.0 banking.achievacu.com
-0.0.0.0 bcw-media.s3.ap-northeast-1.amazonaws.com
-0.0.0.0 binarydefense.com
-0.0.0.0 blacklist.tampermonkey.net
-0.0.0.0 blobcomments-pa.clients6.google.com
-0.0.0.0 blocklist.greensnow.co
-0.0.0.0 boards.4chan.org
-0.0.0.0 bolt.dropbox.com
-0.0.0.0 botscout.com
-0.0.0.0 byteeffecttos-g.com
-0.0.0.0 c.pki.goog
-0.0.0.0 calendar.google.com
-0.0.0.0 callofduty.com
-0.0.0.0 camo.githubusercontent.com
-0.0.0.0 canvaz.scdn.co
-0.0.0.0 carrierbundle.itunes.apple.com
-0.0.0.0 catppuccin.com
-0.0.0.0 cdn-v4.amp-endpoint3.com
-0.0.0.0 cdn-v6.amp-endpoint3.com
-0.0.0.0 cdn.ecosia.org
-0.0.0.0 cdn.ecosia.org.cdn.cloudflare.net
-0.0.0.0 cdn.embed.ly.cdn.cloudflare.net
-0.0.0.0 cdn.embedly.com
-0.0.0.0 cdn.jsdelivr.net
-0.0.0.0 cdn.jsdelivr.net.cdn.cloudflare.net
-0.0.0.0 cdn.native.creditkarma.com
-0.0.0.0 cdn.oaistatic.com
-0.0.0.0 cdn.search.brave.com
-0.0.0.0 cdn.shopify.com
-0.0.0.0 cdn.sift.com
-0.0.0.0 cdn.smootify.io
-0.0.0.0 cdnplanet.com
-0.0.0.0 cdp.geotrust.com
-0.0.0.0 cds.apple.com
-0.0.0.0 cdsassets.apple.com
-0.0.0.0 challenges.cloudflare.com
-0.0.0.0 chat-e2ee-mini.facebook.com
-0.0.0.0 chat.google.com
-0.0.0.0 chatgpt.com
-0.0.0.0 chunderm.gll.twilio.com
-0.0.0.0 ci3.googleusercontent.com
-0.0.0.0 cinsarmy.com
-0.0.0.0 cl3.apple.com
-0.0.0.0 cl4.apple.com
-0.0.0.0 client-env.dropbox-dns.com
-0.0.0.0 client.dropbox.com
-0.0.0.0 client.teamviewer.com
-0.0.0.0 clientconfig.akamai.steamstatic.com
-0.0.0.0 clients2.google.com
-0.0.0.0 clients3.google.com
-0.0.0.0 clients6.google.com
-0.0.0.0 clientservices.googleapis.com
-0.0.0.0 cloudidentity.googleapis.com
-0.0.0.0 cms-public-artifacts.artlist.io
-0.0.0.0 cname.vercel-dns.com
-0.0.0.0 cod-assets.cdn.callofduty.com
-0.0.0.0 community.steamstatic.com
-0.0.0.0 completion.amazon.com
-0.0.0.0 configuration.apple.com
-0.0.0.0 configuration.ls.apple.com
-0.0.0.0 connectivitycheck.gstatic.com
-0.0.0.0 console.aws.amazon.com
-0.0.0.0 contacts.google.com
-0.0.0.0 content-autofill.googleapis.com
-0.0.0.0 content.googleapis.com
-0.0.0.0 contribution.usercontent.google.com
-0.0.0.0 cp801.prod.do.dsp.mp.microsoft.com
-0.0.0.0 crl3.digicert.com
-0.0.0.0 crxdownload.brave.com
-0.0.0.0 cryptauthdevicesync.googleapis.com
-0.0.0.0 ctldl.windowsupdate.com
-0.0.0.0 cyclones.acmeaom.com
-0.0.0.0 d56vh6ph4jjmq.cloudfront.net
-0.0.0.0 danger.rulez.sk
-0.0.0.0 dashboard-extensions.aircall.io
-0.0.0.0 dashboard.aircall.io
-0.0.0.0 data.amazon.com
-0.0.0.0 daylist.spotifycdn.com
-0.0.0.0 dcape-na.amazon.com
-0.0.0.0 dearrow-thumb.ajay.app
-0.0.0.0 deepmind.google
-0.0.0.0 demonware.net
-0.0.0.0 device-config.pcms.apple.com
-0.0.0.0 deviceintegritytokens-pa.googleapis.com
-0.0.0.0 discover-pa.googleapis.com
-0.0.0.0 displaycatalog.mp.microsoft.com
-0.0.0.0 dl.delivery.mp.microsoft.com
-0.0.0.0 dnsbl.test.quakes.acmeaom.com
-0.0.0.0 docs.google.com
-0.0.0.0 doordash.com
-0.0.0.0 downloads.topazlabs.com
-0.0.0.0 dreo-tech.com
-0.0.0.0 drive-thirdparty.googleusercontent.com
-0.0.0.0 drive.google.com
-0.0.0.0 drive.usercontent.google.com
-0.0.0.0 drivefrontend-pa.clients6.google.com
-0.0.0.0 dualstack.n.sni.us-eu.fastly.net
-0.0.0.0 duckduckgo.com
-0.0.0.0 easylist-downloads.adblockplus.org
-0.0.0.0 easylist.to
-0.0.0.0 edge-block-previews-env.dropbox-dns.com
-0.0.0.0 edge-chat.facebook.com
-0.0.0.0 edge-mqtt-fallback.facebook.com
-0.0.0.0 edge-mqtt.facebook.com
-0.0.0.0 electron.aircall.io
-0.0.0.0 embedded.creditkarma.com
-0.0.0.0 en.wikipedia.org
-0.0.0.0 encrypted-tbn0.gstatic.com
-0.0.0.0 encrypted-tbn1.gstatic.com
-0.0.0.0 encrypted-tbn2.gstatic.com
-0.0.0.0 encrypted-tbn3.gstatic.com
-0.0.0.0 entitlements.itunes.apple.com
-0.0.0.0 enumer.org
-0.0.0.0 etc-content.acmeaom.com
-0.0.0.0 etc.acmeaom.com
-0.0.0.0 ews.netgate.com
-0.0.0.0 exceptions.hubspot.com
-0.0.0.0 external-ord5-2.xx.fbcdn.net
-0.0.0.0 f-droid.org
-0.0.0.0 f.vimeocdn.com
-0.0.0.0 facebook.com
-0.0.0.0 favicons.nextdns.io
-0.0.0.0 fe3cr.delivery.mp.microsoft.com
-0.0.0.0 feodotracker.abuse.ch
-0.0.0.0 file-upload.org
-0.0.0.0 filters.adtidy.org
-0.0.0.0 firebaseremoteconfigrealtime.googleapis.com
-0.0.0.0 fonts.googleapis.com
-0.0.0.0 fonts.gstatic.com
-0.0.0.0 footage-private.imgix.net
-0.0.0.0 forecast.acmeaom.com
-0.0.0.0 fp.msedge.net
-0.0.0.0 frontier.tiktokv.us
-0.0.0.0 futureradar.acmeaom.com
-0.0.0.0 gateway.facebook.com
-0.0.0.0 gateway.icloud.com
-0.0.0.0 gcs-us-00003.content-storage-upload.googleapis.com
-0.0.0.0 gdmf-ados.apple.com
-0.0.0.0 gdmf.apple.com
-0.0.0.0 gemini.google.com
-0.0.0.0 genesis.stun.eu.demonware.net
-0.0.0.0 geo.prod.do.dsp.mp.microsoft.com
-0.0.0.0 geotrust.com
-0.0.0.0 gist.githubusercontent.com
-0.0.0.0 github-cloud.s3.amazonaws.com
-0.0.0.0 github.com
-0.0.0.0 github.githubassets.com
-0.0.0.0 global.a.fallback.hubspot.cluster.ably-realtime.com
-0.0.0.0 global.b.fallback.hubspot.cluster.ably-realtime.com
-0.0.0.0 global.c.fallback.hubspot.cluster.ably-realtime.com
-0.0.0.0 global.d.fallback.hubspot.cluster.ably-realtime.com
-0.0.0.0 global.e.fallback.hubspot.cluster.ably-realtime.com
-0.0.0.0 global.stun.twilio.com
-0.0.0.0 google.com
-0.0.0.0 googlevideo.com
-0.0.0.0 gql-fed.reddit.com
-0.0.0.0 graph-fallback.facebook.com
-0.0.0.0 graph.facebook.com
-0.0.0.0 graph.fbpigeon.com
-0.0.0.0 grok.com
-0.0.0.0 gsa.apple.com
-0.0.0.0 gsas.apple.com
-0.0.0.0 gsp-ssl.ls.apple.com
-0.0.0.0 gsp10-ssl.apple.com
-0.0.0.0 gsp36-ssl.ls.apple.com
-0.0.0.0 gsp51-ssl.ls.apple.com
-0.0.0.0 gsp57-ssl-revgeo.ls.apple.com
-0.0.0.0 gsp64-ssl.ls.apple.com
-0.0.0.0 gspe19-ssl.ls.apple.com
-0.0.0.0 gspe21-ssl.ls.apple.com
-0.0.0.0 gspe35-ssl.ls.apple.com
-0.0.0.0 gspe79-ssl.ls.apple.com
-0.0.0.0 gspe85-ssl.ls.apple.com
-0.0.0.0 gue1-spclient.spotify.com
-0.0.0.0 guzzoni.apple.com
-0.0.0.0 hapi.teamviewer.com
-0.0.0.0 hdradcache.acmeaom.com
-0.0.0.0 heads-fa-tls13.spotifycdn.com
-0.0.0.0 hubspot-na1-a-fallback.ably-realtime.com
-0.0.0.0 hubspot-na1-b-fallback.ably-realtime.com
-0.0.0.0 hubspot-na1-c-fallback.ably-realtime.com
-0.0.0.0 hubspot-na1-d-fallback.ably-realtime.com
-0.0.0.0 hubspot-na1-e-fallback.ably-realtime.com
-0.0.0.0 hubspot-na1-realtime.ably.io
-0.0.0.0 hubspot-na1-rest.ably.io
-0.0.0.0 hubspot-na1.a.fallback.ably-realtime.com
-0.0.0.0 hubspot-na1.b.fallback.ably-realtime.com
-0.0.0.0 hubspot-na1.c.fallback.ably-realtime.com
-0.0.0.0 hubspot-na1.d.fallback.ably-realtime.com
-0.0.0.0 hubspot-na1.e.fallback.ably-realtime.com
-0.0.0.0 hubspot-na1.realtime.ably.net
-0.0.0.0 hubspot.com
-0.0.0.0 hubspotusercontent-na1.net
-0.0.0.0 i.4cdn.org
-0.0.0.0 i.ibb.co
-0.0.0.0 i.imgur.com
-0.0.0.0 i.postimg.cc
-0.0.0.0 i.scdn.co
-0.0.0.0 i.vimeocdn.com
-0.0.0.0 i.ytimg.com
-0.0.0.0 ibyteimg.com
-0.0.0.0 icons.bitwarden.net
-0.0.0.0 id.aircall.io
-0.0.0.0 identity.bitwarden.com
-0.0.0.0 identity.mapmyfitness.com
-0.0.0.0 images-na.ssl-images-amazon.com
-0.0.0.0 imap.gmail.com
-0.0.0.0 img.youtube.com
-0.0.0.0 inbox.google.com
-0.0.0.0 ingest.datax.activision.com
-0.0.0.0 init-p01md.apple.com
-0.0.0.0 init.ess.apple.com
-0.0.0.0 init.gc.apple.com
-0.0.0.0 init.itunes.apple.com
-0.0.0.0 init.push.apple.com
-0.0.0.0 instantmessaging-pa-jms-us.googleapis.com
-0.0.0.0 instantmessaging-pa.googleapis.com
-0.0.0.0 internal-api.aircall.io
-0.0.0.0 internal-mobile.aircall.io
-0.0.0.0 internal.aircall.io
-0.0.0.0 iosantiabuse-pa.googleapis.com
-0.0.0.0 iot.dreo-cloud.com
-0.0.0.0 ipcdn.apple.com
-0.0.0.0 ipcheck0.jdownloader.org
-0.0.0.0 iphone-ld.apple.com
-0.0.0.0 ipv4only.arpa
-0.0.0.0 is1-ssl.mzstatic.com
-0.0.0.0 isc.sans.edu
-0.0.0.0 itunes.apple.com
-0.0.0.0 jsdelivr.map.fastly.net
-0.0.0.0 kv801.prod.do.dsp.mp.microsoft.com
-0.0.0.0 lf16-effectcdn.byteeffecttos-g.com
-0.0.0.0 lh3.google.com
-0.0.0.0 lh3.googleusercontent.com
-0.0.0.0 lists.blocklist.de
-0.0.0.0 lookaside.facebook.com
-0.0.0.0 m.media-amazon.com
-0.0.0.0 m.stripe.com
-0.0.0.0 mail-api.proton.me
-0.0.0.0 mail-attachment.googleusercontent.com
-0.0.0.0 mail.google.com
-0.0.0.0 malware-filter.gitlab.io
-0.0.0.0 map2.acmeaom.com
-0.0.0.0 maps.googleapis.com
-0.0.0.0 maxmind.com
-0.0.0.0 mbz100.bitwarden.map.fastly.net
-0.0.0.0 meetings.googleapis.com
-0.0.0.0 messages.google.com
-0.0.0.0 mesu.apple.com
-0.0.0.0 mobile-api.mapmyfitness.com
-0.0.0.0 mobile.facebook.com
-0.0.0.0 mon16-normal-useast5.tiktokv.us
-0.0.0.0 mqtts-us.dreo-cloud.com
-0.0.0.0 msh.amazon.com
-0.0.0.0 mtalk.google.com
-0.0.0.0 music.youtube.com
-0.0.0.0 musicstatus.itunes.apple.com
-0.0.0.0 my.nextdns.io
-0.0.0.0 myip.ms
-0.0.0.0 myradar-readonly.acmeaom.com
-0.0.0.0 myshopify.com
-0.0.0.0 na1.hubspot-logos.com
-0.0.0.0 netcts.cdn-apple.com
-0.0.0.0 netgate.com
-0.0.0.0 netmon-control.dropbox.com
-0.0.0.0 newassets.hcaptcha.com
-0.0.0.0 news.ycombinator.com
-0.0.0.0 nextdns.forumbee.com
-0.0.0.0 nextdns.io
-0.0.0.0 ngx-v4.amp-endpoint2.com
-0.0.0.0 ngx-v6.amp-endpoint2.com
-0.0.0.0 node.e2ro.com
-0.0.0.0 north-america.pool.ntp.org
-0.0.0.0 nsf-3.dropbox.com
-0.0.0.0 nsf-env-3.dropbox-dns.com
-0.0.0.0 o.pki.goog
-0.0.0.0 oauth2.googleapis.com
-0.0.0.0 oauthaccountmanager.googleapis.com
-0.0.0.0 obs.acmeaom.com
-0.0.0.0 ocsp.comodoca.com.cdn.cloudflare.net
-0.0.0.0 ocsp.digicert.com
-0.0.0.0 ocsp.digicert.com.cdn.cloudflare.net
-0.0.0.0 ocsp.edge.digicert.com
-0.0.0.0 ocsp.rootca1.amazontrust.com
-0.0.0.0 ocsp.sectigo.com
-0.0.0.0 ocsp.usertrust.com
-0.0.0.0 ocsp2.apple.com
-0.0.0.0 ogs.google.com
-0.0.0.0 old.reddit.com
-0.0.0.0 ondevicesafety-pa.googleapis.com
-0.0.0.0 ontology.health.apple.com
-0.0.0.0 outlook.office.com
-0.0.0.0 p131-caldav.icloud.com
-0.0.0.0 p131-escrowproxy.icloud.com
-0.0.0.0 p131-fmf.icloud.com
-0.0.0.0 p19-oec-va.ibyteimg.com
-0.0.0.0 p2p-ord1.discovery.steamserver.net
-0.0.0.0 pancake.apple.com
-0.0.0.0 path3.xtracloud.net
-0.0.0.0 pbs.twimg.com
-0.0.0.0 pbs.twimg.com.cdn.cloudflare.net
-0.0.0.0 pd.itunes.apple.com
-0.0.0.0 pds-init.ess.apple.com
-0.0.0.0 pds.ess.apple.com
-0.0.0.0 people-pa.clients6.google.com
-0.0.0.0 people-pa.googleapis.com
-0.0.0.0 peoplestack-pa.clients6.google.com
-0.0.0.0 peoplestack-pa.googleapis.com
-0.0.0.0 pfsense-plus-pkg01.atx.netgate.com
-0.0.0.0 pgl.yoyo.org
-0.0.0.0 photos-thumb.dropbox.com
-0.0.0.0 pickasso.spotifycdn.com
-0.0.0.0 pinimg.com
-0.0.0.0 pki-goog.l.google.com
-0.0.0.0 play-fe.googleapis.com
-0.0.0.0 play.google.com
-0.0.0.0 play.googleapis.com
-0.0.0.0 playatoms-pa.googleapis.com
-0.0.0.0 player.vimeo.com
-0.0.0.0 player.vimeo.com.cdn.cloudflare.net
-0.0.0.0 pool.ntp.org
-0.0.0.0 preview.redd.it
-0.0.0.0 private-user-images.githubusercontent.com
-0.0.0.0 prod-dynamite-prod-08-us-signaler-pa.clients6.google.com
-0.0.0.0 prod.cdni.callofduty.com
-0.0.0.0 production-filterlist-delivery.easylist-downloads.adblockplus.org.edgesuite.net
-0.0.0.0 production-pdx-555773567328-web-recordings.s3.us-west-2.amazonaws.com
-0.0.0.0 profile.gc.apple.com
-0.0.0.0 publicassets.cdn-apple.com
-0.0.0.0 push.clients6.google.com
-0.0.0.0 query.ess.apple.com
-0.0.0.0 r13.c.lencr.org
-0.0.0.0 raw.githubusercontent.com
-0.0.0.0 raymondhill.net
-0.0.0.0 rcs-acs-tmo-us.jibe.google.com
-0.0.0.0 reddit-image.s3.amazonaws.com
-0.0.0.0 reddit.com
-0.0.0.0 redditstatic.s3.amazonaws.com
-0.0.0.0 release-assets.githubusercontent.com
-0.0.0.0 reputation.alienvault.com
-0.0.0.0 reputation.alienvault.io
-0.0.0.0 router5.teamviewer.com
-0.0.0.0 rr3---sn-vgqskne6.c.drive.google.com
-0.0.0.0 rules.emergingthreats.net
-0.0.0.0 rumble.com
-0.0.0.0 s-gke-usc1-nssi3-16.firebaseio.com
-0.0.0.0 s.4cdn.org
-0.0.0.0 s.mzstatic.com
-0.0.0.0 s.w-x.co
-0.0.0.0 s.ytimg.com
-0.0.0.0 s3.amazonaws.com
-0.0.0.0 safety-alert.apple.com
-0.0.0.0 scdn.co
-0.0.0.0 scontent-mia3-1.xx.fbcdn.net
-0.0.0.0 scontent-ord5-1.xx.fbcdn.net
-0.0.0.0 scontent-ord5-2.xx.fbcdn.net
-0.0.0.0 scontent-ord5-3.xx.fbcdn.net
-0.0.0.0 scontent.xx.fbcdn.net
-0.0.0.0 sdk.split.io
-0.0.0.0 sdmntprwestus.oaiusercontent.com
-0.0.0.0 se-edge.itunes.apple.com
-0.0.0.0 searchnotifications-pa.googleapis.com
-0.0.0.0 secure.fanboy.co.nz
-0.0.0.0 securetoken.googleapis.com
-0.0.0.0 sendbird.com
-0.0.0.0 setup.icloud.com
-0.0.0.0 sf-api-token-service.itunes.apple.com
-0.0.0.0 shared.steamstatic.com
-0.0.0.0 shared.valve.map.fastly.net
-0.0.0.0 signaler-pa.clients6.google.com
-0.0.0.0 silverbullet-external-ats.itunes.apple.com
-0.0.0.0 slscr.update.microsoft.com
-0.0.0.0 smp-device-content.apple.com
-0.0.0.0 spclient.wg.spotify.com
-0.0.0.0 speedysub.itunes.apple.com
-0.0.0.0 split.map.fastly.net
-0.0.0.0 sponsor.ajay.app
-0.0.0.0 spotify.com
-0.0.0.0 spotifycdn.com
-0.0.0.0 sse-ws-p189.apple.com
-0.0.0.0 ssl.gstatic.com
-0.0.0.0 sslbl.abuse.ch
-0.0.0.0 startpage.com
-0.0.0.0 static-ord5-2.xx.fbcdn.net
-0.0.0.0 static.gc.apple.com
-0.0.0.0 static.hsappstatic.net
-0.0.0.0 static.xx.fbcdn.net
-0.0.0.0 status.geotrust.com
-0.0.0.0 steamcommunity.com
-0.0.0.0 steamserver.net
-0.0.0.0 steamstatic.com
-0.0.0.0 storage.googleapis.com
-0.0.0.0 store.akamai.steamstatic.com
-0.0.0.0 store.steampowered.com
-0.0.0.0 storecatalogrevocation.storequality.microsoft.com
-0.0.0.0 storeedgefd.dsx.mp.microsoft.com
-0.0.0.0 stripe.com
-0.0.0.0 stripe.network
-0.0.0.0 support.microsoft.com
-0.0.0.0 swallow.apple.com
-0.0.0.0 swift-backup-31751.firebaseio.com
-0.0.0.0 sync.itunes.apple.com
-0.0.0.0 sys.4chan.org
-0.0.0.0 t.co
-0.0.0.0 t0.gstatic.com
-0.0.0.0 t1.gstatic.com
-0.0.0.0 t2.gstatic.com
-0.0.0.0 t3.gstatic.com
-0.0.0.0 talosintelligence.com
-0.0.0.0 taskassist-pa.googleapis.com
-0.0.0.0 teamviewer.com
-0.0.0.0 test.steampowered.com
-0.0.0.0 tiktok.com
-0.0.0.0 tiktokcdn-us.com
-0.0.0.0 tiktokcdn.com
-0.0.0.0 tiktokv.com
-0.0.0.0 tiktokv.us
-0.0.0.0 tiktokw.us
-0.0.0.0 time.apple.com
-0.0.0.0 tracker.leechers-paradise.org
-0.0.0.0 translate.brave.com
-0.0.0.0 tsfe.trafficshaping.dsp.mp.microsoft.com
-0.0.0.0 twilio.com
-0.0.0.0 twitter.com
-0.0.0.0 ublockorigin.github.io
-0.0.0.0 ublockorigin.pages.dev
-0.0.0.0 update.greasyfork.org
-0.0.0.0 update.jdownloader.org
-0.0.0.0 updates.cdn-apple.com
-0.0.0.0 us-iad-gcp-r002.router.teamviewer.com
-0.0.0.0 us-mia-anx-r007.router.teamviewer.com
-0.0.0.0 user-images.githubusercontent.com
-0.0.0.0 v.redd.it
-0.0.0.0 valid.apple.com
-0.0.0.0 vanced.to
-0.0.0.0 veai-models.topazlabs.com
-0.0.0.0 vercel-dns.com
-0.0.0.0 video-akpcw.spotifycdn.com
-0.0.0.0 video-ord5-1.xx.fbcdn.net
-0.0.0.0 video-ord5-2.xx.fbcdn.net
-0.0.0.0 video-ord5-3.xx.fbcdn.net
-0.0.0.0 video.google.com
-0.0.0.0 video.twimg.com
-0.0.0.0 video.twimg.com.cdn.cloudflare.net
-0.0.0.0 voice-js.roaming.twilio.com
-0.0.0.0 vupload-edge.facebook.com
-0.0.0.0 waa-pa.clients6.google.com
-0.0.0.0 wayback-api.archive.org
-0.0.0.0 web-chat-e2ee.facebook.com
-0.0.0.0 web-fallback.facebook.com
-0.0.0.0 web-static.archive.org
-0.0.0.0 web.facebook.com
-0.0.0.0 whoami.akamai.net
-0.0.0.0 winhelp2002.mvps.org
-0.0.0.0 wonderland.rulez.sk
-0.0.0.0 workspace.aircall.io
-0.0.0.0 workspace.google.com
-0.0.0.0 workspacevideo-pa.clients6.google.com
-0.0.0.0 wpad.home.arpa
-0.0.0.0 wps.apple.com
-0.0.0.0 ws-us3.pusher.com
-0.0.0.0 wsb-us.dreo-tech.com
-0.0.0.0 www-env.dropbox-dns.com
-0.0.0.0 www.amazon.com
-0.0.0.0 www.android.googleapis.com
-0.0.0.0 www.api.artlist.io
-0.0.0.0 www.botvrij.eu
-0.0.0.0 www.callofduty.com
-0.0.0.0 www.cdnplanet.com
-0.0.0.0 www.chromium.org
-0.0.0.0 www.community.steamstatic.com
-0.0.0.0 www.dreo-tech.com
-0.0.0.0 www.dropbox.com
-0.0.0.0 www.elevenforum.com
-0.0.0.0 www.encrypted-tbn0.gstatic.com
-0.0.0.0 www.facebook.com
-0.0.0.0 www.fbsbx.com
-0.0.0.0 www.file-upload.org
-0.0.0.0 www.ghacks.net
-0.0.0.0 www.godlikeproductions.com
-0.0.0.0 www.google.com
-0.0.0.0 www.googleapis.com
-0.0.0.0 www.graph.fbpigeon.com
-0.0.0.0 www.gstatic.com
-0.0.0.0 www.ipspamlist.com
-0.0.0.0 www.maxmind.com
-0.0.0.0 www.msftconnecttest.com
-0.0.0.0 www.python.org
-0.0.0.0 www.qwant.com
-0.0.0.0 www.reddit.com
-0.0.0.0 www.redditmedia.com
-0.0.0.0 www.redditstatic.com
-0.0.0.0 www.spamhaus.org
-0.0.0.0 www.spamhaus.org.cdn.cloudflare.net
-0.0.0.0 www.steamcommunity.com
-0.0.0.0 www.store.akamai.steamstatic.com
-0.0.0.0 www.store.steampowered.com
-0.0.0.0 www.tenforums.com
-0.0.0.0 www.youtube.com
-0.0.0.0 x.com
-0.0.0.0 x1.c.lencr.org
-0.0.0.0 xpui.app.spotify.com
-0.0.0.0 youtube.com
-0.0.0.0 youtube.googleapis.com
-0.0.0.0 youtubei.googleapis.com
-0.0.0.0 yt3.ggpht.com
-0.0.0.0 yt3.googleusercontent.com
-0.0.0.0 yt4.ggpht.com
+0.amazon.pool.ntp.org
+1.amazon.pool.ntp.org
+1.datadog.pool.ntp.org
+1337x.to
+1a-1791.com
+1d.tlu.dl.delivery.mp.microsoft.com
+2-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com
+2.amazon.pool.ntp.org
+2.pfsense.pool.ntp.org
+2.tlu.dl.delivery.mp.microsoft.com
+24-courier.push.apple.com
+3.amazon.pool.ntp.org
+3.au.download.windowsupdate.com
+45-courier.push.apple.com
+48-courier.push.apple.com
+5-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com
+5196634.cdnp1.hubspotusercontent-na1.net
+5196634.hs1.hscontentproxy-na1.net
+6-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com
+a.4cdn.org
+a.thumbs.redditmedia.com
+aapi.shouldianswer.net
+ab.chatgpt.com
+abs-0.twimg.com
+abs.twimg.com
+accounts.google.com
+accounts.spotify.com
+accounts.youtube.com
+activision.com
+adaway.org
+addons-pa.clients6.google.com
+addons-pa.googleapis.com
+aircall-dataplane.rudderstack.com
+aircall.io
+airspace-cdn.acmeaom.com
+ajax.googleapis.com
+aka.ms
+amazonaws.com
+amd-infra.itunes.apple.com
+amp-api-edge.apps.apple.com
+amp-api-search-edge.apps.apple.com
+amp-api-updates.apps.apple.com
+amp-api.apps.apple.com
+amp-api.media.apple.com
+android.apis.google.com
+android.googleapis.com
+api-app.hubspot.com
+api-edge.apps.apple.com
+api-env.dropbox-dns.com
+api-glb-aeuw1b.smoot.apple.com
+api-glb-ause2c.smoot.apple.com
+api-na1.hubspot.com
+api-partner.spotify.com
+api-tvclient-sc1.azurewebsites.net
+api-user.e2ro.com
+api.amazon.com
+api.apps.apple.com
+api.artlist.io
+api.bitwarden.com
+api.cdnplanet.com
+api.dropbox.com
+api.github.com
+api.hubspot.com
+api.jdownloader.org
+api.nextdns.io
+api.radar.io
+api.revanced.app
+api.smoot.apple.com
+api.steampowered.com
+api.topaz-labs.net
+api.topazlabs.com
+api.twitter.com
+api.twitter.com.cdn.cloudflare.net
+api.x.com
+api.x.com.cdn.cloudflare.net
+api2.hcaptcha.com
+apis.google.com
+app-api-us.dreo-tech.com
+app-site-association.cdn-apple.com
+app.adaway.org
+app.hubspot.com
+apple-relay.cloudflare.com
+apple-relay.fastly-edge.com
+apps.itunes-nocookie.com
+appsgenaiserver-pa.clients6.google.com
+appsgenaiserver-pa.googleapis.com
+appx.transient.amazon.com
+apt.izzysoft.de
+archive.org
+artgrid.imgix.net
+artlist-content-images.imgix.net
+artlist-dev.imgix.net
+artlist-images.imgix.net
+artlist.io
+assets.aircall.io
+audio-cf.spotifycdn.com
+audio-cf.spotifycdn.com.cdn.cloudflare.net
+auth.split.io
+avatars.githubusercontent.com
+avatars.hubspot.net
+azorult-tracker.net
+b-graph.facebook.com
+b.thumbs.redditmedia.com
+bag.itunes.apple.com
+banking.achievacu.com
+bcw-media.s3.ap-northeast-1.amazonaws.com
+binarydefense.com
+blacklist.tampermonkey.net
+blobcomments-pa.clients6.google.com
+blocklist.greensnow.co
+boards.4chan.org
+bolt.dropbox.com
+botscout.com
+byteeffecttos-g.com
+c.pki.goog
+calendar.google.com
+callofduty.com
+camo.githubusercontent.com
+canvaz.scdn.co
+captive.apple.com
+carrierbundle.itunes.apple.com
+catppuccin.com
+cdn-v4.amp-endpoint3.com
+cdn-v6.amp-endpoint3.com
+cdn.ecosia.org
+cdn.ecosia.org.cdn.cloudflare.net
+cdn.embed.ly.cdn.cloudflare.net
+cdn.embedly.com
+cdn.gifo.wisestamp.com
+cdn.jsdelivr.net
+cdn.jsdelivr.net.cdn.cloudflare.net
+cdn.native.creditkarma.com
+cdn.oaistatic.com
+cdn.search.brave.com
+cdn.shopify.com
+cdn.sift.com
+cdn.smootify.io
+cdnplanet.com
+cdp.geotrust.com
+cds.apple.com
+cdsassets.apple.com
+challenges.cloudflare.com
+chat-e2ee-mini.facebook.com
+chat.google.com
+chatgpt.com
+chunderm.gll.twilio.com
+ci3.googleusercontent.com
+cinsarmy.com
+cl1.apple.com
+cl2.apple.com
+cl3.apple.com
+cl4.apple.com
+client-env.dropbox-dns.com
+client.dropbox.com
+client.teamviewer.com
+clientconfig.akamai.steamstatic.com
+clients2.google.com
+clients3.google.com
+clients6.google.com
+clientservices.googleapis.com
+cloudidentity.googleapis.com
+cms-public-artifacts.artlist.io
+cname.vercel-dns.com
+cod-assets.cdn.callofduty.com
+community.steamstatic.com
+completion.amazon.com
+configuration.apple.com
+configuration.ls.apple.com
+connectivitycheck.getdropbox.com
+connectivitycheck.gstatic.com
+console.aws.amazon.com
+contacts.google.com
+content-autofill.googleapis.com
+content.googleapis.com
+contribution.usercontent.google.com
+cp10.cloudflare.com
+cp801.prod.do.dsp.mp.microsoft.com
+crl.comodoca.com
+crl.comodoca.com.cdn.cloudflare.net
+crl.edge.digicert.com
+crl3.digicert.com
+crxdownload.brave.com
+cryptauthdevicesync.googleapis.com
+cstat.cdn-apple.com
+ctldl.windowsupdate.com
+cyclones.acmeaom.com
+d56vh6ph4jjmq.cloudfront.net
+danger.rulez.sk
+dashboard-extensions.aircall.io
+dashboard.aircall.io
+data.amazon.com
+daylist.spotifycdn.com
+dcape-na.amazon.com
+dearrow-thumb.ajay.app
+deepmind.google
+demonware.net
+device-config.pcms.apple.com
+deviceintegritytokens-pa.googleapis.com
+digitalassetlinks.googleapis.com
+discover-pa.googleapis.com
+displaycatalog.mp.microsoft.com
+dl.delivery.mp.microsoft.com
+dnsbl.test.quakes.acmeaom.com
+docs.google.com
+doordash.com
+download.windowsupdate.com
+downloads.topazlabs.com
+dreo-tech.com
+drive-thirdparty.googleusercontent.com
+drive.google.com
+drive.usercontent.google.com
+drivefrontend-pa.clients6.google.com
+dualstack.n.sni.us-eu.fastly.net
+duckduckgo.com
+easylist-downloads.adblockplus.org
+easylist.to
+edge-block-previews-env.dropbox-dns.com
+edge-chat.facebook.com
+edge-misc-env.dropbox-dns.com
+edge-mqtt-fallback.facebook.com
+edge-mqtt.facebook.com
+edge.e2ro.com
+edgedl.me.gvt1.com
+eeroup.com
+electron.aircall.io
+embedded.creditkarma.com
+en.wikipedia.org
+encrypted-tbn0.gstatic.com
+encrypted-tbn1.gstatic.com
+encrypted-tbn2.gstatic.com
+encrypted-tbn3.gstatic.com
+entitlements.itunes.apple.com
+enumer.org
+etc-content.acmeaom.com
+etc.acmeaom.com
+eventgw.us1.twilio.com
+ews.netgate.com
+exceptions.hubspot.com
+external-ord5-2.xx.fbcdn.net
+external-preview.redd.it
+f-droid.org
+f.vimeocdn.com
+facebook.com
+favicons.nextdns.io
+fd.api.iris.microsoft.com
+fe2cr.update.microsoft.com
+fe3cr.delivery.mp.microsoft.com
+feodotracker.abuse.ch
+file-upload.org
+filters.adtidy.org
+firebaseremoteconfigrealtime.googleapis.com
+fonts.googleapis.com
+fonts.gstatic.com
+footage-private.imgix.net
+forecast.acmeaom.com
+fp-us-verizon.rcs.telephony.goog
+fp.msedge.net
+fpinit.itunes.apple.com
+frontier.tiktokv.us
+futureradar.acmeaom.com
+gateway.facebook.com
+gateway.icloud.com
+gcs-us-00003.content-storage-upload.googleapis.com
+gdmf-ados.apple.com
+gdmf.apple.com
+gemini.google.com
+genesis.stun.eu.demonware.net
+geo.prod.do.dsp.mp.microsoft.com
+geotrust.com
+gist.githubusercontent.com
+github-cloud.s3.amazonaws.com
+github.com
+github.githubassets.com
+global.a.fallback.hubspot.cluster.ably-realtime.com
+global.b.fallback.hubspot.cluster.ably-realtime.com
+global.c.fallback.hubspot.cluster.ably-realtime.com
+global.d.fallback.hubspot.cluster.ably-realtime.com
+global.dev.cftls.t.co.cdn.cloudflare.net
+global.e.fallback.hubspot.cluster.ably-realtime.com
+global.stun.twilio.com
+google.com
+googlevideo.com
+gql-fed.reddit.com
+graph-fallback.facebook.com
+graph.facebook.com
+graph.fbpigeon.com
+grok.com
+gsa.apple.com
+gsas.apple.com
+gsp-ssl.ls.apple.com
+gsp10-ssl.apple.com
+gsp36-ssl.ls.apple.com
+gsp51-ssl.ls.apple.com
+gsp57-ssl-locus.ls.apple.com
+gsp57-ssl-revgeo.ls.apple.com
+gsp64-ssl.ls.apple.com
+gsp85-ssl.ls.apple.com
+gspe19-ssl.ls.apple.com
+gspe21-ssl.ls.apple.com
+gspe35-ssl.ls.apple.com
+gspe79-cdn.g.aaplimg.com
+gspe79-ssl.ls.apple.com
+gspe85-ssl.ls.apple.com
+gue1-spclient.spotify.com
+guzzoni.apple.com
+gvt1.com
+hapi.teamviewer.com
+hdradcache.acmeaom.com
+heads-fa-tls13.spotifycdn.com
+health.aws.amazon.com
+home.arpa
+hubspot-na1-a-fallback.ably-realtime.com
+hubspot-na1-b-fallback.ably-realtime.com
+hubspot-na1-c-fallback.ably-realtime.com
+hubspot-na1-d-fallback.ably-realtime.com
+hubspot-na1-e-fallback.ably-realtime.com
+hubspot-na1-realtime.ably.io
+hubspot-na1-rest.ably.io
+hubspot-na1.a.fallback.ably-realtime.com
+hubspot-na1.b.fallback.ably-realtime.com
+hubspot-na1.c.fallback.ably-realtime.com
+hubspot-na1.d.fallback.ably-realtime.com
+hubspot-na1.e.fallback.ably-realtime.com
+hubspot-na1.realtime.ably.net
+hubspot.com
+hubspotusercontent-na1.net
+i.4cdn.org
+i.ibb.co
+i.imgur.com
+i.postimg.cc
+i.scdn.co
+i.vimeocdn.com
+i.ytimg.com
+ibyteimg.com
+icons.bitwarden.net
+id.aircall.io
+identity.bitwarden.com
+identity.mapmyfitness.com
+images-na.ssl-images-amazon.com
+imap.gmail.com
+img.youtube.com
+inbox.google.com
+ingest.datax.activision.com
+init-p01md.apple.com
+init.ess.apple.com
+init.gc.apple.com
+init.itunes.apple.com
+init.push.apple.com
+instantmessaging-pa-jms-us.googleapis.com
+instantmessaging-pa.googleapis.com
+internal-api.aircall.io
+internal-mobile.aircall.io
+internal.aircall.io
+iosantiabuse-pa.googleapis.com
+iot.dreo-cloud.com
+ipcdn.apple.com
+ipcheck0.jdownloader.org
+iphone-ld.apple.com
+ipv4only.arpa
+is1-ssl.mzstatic.com
+isc.sans.edu
+itunes.apple.com
+jnn-pa.googleapis.com
+jsdelivr.map.fastly.net
+kt-prod.ess.apple.com
+kv801.prod.do.dsp.mp.microsoft.com
+lf16-effectcdn.byteeffecttos-g.com
+lh3.google.com
+lh3.googleusercontent.com
+lh5.googleusercontent.com
+lists.blocklist.de
+login.live.com
+lookaside.facebook.com
+m.media-amazon.com
+m.stripe.com
+mail-api.proton.me
+mail-attachment.googleusercontent.com
+mail.google.com
+malware-filter.gitlab.io
+map2.acmeaom.com
+maps.googleapis.com
+mask-api.icloud.com
+maxmind.com
+mbz100.bitwarden.map.fastly.net
+meetings.googleapis.com
+messages.google.com
+mesu.apple.com
+mobile-api.mapmyfitness.com
+mobile.facebook.com
+mobileconfiguration-pa.googleapis.com
+mon16-normal-useast5.tiktokv.us
+mqtts-us.dreo-cloud.com
+msh.amazon.com
+mtalk.google.com
+music.youtube.com
+musicstatus.itunes.apple.com
+my.nextdns.io
+myip.ms
+myradar-readonly.acmeaom.com
+myshopify.com
+na1.hubspot-logos.com
+netcts.cdn-apple.com
+netgate.com
+netmon-control.dropbox.com
+newassets.hcaptcha.com
+news.ycombinator.com
+nextdns.forumbee.com
+nextdns.io
+ngx-v4.amp-endpoint2.com
+ngx-v6.amp-endpoint2.com
+node.e2ro.com
+north-america.pool.ntp.org
+notifications-pa.googleapis.com
+notifications.bitwarden.com
+nsf-3.dropbox.com
+nsf-env-3.dropbox-dns.com
+o.pki.goog
+oauth2.googleapis.com
+oauthaccountmanager.googleapis.com
+obs.acmeaom.com
+ocsp.comodoca.com.cdn.cloudflare.net
+ocsp.digicert.com
+ocsp.digicert.com.cdn.cloudflare.net
+ocsp.edge.digicert.com
+ocsp.rootca1.amazontrust.com
+ocsp.sectigo.com
+ocsp.usertrust.com
+ocsp2.apple.com
+ocsps.ssl.com
+officeclient.microsoft.com
+ogs.google.com
+old.reddit.com
+ondevicesafety-pa.googleapis.com
+oneocsp.microsoft.com
+ontology.health.apple.com
+outlook.office.com
+outlook.office365.com
+p131-caldav.icloud.com
+p131-escrowproxy.icloud.com
+p131-fmf.icloud.com
+p131-fmip.icloud.com
+p131-fmipmobile.icloud.com
+p131-quota.icloud.com
+p19-oec-va.ibyteimg.com
+p2p-ord1.discovery.steamserver.net
+pancake.apple.com
+path1.xtracloud.net
+path3.xtracloud.net
+pbs.twimg.com
+pbs.twimg.com.cdn.cloudflare.net
+pd.itunes.apple.com
+pds-init.ess.apple.com
+pds.ess.apple.com
+people-pa.clients6.google.com
+people-pa.googleapis.com
+peoplestack-pa.clients6.google.com
+peoplestack-pa.googleapis.com
+pfsense-plus-pkg00.atx.netgate.com
+pfsense-plus-pkg01.atx.netgate.com
+pgl.yoyo.org
+photos-thumb.dropbox.com
+pickasso.spotifycdn.com
+pinimg.com
+pki-goog.l.google.com
+play-fe.googleapis.com
+play-lh.googleusercontent.com
+play.google.com
+play.googleapis.com
+playatoms-pa.googleapis.com
+player.vimeo.com
+player.vimeo.com.cdn.cloudflare.net
+playstoregatewayadapter-pa.googleapis.com
+pool.ntp.org
+preview.redd.it
+private-user-images.githubusercontent.com
+prod-dynamite-prod-08-us-signaler-pa.clients6.google.com
+prod-lt-playstoregatewayadapter-pa.googleapis.com
+prod.cdni.callofduty.com
+production-filterlist-delivery.easylist-downloads.adblockplus.org.edgesuite.net
+production-pdx-555773567328-web-recordings.s3.us-west-2.amazonaws.com
+profile.gc.apple.com
+pti.store.microsoft.com
+publicassets.cdn-apple.com
+push.clients6.google.com
+query.ess.apple.com
+r13.c.lencr.org
+raw.githubusercontent.com
+raymondhill.net
+rcs-acs-tmo-us.jibe.google.com
+reddit-image.s3.amazonaws.com
+reddit.com
+redditstatic.s3.amazonaws.com
+release-assets.githubusercontent.com
+reputation.alienvault.com
+reputation.alienvault.io
+router14.teamviewer.com
+router5.teamviewer.com
+rr2---sn-vgqsrn6e.gvt1.com
+rr3---sn-vgqskne6.c.drive.google.com
+rules.emergingthreats.net
+rumble.com
+s-gke-usc1-nssi3-16.firebaseio.com
+s.4cdn.org
+s.mzstatic.com
+s.w-x.co
+s.ytimg.com
+s3.amazonaws.com
+safety-alert.apple.com
+sandbox.itunes.apple.com
+sas.pcms.apple.com
+sas.pcms.v.aaplimg.com
+scdn.co
+scontent-mia3-1.xx.fbcdn.net
+scontent-ord5-1.xx.fbcdn.net
+scontent-ord5-2.xx.fbcdn.net
+scontent-ord5-3.xx.fbcdn.net
+scontent.xx.fbcdn.net
+sdk.split.io
+sdmntprwestus.oaiusercontent.com
+se-edge.itunes.apple.com
+searchnotifications-pa.googleapis.com
+secure.fanboy.co.nz
+securetoken.googleapis.com
+sendbird.com
+sequoia.cdn-apple.com
+setup.icloud.com
+sf-api-token-service.itunes.apple.com
+shared.steamstatic.com
+shared.valve.map.fastly.net # CNAME for (community.steamstatic.com)
+signaler-pa.clients6.google.com
+silverbullet-external-ats.itunes.apple.com
+slscr.update.microsoft.com
+smp-device-content.apple.com
+spc.gtm.myvzw.com
+spc.myvzw.com
+spclient.wg.spotify.com
+speedysub.itunes.apple.com
+split.map.fastly.net
+sponsor.ajay.app
+spotify.com
+spotifycdn.com
+sse-ws-p189.apple.com
+ssl.gstatic.com
+sslbl.abuse.ch
+startpage.com
+static-ord5-2.xx.fbcdn.net
+static.gc.apple.com
+static.hsappstatic.net
+static.xx.fbcdn.net
+status.geotrust.com
+steamcommunity.com
+steamserver.net
+steamstatic.com
+storage.googleapis.com
+store.akamai.steamstatic.com
+store.steampowered.com
+storecatalogrevocation.storequality.microsoft.com
+storeedgefd.dsx.mp.microsoft.com
+stripe.com
+stripe.network
+support.microsoft.com
+swallow.apple.com
+swift-backup-31751.firebaseio.com
+sync.itunes.apple.com
+sys.4chan.org
+t.co
+t0.gstatic.com
+t1.gstatic.com
+t2.gstatic.com
+t3.gstatic.com
+talosintelligence.com
+tas02.sls.update.microsoft.com
+taskassist-pa.googleapis.com
+teamviewer.com
+test.steampowered.com
+tiktok.com
+tiktokcdn-us.com
+tiktokcdn.com
+tiktokv.com
+tiktokv.us
+tiktokw.us
+time.apple.com
+time.google.com
+time.windows.com
+time.xtracloud.net
+titles.prod.mos.microsoft.com
+tracker.leechers-paradise.org
+translate.brave.com
+tsfe.trafficshaping.dsp.mp.microsoft.com
+twilio.com
+twitter.com
+ublockorigin.github.io
+ublockorigin.pages.dev
+update.googleapis.com
+update.greasyfork.org
+update.jdownloader.org
+updates.cdn-apple.com
+us-iad-gcp-r002.router.teamviewer.com
+us-mia-anx-r007.router.teamviewer.com
+user-images.githubusercontent.com
+v.redd.it
+valid.apple.com
+vanced.to
+veai-models.topazlabs.com
+vercel-dns.com
+video-akpcw.spotifycdn.com
+video-ord5-1.xx.fbcdn.net
+video-ord5-2.xx.fbcdn.net
+video-ord5-3.xx.fbcdn.net
+video.google.com
+video.twimg.com
+video.twimg.com.cdn.cloudflare.net
+voice-js.roaming.twilio.com
+voledevice-pa.googleapis.com
+vupload-edge.facebook.com
+waa-pa.clients6.google.com
+wallet.cdn-apple.com
+wayback-api.archive.org
+web-chat-e2ee.facebook.com
+web-fallback.facebook.com
+web-static.archive.org
+web.facebook.com
+whoami.akamai.net
+winhelp2002.mvps.org
+wonderland.rulez.sk
+workspace.aircall.io
+workspace.google.com
+workspacevideo-pa.clients6.google.com
+wpad.home.arpa
+wps.apple.com
+ws-us3.pusher.com
+wsb-us.dreo-tech.com
+wtcfns.hubspot.com
+www-env.dropbox-dns.com
+www.amazon.com
+www.android.googleapis.com
+www.api.artlist.io
+www.botvrij.eu
+www.callofduty.com
+www.cdnplanet.com
+www.chromium.org
+www.community.steamstatic.com
+www.dreo-tech.com
+www.dropbox.com
+www.elevenforum.com
+www.encrypted-tbn0.gstatic.com
+www.facebook.com
+www.fbsbx.com
+www.file-upload.org
+www.ghacks.net
+www.godlikeproductions.com
+www.google.com
+www.googleapis.com
+www.graph.fbpigeon.com
+www.gstatic.com
+www.ipspamlist.com
+www.maxmind.com
+www.microsoft.com
+www.msftconnecttest.com
+www.python.org
+www.qwant.com
+www.reddit.com
+www.redditmedia.com
+www.redditstatic.com
+www.spamhaus.org
+www.spamhaus.org.cdn.cloudflare.net
+www.steamcommunity.com
+www.store.akamai.steamstatic.com
+www.store.steampowered.com
+www.tenforums.com
+www.youtube.com
+x.com
+x1.c.lencr.org
+xp.apple.com
+xpui.app.spotify.com
+yandex.com
+yastatic.net
+youtube.com
+youtube.googleapis.com
+youtubei.googleapis.com
+yt3.ggpht.com
+yt3.googleusercontent.com
+yt4.ggpht.com
+ytimg.com
