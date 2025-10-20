@@ -36,6 +36,7 @@ clientservices.googleapis.com
 clienttracing-pa.googleapis.com
 cloudcode-pa.googleapis.com
 cloudidentity.googleapis.com
+connectivitycheck.gstatic.com
 contacts.google.com
 content-autofill.googleapis.com
 content.googleapis.com
@@ -46,11 +47,17 @@ deepmind.google
 deviceintegritytokens-pa.googleapis.com
 digitalassetlinks.googleapis.com
 discover-pa.googleapis.com
+dnsbl.test.encrypted-tbn0.gstatic.com
+dnsbl.test.encrypted-tbn0.gstatic.com.home.arpa
 docs.google.com
 drive-thirdparty.googleusercontent.com
 drive.google.com
 drive.usercontent.google.com
 drivefrontend-pa.clients6.google.com
+encrypted-tbn0.gstatic.com
+encrypted-tbn1.gstatic.com
+encrypted-tbn2.gstatic.com
+encrypted-tbn3.gstatic.com
 federatedcompute-pa.googleapis.com
 feedback-pa.clients6.google.com
 firebaseinstallations.googleapis.com
@@ -58,6 +65,7 @@ firebaselogging-pa.googleapis.com
 firebaseremoteconfig.googleapis.com
 firebaseremoteconfigrealtime.googleapis.com
 fonts.googleapis.com
+fonts.gstatic.com
 fp-us-verizon.rcs.telephony.goog
 gcs-us-00003.content-storage-upload.googleapis.com
 geller-pa.googleapis.com
@@ -239,7 +247,12 @@ securetoken.googleapis.com
 signaler-pa.clients6.google.com
 speechs3proto2-pa.googleapis.com
 spot-pa.googleapis.com
+ssl.gstatic.com
 storage.googleapis.com
+t0.gstatic.com
+t1.gstatic.com
+t2.gstatic.com
+t3.gstatic.com
 taskassist-pa.clients6.google.com
 taskassist-pa.googleapis.com
 time.google.com
@@ -255,6 +268,7 @@ www.google.com
 www.googleadservices.com
 www.googleapis.com
 www.googletagmanager.com
+www.gstatic.com
 xgapromomanager-pa.googleapis.com
 youtube.googleapis.com
 youtubei.googleapis.com
