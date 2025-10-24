@@ -1,21 +1,43 @@
-b-graph.facebook.com
-chat-e2ee-mini.facebook.com
-connect.facebook.net
-dnsbl.test.connect.facebook.net
-edge-chat.facebook.com
-edge-mqtt.facebook.com
-edge-mqtt-fallback.facebook.com
-facebook.com
-gateway.facebook.com
-genai-graph.facebook.com
-graph.facebook.com
-graph-fallback.facebook.com
-l.facebook.com
-lookaside.facebook.com
-mobile.facebook.com
-rupload-ord5-2.up.facebook.com
-vupload-edge.facebook.com
-web.facebook.com
-web-chat-e2ee.facebook.com
-web-fallback.facebook.com
-www.facebook.com
+0.0.0.0 a.ns.xy.fbcdn.net
+0.0.0.0 ads.facebook.com
+0.0.0.0 agotraffic-nts-ip-assoc.xy.fbcdn.net
+0.0.0.0 agotraffic-nts-ip-assoc.xz.fbcdn.net
+0.0.0.0 an.facebook.com
+0.0.0.0 analytics.facebook.com
+0.0.0.0 b-graph-fallback.facebook.com
+0.0.0.0 b-graph.facebook.com
+0.0.0.0 b-graph.fbpigeon.com
+0.0.0.0 badge.facebook.com
+0.0.0.0 connect.facebook.com
+0.0.0.0 connect.facebook.net
+0.0.0.0 dns.facebook.com
+0.0.0.0 error.facebook.com
+0.0.0.0 graph.fbpigeon.com
+0.0.0.0 graph.instagram.com
+0.0.0.0 l.facebook.com
+0.0.0.0 meta-ohttp-relay-prod.fastly-edge.com
+0.0.0.0 metric.beta.facebook.com
+0.0.0.0 metrics.dns.facebook.com
+0.0.0.0 netseer-ipaddr-assoc.xy.fbcdn.net
+0.0.0.0 netseer-ipaddr-assoc.xz.fbcdn.net
+0.0.0.0 netseer.xy.fbcdn.net
+0.0.0.0 netseer.xz.fbcdn.net
+0.0.0.0 ns.xy.fbcdn.net
+0.0.0.0 platform.instagram.com
+0.0.0.0 sonar-iad.xx.fbcdn.net
+0.0.0.0 sonar-iad3-1.xx.fbcdn.net
+0.0.0.0 sonar-iad3-2.xx.fbcdn.net
+0.0.0.0 sonar6-iad.xx.fbcdn.net
+0.0.0.0 sonar6-iad3-1.xx.fbcdn.net
+0.0.0.0 sonar6-iad3-2.xx.fbcdn.net
+0.0.0.0 sonar6.xy.fbcdn.net
+0.0.0.0 traffic-nts-ip-assoc.xy.fbcdn.net
+0.0.0.0 traffic-nts-ip-assoc.xz.fbcdn.net
+0.0.0.0 v4.xz.fbcdn.net
+0.0.0.0 v6.xy.fbcdn.net
+0.0.0.0 web-chat-e2ee.facebook.com
+0.0.0.0 web-fallback.facebook.com
+0.0.0.0 www.instagram.com
+0.0.0.0 xy.fbcdn.net
+0.0.0.0 xyzzy.dns.facebook.com
+0.0.0.0 xz.fbcdn.net

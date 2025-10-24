@@ -1,14 +1,19 @@
-anonymous.ads.brave.com
-brave-core-ext.s3.brave.com
-brave-production-proxy-238320562.us-west-2.elb.amazonaws.com
-cdn.search.brave.com
-componentupdater.brave.com
-crxdownload.brave.com
-go-updater.brave.com
-redirector.brave.com
-safebrowsing.brave.com
-sb-ssl.brave.com
-star-randsrv.bsg.brave.com
-translate.brave.com
-usage-ping.brave.com
-variations.brave.com
+0.0.0.0 anonymous.ads.brave.com
+0.0.0.0 brave-core-ext.s3.brave.com
+0.0.0.0 brave-production-proxy-238320562.us-west-2.elb.amazonaws.com
+0.0.0.0 brave.com
+0.0.0.0 cdn.search.brave.com
+0.0.0.0 componentupdater.brave.com
+0.0.0.0 crxdownload.brave.com
+0.0.0.0 detectportal.brave-http-only.com
+0.0.0.0 favicons.proxy.brave.com
+0.0.0.0 go-updater.brave.com
+0.0.0.0 redirector.brave.com
+0.0.0.0 safebrowsing.brave.com
+0.0.0.0 sb-ssl.brave.com
+0.0.0.0 search.brave.com
+0.0.0.0 star-randsrv.bsg.brave.com
+0.0.0.0 support.brave.app
+0.0.0.0 translate.brave.com
+0.0.0.0 usage-ping.brave.com
+0.0.0.0 variations.brave.com

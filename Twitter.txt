@@ -1,0 +1,6 @@
+0.0.0.0 ads-api.twitter.com
+0.0.0.0 ads-api.x.com
+0.0.0.0 analytics.twitter.com
+0.0.0.0 api.vxtwitter.com
+0.0.0.0 global.dev.cftls.t.co
+0.0.0.0 syndication.twitter.com
