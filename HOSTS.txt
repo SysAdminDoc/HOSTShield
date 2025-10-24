@@ -524,8 +524,6 @@
 0.0.0.0 globalservices.conde.digital
 0.0.0.0 gmp.samsungapps.com
 0.0.0.0 gmscompliance-pa.googleapis.com
-0.0.0.0 go-updater-1830831421.us-west-2.elb.amazonaws.com
-0.0.0.0 go-updater.brave.com
 0.0.0.0 gocart-web-prod-ue1-alb-1461435473.us-east-1.elb.amazonaws.com
 0.0.0.0 google-analytics.com
 0.0.0.0 google-ohttp-relay-safebrowsing.fastly-edge.com
