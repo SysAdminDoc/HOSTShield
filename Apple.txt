@@ -1,13 +1,16 @@
 0.0.0.0 11-courier.push.apple.com
 0.0.0.0 19-courier.push.apple.com
+0.0.0.0 21-courier.push.apple.com
 0.0.0.0 24-courier.push.apple.com
 0.0.0.0 25.courier-push-apple.com.akadns.net
 0.0.0.0 25-courier.push.apple.com
+0.0.0.0 3.datadog.pool.ntp.org
 0.0.0.0 30-courier.push.apple.com
 0.0.0.0 31-courier.push.apple.com
 0.0.0.0 45-courier.push.apple.com
 0.0.0.0 48-courier.push.apple.com
 0.0.0.0 5-courier.push.apple.com
+0.0.0.0 acsegateway.fe2.apple-dns.net
 0.0.0.0 aidc.apple.com
 0.0.0.0 amd-infra.itunes.apple.com
 0.0.0.0 amd-infra.itunes.g.aaplimg.com
@@ -20,6 +23,7 @@
 0.0.0.0 api.smoot.apple.com
 0.0.0.0 api-edge.apps.apple.com
 0.0.0.0 api-glb-aeuw1b.smoot.apple.com
+0.0.0.0 api-glb-ause1b.smoot.apple.com
 0.0.0.0 api-glb-ause2c.smoot.apple.com
 0.0.0.0 apis.apple.map.fastly.net
 0.0.0.0 apple.com
@@ -64,6 +68,7 @@
 0.0.0.0 commerce.itunes.apple.com.edgesuite.net
 0.0.0.0 config-chr.health.apple.com
 0.0.0.0 configuration.apple.com
+0.0.0.0 configuration.apple.com.akadns.net
 0.0.0.0 configuration.apple.com.edgekey.net
 0.0.0.0 configuration.ls.apple.com
 0.0.0.0 configuration.ls.v.aaplimg.com
@@ -93,7 +98,9 @@
 0.0.0.0 gdmf-ados.v.aaplimg.com
 0.0.0.0 get-bx.g.aaplimg.com
 0.0.0.0 gsa.apple.com
+0.0.0.0 gsa.idms-apple.com.akadns.net
 0.0.0.0 gsas.apple.com
+0.0.0.0 gsas.idms-apple.com.akadns.net
 0.0.0.0 gs-loc.apple.com
 0.0.0.0 gsp10-ssl.apple.com
 0.0.0.0 gsp10-ssl.ls-apple.com.akadns.net
@@ -104,6 +111,7 @@
 0.0.0.0 gsp64-ssl.ls.apple.com
 0.0.0.0 gsp64-ssl.ls-apple.com.akadns.net
 0.0.0.0 gsp85-ssl.ls.apple.com
+0.0.0.0 gsp85-ssl.ls2-apple.com.akadns.net
 0.0.0.0 gspe19-ssl.ls.apple.com
 0.0.0.0 gspe21-ssl.ls.apple.com
 0.0.0.0 gspe35-applecdn-cutover.ls-apple.com.akadns.net
@@ -135,8 +143,10 @@
 0.0.0.0 init.gc.apple.com
 0.0.0.0 init.itunes.apple.com
 0.0.0.0 init.push.apple.com
+0.0.0.0 init.push-apple.com.akadns.net
 0.0.0.0 init-p01md.apple.com
 0.0.0.0 init-p01md.apple.com.edgesuite.net
+0.0.0.0 installer.teams.static.microsoft
 0.0.0.0 iosapps.itunes.apple.com
 0.0.0.0 iosapps.itunes.g.aaplimg.com
 0.0.0.0 ipcdn.apple.com
@@ -170,6 +180,7 @@
 0.0.0.0 ocsp2.g.aaplimg.com
 0.0.0.0 ontology.health.apple.com
 0.0.0.0 p112-sharedstreams.icloud.com
+0.0.0.0 p131-acsegateway.icloud.com
 0.0.0.0 p131-caldav.icloud.com
 0.0.0.0 p131-escrowproxy.icloud.com
 0.0.0.0 p131-fmf.icloud.com
@@ -189,6 +200,7 @@
 0.0.0.0 pd.itunes.apple.com
 0.0.0.0 pds.ess.apple.com
 0.0.0.0 pds-init.ess.apple.com
+0.0.0.0 pool.ntp.org
 0.0.0.0 profile.gc.apple.com
 0.0.0.0 pr-pod9-smp-device.apple.com
 0.0.0.0 publicassets.cdn-apple.com
@@ -202,6 +214,7 @@
 0.0.0.0 safety-alert.apple.com
 0.0.0.0 safety-alert.apple.com.edgesuite.net
 0.0.0.0 sandbox.itunes.apple.com
+0.0.0.0 sandbox-dist.itunes-apple.com.akadns.net
 0.0.0.0 sas.pcms.apple.com
 0.0.0.0 sas.pcms.v.aaplimg.com
 0.0.0.0 sas-uw2-pcms.apple.com
@@ -215,6 +228,8 @@
 0.0.0.0 sf-api-token-service.itunes.apple.com.edgekey.net
 0.0.0.0 sharedstreams.fe2.apple-dns.net
 0.0.0.0 silverbullet-external-ats.itunes.apple.com
+0.0.0.0 smoot-searchv2-aeuw1b.v.aaplimg.com
+0.0.0.0 smoot-searchv2-ause1b.v.aaplimg.com
 0.0.0.0 smoot-searchv2-ause2c.v.aaplimg.com
 0.0.0.0 smp-device-content.apple.com
 0.0.0.0 smp-device-content.g.aaplimg.com
@@ -231,6 +246,8 @@
 0.0.0.0 swallow-apple-com.v.aaplimg.com
 0.0.0.0 sync.itunes.apple.com
 0.0.0.0 time.apple.com
+0.0.0.0 time.g.aaplimg.com
+0.0.0.0 time.windows.com
 0.0.0.0 tr.iadsdk.apple.com
 0.0.0.0 ts.itunes.apple.com
 0.0.0.0 updates.cdn-apple.com
