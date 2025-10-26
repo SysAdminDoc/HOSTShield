@@ -1,3 +1,7 @@
+0.0.0.0 dls.di.atlas.samsung.com
+0.0.0.0 policy.samsungcloud.com
+0.0.0.0 wu2z-api.samsungcloud.com
+
 0.0.0.0 account.samsung.com
 0.0.0.0 acs-central-ue1.samsungmdec.com
 0.0.0.0 acs.esimsamsung.com
