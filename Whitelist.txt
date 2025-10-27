@@ -1,5 +1,4 @@
-0.amazon.pool.ntp.org
-0.datadog.pool.ntp.org
+
 0rtt.us.bytedance.map.fastly.net
 1.amazon.pool.ntp.org
 1.datadog.pool.ntp.org

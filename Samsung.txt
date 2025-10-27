@@ -1,87 +1,90 @@
-0.0.0.0 account.samsung.com
-0.0.0.0 acs-central-ue1.samsungmdec.com
-0.0.0.0 acs.esimsamsung.com
-0.0.0.0 acs.samsungmdec.com
-0.0.0.0 aka-dn.gw.samsungapps.com
-0.0.0.0 ap-auth2.samsungosp.com
-0.0.0.0 api.account.samsung.com
-0.0.0.0 api.gras.samsungdm.com
-0.0.0.0 api.samsungcloud.com
-0.0.0.0 api.samsungconsent.com
-0.0.0.0 api.samsungosp.com
-0.0.0.0 api.smartthings.com
-0.0.0.0 ash-use2.mgmt.aibixby.com
-0.0.0.0 auth2.samsungosp.com
-0.0.0.0 bixby-client.aibixby.com
-0.0.0.0 bixbyllm.com
-0.0.0.0 capi.samsungcloud.com
-0.0.0.0 cfota1.ospserver.net
-0.0.0.0 client.smartthings.com
-0.0.0.0 config-api.internet.apps.samsung.com
-0.0.0.0 consent.samsungrs.com
-0.0.0.0 dc.di.atlas.samsung.com
-0.0.0.0 dc.dqa.samsung.com
-0.0.0.0 ddf.di.atlas.samsung.com
-0.0.0.0 dir-apis.samsungdiroute.net
-0.0.0.0 dir-apis.samsungdm.com
-0.0.0.0 dvs.samsungmobile.com
-0.0.0.0 ers.samsungcloud.com
-0.0.0.0 ers.samsungcloudplatform.com
-0.0.0.0 es11.samsung-sm-ds.com
-0.0.0.0 eu-gslu.samsunggsl.com
-0.0.0.0 fcm.samsung-sm-ds.com
-0.0.0.0 fota-apis.samsungdm.com
-0.0.0.0 gke-scs-euw4.bixbyllm.com
-0.0.0.0 gmp.samsungapps.com
-0.0.0.0 gos-api.gos-gsp.io
-0.0.0.0 gos-gsp.io
-0.0.0.0 gsl.samsunggsl.com
-0.0.0.0 gtg.samsungapps.com
-0.0.0.0 hub-odc.samsungapps.com
-0.0.0.0 hub.samsungapps.com
-0.0.0.0 icons.cp.hiyaapi.com
-0.0.0.0 img.samsungapps.com
-0.0.0.0 market-use2.mgmt.aibixby.com
-0.0.0.0 omc.gras.samsungdm.com
-0.0.0.0 orsfs.di.runestone.samsung.com
-0.0.0.0 orsplc.di.runestone.samsung.com
-0.0.0.0 pinning-02.secb2b.com
-0.0.0.0 play.samsungcloud.com
-0.0.0.0 poll.gras.samsungdm.com
-0.0.0.0 prd-use2-pdss-sync.aibixby.com
-0.0.0.0 provisioning-use2.mgmt.aibixby.com
-0.0.0.0 report.gras.samsungdm.com
-0.0.0.0 samsung-auth.edge.hiyaapi.com
-0.0.0.0 samsung-callerprofile.edge.hiyaapi.com
-0.0.0.0 samsung-directory.edge.hiyaapi.com
-0.0.0.0 samsung-ingestion.edge.hiyaapi.com
-0.0.0.0 samsung-phones.edge.hiyaapi.com
-0.0.0.0 samsung-sm-ds.com
-0.0.0.0 samsung.com
-0.0.0.0 samsungapps.com
-0.0.0.0 samsungcloud.com
-0.0.0.0 samsungconsent.com
-0.0.0.0 samsungdiroute.net
-0.0.0.0 samsungdm.com
-0.0.0.0 samsungdms.net
-0.0.0.0 samsunggsl.com
-0.0.0.0 samsungmobile.com
-0.0.0.0 samsungosp.com
-0.0.0.0 sapush.samsungosp.com
-0.0.0.0 scloud-p2uw2-ext.elb.samsungcloud.com
-0.0.0.0 scs-euw1.bixbyllm.com
-0.0.0.0 sdk.pushmessage.samsung.com
-0.0.0.0 smax.samsungapps.com
-0.0.0.0 stc.samsungdis.com
-0.0.0.0 terms.account.samsung.com
-0.0.0.0 umc-cdn.secb2b.com
-0.0.0.0 us-auth2.samsungosp.com
-0.0.0.0 us-gslu.samsunggsl.com
-0.0.0.0 us-odc.gw.samsungapps.com
-0.0.0.0 us-odc.samsungapps.com
-0.0.0.0 vas.samsungapps.com
-0.0.0.0 www.ospserver.net
-0.0.0.0 www.samsung.com
-0.0.0.0 www.samsung.com.akadns.net
-0.0.0.0 www.samsung.com.edgekey.net.globalredir.akadns.net
-0.0.0.0 www.tizen.org
+account.samsung.com
+acs-central-ue1.samsungmdec.com
+acs.esimsamsung.com
+acs.samsungmdec.com
+aka-dn.gw.samsungapps.com
+ap-auth2.samsungosp.com
+api.account.samsung.com
+api.gras.samsungdm.com
+api.samsungcloud.com
+api.samsungconsent.com
+api.samsungosp.com
+api.smartthings.com
+ash-use2.mgmt.aibixby.com
+auth2.samsungosp.com
+bixby-client.aibixby.com
+bixbyllm.com
+capi.samsungcloud.com
+cfota1.ospserver.net
+client.smartthings.com
+config-api.internet.apps.samsung.com
+consent.samsungrs.com
+dc.di.atlas.samsung.com
+dc.dqa.samsung.com
+ddf.di.atlas.samsung.com
+dir-apis.samsungdiroute.net
+dir-apis.samsungdm.com
+dvs.samsungmobile.com
+ers.samsungcloud.com
+ers.samsungcloudplatform.com
+es11.samsung-sm-ds.com
+eu-gslu.samsunggsl.com
+fcm.samsung-sm-ds.com
+fota-apis.samsungdm.com
+gke-scs-euw4.bixbyllm.com
+gmp.samsungapps.com
+gos-api.gos-gsp.io
+gos-gsp.io
+gsl.samsunggsl.com
+gtg.samsungapps.com
+hub-odc.samsungapps.com
+hub.samsungapps.com
+icons.cp.hiyaapi.com
+img.samsungapps.com
+market-use2.mgmt.aibixby.com
+omc.gras.samsungdm.com
+orsfs.di.runestone.samsung.com
+orsplc.di.runestone.samsung.com
+pinning-02.secb2b.com
+play.samsungcloud.com
+poll.gras.samsungdm.com
+prd-use2-pdss-sync.aibixby.com
+provisioning-use2.mgmt.aibixby.com
+report.gras.samsungdm.com
+samsung-auth.edge.hiyaapi.com
+samsung-callerprofile.edge.hiyaapi.com
+samsung-directory.edge.hiyaapi.com
+samsung-ingestion.edge.hiyaapi.com
+samsung-phones.edge.hiyaapi.com
+samsung-sm-ds.com
+samsung.com
+samsungapps.com
+samsungcloud.com
+samsungconsent.com
+samsungdiroute.net
+samsungdm.com
+samsungdms.net
+samsunggsl.com
+samsungmobile.com
+samsungosp.com
+sapush.samsungosp.com
+scloud-p2uw2-ext.elb.samsungcloud.com
+scs-euw1.bixbyllm.com
+sdk.pushmessage.samsung.com
+smax.samsungapps.com
+stc.samsungdis.com
+terms.account.samsung.com
+umc-cdn.secb2b.com
+us-auth2.samsungosp.com
+us-gslu.samsunggsl.com
+us-odc.gw.samsungapps.com
+us-odc.samsungapps.com
+vas.samsungapps.com
+www.ospserver.net
+www.samsung.com
+www.samsung.com.akadns.net
+www.samsung.com.edgekey.net.globalredir.akadns.net
+www.tizen.org
+dls.di.atlas.samsung.com
+policy.samsungcloud.com
+wu2z-api.samsungcloud.com
