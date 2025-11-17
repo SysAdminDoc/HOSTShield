@@ -1,6 +1,3 @@
-[14 tools called]
-
-```
 # Categorized HOSTS file with vendor-grouped ordering (Option A2)
 # Essentials for each vendor/category are commented out at the top of that section.
 # Uncomment an essential entry to enable blocking when needed.
@@ -146,7 +143,6 @@
 0.0.0.0 beacons5.gvt3.com
 0.0.0.0 blogger.googleusercontent.com
 0.0.0.0 chromesyncpasswords-pa.googleapis.com
-0.0.0.0 clients3.google.com
 0.0.0.0 clienttracing-pa.googleapis.com
 0.0.0.0 content-autofill.googleapis.com
 0.0.0.0 contributor.google.com
@@ -1118,10 +1114,6 @@
 0.0.0.0 3.pool.ntp.org
 0.0.0.0 ably-realtime.com
 0.0.0.0 detectportal.brave-http-only.com
-0.0.0.0 dns.google
-0.0.0.0 dns.quad9.net
-0.0.0.0 eerospeedtests.com
-0.0.0.0 incapdns.net
 0.0.0.0 north-america.pool.ntp.org
 0.0.0.0 nrw3iqu.x.incapdns.net
 0.0.0.0 nts.sth1.ntp.se
@@ -1321,7 +1313,6 @@
 # These do not fit neatly above but are not unknown.
 
 0.0.0.0 change.org
-0.0.0.0 example.org
 0.0.0.0 featureassets.org
 0.0.0.0 publicsuffix.org
 0.0.0.0 seal-westflorida.bbb.org
@@ -1431,7 +1422,6 @@
 0.0.0.0 cenoobi.run
 0.0.0.0 cf-afd.www.linkedin.com
 0.0.0.0 cfota1.ospserver.net
-0.0.0.0 chance.surf
 0.0.0.0 check.ddos-guard.net
 0.0.0.0 chilipiper.com
 0.0.0.0 cirrus.ngwz.dell.com
@@ -1462,7 +1452,6 @@
 0.0.0.0 csp.yandex.net
 0.0.0.0 cx.atdmt.com
 0.0.0.0 dailymail.co.uk
-0.0.0.0 darkreader.org
 0.0.0.0 dashboard.searchatlas.com
 0.0.0.0 dashboard.tinypass.com
 0.0.0.0 data.ad-score.com
@@ -1866,3 +1855,4 @@
 0.0.0.0 zedge.net
 
 # End of categorized HOSTS file.
+
