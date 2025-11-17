@@ -1480,8 +1480,6 @@
 0.0.0.0 eo-perfops2.qcloudteo.com
 0.0.0.0 eo-perfops3.qcloudteo.com
 0.0.0.0 eo-perfops4.qcloudteo.com
-0.0.0.0 epdg.epc.mnc240.mcc310.pub.3gppnetwork.org
-0.0.0.0 epdg.epc.mnc260.mcc310.pub.3gppnetwork.org
 0.0.0.0 ers.twilio.com
 0.0.0.0 esp.aptrinsic.com
 0.0.0.0 et.topazlabs.com
@@ -1855,4 +1853,5 @@
 0.0.0.0 zedge.net
 
 # End of categorized HOSTS file.
+
 
