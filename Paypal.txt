@@ -1,11 +1,21 @@
+# Organized Hosts File (Blocked by 0.0.0.0)
+# Source: PayPal and Braintree services.
+
+################################################################################
+# PAYPAL/BRAINTREE CORE APIs & GATEWAYS
+################################################################################
 0.0.0.0 api-m.glb.paypal.com
 0.0.0.0 api-m.paypal.com
 0.0.0.0 api.braintreegateway.com
 0.0.0.0 api.glb.paypal.com
 0.0.0.0 api.paypal.com
 0.0.0.0 braintreegateway.com
+0.0.0.0 gateway-api.production.braintree-api.com
+0.0.0.0 payments.braintree-api.com
+
+################################################################################
+# ANALYTICS, TRACKING, & METRIX
+################################################################################
 0.0.0.0 c.paypal.com
 0.0.0.0 client-analytics.braintreegateway.com
-0.0.0.0 gateway-api.production.braintree-api.com
 0.0.0.0 online-metrix.net
-0.0.0.0 payments.braintree-api.com
