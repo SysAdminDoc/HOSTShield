@@ -291,32 +291,3 @@
 0.0.0.0 stm-keyid-1adb994ab58be57a0cc9b900e7851e1a43c08660.microsoftaik.azure.net
 0.0.0.0 tile-service.weather.microsoft.com
 
-################################################################################
-# NON-MICROSOFT DOMAINS (Third-party services)
-################################################################################
-0.0.0.0 api.individual.githubcopilot.com
-0.0.0.0 apigtwb2c.us.dell.com
-0.0.0.0 cirrus.ngwz.dell.com
-0.0.0.0 collector.github.com
-0.0.0.0 creativecdn.com
-0.0.0.0 dnsbl.test.region1.analytics.google.com
-0.0.0.0 dnsbl.test.www.google-analytics.com
-0.0.0.0 dropbox.com
-0.0.0.0 ecn-us.dev.virtualearth.net
-0.0.0.0 ecn.dev.virtualearth.net
-0.0.0.0 hotmail.com
-0.0.0.0 in.appcenter.ms
-0.0.0.0 main.vscode-cdn.net
-0.0.0.0 marketplace.visualstudio.com
-0.0.0.0 nelreports.net
-0.0.0.0 powerbi.com
-0.0.0.0 skype.com
-0.0.0.0 swiftkey.com
-0.0.0.0 telemetry.api.swiftkey.com
-0.0.0.0 telemetry.dropbox.com
-0.0.0.0 telemetry.v.dropbox.com
-0.0.0.0 tigger-citadel.touchtype-fluency.com
-0.0.0.0 tm-sdk.platinumai.net
-0.0.0.0 touchtype-fluency.com
-0.0.0.0 update.code.visualstudio.com
-0.0.0.0 www.intel.com
