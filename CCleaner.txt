@@ -1,7 +1,21 @@
-ncc.avast.com
-ncc.avast.com.edgesuite.net
-license.piriform.com
-ipm-provider.ff.avast.com
-shepherd.ff.avast.com
-ip-info.ff.avast.com
-analytics.ff.avast.com
+# Organized Hosts File (Blocked by 0.0.0.0)
+# Source: CCleaner/Piriform and Avast-related services.
+
+################################################################################
+# LICENSING & PIRIFORM CORE
+################################################################################
+0.0.0.0 license.piriform.com
+
+################################################################################
+# AVAST CORE INFRASTRUCTURE (Updates, Licensing Checks, etc.)
+################################################################################
+0.0.0.0 ncc.avast.com
+0.0.0.0 ncc.avast.com.edgesuite.net
+
+################################################################################
+# TELEMETRY, ANALYTICS, & INFORMATION PINGBACKS (ff.avast.com)
+################################################################################
+0.0.0.0 analytics.ff.avast.com
+0.0.0.0 ip-info.ff.avast.com
+0.0.0.0 ipm-provider.ff.avast.com
+0.0.0.0 shepherd.ff.avast.com
