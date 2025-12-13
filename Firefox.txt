@@ -1,23 +1,39 @@
-0.0.0.0 addons.mozilla.org
-0.0.0.0 ads.mozilla.org
+# Firefox/Mozilla Hosts File Blacklist (Organized by Domain Type)
+# All entries redirect to the loopback address (0.0.0.0) to block connections.
+
+# --- Core Mozilla/Firefox Domains ---
+0.0.0.0 firefox.com
+0.0.0.0 mozilla.net
+0.0.0.0 mozilla.org
 0.0.0.0 archive.mozilla.org
-0.0.0.0 assets.mozilla.net
+
+# --- Telemetry, Updates, and Experiments (Critical Client Services) ---
 0.0.0.0 aus5.mozilla.org
+0.0.0.0 incoming.telemetry.mozilla.org
+0.0.0.0 normandy.cdn.mozilla.net
+0.0.0.0 versioncheck-bg.addons.mozilla.org
+
+# --- Content Delivery Networks (CDN) and Assets ---
+0.0.0.0 assets.mozilla.net
 0.0.0.0 content-signature-2.cdn.mozilla.net
 0.0.0.0 download-installer.cdn.mozilla.net
 0.0.0.0 download.mozilla.org
 0.0.0.0 firefox-settings-attachments.cdn.mozilla.net
-0.0.0.0 firefox.com
-0.0.0.0 firefox.settings.services.mozilla.com
 0.0.0.0 img-getpocket.cdn.mozilla.net
-0.0.0.0 incoming.telemetry.mozilla.org
+
+# --- Service Endpoints (Push, Location, Settings, etc.) ---
+0.0.0.0 firefox.settings.services.mozilla.com
 0.0.0.0 location.services.mozilla.com
 0.0.0.0 merino.services.mozilla.com
-0.0.0.0 mozilla-ohttp.fastly-edge.com
-0.0.0.0 mozilla.net
-0.0.0.0 mozilla.org
-0.0.0.0 normandy.cdn.mozilla.net
-0.0.0.0 prod.ohttp-gateway.prod.webservices.mozgcp.net
 0.0.0.0 push.services.mozilla.com
+
+# --- Add-ons and Extensions ---
+0.0.0.0 addons.mozilla.org
 0.0.0.0 services.addons.mozilla.org
-0.0.0.0 versioncheck-bg.addons.mozilla.org
+
+# --- Advertising ---
+0.0.0.0 ads.mozilla.org
+
+# --- OHTTP (Oblivious HTTP) Gateway / Privacy Services ---
+0.0.0.0 mozilla-ohttp.fastly-edge.com
+0.0.0.0 prod.ohttp-gateway.prod.webservices.mozgcp.net
