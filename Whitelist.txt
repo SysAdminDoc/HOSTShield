@@ -1,7 +1,3 @@
-achievacu.com
-affirm.com
-alkamitech.com
-iris.alkamitech.com
 0rtt.us.bytedance.map.fastly.net
 1.amazon.pool.ntp.org
 1.datadog.pool.ntp.org
@@ -43,6 +39,7 @@ a.thumbs.redditmedia.com
 a-0003.a-msedge.net
 a1361.us.akamai.net
 a1446.dscr.akamai.net
+a155.dscd.akamai.net
 a1744.dscw154.akamai.net
 a175.b.akamai.net
 a1918.us.akamai.net
@@ -81,6 +78,7 @@ accounts.google.com
 accounts.spotify.com
 accounts.youtube.com
 accountscenter.facebook.com
+achievacu.com
 activision.com
 adaway.org
 adbappcontrol.com
@@ -89,6 +87,7 @@ addons-pa.clients6.google.com
 addons-pa.googleapis.com
 adguardteam.github.io
 adsb.lol
+affirm.com
 aggr19-normal.tiktokv.us
 aircall.io
 aircall-dataplane.rudderstack.com
@@ -97,6 +96,7 @@ airspace-cdn.acmeaom.com
 ajax.googleapis.com
 aka.ms
 alive.github.com
+alkamitech.com
 alldaychemist.com
 amazonaws.com
 amd-infra.itunes.apple.com
@@ -615,6 +615,7 @@ github.io
 github-cloud.s3.amazonaws.com
 githubusercontent.com
 gitlab.com
+gitlab.io
 glb.cws.prod.dcat.dsp.trafficmanager.net
 glia.com
 global.a.fallback.hubspot.cluster.ably-realtime.com
@@ -629,6 +630,8 @@ global.turn.twilio.com
 globe.adsbexchange.com
 globe.airplanes.live
 gmail.com
+go.microsoft.com
+go.microsoft.com.edgekey.net
 google.com
 googleapis.com
 googlehosted.com
@@ -832,6 +835,7 @@ live.staticflickr.com
 log16-normal-useast5.tiktokv.us
 login.live.com
 login.microsoftonline.com
+login.msa.msidentity.com
 lookaside.facebook.com
 lpa.live.esimdiscovery.com
 lsg.7300.prod.demonware.net
@@ -877,6 +881,7 @@ mon-boot.tiktokv.com
 mqtt.c10r.facebook.com
 mqtt.fallback.c10r.facebook.com
 mqtts-us.dreo-cloud.com
+mr-z01.tm-azurefd.net
 msftconnecttest.com
 msh.amazon.com
 mssdk16-normal-useast5.tiktokv.us
@@ -1289,6 +1294,7 @@ shared.akamai.steamstatic.com
 shared.steamstatic.com
 shared.valve.map.fastly.net
 sharedstreams.fe2.apple-dns.net
+shed.dual-low.part-0013.t-0009.t-msedge.net
 shizuku.rikka.app
 signaler-pa.clients6.google.com
 signaler-pa.googleapis.com
@@ -1395,10 +1401,12 @@ techprofile.blob.core.windows.net
 telegram.org
 test.steampowered.com
 thebaldgeek.github.io
+tiktok.com
 tiktokcdn.com
 tiktokcdn-us.com
 tiktokv.com
 tiktokv.us
+tiktokw.us
 tile.openstreetmap.org
 time.android.com
 time.apple.com
@@ -1407,6 +1415,7 @@ time.windows.com
 time.xtracloud.net
 titles.prod.mos.microsoft.com
 tm.v4.a.prd.aadg.akadns.net
+tm-onegetcdn.trafficmanager.net
 tnc0-normal-useast1a.tiktokv.com
 tnc16-normal-useast5.tiktokv.us
 tnc19-normal-useast5.tiktokv.us
@@ -1496,6 +1505,7 @@ wayback-api.archive.org
 wcpstatic.microsoft.com
 weather.com
 web.facebook.com
+web.pdx.555773567328.aircall.io
 web-assets.cdn4dd.com
 webcast.us.tiktok.com
 webcast.us.tiktok.com.edgesuite.net
