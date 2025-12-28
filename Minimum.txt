@@ -1,6 +1,8 @@
+
 0.0.0.0 0.amazon.pool.ntp.org
 0.0.0.0 0.datadog.pool.ntp.org
 0.0.0.0 0.pool.ntp.org
+0.0.0.0 0rtt.us.bytedance.map.fastly.net
 0.0.0.0 1.datadog.pool.ntp.org
 0.0.0.0 1.pool.ntp.org
 0.0.0.0 127-0-0-1.mydns.jdownloader.org
@@ -583,6 +585,7 @@
 0.0.0.0 download.windowsupdate.com
 0.0.0.0 download.wondershare.com
 0.0.0.0 dpm.demdex.net
+0.0.0.0 dualstack.n.sni.us-eu.fastly.net
 0.0.0.0 duwcmgoncrsncj.hsd1.fl.comcast.net
 0.0.0.0 dvs.samsungmobile.com
 0.0.0.0 dvs.samsungmobile.com.home.arpa
@@ -978,6 +981,7 @@
 0.0.0.0 mask.icloud.com
 0.0.0.0 matt-kruse.github.io
 0.0.0.0 mauth.cyberlink.com
+0.0.0.0 mbz100.bitwarden.map.fastly.net
 0.0.0.0 mc.prod.ads.prod.webservices.mozgcp.net
 0.0.0.0 mcbnck8rxcs7cyrnvfcfd43796q0.device.marketingcloudapis.com
 0.0.0.0 mcs-sg.tiktokv.com
@@ -1067,6 +1071,8 @@
 0.0.0.0 ntmkgvxy.hsd1.fl.comcast.net
 0.0.0.0 nts.netnod.se
 0.0.0.0 nts.sth1.ntp.se
+0.0.0.0 nts.xtracloud.net
+0.0.0.0 nts.xtracloud.net.home.arpa
 0.0.0.0 ntserv.hsd1.fl.comcast.net
 0.0.0.0 nvidia.com
 0.0.0.0 o1069899.ingest.sentry.io
@@ -1089,6 +1095,7 @@
 0.0.0.0 ocalesit.com
 0.0.0.0 ocsp2.apple.com
 0.0.0.0 oculuscdn.com
+0.0.0.0 office-f-net.trafficmanager.net
 0.0.0.0 office.com
 0.0.0.0 office.home.arpa
 0.0.0.0 office.net
@@ -1451,6 +1458,7 @@
 0.0.0.0 sonar6-iad3-1.xx.fbcdn.net
 0.0.0.0 sonar6-lga3-2.xx.fbcdn.net.hsd1.fl.comcast.net
 0.0.0.0 sonar6.xy.fbcdn.net
+0.0.0.0 sonar6.xy.fbcdn.net.home.arpa
 0.0.0.0 sophi.io
 0.0.0.0 speechs3proto2-pa.googleapis.com
 0.0.0.0 spidersense.bendingspoons.com
@@ -1554,6 +1562,8 @@
 0.0.0.0 time.google.com
 0.0.0.0 time.nist.gov
 0.0.0.0 time.windows.com
+0.0.0.0 time.xtracloud.net
+0.0.0.0 time.xtracloud.net.home.arpa
 0.0.0.0 tluuehlffrsvdeq.hsd1.fl.comcast.net
 0.0.0.0 tlx.3lift.com
 0.0.0.0 tnc-boot.tiktokv.com
@@ -1775,6 +1785,7 @@
 0.0.0.0 www.tiktoklinksafety.us
 0.0.0.0 www.tiktoklinksafety.us.edgesuite.net
 0.0.0.0 www.tizen.org
+0.0.0.0 www.tm.v4.a.prd.aadg.trafficmanager.net
 0.0.0.0 www.topazlabs.com
 0.0.0.0 www.wondershare.com
 0.0.0.0 x.hsd1.fl.comcast.net
