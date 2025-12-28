@@ -1,1386 +1,1805 @@
-_8901._https.websdr.ewi.utwente.nl
-0.amazon.pool.ntp.org
-0rtt.us.bytedance.map.fastly.net
-2.datadog.pool.ntp.org
-2c4eb3d18fca8ba6d9ca-4662654c4d02b3489a1b137ebc24250a.ssl.cf1.rackcdn.com
-9mod.com
-a.ads.rmbl.ws
-a.tiktokmod.pro
-a.tiktokmod.pro.home.arpa
-a-0003.a-msedge.net
-a1431.dscb.akamai.net
-a175.b.akamai.net
-a2004.us.akamai.net
-a2023.mm3.akamai.net
-a2043.dscr.akamai.net
-a2047.w183.akamai.net
-a2047.w184.akamai.net
-a672.dsct.akamai.net
-a840.us.akamai.net
-a874.b.akamai.net
-aaplimg.com
-aax-events-cell01-cf.us-east.ono.axp.amazon-adsystem.com
-ableton.com
-account.samsung.com
-account.samsung.com.home.arpa
-accounts.google.com
-adobe.io
-adobeid-na1.services.adobe.com
-adobeioruntime.net
-adstudio-assets.scdn.co
-aepxlg.adobe.com
-aes.us-east.ono.axp.amazon-adsystem.com
-affirm.com
-ahacdn.me
-aircall-dataplane.rudderstack.com
-ajayyy.github.io
-akadns.net
-akahost.net
-akamai.net
-akamai-cdn.perfops.io
-akamaiedge.net
-akamaized.net
-aliyuncs.com
-amazonaws.com
-ancensored.com
-android-context-data.googleapis.com
-android-context-data.googleapis.com.home.arpa
-androidpay-users-pa.googleapis.com
-android-safebrowsing.google.com
-api.cdp.microsoft.com
-api.consentjs.datagrail.io
-api.consentjs.datagrail.io.home.arpa
-api.fouanalytics.com
-api.honeycomb.io
-api.imdb.us-east-1.prod.mario.imdbtv.amazon.dev
-api.iterable.com
-api.iterable.com.home.arpa
-api.segment.io
-api.segment.io.home.arpa
-api.topazlabs.com
-api.topaz-labs.net
-api16-normal-useast5.tiktokv.us.edgesuite.net
-apiv2.piaproxy.net
-apiv2.privateinternetaccess.com
-app.adaway.org
-app.satismeter.com
-app-analytics-services.com
-apple.com
-apple-dns.net
-appleid.cdn-apple.com.akadns.net
-appleid.cdn-apple.com.edgekey.net
-apple-relay.fastly-edge.com
-app-measurement.com
-appsflyer.com
-appsflyersdk.com
-assets.adobedtm.com
-assets-jpcust.jwpsrv.com
-atomile.com
-auth.prod.ims.adobejanus.com
-auth.services.adobe.com
-auth.services.adobe.com.cdn.cloudflare.net
-auth.wikimedia.org
-auth-weighted.prod.ims.adobejanus.com
-avast.com
-avatars.mds.yandex.net
-avcloud.e5.sk
-avid.com
-ax-0001.ax-msedge.net
-ax-msedge.net
-azioncdn.net
-azurefd.net
-bag.itunes.apple.com
-bal-kube-westus-01-kng-edf.westus.cloudapp.azure.com
-bc.d.rdcv1.com
-b-cdn.net
-beacon.riskified.com
-bibo.api.swiftkey.com
-bing.net
-bingocountrydays.playcus.com
-binisoft.org
-bixbyllm.com
-blazingcdn.com
-blazingcdn.net
-b-msedge.net
-bob.framasoft.org
-bobsvagene.club
-boris-fx.postaffiliatepro.com
-borisfx-com-res.cloudinary.com
-brave-core-ext.s3.brave.com
-brave-production-proxy-238320562.us-west-2.elb.amazonaws.com
-braze.com
-browser-intake-datadoghq.com
-byteperf.com
-c.amazon-adsystem.com
-c.eset.com
-c6.paypal.com
-cachefly.net
-cc-api-data.adobe.io
-cdn.auth0.com
-cdn.darkreader.app
-cdn.fuseplatform.net
-cdn.jsdelivr.net
-cdn.playcus.com
-cdn.rudderlabs.com
-cdn.sift.com
-cdn77.org
-cdn-apple.com
-cdn-cookieyes.com
-cdn-dynmedia-1.microsoft.com
-cdnetworks.net
-cdnperf-rum.cdnetworks.net
-cdsassets.apple.com
-cedexis.d.rdcv1.com
-cf.47cf2c8c9-frontier.amazon.com
-chromesyncentities-pa.googleapis.com
-chromesyncpasswords-pa.googleapis.com
-cl2.apple.com
-cl3.apple.com
-cl4.apple.com
-cleantalk.org
-client.messaging.adobe.com
-client.wns.windows.com
-clientsdk.launchdarkly.com
-clienttracing-pa.googleapis.com
-cloud.microsoft
-cloudflare-dns.com
-cloudflareinsights.com
-cloudflareperf.com
-cloudfront.net
-clstorage.net
-cm.g.doubleclick.net
-commerce.adobe.com
-community.adobe.com
-componentupdater.brave.com
-config.edge.skype.com
-config.edge.skype.com.trafficmanager.net
-config.officeapps.live.com
-configuration.apple.com
-configuration.ls.apple.com
-connect.wowlazy.com
-consumer-licensing-aks2aks.md.mp.microsoft.com.akadns.net
-content.jwplatform.com
-contentpass.net
-cp801.prod.do.dsp.mp.microsoft.com
-cp801.prod.do.dsp.mp.microsoft.com.edgekey.net
-crashlyticsreports-pa.googleapis.com
-crashlyticsreports-pa.googleapis.com.home.arpa
-cstat.cdn-apple.com
-ctldl.windowsupdate.com
-ctldl.windowsupdate.com.delivery.microsoft.com
-cuoieadrraxle.space
-cw-static.aditude.io
-cyberlink.com
-d161f70cbh7kx6.cloudfront.net
-d1gtt36mgrexoi.cloudfront.net
-d1v01e3aef8dm5.cloudfront.net
-d1vbftvkf37ah3.cloudfront.net
-d28139t0r7hg1k.cloudfront.net
-d3888oxgux3fey.cloudfront.net
-d3apz0saa5hrj5.cloudfront.net
-d3ok5gjxqqhp57.cloudfront.net
-darkreader.app
-darkreader.org
-datadoghq.com
-datagrail.io
-dc.di.atlas.samsung.com
-dc.di.atlas.samsung.com.home.arpa
-dc.dqa.samsung.com
-dc.dqa.samsung.com.home.arpa
-dearrow.ajay.app
-default.exp-tas.com
-detectportal.brave-http-only.com
-detectportal-prod-343460633.us-west-2.elb.amazonaws.com
-developer.android.com
-device-api.urbanairship.com
-device-api.urbanairship.com.home.arpa
-device-config.pcms.apple.com
-devnull.perfops.net
-diagmon-serviceapi.samsungdm.com
-diagmon-serviceapi.samsungdm.com.home.arpa
-digiboy.ir
-displaycatalog.mp.microsoft.com
-djlzvy5xcvhxt.cloudfront.net
-dns.msftncsi.com
-dnse5.com
-doh.dns.apple.com
-doubleclick.net
-download.db-ip.com
-download.teamviewer.com.cdn.cloudflare.net
-download.windowsupdate.com
-dualstack.h2.bytedance.map.fastly.net
-dualstack.n.sni.us-eu.fastly.net
-dvs.samsungmobile.com
-dvs.samsungmobile.com.home.arpa
-e2885.e9.akamaiedge.net
-ecs.office.com
-edf.eset.com
-edf.gtm.eset.com
-edge.aditude.io
-edge.run
-edgekey.net
-edgesuite.net
-engagements.appsflyer.com
-engagements.appsflyer.com.home.arpa
-entitlements.jwplayer.com
-epns.eset.com
-error-report.com
-ers.samsungcloud.com
-ers.samsungcloudplatform.com
-ers.samsungcloudplatform.com.home.arpa
-ers.twilio.com
-es.ancensored.com
-es11.samsung-sm-ds.com
-es11.samsung-sm-ds.com.home.arpa
-eset.com
-etgd-websdr.ewi.utwente.nl
-eu-gslu.samsunggsl.com
-euprd-kag-device-ext-1541b5150b59c728.elb.eu-west-1.amazonaws.com
-eus2-10.frontdoor.licensing.commerce.microsoft.com
-eus2s2c-displaycatalog.frontdoor.bigcatalog.commerce.microsoft.com
-eventgw.twilio.com
-ewowfthxrmqzb.space
-excire.onfastspring.com
-exoscale-cdn.com
-f5-cloud-demo.com
-fastly.net
-fastly-edge.com
-favicons.proxy.brave.com
-fb.content-loader.com
-fbs.smoot.apple.com
-fd.api.iris.microsoft.com
-fd-api-iris.trafficmanager.net
-fe2cr.update.microsoft.com
-fe3.delivery.mp.microsoft.com
-fe3cr.delivery.mp.microsoft.com
-feedback-pa.googleapis.com
-firebaselogging.googleapis.com
-firebaselogging.googleapis.com.home.arpa
-firebaselogging-pa.googleapis.com
-firebaselogging-pa.googleapis.com.home.arpa
-firebase-settings.crashlytics.com
-firebase-settings.crashlytics.com.home.arpa
-fls-na.amazon.com
-fonts.googleapis.com
-fonts.gstatic.com
-fonts.wp.com
-fonts-api.wp.com
-footprints-pa.googleapis.com
-footprints-pa.googleapis.com.home.arpa
-forsfahqjnlhr.online
-futurecdn.net
-galaxy-cdn.com
-gateway.edge.network
-gateway.fe2.apple-dns.net
-gateway.icloud.com
-gator.volces.com
-gcorelabs.com
-gdmf.apple.com
-gdmf-ados.apple.com
-geller-pa.googleapis.com
-geo.prod.do.dsp.mp.microsoft.com
-geo-location.prebid.cloud
-geomobileservices-pa.googleapis.com
-get-bx.g.aaplimg.com
-getgreenshot.org
-ggl-ds-es11.ue4.odcus.nmcs.gcloud.thalescloud.io
-glb.sls.prod.dcat.dsp.trafficmanager.net
-glb.tas02.sls-prod.dcat.dsp.mp.microsoft.com
-global.identity.adobe.com
-go.glarysoft.com
-go.playlg.com
-googleads.g.doubleclick.net
-googleads.g.doubleclick.net.home.arpa
-googlecdn.org
-google-ohttp-relay-safebrowsing.fastly-edge.com
-google-ohttp-relay-safebrowsing.fastly-edge.com.home.arpa
-gos-api-pue1-b.gos-gsp.io
-gos-gsp.io
-go-updater.brave.com
-go-updater-1830831421.us-west-2.elb.amazonaws.com
-gsa.apple.com
-gsl.samsunggsl.com
-gsp10-ssl.apple.com
-gsp57-ssl-revgeo.ls.apple.com
-gsp64-ssl.ls.apple.com
-gspe1-ssl.ls.apple.com
-gspe35-ssl.ls.apple.com
-gspe79-cdn.g.aaplimg.com
-gspe79-ssl.ls.apple.com
-gspe79-ssl-96.ls.apple.com
-gsp-ssl.ls.apple.com
-gsp-ssl.ls-apple.com.akadns.net
-gsp-ssl-geomap.ls-apple.com.akadns.net
-gspx-ssl.ls.apple.com
-gtranslate.net
-hakurei.us-cdnbo.org
-haprjfxlcvint.site
-haproxy.com
-haproxyedge.net
-havfw69955.lithium.com
-hawk.digitalcameraworld.com
-hexagon-analytics.com
-home.arpa
-http-intake.logs.datadoghq.com
-i.harperapps.com
-i.postimg.cc
-i.singular.net
-i.sng.link
-i-bn3p-cor090.api.p001.1drv.com
-ic-ah.flixcdn.com
-icloud.com
-iguazu.doordash.com
-ihsdygpltqwob.site
-imagecdn.clips4sale.com
-img.cdn4dd.com
-img.icons8.com
-img.shields.io
-ims-na1.adobelogin.com.cdn.cloudflare.net
-incapdns.net
-init.ess.apple.com
-init.push.apple.com
-init-p01md.apple.com
-inputsuggestions.msdxcdn.microsoft.com
-instantcdn.net
-intc-keyid-77b63d9f8b73f5fbbd73ace7d8fbda37a6a7865f.microsoftaik.azure.net
-intercom.io
-iosantiabuse-pa.googleapis.com
-iosapps.itunes.apple.com
-ipcdn.apple.com
-iphone-ld.apple.com
-ipv4.imgur.map.fastly.net
-ipv6.msftconnecttest.com
-ipv6.msftconnecttest.com.edgesuite.net
-ipv6.msftncsi.com
-iris-de-ppe-azsc-v2-eus2.eastus2.cloudapp.azure.com
-iris-de-prod-azsc-v2-wus2.westus2.cloudapp.azure.com
-ist1-3.filesor.com
-itunes.com
-jenson.api.swiftkey.com
-jsc.mgid.com
-js-cdn.music.apple.com
-justlagoon.com
-kms.digiboy.ir
-ko-fi.com
-launchdarkly.com
-lcdn-locator.apple.com
-ldgslb.com
-lf1go.bmtrck.com
-licensing.mp.microsoft.com
-licensing-prod-frontdoor-geomap.trafficmanager.net
-live.primis.tech
-livechatinc.com
-ln-0007.config.skype.com
-locationhistory-pa.googleapis.com
-locationhistory-pa.googleapis.com.home.arpa
-location-v6.tiktokv.us
-location-v6.tiktokv.us.home.arpa
-luxformula.com
-m.sni.global.fastly.net
-malwarebytes-api.go-vip.net
-mask.apple-dns.net
-mask.icloud.com
-mask-api.icloud.com
-mask-h2.icloud.com
-matt-kruse.github.io
-medianova-cdnperf.mncdn.com
-mesu.apple.com
-mjriazemzybdg.online
-mm-mm.bing.net.trafficmanager.net
-mncdn.com
-mobileconfiguration-pa.googleapis.com
-msdx-cdn-y86ykn8r9v.azureedge.net
-msedge.api.cdp.microsoft.com
-mssdk.tiktokw.us
-myaccount.glarysoft.com
-mzstatic.com
-nacktefoto.com
-nearbysharing-pa.googleapis.com
-net.geo.opera.com
-netcts.cdn-apple.com
-netcts.cdn-apple.com.edgesuite.net
-news.iadsdk.apple.com
-nexusrules.officeapps.live.com
-nexus-websocket-a.intercom.io
-ngx.download.nvidia.com
-nitroscripts.com
-notepad-plus-plus.org
-o17585.ingest.sentry.io
-o17585.ingest.us.sentry.io
-o4504260137254912.ingest.us.sentry.io
-obsproject.com
-ocsp2.apple.com
-oculuscdn.com
-office.com
-office.net
-ondevicesafety-pa.googleapis.com
-oneclient.sfx.ms
-oneclient.sfx.ms.home.arpa
-ontology.health.apple.com
-ooc-g2.tm-4.office.com
-otel-mobile.doordash.com
-ovh-cdn.perfops.io
-ovscdns.com
-ovscdns.net
-p112-sharedstreams.icloud.com
-p131-escrowproxy.icloud.com
-p131-fmip.icloud.com
-p131-fmipmobile.icloud.com
-p131-quota.icloud.com
-p16-common-ipv6-sign.tiktokcdn-us.com.home.arpa
-p16-oec-ttp.tiktokcdn-us.com.home.arpa
-pagead2.googlesyndication.com
-pancake.apple.com
-passwordsleakcheck-pa.googleapis.com
-patch.com
-path1.xtracloud.net
-path1_new.qcomgeo2.com
-pay-users-pa.googleapis.com
-perfops.gcorelabs.com
-perfops.io
-perfops.net
-perfops-static.freetls.fastly.net
-pinimg.com
-pinning-02.secb2b.com
-pinterest.com
-pinterest.net
-pkmyexkljzdfy.site
-play.samsungcloud.com
-play-apps-features.googleusercontent.com
-playcus.com
-players.brightcove.net
-pps.services.adobe.com
-privacy-mgmt.com
-pro.fontawesome.com
-pro.fontawesome.com.cdn.cloudflare.net
-proactivebackend-pa.googleapis.com
-proactivebackend-pa.googleapis.com.home.arpa
-prod.idgraph.dt.fox
-prod-foxkit.kts.fox
-pr-pod9-smp-device.apple.com
-push-fcdn-ttp4.s.bytefcdn-ttpus.com
-qcloudcdn.com
-qcloudteo.com
-quake-pa.googleapis.com
-query.ess.apple.com
-ratingsedge.rnr.microsoft.com
-rcm-na.amazon-adsystem.com
-rdcv1.com
-redirector.brave.com
-remote-data.urbanairship.com
-remote-data.urbanairship.com.home.arpa
-report.error-report.com
-repository.eset.com
-repository.gtm.eset.com
-reqhfg-cdn-settings.appsflyersdk.com
-reqhfg-cdn-settings.appsflyersdk.com.home.arpa
-reqhfg-inapps.appsflyersdk.com
-reqhfg-inapps.appsflyersdk.com.home.arpa
-reqhfg-launches.appsflyersdk.com
-reqhfg-launches.appsflyersdk.com.home.arpa
-resources.blogblog.com
-restrictedapps-pa.googleapis.com
-rezvorck.github.io
-rezvorck.github.io.home.arpa
-rncdn7.com
-rnr-prod.eastus.cloudapp.azure.com
-rnr-prod.trafficmanager.net
-rocket-cdn.com
-rudderstack.com
-rum-cdn.perfops.net
-s.amazon-adsystem.com
-s.mzstatic.com
-s.n4m5x60.com
-s2.loli.net
-s38.sitemeter.com
-s7mbrstream.scene7.com
-safebrowsing.brave.com
-safety-alert.apple.com
-samsung.com
-samsungapps.com
-samsungcloud.com
-samsungcloudplatform.com
-samsungdis.com
-samsungdm.com
-samsunggsl.com
-samsungmobile.com
-samsung-sm-ds.com
-sb.scorecardresearch.com
-sb-ssl.brave.com
-scloud.ws
-scone-pa.googleapis.com
-scrubbingcenter.com
-scs-config-use2.bixbyllm.com
-scs-config-use2.bixbyllm.com.home.arpa
-scs-use2.bixbyllm.com
-scs-use2.bixbyllm.com.home.arpa
-sdk.iad-06.braze.com
-search-api.fie.futurecdn.net
-searchnotifications-pa.googleapis.com
-secb2b.com
-secure.gravatar.com
-securepubads.g.doubleclick.net
-security.wowlazy.com
-server.messaging.adobe.com
-setup.icloud.com
-sexystars.online
-sf16-website-login.neutral.ttwstatic.com
-sfpwqxnzxszzx.website
-shepherd.ff.avast.com
-shopvoxpopulus.com
-skype.com
-smp-device-content.apple.com
-speechs3proto2-pa.googleapis.com
-spot-pa.googleapis.com
-sr.studiostack.com
-sso.malwarebytes.com
-statcounter.com
-static.adsafeprotected.com
-static.cloudflareinsights.com
-static.doubleclick.net
-static.guance.com
-stats.g.doubleclick.net
-statsig.anthropic.com
-stc.samsungdis.com
-stc.samsungdis.com.home.arpa
-stmedia.startribune.com
-storecatalogrevocation.storequality.microsoft.com
-storeedgefd.dsx.mp.microsoft.com
-storeedgefd.dsx.mp.microsoft.com.edgekey.net
-storeedgefd.dsx.mp.microsoft.com.edgekey.net.globalredir.akadns.net
-stubbsmovers.com
-stun.framasoft.org
-stunserver2024.stunprotocol.org
-sufycdn.com
-sufydns.com
-suggestqueries.google.com
-suggestqueries.l.google.com
-swallow.apple.com
-swiftkey.com
-swiftycdn.net
-tas02.sls.update.microsoft.com
-telemetry.api.swiftkey.com
-telemetry.api.swiftkey.com.home.arpa
-telemetry.malwarebytes.com
-test-perfops.ldgslb.com
-thalescloud.io
-thumb-p4.xhcdn.com
-tigger-citadel.touchtype-fluency.com
-tiktokmod.pro
-time.apple.com
-time.google.com
-time.windows.com
-tm-azurefd.net
-t-msedge.net
-touch.facebook.com
-tp.47cf2c8c9-frontier.amazon.com
-tqofiyedqqxwq.online
-tracker.madtia.cc
-trafficmanager.net
-traffic-nts-ip-assoc.xy.fbcdn.net
-tse1.mm.bing.net
-typeform.com
-typekit.net
-udp.ping.teamviewer.com
-uishape.com
-um02.eset.com
-um03.eset.com
-um06.eset.com
-um08.eset.com
-um10.eset.com
-um12.eset.com
-um15.eset.com
-um16.eset.com
-um23.eset.com
-update.9mod.com
-update.eset.com
-update.gtm.eset.com
-us.bytedance.map.fastly.net
-usage-ping.brave.com
-use.fontawesome.com
-use.fontawesome.com.cdn.cloudflare.net
-use.typekit.net
-userlocation.googleapis.com
-userlocation.googleapis.com.home.arpa
-v2fy.com
-vagjxotbfroij.website
-valid.apple.com
-variations.brave.com
-vas.samsungapps.com
-vergecloud.com
-video.us.bytedance.map.fastly.net
-voilatile-pa.googleapis.com
-volterra.io
-wallet.google.com
-waws-prod-am2-027.westeurope.cloudapp.azure.com
-waws-prod-am2-027a.sip.azurewebsites.windows.net
-waws-prod-blu-231.sip.azurewebsites.windows.net
-waws-prod-blu-231-e73a.eastus.cloudapp.azure.com
-webd-assets.cdn4dd.com
-web-sdk.aptrinsic.com
-websdr.ewi.utwente.nl
-web-service.malwarebytes.com
-wedos.delivery
-whatsnew.teamviewer.com
-whoami.akamai.net
-widgets.wp.com
-wildcard-amd.scene7.com.edgesuite.net
-wowlazy.com
-wpad.home.arpa
-wu-b-net.trafficmanager.net
-www.adobe.com
-www.affirm.com
-www.bing.com
-www.bing.com.edgekey.net
-www.do-groove.com
-www.glarysoft.com
-www.googleadservices.com
-www.google-analytics.com
-www.googletagmanager.com
-www.gravatar.com
-www.malwarebytes.com
-www.microsoft.com-c-3.edgekey.net
-www.microsoft.com-c-3.edgekey.net.globalredir.akadns.net
-www.msftconnecttest.com
-www.msftncsi.com
-www.msftncsi.com.edgesuite.net
-www.sexiestpicture.com
-www.stack-sonar.com
-www.statcounter.com
-www.statcounter.com.home.arpa
-www.tiktoklinksafety.us.edgesuite.net
-www-www.bing.com.trafficmanager.net
-xp.apple.com
-yvoschaap.com
-zipthelake.com
+0.0.0.0 0.amazon.pool.ntp.org
+0.0.0.0 0.datadog.pool.ntp.org
+0.0.0.0 0.pool.ntp.org
+0.0.0.0 1.datadog.pool.ntp.org
+0.0.0.0 1.pool.ntp.org
+0.0.0.0 127-0-0-1.mydns.jdownloader.org
+0.0.0.0 1978802.hs-sites.com
+0.0.0.0 1991544353.rsc.cdn77.org
+0.0.0.0 1bzi1xrmv1rb.hsd1.fl.comcast.net
+0.0.0.0 1bzi1xrmv1rb.mw1i8.adobestats.io
+0.0.0.0 1uiqwi3r5hi.hsd1.fl.comcast.net
+0.0.0.0 2.android.pool.ntp.org
+0.0.0.0 2.datadog.pool.ntp.org
+0.0.0.0 2.pool.ntp.org
+0.0.0.0 2c4eb3d18fca8ba6d9ca-4662654c4d02b3489a1b137ebc24250a.ssl.cf1.rackcdn.com
+0.0.0.0 3.datadog.pool.ntp.org
+0.0.0.0 3.pool.ntp.org
+0.0.0.0 300624.com
+0.0.0.0 3gppnetwork.org
+0.0.0.0 4chenz.github.io
+0.0.0.0 7yevilw86i.sf7e3.adobestats.io
+0.0.0.0 8vd23ki8gk.mw1i8.adobestats.io
+0.0.0.0 9mod.com
+0.0.0.0 a-0003.a-msedge.net
+0.0.0.0 a.ads.rmbl.ws
+0.0.0.0 a.hsd1.fl.comcast.net
+0.0.0.0 a.omappapi.com
+0.0.0.0 a.pub.network
+0.0.0.0 a.tampermonkey.net
+0.0.0.0 a.tiktokmod.pro
+0.0.0.0 a.tiktokmod.pro.home.arpa
+0.0.0.0 a1431.dscb.akamai.net
+0.0.0.0 a1948.z.akamai.net
+0.0.0.0 a2004.us.akamai.net
+0.0.0.0 a2023.mm3.akamai.net
+0.0.0.0 a2043.dscr.akamai.net
+0.0.0.0 a672.dsct.akamai.net
+0.0.0.0 aapi.shouldianswer.net
+0.0.0.0 aaplimg.com
+0.0.0.0 aax-events-cell01-cf.us-east.ono.axp.amazon-adsystem.com
+0.0.0.0 aax-us-iad.amazon.com
+0.0.0.0 ableton.com
+0.0.0.0 abtest-aws-us-east-01.saas.sensorsdata.com
+0.0.0.0 account.samsung.com
+0.0.0.0 account.samsung.com.home.arpa
+0.0.0.0 accounts.google.com
+0.0.0.0 accounts.tampermonkey.net
+0.0.0.0 acmeaom.pubfinity.com
+0.0.0.0 acp-aep-cs-blobstore-prod-va6-data.adobe.io
+0.0.0.0 acroipm2.adobe.com
+0.0.0.0 acsbapp.com
+0.0.0.0 activity.windows.com
+0.0.0.0 ad-delivery.net
+0.0.0.0 ad-wa.anydesk.com
+0.0.0.0 ad.doubleclick.net
+0.0.0.0 adcs.basspro.com
+0.0.0.0 aditude.io
+0.0.0.0 adjust.com
+0.0.0.0 adjust.net.in
+0.0.0.0 adjust.world
+0.0.0.0 adobe.io
+0.0.0.0 adobe.net
+0.0.0.0 adobeccstatic.com
+0.0.0.0 adobedtm.com
+0.0.0.0 adobeid-na1.services.adobe.com
+0.0.0.0 adobeioruntime.net
+0.0.0.0 adobestats.io
+0.0.0.0 ads-api.twitter.com
+0.0.0.0 ads-api.x.com
+0.0.0.0 ads-img.mozilla.org
+0.0.0.0 ads-resources.waze.com
+0.0.0.0 ads.google.com
+0.0.0.0 ads.mozilla.org
+0.0.0.0 adsafeprotected.com
+0.0.0.0 adsassets.waze.com
+0.0.0.0 adsdk.microsoft.com
+0.0.0.0 adstudio-assets.scdn.co
+0.0.0.0 aefd.nelreports.net
+0.0.0.0 aepxlg.adobe.com
+0.0.0.0 aes.us-east.ono.axp.amazon-adsystem.com
+0.0.0.0 affirm.com
+0.0.0.0 ag.yieldoptimizer.com
+0.0.0.0 agentio.com
+0.0.0.0 aggr16-normal.tiktokv.us.home.arpa
+0.0.0.0 agkn.com
+0.0.0.0 ahacdn.me
+0.0.0.0 aircall-dataplane.rudderstack.com
+0.0.0.0 airlytics.airlock.twcmobile.weather.com
+0.0.0.0 ajayyy.github.io
+0.0.0.0 akadns.net
+0.0.0.0 akahost.net
+0.0.0.0 akamai-cdn.perfops.io
+0.0.0.0 akamai.net
+0.0.0.0 akamaiedge.net
+0.0.0.0 akamaized.net
+0.0.0.0 alb.reddit.com
+0.0.0.0 aliyuncs.com
+0.0.0.0 alt1-mtalk.google.com.hsd1.fl.comcast.net
+0.0.0.0 alt2-mtalk.google.com.hsd1.fl.comcast.net
+0.0.0.0 alt3-mtalk.google.com.hsd1.fl.comcast.net
+0.0.0.0 alt4-mtalk.google.com.hsd1.fl.comcast.net
+0.0.0.0 alt5-mtalk.google.com.hsd1.fl.comcast.net
+0.0.0.0 alt6-mtalk.google.com.hsd1.fl.comcast.net
+0.0.0.0 alt8-mtalk.google.com.hsd1.fl.comcast.net
+0.0.0.0 amazon-adsystem.com
+0.0.0.0 amazonaws.com
+0.0.0.0 amplitude.com
+0.0.0.0 analytics.afirstsoft.cn
+0.0.0.0 analytics.ahrefs.com
+0.0.0.0 analytics.avcdn.net
+0.0.0.0 analytics.cloud.coveo.com
+0.0.0.0 analytics.ff.avast.com
+0.0.0.0 analytics.ff.avast.com.home.arpa
+0.0.0.0 analytics.google.com
+0.0.0.0 analytics.pandadoc.com
+0.0.0.0 analytics.pesktop.com
+0.0.0.0 analytics.wondershare.cc
+0.0.0.0 ancensored.com
+0.0.0.0 android-context-data.googleapis.com
+0.0.0.0 android-context-data.googleapis.com.home.arpa
+0.0.0.0 android-safebrowsing.google.com
+0.0.0.0 android.apis.google.com
+0.0.0.0 android.chat.openai.com.cdn.cloudflare.net
+0.0.0.0 androidpay-users-pa.googleapis.com
+0.0.0.0 androidpay-users-pa.googleapis.com.home.arpa
+0.0.0.0 androidplatformbackuprestore-pa.googleapis.com
+0.0.0.0 ap.lijit.com
+0.0.0.0 api-esp.piano.io
+0.0.0.0 api-geico-prod.formotiv.com
+0.0.0.0 api-js.mixpanel.com
+0.0.0.0 api-na1.hubapi.com
+0.0.0.0 api-tvclient-sc1.azurewebsites.net
+0.0.0.0 api.account.samsung.com
+0.0.0.0 api.account.samsung.com.home.arpa
+0.0.0.0 api.amplitude.com
+0.0.0.0 api.cdp.microsoft.com
+0.0.0.0 api.chance.surf
+0.0.0.0 api.chance.surf.hsd1.fl.comcast.net
+0.0.0.0 api.company-target.com
+0.0.0.0 api.consentdesk.com
+0.0.0.0 api.consentjs.datagrail.io
+0.0.0.0 api.consentjs.datagrail.io.home.arpa
+0.0.0.0 api.fouanalytics.com
+0.0.0.0 api.glia.com
+0.0.0.0 api.honeycomb.io
+0.0.0.0 api.imdb.us-east-1.prod.mario.imdbtv.amazon.dev
+0.0.0.0 api.ipify.org
+0.0.0.0 api.iterable.com
+0.0.0.0 api.iterable.com.home.arpa
+0.0.0.0 api.lab.amplitude.com
+0.0.0.0 api.mixpanel.com
+0.0.0.0 api.mixpanel.com.home.arpa
+0.0.0.0 api.onesignal.com
+0.0.0.0 api.privateinternetaccess.com
+0.0.0.0 api.pubfinity.com
+0.0.0.0 api.queryly.com
+0.0.0.0 api.rudderlabs.com
+0.0.0.0 api.rudderstack.com
+0.0.0.0 api.samsungconsent.com
+0.0.0.0 api.segment.io
+0.0.0.0 api.segment.io.home.arpa
+0.0.0.0 api.settingshelper.com
+0.0.0.0 api.sprig.com
+0.0.0.0 api.stores.us-east-1.prod.paets.advertising.amazon.dev
+0.0.0.0 api.topaz-labs.net
+0.0.0.0 api.topazlabs.com
+0.0.0.0 api.wondershare.cc
+0.0.0.0 api16-normal-useast5.tiktokv.us.home.arpa
+0.0.0.0 api2.amplitude.com
+0.0.0.0 api2.branch.io
+0.0.0.0 api3.siftscience.com
+0.0.0.0 api64.ipify.org
+0.0.0.0 apiv2.piaproxy.net
+0.0.0.0 apiv2.privateinternetaccess.com
+0.0.0.0 app-analytics-services.com
+0.0.0.0 app-geico.formotiv.com
+0.0.0.0 app-measurement.com
+0.0.0.0 app-measurement.com.home.arpa
+0.0.0.0 app-script.monsido.com
+0.0.0.0 app-static.turtl.co
+0.0.0.0 app.adaway.org
+0.0.0.0 app.adjust.com
+0.0.0.0 app.adjust.net.in
+0.0.0.0 app.adjust.world
+0.0.0.0 app.cyberlink.com
+0.0.0.0 app.hubspot.com
+0.0.0.0 app.satismeter.com
+0.0.0.0 apple-dns.net
+0.0.0.0 apple-relay.fastly-edge.com
+0.0.0.0 apple.com
+0.0.0.0 appleid.cdn-apple.com.akadns.net
+0.0.0.0 appleid.cdn-apple.com.edgekey.net
+0.0.0.0 applovin.com
+0.0.0.0 appsettings.apalon.com.hsd1.fl.comcast.net
+0.0.0.0 appsflyer.com
+0.0.0.0 appsflyersdk.com
+0.0.0.0 appsgrowthpromo-pa.clients6.google.com
+0.0.0.0 apt.izzysoft.de.home.arpa
+0.0.0.0 aptabase.com
+0.0.0.0 aptrinsic.com
+0.0.0.0 arc.msn.com
+0.0.0.0 ardownload2.adobe.com
+0.0.0.0 armmf.adobe.com
+0.0.0.0 assemblyexchange.com
+0.0.0.0 assets-cms.privateinternetaccess.com
+0.0.0.0 assets-jpcust.jwpsrv.com
+0.0.0.0 assets.adobedtm.com
+0.0.0.0 assets.churnkey.co
+0.0.0.0 assets.mozilla.net
+0.0.0.0 assets.pcrl.co
+0.0.0.0 atdmt.com
+0.0.0.0 atomile.com
+0.0.0.0 auditrecording-pa.googleapis.com
+0.0.0.0 aus5.mozilla.org
+0.0.0.0 auth-weighted.prod.ims.adobejanus.com
+0.0.0.0 auth.prod.ims.adobejanus.com
+0.0.0.0 auth.services.adobe.com
+0.0.0.0 auth.services.adobe.com.cdn.cloudflare.net
+0.0.0.0 auth.wikimedia.org
+0.0.0.0 authclient.config-cdn.a.intuit.com
+0.0.0.0 avast.com
+0.0.0.0 avatars.discourse-cdn.com
+0.0.0.0 avatars.hubspot.net
+0.0.0.0 avatars.mds.yandex.net
+0.0.0.0 avcloud.e5.sk
+0.0.0.0 avid.com
+0.0.0.0 ax-0001.ax-msedge.net
+0.0.0.0 ax-msedge.net
+0.0.0.0 axon.ai
+0.0.0.0 ay.delivery
+0.0.0.0 azioncdn.net
+0.0.0.0 b-cdn.net
+0.0.0.0 b-graph-fallback.facebook.com
+0.0.0.0 b.hsd1.fl.comcast.net
+0.0.0.0 b.stats.paypal.com
+0.0.0.0 backtrace.io
+0.0.0.0 bag.itunes.apple.com
+0.0.0.0 bal-kube-westus-01-kng-edf.westus.cloudapp.azure.com
+0.0.0.0 bam-cell.nr-data.net
+0.0.0.0 bam.nr-data.net
+0.0.0.0 bat.bing.com
+0.0.0.0 bc.d.rdcv1.com
+0.0.0.0 bc9g603xylq.hsd1.fl.comcast.net
+0.0.0.0 bc9g603xylq.mw1i8.adobestats.io
+0.0.0.0 beacon.gtv-pub.com
+0.0.0.0 beacon.krxd.net
+0.0.0.0 beacon.riskified.com
+0.0.0.0 beacon.shazam.com
+0.0.0.0 beacons.gcp.gvt2.com
+0.0.0.0 beacons.gvt2.com
+0.0.0.0 beacons5.gvt3.com
+0.0.0.0 bi-module.hsd1.fl.comcast.net
+0.0.0.0 bibo.api.swiftkey.com
+0.0.0.0 bing.net
+0.0.0.0 bingocountrydays.playcus.com
+0.0.0.0 binisoft.org
+0.0.0.0 bixbyllm.com
+0.0.0.0 blacklist.tampermonkey.net
+0.0.0.0 blazingcdn.com
+0.0.0.0 blazingcdn.net
+0.0.0.0 blitz.mb-cosmos.com
+0.0.0.0 boards.4chan.org.hsd1.fl.comcast.net
+0.0.0.0 boards.chance.surf
+0.0.0.0 bob.framasoft.org
+0.0.0.0 bobsvagene.club
+0.0.0.0 boomerang.dell.com
+0.0.0.0 bordeaux.futurecdn.net
+0.0.0.0 boris-fx.postaffiliatepro.com
+0.0.0.0 borisfx-com-res.cloudinary.com
+0.0.0.0 branch.io
+0.0.0.0 brave-core-ext.s3.brave.com
+0.0.0.0 brave-production-proxy-238320562.us-west-2.elb.amazonaws.com
+0.0.0.0 braze.com
+0.0.0.0 bridgelabs.kr
+0.0.0.0 brittany-pc.home.arpa
+0.0.0.0 browser-intake-datadoghq.com
+0.0.0.0 browser.events.data.microsoft.com
+0.0.0.0 browser.events.data.msn.com
+0.0.0.0 browser.pipe.aria.microsoft.com
+0.0.0.0 browser.sentry-cdn.com
+0.0.0.0 browsiprod.com
+0.0.0.0 btloader.com
+0.0.0.0 bzoaqfwccgc.hsd1.fl.comcast.net
+0.0.0.0 c.amazon-adsystem.com
+0.0.0.0 c.bing.com
+0.0.0.0 c.eset.com
+0.0.0.0 c.msn.com
+0.0.0.0 c.paypal.com
+0.0.0.0 c.pki.goog
+0.0.0.0 c.riskified.com
+0.0.0.0 c1.microsoft.com
+0.0.0.0 c1g0grvdm.mw1i8.adobestats.io
+0.0.0.0 c2.fortune.com
+0.0.0.0 c6.paypal.com
+0.0.0.0 cache.hsd1.fl.comcast.net
+0.0.0.0 cachefly.net
+0.0.0.0 cadmus2.script.ac
+0.0.0.0 cai-identity.adobe.io
+0.0.0.0 capi.samsungcloud.com
+0.0.0.0 cbs.wondershare.cc
+0.0.0.0 cbs.wondershare.com
+0.0.0.0 cc-api-data.adobe.io
+0.0.0.0 cc-api-teamprojects.adobe.io
+0.0.0.0 cc-cdn.adobe.com
+0.0.0.0 cc-embed.adobe.com
+0.0.0.0 ccgateway.net
+0.0.0.0 cctypekit.adobe.io
+0.0.0.0 cd.connatix.com
+0.0.0.0 cd05-04.na1.hs-sales-engage.com
+0.0.0.0 cdn-apple.com
+0.0.0.0 cdn-cookieyes.com
+0.0.0.0 cdn-dynmedia-1.microsoft.com
+0.0.0.0 cdn-fc.com
+0.0.0.0 cdn-scripts.signifyd.com
+0.0.0.0 cdn-settings.segment.com
+0.0.0.0 cdn-v4.amp-endpoint3.com
+0.0.0.0 cdn-v6.amp-endpoint3.com
+0.0.0.0 cdn-v6.amp-endpoint3.com.home.arpa
+0.0.0.0 cdn.adsafeprotected.com
+0.0.0.0 cdn.auth0.com
+0.0.0.0 cdn.branch.io
+0.0.0.0 cdn.bridgelabs.kr
+0.0.0.0 cdn.browsiprod.com
+0.0.0.0 cdn.callrail.com
+0.0.0.0 cdn.confiant-integrations.net
+0.0.0.0 cdn.cookielaw.org
+0.0.0.0 cdn.darkreader.app
+0.0.0.0 cdn.dropboxexperiment.com
+0.0.0.0 cdn.evgnet.com
+0.0.0.0 cdn.feathr.co
+0.0.0.0 cdn.fortune.com
+0.0.0.0 cdn.fuseplatform.net
+0.0.0.0 cdn.intellimize.co
+0.0.0.0 cdn.krxd.net
+0.0.0.0 cdn.optimizely.com
+0.0.0.0 cdn.playcus.com
+0.0.0.0 cdn.prod.website-files.com
+0.0.0.0 cdn.pubnub.com
+0.0.0.0 cdn.quantummetric.com
+0.0.0.0 cdn.rudderlabs.com
+0.0.0.0 cdn.segment.com
+0.0.0.0 cdn.sift.com
+0.0.0.0 cdn.sophi.io
+0.0.0.0 cdn.staticaly.com
+0.0.0.0 cdn.tagcommander.com
+0.0.0.0 cdn.viafoura.net
+0.0.0.0 cdn.walkme.com
+0.0.0.0 cdn.webflow.com
+0.0.0.0 cdn.wootric.com
+0.0.0.0 cdn.zg-api.com
+0.0.0.0 cdn.ziffstatic.com
+0.0.0.0 cdn31481338.ahacdn.me
+0.0.0.0 cdn55155840.ahacdn.me
+0.0.0.0 cdn77.org
+0.0.0.0 cdnperf-rum.cdnetworks.net
+0.0.0.0 cdsassets.apple.com
+0.0.0.0 ced-ns.sascdn.com
+0.0.0.0 ced.sascdn.com
+0.0.0.0 census-app.scorecardresearch.com
+0.0.0.0 cf.47cf2c8c9-frontier.amazon.com
+0.0.0.0 champagne.futurecdn.net
+0.0.0.0 chromesyncentities-pa.googleapis.com
+0.0.0.0 chromesyncpasswords-pa.googleapis.com
+0.0.0.0 cl2.apple.com
+0.0.0.0 cl3.apple.com
+0.0.0.0 cl4.apple.com
+0.0.0.0 clean.gg
+0.0.0.0 cleantalk.org
+0.0.0.0 clerk-telemetry.com
+0.0.0.0 clevertap-prod.com
+0.0.0.0 clicktripz.com
+0.0.0.0 client-analytics.braintreegateway.com
+0.0.0.0 client-logger.glia.com
+0.0.0.0 client.messaging.adobe.com
+0.0.0.0 client.protechts.net
+0.0.0.0 client.px-cloud.net
+0.0.0.0 client.teamviewer.com
+0.0.0.0 client.wns.windows.com
+0.0.0.0 clients.config.office.net
+0.0.0.0 clientsdk.launchdarkly.com
+0.0.0.0 clientservices.googleapis.com
+0.0.0.0 clienttracing-pa.googleapis.com
+0.0.0.0 clienttracing-pa.googleapis.com.home.arpa
+0.0.0.0 cloud.microsoft
+0.0.0.0 cloudflare-dns.com
+0.0.0.0 cloudflareinsights.com
+0.0.0.0 cloudflareperf.com
+0.0.0.0 clstorage.net
+0.0.0.0 cm.g.doubleclick.net
+0.0.0.0 cmp.osano.com
+0.0.0.0 cname.vercel-dns.com
+0.0.0.0 codesector.com
+0.0.0.0 col.eum-appdynamics.com
+0.0.0.0 collector-pxdojv695v.protechts.net
+0.0.0.0 collector-pxhyx10rg3.px-client.net
+0.0.0.0 collector-pxhyx10rg3.px-cloud.net
+0.0.0.0 collector.github.com
+0.0.0.0 collector.vhx.tv
+0.0.0.0 commerce.adobe.com
+0.0.0.0 community.adobe.com
+0.0.0.0 compare-static.travelmath.com
+0.0.0.0 compare-static.travelmath.com.clicktripz.com
+0.0.0.0 componentupdater.brave.com
+0.0.0.0 confiant.msn.com
+0.0.0.0 config-api.internet.apps.samsung.com
+0.0.0.0 config.edge.skype.com
+0.0.0.0 config.edge.skype.com.trafficmanager.net
+0.0.0.0 config.officeapps.live.com
+0.0.0.0 config2.mparticle.com
+0.0.0.0 configuration.apple.com
+0.0.0.0 configuration.ls.apple.com
+0.0.0.0 connatix.com
+0.0.0.0 connect.facebook.net
+0.0.0.0 connect.wowlazy.com
+0.0.0.0 connectwiseproduction36o5x1p5.analytics.org.coveo.com
+0.0.0.0 consumer-licensing-aks2aks.md.mp.microsoft.com.akadns.net
+0.0.0.0 content-ad.net
+0.0.0.0 content-signature-2.cdn.mozilla.net
+0.0.0.0 content.jwplatform.com
+0.0.0.0 contentpass.net
+0.0.0.0 conversions-config.reddit.com
+0.0.0.0 copyrightalliance.informz.net
+0.0.0.0 cp.pubfinity.com
+0.0.0.0 cp801.prod.do.dsp.mp.microsoft.com
+0.0.0.0 cp801.prod.do.dsp.mp.microsoft.com.edgekey.net
+0.0.0.0 crackshash.com
+0.0.0.0 crash.steampowered.com
+0.0.0.0 crashlytics.com
+0.0.0.0 crashlyticsreports-pa.googleapis.com
+0.0.0.0 crashlyticsreports-pa.googleapis.com.home.arpa
+0.0.0.0 credit.cyberlink.com
+0.0.0.0 crs.cr.adobe.com
+0.0.0.0 cs.lkqd.net
+0.0.0.0 cse.google.com
+0.0.0.0 csi.gstatic.com
+0.0.0.0 csoqxjutolsg.hsd1.fl.comcast.net
+0.0.0.0 csp.intuit.com
+0.0.0.0 csp.secureserver.net
+0.0.0.0 csp.withgoogle.com
+0.0.0.0 cstat.cdn-apple.com
+0.0.0.0 ctldl.windowsupdate.com
+0.0.0.0 ctldl.windowsupdate.com.delivery.microsoft.com
+0.0.0.0 cuoieadrraxle.space
+0.0.0.0 custom-elements-registry.hsd1.fl.comcast.net
+0.0.0.0 custom-elements.hsd1.fl.comcast.net
+0.0.0.0 cw-static.aditude.io
+0.0.0.0 cwbulxwfxyezu.hsd1.fl.comcast.net
+0.0.0.0 cx.atdmt.com
+0.0.0.0 cx.atdmt.com.home.arpa
+0.0.0.0 cyberlink.com
+0.0.0.0 d10lpsik1i8c69.cloudfront.net
+0.0.0.0 d161f70cbh7kx6.cloudfront.net
+0.0.0.0 d1gtt36mgrexoi.cloudfront.net
+0.0.0.0 d1swly8pgrbhu5.cloudfront.net
+0.0.0.0 d1v01e3aef8dm5.cloudfront.net
+0.0.0.0 d1vbftvkf37ah3.cloudfront.net
+0.0.0.0 d28139t0r7hg1k.cloudfront.net
+0.0.0.0 d2h8zr0m6mus4x.cloudfront.net
+0.0.0.0 d3888oxgux3fey.cloudfront.net
+0.0.0.0 d3agakyjgjv5i8.cloudfront.net
+0.0.0.0 d3apz0saa5hrj5.cloudfront.net
+0.0.0.0 d3ok5gjxqqhp57.cloudfront.net
+0.0.0.0 damgmyphbofnw.hsd1.fl.comcast.net
+0.0.0.0 dap.digitalgov.gov
+0.0.0.0 darkreader.app
+0.0.0.0 darkreader.org
+0.0.0.0 data-edge.smartscreen.microsoft.com
+0.0.0.0 datadoghq-browser-agent.com
+0.0.0.0 datadoghq.com
+0.0.0.0 datagrail.io
+0.0.0.0 db-ip.com
+0.0.0.0 dbrzswgyepb.hsd1.fl.comcast.net
+0.0.0.0 dc-static.wondershare.cc
+0.0.0.0 dc.di.atlas.samsung.com
+0.0.0.0 dc.di.atlas.samsung.com.home.arpa
+0.0.0.0 dc.dqa.samsung.com
+0.0.0.0 dc.dqa.samsung.com.home.arpa
+0.0.0.0 dc.services.visualstudio.com
+0.0.0.0 dcvinhcc.hsd1.fl.comcast.net
+0.0.0.0 ddf.di.atlas.samsung.com
+0.0.0.0 dearrow.ajay.app
+0.0.0.0 default.exp-tas.com
+0.0.0.0 deizyzaxeogkc.space
+0.0.0.0 dellprod.analytics.org.coveo.com
+0.0.0.0 demdex.net
+0.0.0.0 desktop-17olmcd.home.arpa
+0.0.0.0 desktop-42j2jbb.home.arpa
+0.0.0.0 desktop-62n6mna.home.arpa
+0.0.0.0 desktop-lon2n5a.home.arpa
+0.0.0.0 detectportal-prod-343460633.us-west-2.elb.amazonaws.com
+0.0.0.0 detectportal.brave-http-only.com
+0.0.0.0 detectportal.firefox.com
+0.0.0.0 dev-assets-cms.privateinternetaccess.com
+0.0.0.0 dev.visualwebsiteoptimizer.com
+0.0.0.0 developer.android.com
+0.0.0.0 device-api.urbanairship.com
+0.0.0.0 device-api.urbanairship.com.home.arpa
+0.0.0.0 device-config.pcms.apple.com
+0.0.0.0 device-control.ff.avast.com
+0.0.0.0 device-control.ff.avast.com.home.arpa
+0.0.0.0 devnull.perfops.net
+0.0.0.0 dfp.calendly.com
+0.0.0.0 dgncrrpgzfz.hsd1.fl.comcast.net
+0.0.0.0 diagmon-serviceapi.samsungdm.com
+0.0.0.0 diagmon-serviceapi.samsungdm.com.home.arpa
+0.0.0.0 dianomi.com
+0.0.0.0 digiboy.ir
+0.0.0.0 dir-apis.samsungdm.com
+0.0.0.0 direct.quic-core-proxy-gcpsg-v3.gcpsg.byteglb.com
+0.0.0.0 directory.cookieyes.com
+0.0.0.0 discover-pa.googleapis.com
+0.0.0.0 displaycatalog.mp.microsoft.com
+0.0.0.0 djlzvy5xcvhxt.cloudfront.net
+0.0.0.0 dl.4kdownload.com
+0.0.0.0 dndrsevqdnj.hsd1.fl.comcast.net
+0.0.0.0 dns.google
+0.0.0.0 dns.google.com
+0.0.0.0 dns.msftncsi.com
+0.0.0.0 dns11.quad9.net
+0.0.0.0 dnsbl.test.aax-us-east-retail-direct.amazon.com
+0.0.0.0 dnsbl.test.alb.reddit.com
+0.0.0.0 dnsbl.test.api.content-ad.net
+0.0.0.0 dnsbl.test.api.lab.amplitude.com
+0.0.0.0 dnsbl.test.api2.branch.io
+0.0.0.0 dnsbl.test.app-measurement.com
+0.0.0.0 dnsbl.test.b.stats.paypal.com
+0.0.0.0 dnsbl.test.bat.bing.com
+0.0.0.0 dnsbl.test.beacon.riskified.com
+0.0.0.0 dnsbl.test.browser-intake-datadoghq.com
+0.0.0.0 dnsbl.test.cdn.cookielaw.org
+0.0.0.0 dnsbl.test.cdn.optimizely.com
+0.0.0.0 dnsbl.test.cdn.segment.com
+0.0.0.0 dnsbl.test.client-analytics.braintreegateway.com
+0.0.0.0 dnsbl.test.cmp.dmgmediaprivacy.co.uk
+0.0.0.0 dnsbl.test.crta.dailymail.co.uk
+0.0.0.0 dnsbl.test.csi.gstatic.com
+0.0.0.0 dnsbl.test.csp.yandex.net
+0.0.0.0 dnsbl.test.default.exp-tas.com
+0.0.0.0 dnsbl.test.e44177b6b805.cdn4.forter.com
+0.0.0.0 dnsbl.test.events.mapbox.com
+0.0.0.0 dnsbl.test.fls-na.amazon.com
+0.0.0.0 dnsbl.test.googleads.g.doubleclick.net
+0.0.0.0 dnsbl.test.hassaleh.iad-03.braze.com
+0.0.0.0 dnsbl.test.hexagon-analytics.com
+0.0.0.0 dnsbl.test.incoming.telemetry.mozilla.org
+0.0.0.0 dnsbl.test.js.appboycdn.com
+0.0.0.0 dnsbl.test.mc.yandex.ru
+0.0.0.0 dnsbl.test.mcs.tiktokv.us
+0.0.0.0 dnsbl.test.mcs.tiktokw.us
+0.0.0.0 dnsbl.test.mon.tiktokv.com
+0.0.0.0 dnsbl.test.nexusrules.officeapps.live.com
+0.0.0.0 dnsbl.test.o17585.ingest.us.sentry.io
+0.0.0.0 dnsbl.test.o418887.ingest.sentry.io
+0.0.0.0 dnsbl.test.otel-mobile.doordash.com
+0.0.0.0 dnsbl.test.pixel-static.spotify.com
+0.0.0.0 dnsbl.test.pixel.spotify.com
+0.0.0.0 dnsbl.test.s.axon.ai
+0.0.0.0 dnsbl.test.s.go-mpulse.net
+0.0.0.0 dnsbl.test.sb.scorecardresearch.com
+0.0.0.0 dnsbl.test.sc-static.net
+0.0.0.0 dnsbl.test.sentry.io
+0.0.0.0 dnsbl.test.static.ads-twitter.com
+0.0.0.0 dnsbl.test.static.cloudflareinsights.com
+0.0.0.0 dnsbl.test.static.doubleclick.net
+0.0.0.0 dnsbl.test.syndication.twitter.com
+0.0.0.0 dnsbl.test.uk-script.dotmetrics.net
+0.0.0.0 dnsbl.test.variations.brave.com
+0.0.0.0 dnsbl.test.w3-reporting.reddit.com
+0.0.0.0 dnsbl.test.web-beacon.starii-rover.com
+0.0.0.0 dnsbl.test.www.clarity.ms
+0.0.0.0 dnsbl.test.www.google-analytics.com
+0.0.0.0 dnsbl.test.www.googleadservices.com
+0.0.0.0 dnsbl.test.www.googletagmanager.com
+0.0.0.0 dnsbl.test.zipthelake.com
+0.0.0.0 dnse5.com
+0.0.0.0 doh.dns.apple.com
+0.0.0.0 dooh.cloudflare-dns.com
+0.0.0.0 doubleclick.net
+0.0.0.0 download.db-ip.com
+0.0.0.0 download.steinberg.net
+0.0.0.0 download.teamviewer.com.cdn.cloudflare.net
+0.0.0.0 download.techsmith.com
+0.0.0.0 download.windowsupdate.com
+0.0.0.0 download.wondershare.com
+0.0.0.0 dpm.demdex.net
+0.0.0.0 duwcmgoncrsncj.hsd1.fl.comcast.net
+0.0.0.0 dvs.samsungmobile.com
+0.0.0.0 dvs.samsungmobile.com.home.arpa
+0.0.0.0 dwt.soundcloud.com
+0.0.0.0 dxulolpjbzz.hsd1.fl.comcast.net
+0.0.0.0 dyxqwgsdkkrzn.hsd1.fl.comcast.net
+0.0.0.0 e.reddit.com
+0.0.0.0 e2885.e9.akamaiedge.net
+0.0.0.0 eas.outlook.com.hsd1.fl.comcast.net
+0.0.0.0 eb2.3lift.com
+0.0.0.0 ecn.dev.virtualearth.net
+0.0.0.0 ecom.wix.com
+0.0.0.0 ecs.office.com
+0.0.0.0 edf.eset.com
+0.0.0.0 edf.gtm.eset.com
+0.0.0.0 edge-094.usmia1.ce.apple-dns.net
+0.0.0.0 edge-094.usmia1.icloud-content.com
+0.0.0.0 edge-microsoft-com.ax-0002.ax-msedge.net
+0.0.0.0 edge.aditude.io
+0.0.0.0 edge.browser-fp.production.linktr.ee
+0.0.0.0 edge.microsoft.com
+0.0.0.0 edgekey.net
+0.0.0.0 edgesuite.net
+0.0.0.0 editor-platform-sdk-types.hsd1.fl.comcast.net
+0.0.0.0 eejpqsah.hsd1.fl.comcast.net
+0.0.0.0 eghcvwkbbm.hsd1.fl.comcast.net
+0.0.0.0 egv4py1c-android.mobile-messenger.intercom.com
+0.0.0.0 ejicefefi.hsd1.fl.comcast.net
+0.0.0.0 ekxwcsie.hsd1.fl.comcast.net
+0.0.0.0 eligibility.wootric.com
+0.0.0.0 email.mail.digg.com
+0.0.0.0 emocgfogibx.hsd1.fl.comcast.net
+0.0.0.0 emoji-456a.kxcdn.com
+0.0.0.0 emoji.discourse-cdn.com
+0.0.0.0 emoji.redditmedia.com.cdn.cloudflare.net
+0.0.0.0 engage.wixapps.net
+0.0.0.0 engagements.appsflyer.com
+0.0.0.0 engagements.appsflyer.com.home.arpa
+0.0.0.0 entitlements.jwplayer.com
+0.0.0.0 ep1.adtrafficquality.google
+0.0.0.0 ep2.adtrafficquality.google
+0.0.0.0 epdg.epc.geo.mnc260.mcc310.pub.3gppnetwork.org
+0.0.0.0 epdg.epc.mnc240.mcc310.pub.3gppnetwork.org
+0.0.0.0 epns.eset.com
+0.0.0.0 error-analytics-sessions-production.shopifysvc.com
+0.0.0.0 error-report.com
+0.0.0.0 error-tracking.reddit.com
+0.0.0.0 ers.samsungcloud.com
+0.0.0.0 ers.samsungcloudplatform.com
+0.0.0.0 ers.samsungcloudplatform.com.home.arpa
+0.0.0.0 ers.twilio.com
+0.0.0.0 es.ancensored.com
+0.0.0.0 es.wix.com
+0.0.0.0 es11.samsung-sm-ds.com
+0.0.0.0 es11.samsung-sm-ds.com.home.arpa
+0.0.0.0 eset.com
+0.0.0.0 esimdiscovery.com
+0.0.0.0 esp.aptrinsic.com
+0.0.0.0 et.topazlabs.com
+0.0.0.0 etgd-websdr.ewi.utwente.nl
+0.0.0.0 eu-gslu.samsunggsl.com
+0.0.0.0 euc1-turn.fpjs.io
+0.0.0.0 euprd-kag-device-ext-1541b5150b59c728.elb.eu-west-1.amazonaws.com
+0.0.0.0 eus2-10.frontdoor.licensing.commerce.microsoft.com
+0.0.0.0 eus2s2c-displaycatalog.frontdoor.bigcatalog.commerce.microsoft.com
+0.0.0.0 eventbus.intuit.com
+0.0.0.0 eventgw.twilio.com
+0.0.0.0 events.mapbox.com
+0.0.0.0 eventtracking.hubapi.com
+0.0.0.0 ewowfthxrmqzb.space
+0.0.0.0 example.org
+0.0.0.0 exceptions.hubspot.com
+0.0.0.0 excire.onfastspring.com
+0.0.0.0 exoscale-cdn.com
+0.0.0.0 exp.wg.spotify.com
+0.0.0.0 experience.ninetailed.co
+0.0.0.0 experience.piano.io
+0.0.0.0 experiments.apple.com
+0.0.0.0 external.simpleanalytics.com
+0.0.0.0 f.c2r.ts.cdn.office.net
+0.0.0.0 f02.myftpupload.com
+0.0.0.0 f5-cloud-demo.com
+0.0.0.0 fast.appcues.com
+0.0.0.0 fast.wistia.net
+0.0.0.0 fastly-edge.com
+0.0.0.0 fat.newsletterwoot.com
+0.0.0.0 favicons.proxy.brave.com
+0.0.0.0 fb.content-loader.com
+0.0.0.0 fbs.smoot.apple.com
+0.0.0.0 fc8ae836c80-odeydncl1755313873-sonar.xz.fbcdn.net
+0.0.0.0 fd-api-iris.trafficmanager.net
+0.0.0.0 fd.api.iris.microsoft.com
+0.0.0.0 fe2cr.update.microsoft.com
+0.0.0.0 fe3.delivery.mp.microsoft.com
+0.0.0.0 fe3cr.delivery.mp.microsoft.com
+0.0.0.0 feathr.co
+0.0.0.0 feature-window-message-registrar.hsd1.fl.comcast.net
+0.0.0.0 featureassets.org
+0.0.0.0 federatedcompute-pa.googleapis.com
+0.0.0.0 fedops.hsd1.fl.comcast.net
+0.0.0.0 feed.ff.avast.com
+0.0.0.0 feedback-pa.clients6.google.com
+0.0.0.0 feedback-pa.googleapis.com
+0.0.0.0 feedback-pa.googleapis.com.home.arpa
+0.0.0.0 feedback.hubapi.com
+0.0.0.0 ffc-static-cdn.oobesaas.adobe.com
+0.0.0.0 fh-wgt.com
+0.0.0.0 fid.agkn.com
+0.0.0.0 file.hsd1.fl.comcast.net
+0.0.0.0 findmydevice-pa.googleapis.com
+0.0.0.0 firebase-settings.crashlytics.com
+0.0.0.0 firebase-settings.crashlytics.com.home.arpa
+0.0.0.0 firebaseinstallations.googleapis.com
+0.0.0.0 firebaselogging-pa.googleapis.com
+0.0.0.0 firebaselogging-pa.googleapis.com.home.arpa
+0.0.0.0 firebaselogging.googleapis.com
+0.0.0.0 firebaselogging.googleapis.com.home.arpa
+0.0.0.0 firebaseremoteconfig.googleapis.com
+0.0.0.0 firebaseremoteconfigrealtime.googleapis.com
+0.0.0.0 firefox-settings-attachments.cdn.mozilla.net
+0.0.0.0 firefox.settings.services.mozilla.com
+0.0.0.0 firewall.hsd1.fl.comcast.net
+0.0.0.0 fls-na.amazon.com
+0.0.0.0 fmmmgxsmyopsmzt.hsd1.fl.comcast.net
+0.0.0.0 fonts-api.wp.com
+0.0.0.0 fonts.googleapis.com
+0.0.0.0 fonts.gstatic.com
+0.0.0.0 fonts.wp.com
+0.0.0.0 footprints-pa.googleapis.com
+0.0.0.0 footprints-pa.googleapis.com.home.arpa
+0.0.0.0 forms-na1.hsforms.com
+0.0.0.0 forms.hsforms.com
+0.0.0.0 forsfahqjnlhr.online
+0.0.0.0 forter.com
+0.0.0.0 fota-apis.samsungdm.com
+0.0.0.0 fpdfjmve.hsd1.fl.comcast.net
+0.0.0.0 fpjs.io
+0.0.0.0 fr.wix.com
+0.0.0.0 freyr.futurecdn.net
+0.0.0.0 frog.wix.com
+0.0.0.0 frontier-ttp2.tiktokv.us
+0.0.0.0 frontier.tiktokv.us
+0.0.0.0 futurecdn.net
+0.0.0.0 galaxy-cdn.com
+0.0.0.0 gate.hsd1.fl.comcast.net
+0.0.0.0 gateway.edge.network
+0.0.0.0 gateway.fe2.apple-dns.net
+0.0.0.0 gateway.hsd1.fl.comcast.net
+0.0.0.0 gateway.icloud.com
+0.0.0.0 gator.volces.com
+0.0.0.0 gcdn.2mdn.net
+0.0.0.0 gcdn.co
+0.0.0.0 gcorelabs.com
+0.0.0.0 gdmf-ados.apple.com
+0.0.0.0 gdmf.apple.com
+0.0.0.0 geller-pa.googleapis.com
+0.0.0.0 geo-location.prebid.cloud
+0.0.0.0 geo.prod.do.dsp.mp.microsoft.com
+0.0.0.0 geo2.adobe.com
+0.0.0.0 geolocation.onetrust.com
+0.0.0.0 geomobileservices-pa.googleapis.com
+0.0.0.0 geover.prod.do.dsp.mp.microsoft.com
+0.0.0.0 get-bx.g.aaplimg.com
+0.0.0.0 get.optad360.io
+0.0.0.0 getgreenshot.org
+0.0.0.0 ggl-ds-es11.ue4.odcus.nmcs.gcloud.thalescloud.io
+0.0.0.0 glb.sls.prod.dcat.dsp.trafficmanager.net
+0.0.0.0 glb.tas02.sls-prod.dcat.dsp.mp.microsoft.com
+0.0.0.0 global.identity.adobe.com
+0.0.0.0 global.ketchcdn.com
+0.0.0.0 glueoa-launches.appsflyersdk.com
+0.0.0.0 gmmgphlcskkqxi.hsd1.fl.comcast.net
+0.0.0.0 go-updater-1830831421.us-west-2.elb.amazonaws.com
+0.0.0.0 go-updater.brave.com
+0.0.0.0 go.glarysoft.com
+0.0.0.0 go.playlg.com
+0.0.0.0 go.sentinelone.com
+0.0.0.0 google-ohttp-relay-safebrowsing.fastly-edge.com
+0.0.0.0 googleads.g.doubleclick.net
+0.0.0.0 googleads.g.doubleclick.net.home.arpa
+0.0.0.0 googleadservices.com
+0.0.0.0 googlecdn.org
+0.0.0.0 googleoptimize.com
+0.0.0.0 googlesyndication.com
+0.0.0.0 googletagmanager.com
+0.0.0.0 gos-api-pue1-b.gos-gsp.io
+0.0.0.0 gos-api.gos-gsp.io
+0.0.0.0 gos-gsp.io
+0.0.0.0 graph-fallback.facebook.com
+0.0.0.0 graph.fbpigeon.com
+0.0.0.0 graph.instagram.com
+0.0.0.0 growth-pa.googleapis.com
+0.0.0.0 growthbook-api.production.aircall.tech
+0.0.0.0 gs-loc.apple.com
+0.0.0.0 gsa.apple.com
+0.0.0.0 gsas.apple.com
+0.0.0.0 gsl.samsunggsl.com
+0.0.0.0 gsp-ssl-geomap.ls-apple.com.akadns.net
+0.0.0.0 gsp-ssl.ls-apple.com.akadns.net
+0.0.0.0 gsp-ssl.ls.apple.com
+0.0.0.0 gsp10-ssl.apple.com
+0.0.0.0 gsp57-ssl-revgeo.ls.apple.com
+0.0.0.0 gsp64-ssl.ls.apple.com
+0.0.0.0 gspe1-ssl.ls.apple.com
+0.0.0.0 gspe35-ssl.ls.apple.com
+0.0.0.0 gspe79-cdn.g.aaplimg.com
+0.0.0.0 gspe79-ssl-96.ls.apple.com
+0.0.0.0 gspe79-ssl.ls.apple.com
+0.0.0.0 gspx-ssl.ls.apple.com
+0.0.0.0 gtm-a2b4.com
+0.0.0.0 gtm-cn-9lb31hwnp0o.gtm-a2b4.com
+0.0.0.0 gtm-cn-wwo31enga0c.gtm-a2b4.com
+0.0.0.0 gtqwrhuzlfedczr.hsd1.fl.comcast.net
+0.0.0.0 gtranslate.net
+0.0.0.0 guance.com
+0.0.0.0 gum.aidemsrv.com
+0.0.0.0 guzzoni.apple.com
+0.0.0.0 gx-target-experiments-frontend-api.gx.nvidia.com
+0.0.0.0 hakurei.us-cdnbo.org
+0.0.0.0 haprjfxlcvint.site
+0.0.0.0 haproxy.com
+0.0.0.0 haproxyedge.net
+0.0.0.0 havfw69955.lithium.com
+0.0.0.0 hawk.digitalcameraworld.com
+0.0.0.0 hbc.adobe.io
+0.0.0.0 hbrcv.adobe.com
+0.0.0.0 hdihpgfqb.hsd1.fl.comcast.net
+0.0.0.0 heatmap.it
+0.0.0.0 helpx.adobe.com
+0.0.0.0 hexagon-analytics.com
+0.0.0.0 hippojump.com
+0.0.0.0 hitler.no.hsd1.fl.comcast.net
+0.0.0.0 hjslphtc.com
+0.0.0.0 holocron.mwbsys.com
+0.0.0.0 home.arpa
+0.0.0.0 hq2zc2zefnwmg3wcm.ay.delivery
+0.0.0.0 hsd1.fl.comcast.net
+0.0.0.0 hstatic.io
+0.0.0.0 html-load.cc
+0.0.0.0 http-intake.logs.datadoghq.com
+0.0.0.0 https.hsd1.fl.comcast.net
+0.0.0.0 hubble.mb-cosmos.com
+0.0.0.0 hubspot-forms-static-embed.s3.amazonaws.com
+0.0.0.0 hubspot.com
+0.0.0.0 hz-ccx-das.adobe.io
+0.0.0.0 i-bn3p-cor090.api.p001.1drv.com
+0.0.0.0 i.clean.gg
+0.0.0.0 i.harperapps.com
+0.0.0.0 i.pinimg.com
+0.0.0.0 i.postimg.cc
+0.0.0.0 i.singular.net
+0.0.0.0 i.sng.link
+0.0.0.0 i.sng.link.home.arpa
+0.0.0.0 ib.3lift.com
+0.0.0.0 ic-ah.flixcdn.com
+0.0.0.0 ic.adobe.io
+0.0.0.0 icloud.com
+0.0.0.0 id-msp.newsbreak.com
+0.0.0.0 id.fortune.com
+0.0.0.0 identity.api.intuit.com
+0.0.0.0 identity.mparticle.com
+0.0.0.0 iguazu.doordash.com
+0.0.0.0 ihsdygpltqwob.site
+0.0.0.0 iia3kltd.emltrk.com
+0.0.0.0 image6.pubmatic.com
+0.0.0.0 imagecdn.clips4sale.com
+0.0.0.0 imasdk.googleapis.com
+0.0.0.0 img.icons8.com
+0.0.0.0 img.mobon.net
+0.0.0.0 img.shields.io
+0.0.0.0 imgs.signifyd.com
+0.0.0.0 imgur.ccgateway.net
+0.0.0.0 ims-na1.adobelogin.com.cdn.cloudflare.net
+0.0.0.0 ims-prod06.adobelogin.com
+0.0.0.0 in.appcenter.ms
+0.0.0.0 incapdns.net
+0.0.0.0 incoming.telemetry.mozilla.org
+0.0.0.0 infinitedata-pa.googleapis.com
+0.0.0.0 infinitedata-pa.googleapis.com.home.arpa
+0.0.0.0 informz.net
+0.0.0.0 ingress.linktr.ee
+0.0.0.0 init-p01md.apple.com
+0.0.0.0 init.ess.apple.com
+0.0.0.0 init.push.apple.com
+0.0.0.0 inputsuggestions.msdxcdn.microsoft.com
+0.0.0.0 insights-collector.newrelic.com
+0.0.0.0 instagram.com
+0.0.0.0 installers.privateinternetaccess.com
+0.0.0.0 instantcdn.net
+0.0.0.0 int.dewrain.life
+0.0.0.0 int.vaicore.site
+0.0.0.0 intc-keyid-77b63d9f8b73f5fbbd73ace7d8fbda37a6a7865f.microsoftaik.azure.net
+0.0.0.0 intercom.io
+0.0.0.0 international-gfe.download.nvidia.com
+0.0.0.0 invitations.adobe.io
+0.0.0.0 iosantiabuse-pa.googleapis.com
+0.0.0.0 iosapps.itunes.apple.com
+0.0.0.0 ip-info.ff.avast.com
+0.0.0.0 ip2c.org
+0.0.0.0 ipcdn.apple.com
+0.0.0.0 iphone-ld.apple.com
+0.0.0.0 ipify.org
+0.0.0.0 ipinfo.io
+0.0.0.0 ipv4.tracker.harry.lu
+0.0.0.0 ipv6.msftconnecttest.com
+0.0.0.0 ipv6.msftconnecttest.com.edgesuite.net
+0.0.0.0 ipv6.msftncsi.com
+0.0.0.0 ipwhois.app
+0.0.0.0 iris-de-ppe-azsc-v2-eus2.eastus2.cloudapp.azure.com
+0.0.0.0 iris-de-prod-azsc-v2-wus2.westus2.cloudapp.azure.com
+0.0.0.0 iris.mwbsys.com
+0.0.0.0 ist1-3.filesor.com
+0.0.0.0 iterable.com
+0.0.0.0 itunes.com
+0.0.0.0 izftyjhboeffc.hsd1.fl.comcast.net
+0.0.0.0 jenson.api.swiftkey.com
+0.0.0.0 jetpack.wordpress.com
+0.0.0.0 jkumqhmfyoxtpo.hsd1.fl.comcast.net
+0.0.0.0 jmuhqima.hsd1.fl.comcast.net
+0.0.0.0 jnm.f02.myftpupload.com
+0.0.0.0 jnn-pa.googleapis.com
+0.0.0.0 jpjclmwjwbv.hsd1.fl.comcast.net
+0.0.0.0 js-cdn.music.apple.com
+0.0.0.0 js.assemblyexchange.com
+0.0.0.0 js.chilipiper.com
+0.0.0.0 js.hs-analytics.net
+0.0.0.0 js.hsadspixel.net
+0.0.0.0 js.hscollectedforms.net
+0.0.0.0 js.monitor.azure.com
+0.0.0.0 js.sentry-cdn.com
+0.0.0.0 justlagoon.com
+0.0.0.0 jvwrjzeienq.hsd1.fl.comcast.net
+0.0.0.0 jwpltx.com
+0.0.0.0 jymogdwwbggv.hsd1.fl.comcast.net
+0.0.0.0 kahn.home.arpa
+0.0.0.0 kcgibogyxffrqa.hsd1.fl.comcast.net
+0.0.0.0 khigh.hsd1.fl.comcast.net
+0.0.0.0 klkokznfctisi.hsd1.fl.comcast.net
+0.0.0.0 kmiqzhojrzffd.hsd1.fl.comcast.net
+0.0.0.0 kms.digiboy.ir
+0.0.0.0 ko-fi.com
+0.0.0.0 kv601.prod.do.dsp.mp.microsoft.com
+0.0.0.0 kzurnweljuvq.hsd1.fl.comcast.net
+0.0.0.0 lamssettings-pa.googleapis.com
+0.0.0.0 launchdarkly.com
+0.0.0.0 launchpad-wrapper.privacymanager.io
+0.0.0.0 launchpad.privacymanager.io
+0.0.0.0 lcdn-locator.apple.com
+0.0.0.0 lcs-cops.adobe.io
+0.0.0.0 lcs-robs.adobe.io
+0.0.0.0 learnplaylistservice.adobe.com
+0.0.0.0 lf1go.bmtrck.com
+0.0.0.0 li.protechts.net
+0.0.0.0 licensing-prod-frontdoor-geomap.trafficmanager.net
+0.0.0.0 licensing.mp.microsoft.com
+0.0.0.0 lijit.com
+0.0.0.0 limeiptv.to
+0.0.0.0 live.primis.tech
+0.0.0.0 livechatinc.com
+0.0.0.0 llornnqkkd.hsd1.fl.comcast.net
+0.0.0.0 ln-0007.config.skype.com
+0.0.0.0 location-v6-ttp2.tiktokv.us
+0.0.0.0 location-v6.tiktokv.us
+0.0.0.0 location-v6.tiktokv.us.home.arpa
+0.0.0.0 location.services.mozilla.com
+0.0.0.0 locationhistory-pa.googleapis.com
+0.0.0.0 locationhistory-pa.googleapis.com.home.arpa
+0.0.0.0 locationhistoryplacedetails-pa.googleapis.com
+0.0.0.0 locationhistoryplacedetails-pa.googleapis.com.home.arpa
+0.0.0.0 log16-normal-useast8.tiktokv.us
+0.0.0.0 login.wikimedia.org
+0.0.0.0 logs.browser-intake-datadoghq.com
+0.0.0.0 loki.delve.office.com
+0.0.0.0 lookaside.instagram.com
+0.0.0.0 lopbemgj.hsd1.fl.comcast.net
+0.0.0.0 lpa.live.esimdiscovery.com
+0.0.0.0 luxformula.com
+0.0.0.0 lxllykmlcmlkfvi.hsd1.fl.comcast.net
+0.0.0.0 lxm8t1aec3c.mw1i8.adobestats.io
+0.0.0.0 m-stratovibe.prod.suno.com
+0.0.0.0 m.castle.io
+0.0.0.0 m.google.com.hsd1.fl.comcast.net
+0.0.0.0 m.ilbe.com
+0.0.0.0 m.ilbe.com.bplslb.com
+0.0.0.0 madnessporn.hsd1.fl.comcast.net
+0.0.0.0 mads.amazon-adsystem.com
+0.0.0.0 mail-ads.google.com
+0.0.0.0 malwarebytes-api.go-vip.net
+0.0.0.0 marvel-b2-cdn.bc0a.com
+0.0.0.0 mask-api.icloud.com
+0.0.0.0 mask-h2.icloud.com
+0.0.0.0 mask.apple-dns.net
+0.0.0.0 mask.icloud.com
+0.0.0.0 matt-kruse.github.io
+0.0.0.0 mauth.cyberlink.com
+0.0.0.0 mc.prod.ads.prod.webservices.mozgcp.net
+0.0.0.0 mcbnck8rxcs7cyrnvfcfd43796q0.device.marketingcloudapis.com
+0.0.0.0 mcs-sg.tiktokv.com
+0.0.0.0 mcxvl96p2dzmhsr3j162tjrsn478.device.marketingcloudapis.com
+0.0.0.0 md7gpg8x53.sf7e3.adobestats.io
+0.0.0.0 medianova-cdnperf.mncdn.com
+0.0.0.0 merino.services.mozilla.com
+0.0.0.0 mesu.apple.com
+0.0.0.0 meta-ohttp-relay-prod.fastly-edge.com
+0.0.0.0 meta-ohttp-relay-prod.fastly-edge.com.home.arpa
+0.0.0.0 metadata.templates.cdn.office.net
+0.0.0.0 mhgulzhluhcvt.space
+0.0.0.0 micro.rubiconproject.com
+0.0.0.0 mixpanel.com
+0.0.0.0 mjriazemzybdg.online
+0.0.0.0 mm-mm.bing.net.trafficmanager.net
+0.0.0.0 mncdn.com
+0.0.0.0 mobile-api.rokt.com
+0.0.0.0 mobile.events.data.microsoft.com
+0.0.0.0 mobileconfiguration-pa.googleapis.com
+0.0.0.0 mobiledataplan-pa.googleapis.com
+0.0.0.0 mobon.net
+0.0.0.0 mon-boot.tiktokv.com
+0.0.0.0 mon-va.byteoversea.com
+0.0.0.0 mon16-normal-useast5.tiktokv.us
+0.0.0.0 mon16-normal-useast8.tiktokv.us
+0.0.0.0 monetate.net
+0.0.0.0 monorail-edge.shopifysvc.com
+0.0.0.0 motherless.hsd1.fl.comcast.net
+0.0.0.0 mozilla.cloudflare-dns.com
+0.0.0.0 mp-data.gofundme.com
+0.0.0.0 mp.imgur.com
+0.0.0.0 mparker2.hsd1.fl.comcast.net
+0.0.0.0 mparticle.weather.com
+0.0.0.0 mqtt-mini.facebook.com
+0.0.0.0 mrodevicemgr.officeapps.live.com
+0.0.0.0 msdx-cdn-y86ykn8r9v.azureedge.net
+0.0.0.0 msedge.api.cdp.microsoft.com
+0.0.0.0 msp.newsbreak.com
+0.0.0.0 mssdk-va.tiktok.com
+0.0.0.0 mssdk.tiktokw.us
+0.0.0.0 mtalk.google.com
+0.0.0.0 mtalk.google.com.hsd1.fl.comcast.net
+0.0.0.0 my.nalpeiron.com
+0.0.0.0 myaccount.glarysoft.com
+0.0.0.0 myftpupload.com
+0.0.0.0 myphonenumbers-pa.googleapis.com
+0.0.0.0 mysite.com
+0.0.0.0 mzstatic.com
+0.0.0.0 mzvwfywh.hsd1.fl.comcast.net
+0.0.0.0 n4m5x60.com
+0.0.0.0 na.shgcdn3.com
+0.0.0.0 na1e-acc.services.adobe.com
+0.0.0.0 na1e-uw.services.adobe.com
+0.0.0.0 nacktefoto.com
+0.0.0.0 nalssi.net
+0.0.0.0 nav-edge.smartscreen.microsoft.com
+0.0.0.0 ncache.ilbe.com
+0.0.0.0 ncache.ilbe.com.bplslb.com
+0.0.0.0 nearbydevices-pa.googleapis.com
+0.0.0.0 nearbysharing-pa.googleapis.com
+0.0.0.0 nearbysharing-pa.googleapis.com.home.arpa
+0.0.0.0 nelreports.net
+0.0.0.0 net.geo.opera.com
+0.0.0.0 netcts.cdn-apple.com
+0.0.0.0 netcts.cdn-apple.com.edgesuite.net
+0.0.0.0 neveragain.allstatics.com
+0.0.0.0 news.iadsdk.apple.com
+0.0.0.0 newsletterwoot.com
+0.0.0.0 nexus-websocket-a.intercom.io
+0.0.0.0 nexus.dell.com
+0.0.0.0 nexusrules.officeapps.live.com
+0.0.0.0 ngx-v4.amp-endpoint2.com
+0.0.0.0 ngx-v6.amp-endpoint2.com
+0.0.0.0 ngx-v6.amp-endpoint2.com.home.arpa
+0.0.0.0 ngx.download.nvidia.com
+0.0.0.0 nitroscripts.com
+0.0.0.0 nlykgmhozbcee.online
+0.0.0.0 nma083006-2.home.arpa
+0.0.0.0 normandy.cdn.mozilla.net
+0.0.0.0 notcardboard.com
+0.0.0.0 notepad-plus-plus.org
+0.0.0.0 notifications-pa.googleapis.com
+0.0.0.0 notifier-configs.airbrake.io
+0.0.0.0 notix.io
+0.0.0.0 ns.hsd1.fl.comcast.net
+0.0.0.0 ntmkgvxy.hsd1.fl.comcast.net
+0.0.0.0 nts.netnod.se
+0.0.0.0 nts.sth1.ntp.se
+0.0.0.0 ntserv.hsd1.fl.comcast.net
+0.0.0.0 nvidia.com
+0.0.0.0 o1069899.ingest.sentry.io
+0.0.0.0 o1383653.ingest.sentry.io
+0.0.0.0 o17585.ingest.sentry.io
+0.0.0.0 o17585.ingest.sentry.io.home.arpa
+0.0.0.0 o17585.ingest.us.sentry.io
+0.0.0.0 o22381.ingest.sentry.io
+0.0.0.0 o33249.ingest.sentry.io
+0.0.0.0 o37417.ingest.sentry.io
+0.0.0.0 o4504260137254912.ingest.us.sentry.io
+0.0.0.0 o4504931153149952.ingest.sentry.io
+0.0.0.0 o4506314634297344.ingest.us.sentry.io
+0.0.0.0 o502263.ingest.sentry.io
+0.0.0.0 o80279.ingest.sentry.io
+0.0.0.0 o80279.ingest.sentry.io.home.arpa
+0.0.0.0 o915751.ingest.sentry.io
+0.0.0.0 oauth.platform.intuit.com
+0.0.0.0 obsproject.com
+0.0.0.0 ocalesit.com
+0.0.0.0 ocsp2.apple.com
+0.0.0.0 oculuscdn.com
+0.0.0.0 office.com
+0.0.0.0 office.home.arpa
+0.0.0.0 office.net
+0.0.0.0 officeclient.microsoft.com
+0.0.0.0 ogads-pa.clients6.google.com
+0.0.0.0 ogads-pa.googleapis.com
+0.0.0.0 omappapi.com
+0.0.0.0 omex.cdn.office.net
+0.0.0.0 omnisnippet1.com
+0.0.0.0 ondevicesafety-pa.googleapis.com
+0.0.0.0 ondevicesafety-pa.googleapis.com.home.arpa
+0.0.0.0 one.one.one.one
+0.0.0.0 oneclient.sfx.ms
+0.0.0.0 oneclient.sfx.ms.home.arpa
+0.0.0.0 ontology.health.apple.com
+0.0.0.0 ooc-g2.tm-4.office.com
+0.0.0.0 oofpalate.com
+0.0.0.0 opera.com
+0.0.0.0 optable.co
+0.0.0.0 optad360.io
+0.0.0.0 optimizationguide-pa.googleapis.com
+0.0.0.0 origin.fe-image-cache-ttp.useast8.byteglb.com
+0.0.0.0 osdglsywo.hsd1.fl.comcast.net
+0.0.0.0 ota.nvidia.com
+0.0.0.0 otel-mobile.doordash.com
+0.0.0.0 otheve.beacon.qq.com
+0.0.0.0 oveuls-cdn-settings.appsflyersdk.com
+0.0.0.0 ovh-cdn.perfops.io
+0.0.0.0 ovscdns.com
+0.0.0.0 ovscdns.net
+0.0.0.0 oxrwsdhcij.hsd1.fl.comcast.net
+0.0.0.0 p.controld.com
+0.0.0.0 p.imgur.com
+0.0.0.0 p.liadm.com
+0.0.0.0 p.typekit.net
+0.0.0.0 p.vidembed.re
+0.0.0.0 p101-content.icloud.com
+0.0.0.0 p11.techlab-cdn.com
+0.0.0.0 p112-sharedstreams.icloud.com
+0.0.0.0 p131-acsegateway.icloud.com
+0.0.0.0 p131-escrowproxy.icloud.com
+0.0.0.0 p131-fmip.icloud.com
+0.0.0.0 p131-fmipmobile.icloud.com
+0.0.0.0 p131-quota.icloud.com
+0.0.0.0 p13n.adobe.io
+0.0.0.0 p16-common-ipv6-sign.tiktokcdn-us.com.home.arpa
+0.0.0.0 p16-oec-ttp-useast5.ttcdn-us.com
+0.0.0.0 p16-oec-ttp.tiktokcdn-us.com.home.arpa
+0.0.0.0 p1800.home.arpa
+0.0.0.0 pagead2.googlesyndication.com
+0.0.0.0 pages.pubfinity.com
+0.0.0.0 pai-us.us-west-1.log.aliyuncs.com
+0.0.0.0 pancake.apple.com
+0.0.0.0 panorama.wixapps.net
+0.0.0.0 partiality.itunes.apple.com
+0.0.0.0 passwordsleakcheck-pa.googleapis.com
+0.0.0.0 patch.com
+0.0.0.0 path1.xtracloud.net
+0.0.0.0 pay-users-pa.googleapis.com
+0.0.0.0 peoplestackwebexperiments-pa.clients6.google.com
+0.0.0.0 perf-na1.hsforms.com
+0.0.0.0 perf.hsforms.com
+0.0.0.0 perfops.gcorelabs.com
+0.0.0.0 perfops.io
+0.0.0.0 perfops.net
+0.0.0.0 perfops.pc.cdn.bitgravity.com
+0.0.0.0 pf.intuit.com
+0.0.0.0 pgidfhyglq.hsd1.fl.comcast.net
+0.0.0.0 phonedeviceverification-pa.googleapis.com
+0.0.0.0 photoshop.com
+0.0.0.0 piano.io
+0.0.0.0 piaproxy.net
+0.0.0.0 pinimg.com
+0.0.0.0 pinning-02.secb2b.com
+0.0.0.0 pinning-02.secb2b.com.home.arpa
+0.0.0.0 pinterest.com
+0.0.0.0 pinterest.net
+0.0.0.0 pipedream.wistia.com
+0.0.0.0 piw46ocbrkp6.mw1i8.adobestats.io
+0.0.0.0 pixel-api.pfsrvs.com
+0.0.0.0 pixel-config.reddit.com
+0.0.0.0 pixel-static.spotify.com
+0.0.0.0 pixel.spotify.com
+0.0.0.0 pixiedust.buzzfeed.com
+0.0.0.0 pkmyexkljzdfy.site
+0.0.0.0 pl.scdn.co.hsd1.fl.comcast.net
+0.0.0.0 platform-cs-edge-va6.adobe.io
+0.0.0.0 platform-cs-va6.adobe.io
+0.0.0.0 platform-cs.adobe.io
+0.0.0.0 platform.linkedin.com
+0.0.0.0 play-apps-features.googleusercontent.com
+0.0.0.0 play.samsungcloud.com
+0.0.0.0 playatoms-pa.googleapis.com
+0.0.0.0 playcus.com
+0.0.0.0 players.brightcove.net
+0.0.0.0 plopr112.home.arpa
+0.0.0.0 plszoocwqra.hsd1.fl.comcast.net
+0.0.0.0 pojvzepbn.hsd1.fl.comcast.net
+0.0.0.0 poll.gras.samsungdm.com
+0.0.0.0 poll.gras.samsungdm.com.home.arpa
+0.0.0.0 polldaddy.com
+0.0.0.0 polyfill.io
+0.0.0.0 pool.ntp.org
+0.0.0.0 posthog.com
+0.0.0.0 pps.services.adobe.com
+0.0.0.0 pr-pod9-smp-device.apple.com
+0.0.0.0 prd.jwpltx.com
+0.0.0.0 prebid.cloud
+0.0.0.0 primary.hsd1.fl.comcast.net
+0.0.0.0 privacy-mgmt.com
+0.0.0.0 privacy.cyberlink.com
+0.0.0.0 privateinternetaccess.com
+0.0.0.0 pro.fontawesome.com
+0.0.0.0 pro.fontawesome.com.cdn.cloudflare.net
+0.0.0.0 pro.ip-api.com
+0.0.0.0 proactivebackend-pa.googleapis.com
+0.0.0.0 proactivebackend-pa.googleapis.com.home.arpa
+0.0.0.0 prod-foxkit.kts.fox
+0.0.0.0 prod.adobeccstatic.com
+0.0.0.0 prod.idgraph.dt.fox
+0.0.0.0 prod.pyxis.atp.fox
+0.0.0.0 prodregistryv2.org
+0.0.0.0 productionresultssa11.blob.core.windows.net
+0.0.0.0 proxy.hsd1.fl.comcast.net
+0.0.0.0 psasc5viz65.kq7xq.hstatic.io
+0.0.0.0 psfdwavj.hsd1.fl.comcast.net
+0.0.0.0 ptd-fs-2.hsd1.fl.comcast.net
+0.0.0.0 ptd-secops-02.hsd1.fl.comcast.net
+0.0.0.0 pub.doubleverify.com
+0.0.0.0 pubads.g.doubleclick.net
+0.0.0.0 pubfinity.com
+0.0.0.0 public.hubapi.com
+0.0.0.0 pubmatic.com
+0.0.0.0 pull-a5-tt02-infra.fcdn.us.tiktokv.com.home.arpa
+0.0.0.0 pull-c5-tt04.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-cmaf-f77-gcp01.tiktokcdn.com.home.arpa
+0.0.0.0 pull-cmaf-f77-sg01.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-cmaf-f77-tt01.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-cmaf-f77-tt02.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-cmaf-f77-tt03.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-cmaf-f77-tt04.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-cmaf-l10-gcp01.tiktokcdn.com.home.arpa
+0.0.0.0 pull-f5-gcp01.fcdn.us.tiktokv.com.home.arpa
+0.0.0.0 pull-f5-tt03.fcdn.us.tiktokv.com.home.arpa
+0.0.0.0 pull-f5-vr-gcp01.tiktokcdn.com.home.arpa
+0.0.0.0 pull-flv-f11-gcp01.tiktokcdn.com.home.arpa
+0.0.0.0 pull-flv-f60-tt02.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-flv-f77-tt01.fcdn.us.tiktokv.com.home.arpa
+0.0.0.0 pull-flv-f77-tt02.fcdn.us.tiktokv.com.home.arpa
+0.0.0.0 pull-flv-f77-tt02.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-flv-f77-tt03.fcdn.us.tiktokcdn.com.home.arpa
+0.0.0.0 pull-flv-f77-tt04.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-flv-f77-va01.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-flv-l10-gcp01.tiktokcdn.com.home.arpa
+0.0.0.0 pull-flv-l11-gcp01.tiktokcdn.com.home.arpa
+0.0.0.0 pull-flv-l16-gcp01.tiktokcdn.com.home.arpa
+0.0.0.0 pull-flv-l60-tt04.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-flv-l77-gcp01.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-flv-l77-sg01.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-flv-l77-tt01.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-flv-o77-sg01.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-flv-q77-va01.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-flv-w77-sg01.tiktokcdn-us.com.home.arpa
+0.0.0.0 pull-lls-l11.tiktokcdn.com.home.arpa
+0.0.0.0 pull-w5-sg01.tiktokcdn-us.com.home.arpa
+0.0.0.0 push-fcdn-ttp4.s.bytefcdn-ttpus.com
+0.0.0.0 push-rtmp-l77-tt01.tiktokcdn-us.com.home.arpa
+0.0.0.0 push-rtmp-l77-tt02.tiktokcdn-us.com.home.arpa
+0.0.0.0 push.apple.com
+0.0.0.0 push.chance.surf
+0.0.0.0 push.services.mozilla.com
+0.0.0.0 pvzlikal.hsd1.fl.comcast.net
+0.0.0.0 px.ads.linkedin.com
+0.0.0.0 pyxis.atp.fox
+0.0.0.0 qcc.qccgeo.qualcomm.com
+0.0.0.0 qcc.qualcomm.com
+0.0.0.0 qcloudcdn.com
+0.0.0.0 qcloudteo.com
+0.0.0.0 qcomgeo2.com
+0.0.0.0 qlivecdn.com
+0.0.0.0 qoqzlggoggn.hsd1.fl.comcast.net
+0.0.0.0 qpyajknjhaf.hsd1.fl.comcast.net
+0.0.0.0 qqtcwwcutjnxd.hsd1.fl.comcast.net
+0.0.0.0 quake-pa.googleapis.com
+0.0.0.0 qualcomm.com
+0.0.0.0 query.ess.apple.com
+0.0.0.0 quick-actions.express.adobe.com
+0.0.0.0 quicklyedit.com
+0.0.0.0 r.logrocket.io
+0.0.0.0 r.lr-intake.com
+0.0.0.0 r.skimresources.com
+0.0.0.0 r0.mradx.net
+0.0.0.0 r3-kjxyo-modsfire.b6fbbdf4a435e192350b1c62f9bdcba7.r2.cloudflarestorage.com
+0.0.0.0 raqxavmkfupnnr.hsd1.fl.comcast.net
+0.0.0.0 ratingsedge.rnr.microsoft.com
+0.0.0.0 raven-edge.aditude.io
+0.0.0.0 rcm-na.amazon-adsystem.com
+0.0.0.0 rdcv1.com
+0.0.0.0 rdlckeqdkrtm.hsd1.fl.comcast.net
+0.0.0.0 redirect.prod.experiment.routing.cloudfront.aws.a2z.com
+0.0.0.0 redirector.brave.com
+0.0.0.0 regulations-api.pfsrvs.com
+0.0.0.0 related.queryly.com
+0.0.0.0 release-assets.githubusercontent.com.hsd1.fl.comcast.net
+0.0.0.0 remote-data.urbanairship.com
+0.0.0.0 remote-data.urbanairship.com.home.arpa
+0.0.0.0 remoteprovisioning.googleapis.com
+0.0.0.0 report.error-report.com
+0.0.0.0 repository.eset.com
+0.0.0.0 repository.gtm.eset.com
+0.0.0.0 reqhfg-cdn-settings.appsflyersdk.com
+0.0.0.0 reqhfg-cdn-settings.appsflyersdk.com.home.arpa
+0.0.0.0 reqhfg-inapps.appsflyersdk.com
+0.0.0.0 reqhfg-inapps.appsflyersdk.com.home.arpa
+0.0.0.0 reqhfg-launches.appsflyersdk.com
+0.0.0.0 reqhfg-launches.appsflyersdk.com.home.arpa
+0.0.0.0 res4.applovin.com
+0.0.0.0 resource.wondershare.com
+0.0.0.0 resource.wondershare.com.w.kunlungr.com
+0.0.0.0 resources.blogblog.com
+0.0.0.0 restrictedapps-pa.googleapis.com
+0.0.0.0 rezvorck.github.io
+0.0.0.0 rezvorck.github.io.home.arpa
+0.0.0.0 rhozet.hsd1.fl.comcast.net
+0.0.0.0 riskified.com
+0.0.0.0 rncdn7.com
+0.0.0.0 rnr-prod.eastus.cloudapp.azure.com
+0.0.0.0 rnr-prod.trafficmanager.net
+0.0.0.0 roaming.svc.cloud.microsoft
+0.0.0.0 rocket-cdn.com
+0.0.0.0 rokt.com
+0.0.0.0 rollout.ada.support
+0.0.0.0 roughtime.int08h.com
+0.0.0.0 roughtime.sandbox.google.com
+0.0.0.0 rqzkhdoann.hsd1.fl.comcast.net
+0.0.0.0 rtlog16-normal-useast8.tiktokv.us
+0.0.0.0 ru.wix.com
+0.0.0.0 rudderlabs.com
+0.0.0.0 rudderstack.com
+0.0.0.0 rum-cdn.perfops.net
+0.0.0.0 rum.hlx.page
+0.0.0.0 rushinfo.adobe.com
+0.0.0.0 rwglohcoqpdljvh.hsd1.fl.comcast.net
+0.0.0.0 s.amazon-adsystem.com
+0.0.0.0 s.axon.ai
+0.0.0.0 s.go-mpulse.net
+0.0.0.0 s.mzstatic.com
+0.0.0.0 s.n4m5x60.com
+0.0.0.0 s.prod.suno.com
+0.0.0.0 s.thebrighttag.com
+0.0.0.0 s.xlgmedia.com
+0.0.0.0 s0.2mdn.net
+0.0.0.0 s2.go-mpulse.net
+0.0.0.0 s2.loli.net
+0.0.0.0 s38.sitemeter.com
+0.0.0.0 s7mbrstream.scene7.com
+0.0.0.0 sa.loud.red
+0.0.0.0 safebrowsing.brave.com
+0.0.0.0 safebrowsing.googleapis.com
+0.0.0.0 safety-alert.apple.com
+0.0.0.0 salesforce.us-1.evergage.com
+0.0.0.0 samsung-sm-ds.com
+0.0.0.0 samsung.com
+0.0.0.0 samsungapps.com
+0.0.0.0 samsungcloud.com
+0.0.0.0 samsungcloudplatform.com
+0.0.0.0 samsungdis.com
+0.0.0.0 samsungdm.com
+0.0.0.0 samsunggsl.com
+0.0.0.0 samsungmobile.com
+0.0.0.0 sascdn.com
+0.0.0.0 satismeter.com
+0.0.0.0 sb-ssl.brave.com
+0.0.0.0 sb.scorecardresearch.com
+0.0.0.0 sc-static.net
+0.0.0.0 scaehvgxfxevwt.hsd1.fl.comcast.net
+0.0.0.0 scloud.ws
+0.0.0.0 scone-pa.googleapis.com
+0.0.0.0 scone-pa.googleapis.com.home.arpa
+0.0.0.0 scorecardresearch.com
+0.0.0.0 screenconnect.userecho.com
+0.0.0.0 scrubbingcenter.com
+0.0.0.0 scs-config-use2.bixbyllm.com
+0.0.0.0 scs-config-use2.bixbyllm.com.home.arpa
+0.0.0.0 scs-euw1.bixbyllm.com
+0.0.0.0 scs-euw1.bixbyllm.com.home.arpa
+0.0.0.0 scs-use2.bixbyllm.com
+0.0.0.0 scs-use2.bixbyllm.com.home.arpa
+0.0.0.0 sdk-api-v1.singular.net
+0.0.0.0 sdk.birdeatsbug.com
+0.0.0.0 sdk.iad-06.braze.com
+0.0.0.0 sdk.mrf.io
+0.0.0.0 sdk.privacy-center.org
+0.0.0.0 sdk.pushmessage.samsung.com
+0.0.0.0 sdk.waze.com
+0.0.0.0 se.monetate.net
+0.0.0.0 seal-westflorida.bbb.org
+0.0.0.0 search-api.fie.futurecdn.net
+0.0.0.0 searchlabspartnerservice-pa.googleapis.com
+0.0.0.0 searchlabspartnerservice-pa.googleapis.com.home.arpa
+0.0.0.0 searchnotifications-pa.googleapis.com
+0.0.0.0 searchnotifications-pa.googleapis.com.home.arpa
+0.0.0.0 secak-fota-dn.samsungdm.com
+0.0.0.0 secb2b.com
+0.0.0.0 secure.gravatar.com
+0.0.0.0 secure.nice3aiea.com
+0.0.0.0 securepubads.g.doubleclick.net
+0.0.0.0 security.wowlazy.com
+0.0.0.0 segment.io
+0.0.0.0 self.events.data.microsoft.com
+0.0.0.0 send.hsbrowserreports.com
+0.0.0.0 sendvsfeedback2.azurewebsites.net
+0.0.0.0 sensorsdata.com
+0.0.0.0 sentry-24.starii-int.com
+0.0.0.0 sentry-cdn.com
+0.0.0.0 sentry-next.wixpress.com
+0.0.0.0 sentry.infrastructure.pandadoc.com
+0.0.0.0 sentry.io
+0.0.0.0 sentry.wixpress.com
+0.0.0.0 server.messaging.adobe.com
+0.0.0.0 service.account.adobe.com
+0.0.0.0 service.force.com
+0.0.0.0 services.gfe.nvidia.com
+0.0.0.0 session-api.pfsrvs.com
+0.0.0.0 settings-win.data.microsoft.com
+0.0.0.0 settings.crashlytics.com
+0.0.0.0 settings.crashlytics.com.home.arpa
+0.0.0.0 setup.icloud.com
+0.0.0.0 sexystars.online
+0.0.0.0 sf16-website-login.neutral.ttwstatic.com
+0.0.0.0 sfpwqxnzxszzx.website
+0.0.0.0 sfsites.hsd1.fl.comcast.net
+0.0.0.0 shepherd.avcdn.net
+0.0.0.0 shepherd.ff.avast.com
+0.0.0.0 shepherd.ff.avast.com.home.arpa
+0.0.0.0 shopvoxpopulus.com
+0.0.0.0 shu91ocywlv6ie711f.hsd1.fl.comcast.net
+0.0.0.0 sia.internet.apps.samsung.com
+0.0.0.0 sift.com
+0.0.0.0 siftscience.com
+0.0.0.0 signifyd.com
+0.0.0.0 simpleanalytics.com
+0.0.0.0 singular.net
+0.0.0.0 siteimproveanalytics.com
+0.0.0.0 siteintercept.qualtrics.com
+0.0.0.0 sitemeter.com
+0.0.0.0 sitereview.zscaler.com
+0.0.0.0 sk-connect.api.swiftkey.com
+0.0.0.0 skimresources.com
+0.0.0.0 skype.com
+0.0.0.0 slice.vanilla.futurecdn.net
+0.0.0.0 slmoh9i0.mw1i8.adobestats.io
+0.0.0.0 sm.dell.com
+0.0.0.0 smetrics.fedex.com
+0.0.0.0 smp-device-content.apple.com
+0.0.0.0 snippet.maze.co
+0.0.0.0 sonar-iad3-1.xx.fbcdn.net
+0.0.0.0 sonar6-atl3-1.xx.fbcdn.net.hsd1.fl.comcast.net
+0.0.0.0 sonar6-atl3-2.xx.fbcdn.net.hsd1.fl.comcast.net
+0.0.0.0 sonar6-iad3-1.xx.fbcdn.net
+0.0.0.0 sonar6-lga3-2.xx.fbcdn.net.hsd1.fl.comcast.net
+0.0.0.0 sonar6.xy.fbcdn.net
+0.0.0.0 sophi.io
+0.0.0.0 speechs3proto2-pa.googleapis.com
+0.0.0.0 spidersense.bendingspoons.com
+0.0.0.0 spn-v1.revampcdn.com
+0.0.0.0 sponge.creditkarma.com
+0.0.0.0 spot-pa.googleapis.com
+0.0.0.0 spot-pa.googleapis.com.home.arpa
+0.0.0.0 spot-pa.googleapis.com.hsd1.fl.comcast.net
+0.0.0.0 sr-client-cfg.amplitude.com
+0.0.0.0 sr.studiostack.com
+0.0.0.0 srkdveixmj.hsd1.fl.comcast.net
+0.0.0.0 srtb.msn.com
+0.0.0.0 ssl.google-analytics.com
+0.0.0.0 sso.malwarebytes.com
+0.0.0.0 ssotlnathqk.hsd1.fl.comcast.net
+0.0.0.0 ssp-api.pfsrvs.com
+0.0.0.0 sstats.adobe.com
+0.0.0.0 stack-sonar.com
+0.0.0.0 stackpath.bootstrapcdn.com
+0.0.0.0 star-randsrv.bsg.brave.com
+0.0.0.0 statcounter.com
+0.0.0.0 static-mon.yandex.net
+0.0.0.0 static-or01.inbenta.com
+0.0.0.0 static.adsafeprotected.com
+0.0.0.0 static.agentio.com
+0.0.0.0 static.cloudflareinsights.com
+0.0.0.0 static.doubleclick.net
+0.0.0.0 static.guance.com
+0.0.0.0 static.hotjar.com
+0.0.0.0 static.pfsrvs.com
+0.0.0.0 static.scroll.com
+0.0.0.0 static.trueanthem.com
+0.0.0.0 stats.g.doubleclick.net
+0.0.0.0 stats.paypal.com
+0.0.0.0 stats.wp.com
+0.0.0.0 statsig.anthropic.com
+0.0.0.0 statsigapi.net
+0.0.0.0 stc.samsungdis.com
+0.0.0.0 stc.samsungdis.com.home.arpa
+0.0.0.0 steinberg.net
+0.0.0.0 stls.helpx.adobe.com-cn.edgesuite.net
+0.0.0.0 stmedia.startribune.com
+0.0.0.0 storecatalogrevocation.storequality.microsoft.com
+0.0.0.0 storeedgefd.dsx.mp.microsoft.com
+0.0.0.0 storeedgefd.dsx.mp.microsoft.com.edgekey.net
+0.0.0.0 storeedgefd.dsx.mp.microsoft.com.edgekey.net.globalredir.akadns.net
+0.0.0.0 streams.yext.com
+0.0.0.0 strike.fox.com
+0.0.0.0 stubbsmovers.com
+0.0.0.0 studiostack.com
+0.0.0.0 stun.framasoft.org
+0.0.0.0 stunserver2024.stunprotocol.org
+0.0.0.0 submit.backtrace.io
+0.0.0.0 sufycdn.com
+0.0.0.0 sufydns.com
+0.0.0.0 suggestqueries.google.com
+0.0.0.0 suggestqueries.l.google.com
+0.0.0.0 surecart.com
+0.0.0.0 swallow.apple.com
+0.0.0.0 swiftkey.com
+0.0.0.0 swupmf.adobe.com
+0.0.0.0 sync.extend.tv
+0.0.0.0 sync.search.spotxchange.com
+0.0.0.0 syndication.twitter.com
+0.0.0.0 szkraidcrtzw.hsd1.fl.comcast.net
+0.0.0.0 t.a3cloud.net
+0.0.0.0 t.arcade.show
+0.0.0.0 t7.noreply.fpl.com
+0.0.0.0 tag.segmetrics.io
+0.0.0.0 tag.yieldoptimizer.com
+0.0.0.0 target.microsoft.com
+0.0.0.0 targetednotifications-tm.trafficmanager.net
+0.0.0.0 tas02.sls.update.microsoft.com
+0.0.0.0 taskassist-pa.googleapis.com
+0.0.0.0 teamviewer-internal-b1f1235a.hsd1.fl.comcast.net
+0.0.0.0 telemetry-incoming.r53-2.services.mozilla.com
+0.0.0.0 telemetry.api.swiftkey.com
+0.0.0.0 telemetry.api.swiftkey.com.home.arpa
+0.0.0.0 telemetry.malwarebytes.com
+0.0.0.0 telemetry.visualstudio.microsoft.com
+0.0.0.0 terms.internet.apps.samsung.com
+0.0.0.0 test-perfops.ldgslb.com
+0.0.0.0 thalescloud.io
+0.0.0.0 thesefilesarehereonlyasreferenceandarenotbeingusedforanything.hsd1.fl.comcast.net
+0.0.0.0 three.home.arpa
+0.0.0.0 thumb-p4.xhcdn.com
+0.0.0.0 thumkglvwvo.hsd1.fl.comcast.net
+0.0.0.0 thunderbolt-commons.hsd1.fl.comcast.net
+0.0.0.0 thunderbolt-custom-elements.hsd1.fl.comcast.net
+0.0.0.0 thunderbolt-environment.hsd1.fl.comcast.net
+0.0.0.0 thunderbolt-security.hsd1.fl.comcast.net
+0.0.0.0 thunderbolt-symbols.hsd1.fl.comcast.net
+0.0.0.0 tigger-citadel.touchtype-fluency.com
+0.0.0.0 tiktokmod.pro
+0.0.0.0 time-a-g.nist.gov
+0.0.0.0 time-b-g.nist.gov
+0.0.0.0 time-c-g.nist.gov
+0.0.0.0 time-d-g.nist.gov
+0.0.0.0 time.android.com
+0.0.0.0 time.apple.com
+0.0.0.0 time.google.com
+0.0.0.0 time.nist.gov
+0.0.0.0 time.windows.com
+0.0.0.0 tluuehlffrsvdeq.hsd1.fl.comcast.net
+0.0.0.0 tlx.3lift.com
+0.0.0.0 tnc-boot.tiktokv.com
+0.0.0.0 tnc16-normal-useast5.tiktokv.us
+0.0.0.0 tnc19-normal-useast8.tiktokv.us
+0.0.0.0 toddeouqqwdrjx.hsd1.fl.comcast.net
+0.0.0.0 ton.twimg.com
+0.0.0.0 toshiba-user.home.arpa
+0.0.0.0 touch.facebook.com
+0.0.0.0 tp.47cf2c8c9-frontier.amazon.com
+0.0.0.0 tpc.googlesyndication.com
+0.0.0.0 tqofiyedqqxwq.online
+0.0.0.0 track.crystalbloom.bid
+0.0.0.0 track.paubox.com
+0.0.0.0 tracker.birkenwald.de
+0.0.0.0 tracker.iionads.com
+0.0.0.0 tracker.madtia.cc
+0.0.0.0 tracking.g2crowd.com
+0.0.0.0 traffic-nts-ip-assoc.xy.fbcdn.net
+0.0.0.0 traffic-nts-ip-assoc.xy.fbcdn.net.home.arpa
+0.0.0.0 traffic-nts-ip-assoc.xy.fbcdn.net.hsd1.fl.comcast.net
+0.0.0.0 traffic-nts-ip-assoc.xz.fbcdn.net
+0.0.0.0 trafficmanager.net
+0.0.0.0 trc.taboola.com
+0.0.0.0 trinitymedia.ai
+0.0.0.0 trusthubmedia.com
+0.0.0.0 trustlist.adobe.com
+0.0.0.0 ts-nocheck.hsd1.fl.comcast.net
+0.0.0.0 tse1.mm.bing.net
+0.0.0.0 typeform.com
+0.0.0.0 typekit.net
+0.0.0.0 tzm.protechts.net
+0.0.0.0 tzm.px-cloud.net
+0.0.0.0 u.heatmap.it
+0.0.0.0 udp.ping.teamviewer.com
+0.0.0.0 uhf.microsoft.com
+0.0.0.0 uishape.com
+0.0.0.0 ulkgiqhxeyaoj.hsd1.fl.comcast.net
+0.0.0.0 ulp1p-pa.googleapis.com
+0.0.0.0 ulp1p-pa.googleapis.com.home.arpa
+0.0.0.0 um02.eset.com
+0.0.0.0 um03.eset.com
+0.0.0.0 um06.eset.com
+0.0.0.0 um08.eset.com
+0.0.0.0 um10.eset.com
+0.0.0.0 um12.eset.com
+0.0.0.0 um15.eset.com
+0.0.0.0 um16.eset.com
+0.0.0.0 um23.eset.com
+0.0.0.0 unagi-na.amazon.com
+0.0.0.0 unagi.amazon.com
+0.0.0.0 unflwejnxrdt.hsd1.fl.comcast.net
+0.0.0.0 unpkg.com
+0.0.0.0 update.9mod.com
+0.0.0.0 update.9mod.com.home.arpa
+0.0.0.0 update.eset.com
+0.0.0.0 update.gtm.eset.com
+0.0.0.0 upsx.weather.com
+0.0.0.0 urbanairship.com
+0.0.0.0 us-assets.i.posthog.com
+0.0.0.0 us-auth2.samsungosp.com
+0.0.0.0 us-cdnbo.org
+0.0.0.0 us-gslu.samsunggsl.com
+0.0.0.0 us-odc.samsungapps.com
+0.0.0.0 us.aptabase.com
+0.0.0.0 us.i.posthog.com
+0.0.0.0 us.yextevents.com
+0.0.0.0 usage-ping.brave.com
+0.0.0.0 usageanalytics.coveo.com
+0.0.0.0 use-application-dns.net
+0.0.0.0 use.fontawesome.com
+0.0.0.0 use.fontawesome.com.cdn.cloudflare.net
+0.0.0.0 use.typekit.net
+0.0.0.0 use1-turn.fpjs.io
+0.0.0.0 userlocation.googleapis.com
+0.0.0.0 userlocation.googleapis.com.home.arpa
+0.0.0.0 userlocation.googleapis.com.hsd1.fl.comcast.net
+0.0.0.0 usermatch.krxd.net
+0.0.0.0 users.hsd1.fl.comcast.net
+0.0.0.0 userstylesapi.com
+0.0.0.0 utut-service.adobe.com
+0.0.0.0 v16m-perf.tiktokcdn-us.com.home.arpa
+0.0.0.0 v2fy.com
+0.0.0.0 v45-perf.tiktokcdn-us.com.home.arpa
+0.0.0.0 v6.xy.fbcdn.net.home.arpa
+0.0.0.0 v70z6cs.r.us-east-1.awstrack.me
+0.0.0.0 vabzsooenipxyf.hsd1.fl.comcast.net
+0.0.0.0 vagjxotbfroij.website
+0.0.0.0 valid.apple.com
+0.0.0.0 variations.brave.com
+0.0.0.0 vas.samsungapps.com
+0.0.0.0 vas.samsungapps.com.home.arpa
+0.0.0.0 vcu-api.300624.com
+0.0.0.0 vela.iad-01.braze.com
+0.0.0.0 vergecloud.com
+0.0.0.0 vhspjqrvjnqbq.hsd1.fl.comcast.net
+0.0.0.0 viafoura.net
+0.0.0.0 video-edge-b5b225.sjc05.hls.live-video.net
+0.0.0.0 videoconverter.wondershare.com
+0.0.0.0 visualsbychin.com
+0.0.0.0 vkzsmdqhygjpchv.hsd1.fl.comcast.net
+0.0.0.0 vlscppe.microsoft.com
+0.0.0.0 vmware-host.hsd1.fl.comcast.net
+0.0.0.0 voilatile-pa.googleapis.com
+0.0.0.0 voilatile-pa.googleapis.com.home.arpa
+0.0.0.0 voilatile-pa.googleapis.com.hsd1.fl.comcast.net
+0.0.0.0 volterra.io
+0.0.0.0 vortex.data.microsoft.com
+0.0.0.0 voyancelicense.azurewebsites.net
+0.0.0.0 vsblobprodscussu5shard1.blob.core.windows.net
+0.0.0.0 vsblobprodscussu5shard13.blob.core.windows.net
+0.0.0.0 vsblobprodscussu5shard56.blob.core.windows.net
+0.0.0.0 vsblobprodscussu5shard62.blob.core.windows.net
+0.0.0.0 vsblobprodscussu5shard65.blob.core.windows.net
+0.0.0.0 vsblobprodscussu5shard69.blob.core.windows.net
+0.0.0.0 vsblobprodscussu5shard73.blob.core.windows.net
+0.0.0.0 vsblobprodscussu5shard76.blob.core.windows.net
+0.0.0.0 vsblobprodscussu5shard9.blob.core.windows.net
+0.0.0.0 vtqworamzkbc.hsd1.fl.comcast.net
+0.0.0.0 vvbjbxpsg5.hsd1.fl.comcast.net
+0.0.0.0 vvbjbxpsg5.mw1i8.adobestats.io
+0.0.0.0 vwphzjigixhmkfa.hsd1.fl.comcast.net
+0.0.0.0 vx.fortune.com
+0.0.0.0 w3-reporting.reddit.com
+0.0.0.0 wallet.google.com
+0.0.0.0 waws-prod-am2-027.westeurope.cloudapp.azure.com
+0.0.0.0 waws-prod-am2-027a.sip.azurewebsites.windows.net
+0.0.0.0 waws-prod-blu-231-e73a.eastus.cloudapp.azure.com
+0.0.0.0 waws-prod-blu-231.sip.azurewebsites.windows.net
+0.0.0.0 wcpstatic.microsoft.com
+0.0.0.0 weather-channel.solutions.cdn.optable.co
+0.0.0.0 web-sdk-cdn.singular.net
+0.0.0.0 web-sdk.aptrinsic.com
+0.0.0.0 web-service.malwarebytes.com
+0.0.0.0 web.hsd1.fl.comcast.net
+0.0.0.0 web.vortex.data.microsoft.com
+0.0.0.0 webd-assets.cdn4dd.com
+0.0.0.0 webpack.hsd1.fl.comcast.net
+0.0.0.0 websdr.ewi.utwente.nl
+0.0.0.0 wedos.delivery
+0.0.0.0 whatsnew.teamviewer.com
+0.0.0.0 whoami.akamai.net
+0.0.0.0 whoami.akamai.net.home.arpa
+0.0.0.0 widget.intercom.io
+0.0.0.0 widgetlogic.org
+0.0.0.0 widgets.pinterest.com
+0.0.0.0 widgets.wp.com
+0.0.0.0 wildcard-amd.scene7.com.edgesuite.net
+0.0.0.0 wnbgqgcxjwrcd.hsd1.fl.comcast.net
+0.0.0.0 wns2-ch1p.wns.windows.com
+0.0.0.0 wootric-eligibility.herokuapp.com
+0.0.0.0 word.oofpalate.com
+0.0.0.0 wowlazy.com
+0.0.0.0 wp-content.hsd1.fl.comcast.net
+0.0.0.0 wpad.home.arpa
+0.0.0.0 wpad.hsd1.fl.comcast.net
+0.0.0.0 wps.apple.com
+0.0.0.0 wptd-k2svr1.hsd1.fl.comcast.net
+0.0.0.0 wsdvs.com
+0.0.0.0 wsmcdn.audioeye.com
+0.0.0.0 wt.omnisendlink.com
+0.0.0.0 wu-b-net.trafficmanager.net
+0.0.0.0 wu-f-net.trafficmanager.net
+0.0.0.0 www-www.bing.com.trafficmanager.net
+0.0.0.0 www.4chan-x.net
+0.0.0.0 www.acm.org
+0.0.0.0 www.adobe.com
+0.0.0.0 www.affirm.com
+0.0.0.0 www.android.com
+0.0.0.0 www.apple.com
+0.0.0.0 www.bing.com
+0.0.0.0 www.bing.com.edgekey.net
+0.0.0.0 www.businessinsider.com
+0.0.0.0 www.cambridge.org
+0.0.0.0 www.change.org
+0.0.0.0 www.chromium.org
+0.0.0.0 www.clarity.ms
+0.0.0.0 www.code.org
+0.0.0.0 www.darkreader.org
+0.0.0.0 www.datadoghq-browser-agent.com
+0.0.0.0 www.dianomi.com
+0.0.0.0 www.do-groove.com
+0.0.0.0 www.f02.myftpupload.com
+0.0.0.0 www.fosshub.com
+0.0.0.0 www.glarysoft.com
+0.0.0.0 www.google-analytics.com
+0.0.0.0 www.googleadservices.com
+0.0.0.0 www.googleoptimize.com
+0.0.0.0 www.googletagmanager.com
+0.0.0.0 www.googletagservices.com
+0.0.0.0 www.gravatar.com
+0.0.0.0 www.hltv.org
+0.0.0.0 www.hsd1.fl.comcast.net
+0.0.0.0 www.ieee.org
+0.0.0.0 www.instagram.com
+0.0.0.0 www.jnm.f02.myftpupload.com
+0.0.0.0 www.malwarebytes.com
+0.0.0.0 www.mediahuman.com
+0.0.0.0 www.mediahuman.net
+0.0.0.0 www.microsoft.com
+0.0.0.0 www.microsoft.com-c-3.edgekey.net
+0.0.0.0 www.microsoft.com-c-3.edgekey.net.globalredir.akadns.net
+0.0.0.0 www.msftconnecttest.com
+0.0.0.0 www.msftncsi.com
+0.0.0.0 www.msftncsi.com.edgesuite.net
+0.0.0.0 www.myftpupload.com
+0.0.0.0 www.npr.org
+0.0.0.0 www.photoshop.com
+0.0.0.0 www.piaproxy.net
+0.0.0.0 www.privateinternetaccess.com
+0.0.0.0 www.qbittorrent.org
+0.0.0.0 www.rfa.org
+0.0.0.0 www.samsung.com
+0.0.0.0 www.samsungsds.com
+0.0.0.0 www.sexiestpicture.com
+0.0.0.0 www.stack-sonar.com
+0.0.0.0 www.statcounter.com
+0.0.0.0 www.statcounter.com.home.arpa
+0.0.0.0 www.tiktoklinksafety.us
+0.0.0.0 www.tiktoklinksafety.us.edgesuite.net
+0.0.0.0 www.tizen.org
+0.0.0.0 www.topazlabs.com
+0.0.0.0 www.wondershare.com
+0.0.0.0 x.hsd1.fl.comcast.net
+0.0.0.0 x1.c.lencr.org
+0.0.0.0 xgapromomanager-pa.googleapis.com
+0.0.0.0 xgapromomanager-pa.googleapis.com.home.arpa
+0.0.0.0 xmpexuafbb.hsd1.fl.comcast.net
+0.0.0.0 xn--e1aybc.hsd1.fl.comcast.net
+0.0.0.0 xp.apple.com
+0.0.0.0 xtnsskqhicbm.hsd1.fl.comcast.net
+0.0.0.0 xtracloud.net
+0.0.0.0 xwfiokzrz.hsd1.fl.comcast.net
+0.0.0.0 xzfttubca.hsd1.fl.comcast.net
+0.0.0.0 y.yarn.co
+0.0.0.0 yext.com
+0.0.0.0 yextevents.com
+0.0.0.0 yvoschaap.com
+0.0.0.0 zbyooxlmcunq.hsd1.fl.comcast.net
+0.0.0.0 zipthelake.com
+0.0.0.0 zlnooxffaw.hsd1.fl.comcast.net
+0.0.0.0 zn1amgis3tmt5gckb-dropbox.siteintercept.qualtrics.com
+0.0.0.0 zn279ys5rg3kpfewc-cisasurvey.gov1.siteintercept.qualtrics.com
+0.0.0.0 zn4uvtrtoremmmnpc-dropbox.siteintercept.qualtrics.com
+0.0.0.0 zndikywqsjiuwn0q5-nlmenterprise.siteintercept.qualtrics.com
+0.0.0.0 zntrmppijtwlmvlz7-spotify.siteintercept.qualtrics.com
+0.0.0.0 zrrazfgmyr.hsd1.fl.comcast.net
+0.0.0.0 zzsnsutxiyga.hsd1.fl.comcast.net
 
-
-0.amazon.pool.ntp.org
-2.datadog.pool.ntp.org
-2c4eb3d18fca8ba6d9ca-4662654c4d02b3489a1b137ebc24250a.ssl.cf1.rackcdn.com
-3gppnetwork.org
-4chenz.github.io
-7yevilw86i.sf7e3.adobestats.io
-9mod.com
-a.ads.rmbl.ws
-a.tiktokmod.pro
-a.tiktokmod.pro.home.arpa
-a-0003.a-msedge.net
-a1431.dscb.akamai.net
-a2004.us.akamai.net
-a2023.mm3.akamai.net
-a2043.dscr.akamai.net
-a672.dsct.akamai.net
-aapi.shouldianswer.net
-aaplimg.com
-aax-events-cell01-cf.us-east.ono.axp.amazon-adsystem.com
-ableton.com
-abtest-aws-us-east-01.saas.sensorsdata.com
-account.samsung.com
-account.samsung.com.home.arpa
-accounts.google.com
-acsbapp.com
-adobe.io
-adobe.net
-adobeccstatic.com
-adobeid-na1.services.adobe.com
-adobeioruntime.net
-adstudio-assets.scdn.co
-aepxlg.adobe.com
-aes.us-east.ono.axp.amazon-adsystem.com
-affirm.com
-ahacdn.me
-aircall-dataplane.rudderstack.com
-ajayyy.github.io
-akadns.net
-akahost.net
-akamai-cdn.perfops.io
-akamaiedge.net
-aliyuncs.com
-amazonaws.com
-analytics.wondershare.cc
-ancensored.com
-android.chat.openai.com.cdn.cloudflare.net
-android-context-data.googleapis.com
-android-context-data.googleapis.com.home.arpa
-androidpay-users-pa.googleapis.com
-androidplatformbackuprestore-pa.googleapis.com
-android-safebrowsing.google.com
-api.cdp.microsoft.com
-api.consentjs.datagrail.io
-api.consentjs.datagrail.io.home.arpa
-api.fouanalytics.com
-api.honeycomb.io
-api.imdb.us-east-1.prod.mario.imdbtv.amazon.dev
-api.iterable.com
-api.iterable.com.home.arpa
-api.lab.amplitude.com
-api.mixpanel.com
-api.segment.io
-api.segment.io.home.arpa
-api.topazlabs.com
-api.topaz-labs.net
-api.wondershare.cc
-api2.branch.io
-apiv2.piaproxy.net
-apiv2.privateinternetaccess.com
-app.adaway.org
-app.cyberlink.com
-app.satismeter.com
-app-analytics-services.com
-apple.com
-apple-dns.net
-appleid.cdn-apple.com.akadns.net
-appleid.cdn-apple.com.edgekey.net
-apple-relay.fastly-edge.com
-app-measurement.com
-appsflyer.com
-appsflyersdk.com
-arc.msn.com
-assets.adobedtm.com
-atomile.com
-auth.prod.ims.adobejanus.com
-auth.services.adobe.com
-auth.services.adobe.com.cdn.cloudflare.net
-auth.wikimedia.org
-auth-weighted.prod.ims.adobejanus.com
-avast.com
-avatars.mds.yandex.net
-avcloud.e5.sk
-avid.com
-ax-0001.ax-msedge.net
-ax-msedge.net
-azioncdn.net
-bag.itunes.apple.com
-bal-kube-westus-01-kng-edf.westus.cloudapp.azure.com
-bc.d.rdcv1.com
-b-cdn.net
-beacon.riskified.com
-bibo.api.swiftkey.com
-bing.net
-bingocountrydays.playcus.com
-binisoft.org
-bixbyllm.com
-blazingcdn.com
-blazingcdn.net
-bob.framasoft.org
-bobsvagene.club
-boris-fx.postaffiliatepro.com
-borisfx-com-res.cloudinary.com
-brave-core-ext.s3.brave.com
-brave-production-proxy-238320562.us-west-2.elb.amazonaws.com
-braze.com
-browser-intake-datadoghq.com
-c.amazon-adsystem.com
-c.eset.com
-c6.paypal.com
-cachefly.net
-cbs.wondershare.com
-cc-api-data.adobe.io
-cc-cdn.adobe.com
-cdn.auth0.com
-cdn.bridgelabs.kr
-cdn.darkreader.app
-cdn.fuseplatform.net
-cdn.playcus.com
-cdn.prod.website-files.com
-cdn.rudderlabs.com
-cdn.sift.com
-cdn.webflow.com
-cdn-apple.com
-cdn-cookieyes.com
-cdn-dynmedia-1.microsoft.com
-cdnperf-rum.cdnetworks.net
-cdn-v4.amp-endpoint3.com
-cdn-v6.amp-endpoint3.com
-cdsassets.apple.com
-census-app.scorecardresearch.com
-cf.47cf2c8c9-frontier.amazon.com
-chromesyncentities-pa.googleapis.com
-chromesyncpasswords-pa.googleapis.com
-cl2.apple.com
-cl3.apple.com
-cl4.apple.com
-cleantalk.org
-client.messaging.adobe.com
-client.wns.windows.com
-clientsdk.launchdarkly.com
-clienttracing-pa.googleapis.com
-cloud.microsoft
-cloudflare-dns.com
-cloudflareinsights.com
-cloudflareperf.com
-clstorage.net
-cm.g.doubleclick.net
-commerce.adobe.com
-community.adobe.com
-componentupdater.brave.com
-config.edge.skype.com
-config.edge.skype.com.trafficmanager.net
-config.officeapps.live.com
-configuration.apple.com
-configuration.ls.apple.com
-connect.wowlazy.com
-consumer-licensing-aks2aks.md.mp.microsoft.com.akadns.net
-content.jwplatform.com
-contentpass.net
-cp801.prod.do.dsp.mp.microsoft.com
-cp801.prod.do.dsp.mp.microsoft.com.edgekey.net
-crashlyticsreports-pa.googleapis.com
-crashlyticsreports-pa.googleapis.com.home.arpa
-credit.cyberlink.com
-cstat.cdn-apple.com
-ctldl.windowsupdate.com
-ctldl.windowsupdate.com.delivery.microsoft.com
-cuoieadrraxle.space
-cw-static.aditude.io
-cyberlink.com
-d161f70cbh7kx6.cloudfront.net
-d1gtt36mgrexoi.cloudfront.net
-d1swly8pgrbhu5.cloudfront.net
-d1v01e3aef8dm5.cloudfront.net
-d1vbftvkf37ah3.cloudfront.net
-d28139t0r7hg1k.cloudfront.net
-d3888oxgux3fey.cloudfront.net
-d3apz0saa5hrj5.cloudfront.net
-d3ok5gjxqqhp57.cloudfront.net
-darkreader.app
-darkreader.org
-datadoghq.com
-datagrail.io
-dc.di.atlas.samsung.com
-dc.di.atlas.samsung.com.home.arpa
-dc.dqa.samsung.com
-dc.dqa.samsung.com.home.arpa
-dearrow.ajay.app
-default.exp-tas.com
-deizyzaxeogkc.space
-detectportal.brave-http-only.com
-detectportal-prod-343460633.us-west-2.elb.amazonaws.com
-developer.android.com
-device-api.urbanairship.com
-device-api.urbanairship.com.home.arpa
-device-config.pcms.apple.com
-devnull.perfops.net
-diagmon-serviceapi.samsungdm.com
-diagmon-serviceapi.samsungdm.com.home.arpa
-digiboy.ir
-direct.quic-core-proxy-gcpsg-v3.gcpsg.byteglb.com
-discover-pa.googleapis.com
-displaycatalog.mp.microsoft.com
-djlzvy5xcvhxt.cloudfront.net
-dns.msftncsi.com
-dnse5.com
-doh.dns.apple.com
-doubleclick.net
-download.db-ip.com
-download.steinberg.net
-download.teamviewer.com.cdn.cloudflare.net
-download.windowsupdate.com
-dvs.samsungmobile.com
-dvs.samsungmobile.com.home.arpa
-e2885.e9.akamaiedge.net
-ecs.office.com
-edf.eset.com
-edf.gtm.eset.com
-edge.aditude.io
-edgekey.net
-emoji.discourse-cdn.com
-emoji.redditmedia.com.cdn.cloudflare.net
-emoji-456a.kxcdn.com
-engagements.appsflyer.com
-engagements.appsflyer.com.home.arpa
-entitlements.jwplayer.com
-epdg.epc.geo.mnc260.mcc310.pub.3gppnetwork.org
-epdg.epc.mnc240.mcc310.pub.3gppnetwork.org
-epns.eset.com
-error-report.com
-ers.samsungcloud.com
-ers.samsungcloudplatform.com
-ers.samsungcloudplatform.com.home.arpa
-ers.twilio.com
-es.ancensored.com
-es11.samsung-sm-ds.com
-es11.samsung-sm-ds.com.home.arpa
-eset.com
-esimdiscovery.com
-etgd-websdr.ewi.utwente.nl
-eu-gslu.samsunggsl.com
-euprd-kag-device-ext-1541b5150b59c728.elb.eu-west-1.amazonaws.com
-eus2-10.frontdoor.licensing.commerce.microsoft.com
-eus2s2c-displaycatalog.frontdoor.bigcatalog.commerce.microsoft.com
-eventgw.twilio.com
-ewowfthxrmqzb.space
-excire.onfastspring.com
-exoscale-cdn.com
-f.c2r.ts.cdn.office.net
-f5-cloud-demo.com
-favicons.proxy.brave.com
-fb.content-loader.com
-fbs.smoot.apple.com
-fd.api.iris.microsoft.com
-fd-api-iris.trafficmanager.net
-fe2cr.update.microsoft.com
-fe3.delivery.mp.microsoft.com
-fe3cr.delivery.mp.microsoft.com
-feedback-pa.googleapis.com
-ffc-static-cdn.oobesaas.adobe.com
-firebaselogging.googleapis.com
-firebaselogging.googleapis.com.home.arpa
-firebaselogging-pa.googleapis.com
-firebaselogging-pa.googleapis.com.home.arpa
-firebaseremoteconfigrealtime.googleapis.com
-firebase-settings.crashlytics.com
-firebase-settings.crashlytics.com.home.arpa
-fls-na.amazon.com
-fonts.googleapis.com
-fonts.gstatic.com
-fonts.wp.com
-fonts-api.wp.com
-footprints-pa.googleapis.com
-footprints-pa.googleapis.com.home.arpa
-forsfahqjnlhr.online
-futurecdn.net
-gateway.edge.network
-gateway.fe2.apple-dns.net
-gateway.icloud.com
-gator.volces.com
-gcdn.co
-gcorelabs.com
-gdmf.apple.com
-gdmf-ados.apple.com
-geller-pa.googleapis.com
-geo.prod.do.dsp.mp.microsoft.com
-geo-location.prebid.cloud
-geomobileservices-pa.googleapis.com
-get-bx.g.aaplimg.com
-getgreenshot.org
-ggl-ds-es11.ue4.odcus.nmcs.gcloud.thalescloud.io
-glb.sls.prod.dcat.dsp.trafficmanager.net
-glb.tas02.sls-prod.dcat.dsp.mp.microsoft.com
-global.identity.adobe.com
-go.glarysoft.com
-go.playlg.com
-googleads.g.doubleclick.net
-googleads.g.doubleclick.net.home.arpa
-googlecdn.org
-gos-api-pue1-b.gos-gsp.io
-gos-gsp.io
-go-updater.brave.com
-go-updater-1830831421.us-west-2.elb.amazonaws.com
-growth-pa.googleapis.com
-gsa.apple.com
-gsl.samsunggsl.com
-gsp10-ssl.apple.com
-gsp57-ssl-revgeo.ls.apple.com
-gsp64-ssl.ls.apple.com
-gspe1-ssl.ls.apple.com
-gspe35-ssl.ls.apple.com
-gspe79-cdn.g.aaplimg.com
-gspe79-ssl.ls.apple.com
-gspe79-ssl-96.ls.apple.com
-gsp-ssl.ls.apple.com
-gsp-ssl.ls-apple.com.akadns.net
-gsp-ssl-geomap.ls-apple.com.akadns.net
-gspx-ssl.ls.apple.com
-gtm-cn-9lb31hwnp0o.gtm-a2b4.com
-gtm-cn-wwo31enga0c.gtm-a2b4.com
-gtranslate.net
-hakurei.us-cdnbo.org
-haprjfxlcvint.site
-haproxy.com
-haproxyedge.net
-havfw69955.lithium.com
-hawk.digitalcameraworld.com
-hbc.adobe.io
-helpx.adobe.com
-hexagon-analytics.com
-home.arpa
-hstatic.io
-http-intake.logs.datadoghq.com
-i.harperapps.com
-i.postimg.cc
-i.singular.net
-i.sng.link
-i-bn3p-cor090.api.p001.1drv.com
-ic.adobe.io
-ic-ah.flixcdn.com
-icloud.com
-iguazu.doordash.com
-ihsdygpltqwob.site
-imagecdn.clips4sale.com
-img.icons8.com
-img.mobon.net
-img.shields.io
-ims-na1.adobelogin.com.cdn.cloudflare.net
-incapdns.net
-infinitedata-pa.googleapis.com
-init.ess.apple.com
-init.push.apple.com
-init-p01md.apple.com
-inputsuggestions.msdxcdn.microsoft.com
-instantcdn.net
-intc-keyid-77b63d9f8b73f5fbbd73ace7d8fbda37a6a7865f.microsoftaik.azure.net
-intercom.io
-iosantiabuse-pa.googleapis.com
-iosapps.itunes.apple.com
-ipcdn.apple.com
-iphone-ld.apple.com
-ipv6.msftconnecttest.com
-ipv6.msftconnecttest.com.edgesuite.net
-ipv6.msftncsi.com
-iris-de-ppe-azsc-v2-eus2.eastus2.cloudapp.azure.com
-iris-de-prod-azsc-v2-wus2.westus2.cloudapp.azure.com
-ist1-3.filesor.com
-itunes.com
-jenson.api.swiftkey.com
-js-cdn.music.apple.com
-justlagoon.com
-kms.digiboy.ir
-ko-fi.com
-launchdarkly.com
-lcdn-locator.apple.com
-lcs-cops.adobe.io
-lcs-robs.adobe.io
-learnplaylistservice.adobe.com
-lf1go.bmtrck.com
-licensing.mp.microsoft.com
-licensing-prod-frontdoor-geomap.trafficmanager.net
-limeiptv.to
-live.primis.tech
-livechatinc.com
-ln-0007.config.skype.com
-locationhistory-pa.googleapis.com
-locationhistory-pa.googleapis.com.home.arpa
-locationhistoryplacedetails-pa.googleapis.com
-location-v6.tiktokv.us
-location-v6.tiktokv.us.home.arpa
-lpa.live.esimdiscovery.com
-luxformula.com
-m.ilbe.com
-m.ilbe.com.bplslb.com
-malwarebytes-api.go-vip.net
-mask.apple-dns.net
-mask.icloud.com
-mask-api.icloud.com
-mask-h2.icloud.com
-matt-kruse.github.io
-mauth.cyberlink.com
-medianova-cdnperf.mncdn.com
-mesu.apple.com
-metadata.templates.cdn.office.net
-mjriazemzybdg.online
-mm-mm.bing.net.trafficmanager.net
-mncdn.com
-mobile.events.data.microsoft.com
-mobileconfiguration-pa.googleapis.com
-mobiledataplan-pa.googleapis.com
-mrodevicemgr.officeapps.live.com
-msdx-cdn-y86ykn8r9v.azureedge.net
-msedge.api.cdp.microsoft.com
-mssdk.tiktokw.us
-myaccount.glarysoft.com
-myphonenumbers-pa.googleapis.com
-mzstatic.com
-na1e-acc.services.adobe.com
-na1e-uw.services.adobe.com
-nacktefoto.com
-nalssi.net
-ncache.ilbe.com
-ncache.ilbe.com.bplslb.com
-nearbydevices-pa.googleapis.com
-nearbysharing-pa.googleapis.com
-net.geo.opera.com
-netcts.cdn-apple.com
-netcts.cdn-apple.com.edgesuite.net
-news.iadsdk.apple.com
-nexusrules.officeapps.live.com
-nexus-websocket-a.intercom.io
-ngx.download.nvidia.com
-ngx-v4.amp-endpoint2.com
-ngx-v6.amp-endpoint2.com
-nitroscripts.com
-notepad-plus-plus.org
-notifications-pa.googleapis.com
-o1383653.ingest.sentry.io
-o17585.ingest.sentry.io
-o17585.ingest.us.sentry.io
-o4504260137254912.ingest.us.sentry.io
-o80279.ingest.sentry.io
-obsproject.com
-ocsp2.apple.com
-oculuscdn.com
-office.com
-office.net
-omex.cdn.office.net
-ondevicesafety-pa.googleapis.com
-oneclient.sfx.ms
-oneclient.sfx.ms.home.arpa
-ontology.health.apple.com
-ooc-g2.tm-4.office.com
-optimizationguide-pa.googleapis.com
-origin.fe-image-cache-ttp.useast8.byteglb.com
-otel-mobile.doordash.com
-ovh-cdn.perfops.io
-ovscdns.com
-ovscdns.net
-p112-sharedstreams.icloud.com
-p131-escrowproxy.icloud.com
-p131-fmip.icloud.com
-p131-fmipmobile.icloud.com
-p131-quota.icloud.com
-p13n.adobe.io
-p16-oec-ttp.tiktokcdn-us.com.home.arpa
-pagead2.googlesyndication.com
-pancake.apple.com
-passwordsleakcheck-pa.googleapis.com
-patch.com
-path1.xtracloud.net
-path1_new.qcomgeo2.com
-pay-users-pa.googleapis.com
-perfops.gcorelabs.com
-perfops.io
-perfops.net
-phonedeviceverification-pa.googleapis.com
-photoshop.com
-pinimg.com
-pinning-02.secb2b.com
-pinterest.com
-pinterest.net
-pkmyexkljzdfy.site
-play.samsungcloud.com
-play-apps-features.googleusercontent.com
-playcus.com
-players.brightcove.net
-pps.services.adobe.com
-privacy.cyberlink.com
-privacy-mgmt.com
-pro.fontawesome.com
-pro.fontawesome.com.cdn.cloudflare.net
-proactivebackend-pa.googleapis.com
-proactivebackend-pa.googleapis.com.home.arpa
-prod.idgraph.dt.fox
-prod-foxkit.kts.fox
-pr-pod9-smp-device.apple.com
-push-fcdn-ttp4.s.bytefcdn-ttpus.com
-qcloudcdn.com
-qcloudteo.com
-qcomgeo2.com
-qlivecdn.com
-quake-pa.googleapis.com
-qualcomm.com
-query.ess.apple.com
-r0.mradx.net
-r3-kjxyo-modsfire.b6fbbdf4a435e192350b1c62f9bdcba7.r2.cloudflarestorage.com
-ratingsedge.rnr.microsoft.com
-rcm-na.amazon-adsystem.com
-rdcv1.com
-redirector.brave.com
-remote-data.urbanairship.com
-remote-data.urbanairship.com.home.arpa
-remoteprovisioning.googleapis.com
-report.error-report.com
-repository.eset.com
-repository.gtm.eset.com
-reqhfg-cdn-settings.appsflyersdk.com
-reqhfg-cdn-settings.appsflyersdk.com.home.arpa
-reqhfg-inapps.appsflyersdk.com
-reqhfg-inapps.appsflyersdk.com.home.arpa
-reqhfg-launches.appsflyersdk.com
-reqhfg-launches.appsflyersdk.com.home.arpa
-resource.wondershare.com
-resource.wondershare.com.w.kunlungr.com
-resources.blogblog.com
-restrictedapps-pa.googleapis.com
-rezvorck.github.io
-rezvorck.github.io.home.arpa
-rncdn7.com
-rnr-prod.eastus.cloudapp.azure.com
-rnr-prod.trafficmanager.net
-roaming.svc.cloud.microsoft
-rudderstack.com
-rum-cdn.perfops.net
-rushinfo.adobe.com
-s.amazon-adsystem.com
-s.mzstatic.com
-s.n4m5x60.com
-s2.loli.net
-s38.sitemeter.com
-s7mbrstream.scene7.com
-safebrowsing.brave.com
-safebrowsing.googleapis.com
-safety-alert.apple.com
-samsung.com
-samsungapps.com
-samsungcloud.com
-samsungcloudplatform.com
-samsungdis.com
-samsungdm.com
-samsunggsl.com
-samsungmobile.com
-samsung-sm-ds.com
-sb.scorecardresearch.com
-sb-ssl.brave.com
-scloud.ws
-scone-pa.googleapis.com
-scrubbingcenter.com
-scs-config-use2.bixbyllm.com
-scs-config-use2.bixbyllm.com.home.arpa
-scs-use2.bixbyllm.com
-scs-use2.bixbyllm.com.home.arpa
-search-api.fie.futurecdn.net
-searchlabspartnerservice-pa.googleapis.com
-searchnotifications-pa.googleapis.com
-secb2b.com
-secure.gravatar.com
-securepubads.g.doubleclick.net
-security.wowlazy.com
-sentry.io
-server.messaging.adobe.com
-service.account.adobe.com
-setup.icloud.com
-sexystars.online
-sf16-website-login.neutral.ttwstatic.com
-sfpwqxnzxszzx.website
-shepherd.ff.avast.com
-shopvoxpopulus.com
-skype.com
-smp-device-content.apple.com
-speechs3proto2-pa.googleapis.com
-spot-pa.googleapis.com
-sr.studiostack.com
-sso.malwarebytes.com
-sstats.adobe.com
-stackpath.bootstrapcdn.com
-statcounter.com
-static.adsafeprotected.com
-static.cloudflareinsights.com
-static.doubleclick.net
-static.guance.com
-stats.g.doubleclick.net
-statsig.anthropic.com
-stc.samsungdis.com
-stc.samsungdis.com.home.arpa
-steinberg.net
-stls.helpx.adobe.com-cn.edgesuite.net
-stmedia.startribune.com
-storecatalogrevocation.storequality.microsoft.com
-storeedgefd.dsx.mp.microsoft.com
-storeedgefd.dsx.mp.microsoft.com.edgekey.net
-storeedgefd.dsx.mp.microsoft.com.edgekey.net.globalredir.akadns.net
-stubbsmovers.com
-stun.framasoft.org
-stunserver2024.stunprotocol.org
-sufycdn.com
-sufydns.com
-suggestqueries.google.com
-suggestqueries.l.google.com
-surecart.com
-swallow.apple.com
-swiftkey.com
-tas02.sls.update.microsoft.com
-taskassist-pa.googleapis.com
-telemetry.api.swiftkey.com
-telemetry.api.swiftkey.com.home.arpa
-telemetry.malwarebytes.com
-test-perfops.ldgslb.com
-thalescloud.io
-thumb-p4.xhcdn.com
-tigger-citadel.touchtype-fluency.com
-tiktokmod.pro
-time.android.com
-time.apple.com
-time.google.com
-time.windows.com
-touch.facebook.com
-tp.47cf2c8c9-frontier.amazon.com
-tqofiyedqqxwq.online
-tracker.madtia.cc
-trafficmanager.net
-traffic-nts-ip-assoc.xy.fbcdn.net
-tse1.mm.bing.net
-typeform.com
-typekit.net
-udp.ping.teamviewer.com
-uishape.com
-ulp1p-pa.googleapis.com
-um02.eset.com
-um03.eset.com
-um06.eset.com
-um08.eset.com
-um10.eset.com
-um12.eset.com
-um15.eset.com
-um16.eset.com
-um23.eset.com
-unpkg.com
-update.9mod.com
-update.eset.com
-update.gtm.eset.com
-usage-ping.brave.com
-use.fontawesome.com
-use.fontawesome.com.cdn.cloudflare.net
-use.typekit.net
-userlocation.googleapis.com
-userlocation.googleapis.com.home.arpa
-utut-service.adobe.com
-v2fy.com
-vagjxotbfroij.website
-valid.apple.com
-variations.brave.com
-vas.samsungapps.com
-vcu-api.300624.com
-vergecloud.com
-visualsbychin.com
-voilatile-pa.googleapis.com
-volterra.io
-wallet.google.com
-waws-prod-am2-027.westeurope.cloudapp.azure.com
-waws-prod-am2-027a.sip.azurewebsites.windows.net
-waws-prod-blu-231.sip.azurewebsites.windows.net
-waws-prod-blu-231-e73a.eastus.cloudapp.azure.com
-web-sdk.aptrinsic.com
-websdr.ewi.utwente.nl
-web-service.malwarebytes.com
-wedos.delivery
-whatsnew.teamviewer.com
-whoami.akamai.net
-widgets.wp.com
-wildcard-amd.scene7.com.edgesuite.net
-wowlazy.com
-wpad.home.arpa
-wsdvs.com
-wu-b-net.trafficmanager.net
-www.adobe.com
-www.affirm.com
-www.bing.com
-www.bing.com.edgekey.net
-www.businessinsider.com
-www.do-groove.com
-www.glarysoft.com
-www.googleadservices.com
-www.google-analytics.com
-www.googletagmanager.com
-www.gravatar.com
-www.malwarebytes.com
-www.mediahuman.com
-www.mediahuman.net
-www.microsoft.com-c-3.edgekey.net
-www.microsoft.com-c-3.edgekey.net.globalredir.akadns.net
-www.msftconnecttest.com
-www.msftncsi.com
-www.msftncsi.com.edgesuite.net
-www.photoshop.com
-www.sexiestpicture.com
-www.stack-sonar.com
-www.statcounter.com
-www.statcounter.com.home.arpa
-www.tiktoklinksafety.us.edgesuite.net
-www.topazlabs.com
-www-www.bing.com.trafficmanager.net
-xgapromomanager-pa.googleapis.com
-xp.apple.com
-xtracloud.net
-y.yarn.co
-yvoschaap.com
-zipthelake.com
