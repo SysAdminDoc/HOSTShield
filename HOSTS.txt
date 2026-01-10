@@ -143,7 +143,6 @@
 0.0.0.0 420chan.org
 0.0.0.0 42fkk06z8c.adobestats.io
 0.0.0.0 43q1uykg1z.adobestats.io
-0.0.0.0 44.240.189.42
 0.0.0.0 44qnmxgtif.adobestats.io
 0.0.0.0 45-courier.push.apple.com
 0.0.0.0 45gnbb50sn.adobestats.io
@@ -4795,5 +4794,6 @@
 0.0.0.0 ztxgqqizv7.adobestats.io
 0.0.0.0 zu8yy3jkaz.adobestats.io
 0.0.0.0 zz8r2o83on.adobestats.io
+
 
 
