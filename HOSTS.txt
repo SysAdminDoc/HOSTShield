@@ -23,7 +23,6 @@
 0.0.0.0 1.datadog.pool.ntp.org
 0.0.0.0 1.perfmsedge.net
 0.0.0.0 1.pool.ntp.org
-0.0.0.0 100.24.211.130
 0.0.0.0 10101.global.siteimproveanalytics.io
 0.0.0.0 11-courier.push.apple.com
 0.0.0.0 11539.searchmagnified.com
@@ -31,22 +30,16 @@
 0.0.0.0 124hzdrtoi.adobestats.io
 0.0.0.0 127-0-0-1.mydns.jdownloader.org
 0.0.0.0 12ihfrf869.adobestats.io
-0.0.0.0 13.227.103.57
 0.0.0.0 13hceguz11.adobestats.io
 0.0.0.0 14xpics.space
 0.0.0.0 1562951790rsccdn77.org
 0.0.0.0 1596384882.rsc.cdn77.org
 0.0.0.0 15ousmguga.adobestats.io
 0.0.0.0 15phzfr05l.adobestats.io
-0.0.0.0 162.247.242.20
 0.0.0.0 17ov1u3gio.adobestats.io
 0.0.0.0 17vpu0xkm6.adobestats.io
-0.0.0.0 18.207.85.246
-0.0.0.0 18.228.243.121
-0.0.0.0 18.230.164.221
 0.0.0.0 19-courier.push.apple.com
 0.0.0.0 1978802.hs-sites.com
-0.0.0.0 199.232.114.137
 0.0.0.0 1991544353.rsc.cdn77.org
 0.0.0.0 1b9khekel6.adobe.io
 0.0.0.0 1bzi1xrmv1rb.mw1i8.adobestats.io
@@ -70,8 +63,6 @@
 0.0.0.0 2.pfsense.pool.ntp.org
 0.0.0.0 2.pool.ntp.org
 0.0.0.0 209-34-83-73.ood.opsource.net
-0.0.0.0 209.34.83.67
-0.0.0.0 209.34.83.73
 0.0.0.0 21-courier.push.apple.com
 0.0.0.0 212218.parkingcrew.net
 0.0.0.0 212218parkingcrew.net
@@ -104,12 +95,6 @@
 0.0.0.0 2qjz50z5lf.adobestats.io
 0.0.0.0 2sug8qxjag.adobestats.io
 0.0.0.0 3-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com
-0.0.0.0 3.208.248.199
-0.0.0.0 3.216.32.253
-0.0.0.0 3.219.243.226
-0.0.0.0 3.220.11.113
-0.0.0.0 3.221.72.231
-0.0.0.0 3.233.129.217
 0.0.0.0 3.datadog.pool.ntp.org
 0.0.0.0 3.pool.ntp.org
 0.0.0.0 3.tlu.dl.delivery.mp.microsoft.com
@@ -121,8 +106,6 @@
 0.0.0.0 32197.api.swrve.com
 0.0.0.0 32197.content.swrve.com
 0.0.0.0 33412.ms.vk.com
-0.0.0.0 34.215.42.13
-0.0.0.0 34.237.241.83
 0.0.0.0 34modi5s5d.adobestats.io
 0.0.0.0 34u96h6rvn.adobestats.io
 0.0.0.0 35412.ms.vk.com
@@ -191,12 +174,7 @@
 0.0.0.0 50sxgwgngu.adobestats.io
 0.0.0.0 5196634.cdnp1.hubspotusercontent-na1.net
 0.0.0.0 5196634.hs1.hscontentproxy-na1.net
-0.0.0.0 52.20.222.155
-0.0.0.0 52.208.86.132
 0.0.0.0 52h0nva0wa.adobestats.io
-0.0.0.0 54.208.86.132
-0.0.0.0 54.221.228.134
-0.0.0.0 54.224.241.105
 0.0.0.0 54cu4v5twu.adobestats.io
 0.0.0.0 55oguiniw8.adobestats.io
 0.0.0.0 561r5c3bz1.adobestats.io
@@ -218,7 +196,6 @@
 0.0.0.0 6-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com
 0.0.0.0 610o7ktxw7.adobestats.io
 0.0.0.0 6482jlr7qo.adobestats.io
-0.0.0.0 65.8.207.109
 0.0.0.0 69rxfbohle.adobestats.io
 0.0.0.0 69tu0xswvq.adobe.io
 0.0.0.0 6dnh2pnz6e.adobestats.io
@@ -4818,4 +4795,5 @@
 0.0.0.0 ztxgqqizv7.adobestats.io
 0.0.0.0 zu8yy3jkaz.adobestats.io
 0.0.0.0 zz8r2o83on.adobestats.io
+
 
