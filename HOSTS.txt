@@ -557,6 +557,7 @@
 0.0.0.0 api.imdb.us-east-1.prod.mario.imdbtv.amazon.dev
 0.0.0.0 api.imdb.us-east-1.prod.paets.advertising.amazon.dev
 0.0.0.0 api.individual.githubcopilot.com
+0.0.0.0 api.individualgithubcopilot.com
 0.0.0.0 api.ipify.org
 0.0.0.0 api.iterable.com
 0.0.0.0 api.lab.amplitude.com
@@ -597,6 +598,7 @@
 0.0.0.0 apiconsentdesk.com
 0.0.0.0 apicustomdomain.sardine.ai
 0.0.0.0 apidigitalinsight.com
+0.0.0.0 apigithubcopilot.com
 0.0.0.0 apigtwb2c.us.dell.com
 0.0.0.0 apiprivateinternetaccess.com
 0.0.0.0 apireviews.io
@@ -811,6 +813,7 @@
 0.0.0.0 bjooauydoa.adobestats.io
 0.0.0.0 bk7y1gneyk.adobestats.io
 0.0.0.0 bk8pzmo8g4.adobestats.io
+0.0.0.0 blacklisttampermonkey.net
 0.0.0.0 blazingcdn.com
 0.0.0.0 blazingcdn.net
 0.0.0.0 blitz.mb-cosmos.com
@@ -1463,7 +1466,11 @@
 0.0.0.0 dnsbl.test.a.adsrmbl.ws
 0.0.0.0 dnsbl.test.a.nel.cloudflare.comhome.arpa
 0.0.0.0 dnsbl.test.a.nelcloudflare.com
+0.0.0.0 dnsbl.test.accounts.tampermonkey.nethome.arpa
+0.0.0.0 dnsbl.test.accountstampermonkey.net
 0.0.0.0 dnsbl.test.akamai-cdnperfops.io
+0.0.0.0 dnsbl.test.analytics-beacon.msha.kehome.arpa
+0.0.0.0 dnsbl.test.analytics-beaconmsha.ke
 0.0.0.0 dnsbl.test.analyticsbrave.com
 0.0.0.0 dnsbl.test.api.edgeoffermicrosoft.com
 0.0.0.0 dnsbl.test.api.glia.comhome.arpa
@@ -1471,6 +1478,7 @@
 0.0.0.0 dnsbl.test.apiconfig-security.com
 0.0.0.0 dnsbl.test.apiglia.com
 0.0.0.0 dnsbl.test.apihoneycomb.io
+0.0.0.0 dnsbl.test.appleidcdn-apple.com
 0.0.0.0 dnsbl.test.arcmsn.com
 0.0.0.0 dnsbl.test.atampermonkey.net
 0.0.0.0 dnsbl.test.b-ring.msedge.nethome.arpa
@@ -1491,19 +1499,32 @@
 0.0.0.0 dnsbl.test.connectfacebook.net
 0.0.0.0 dnsbl.test.csigstatic.com
 0.0.0.0 dnsbl.test.cstatcdn-apple.com
+0.0.0.0 dnsbl.test.cxatdmt.com
 0.0.0.0 dnsbl.test.d.dropbox.com
 0.0.0.0 dnsbl.test.devnullperfops.net
+0.0.0.0 dnsbl.test.dvssamsungmobile.com
 0.0.0.0 dnsbl.test.edge.microsoft.comhome.arpa
 0.0.0.0 dnsbl.test.edgemicrosoft.com
 0.0.0.0 dnsbl.test.engagementsappsflyer.com
 0.0.0.0 dnsbl.test.ep1adtrafficquality.google
+0.0.0.0 dnsbl.test.ers.samsungcloudplatform.comhome.arpa
+0.0.0.0 dnsbl.test.erssamsungcloud.com
+0.0.0.0 dnsbl.test.erssamsungcloudplatform.com
+0.0.0.0 dnsbl.test.experience.ninetailed.cohome.arpa
+0.0.0.0 dnsbl.test.experienceninetailed.co
 0.0.0.0 dnsbl.test.experimentsapple.com
 0.0.0.0 dnsbl.test.favicon.yandex.nethome.arpa
 0.0.0.0 dnsbl.test.faviconyandex.net
 0.0.0.0 dnsbl.test.fbs.smoot.apple.comhome.arpa
 0.0.0.0 dnsbl.test.fbs.smootapple.com
+0.0.0.0 dnsbl.test.feedback-pagoogleapis.com
+0.0.0.0 dnsbl.test.firebasegoogleapis.com
 0.0.0.0 dnsbl.test.g.live.comhome.arpa
 0.0.0.0 dnsbl.test.glive.com
+0.0.0.0 dnsbl.test.global.ketchcdn.comhome.arpa
+0.0.0.0 dnsbl.test.globalketchcdn.com
+0.0.0.0 dnsbl.test.google-ohttp-relay-safebrowsing.fastly-edge.comhome.arpa
+0.0.0.0 dnsbl.test.google-ohttp-relay-safebrowsingfastly-edge.com
 0.0.0.0 dnsbl.test.googleads.gdoubleclick.net
 0.0.0.0 dnsbl.test.growth-pagoogleapis.com
 0.0.0.0 dnsbl.test.hakurei.us-cdnbo.orghome.arpa
@@ -1519,6 +1540,8 @@
 0.0.0.0 dnsbl.test.jsusemessages.com
 0.0.0.0 dnsbl.test.k-ring.msedge.net
 0.0.0.0 dnsbl.test.k-ringmsedge.net
+0.0.0.0 dnsbl.test.kit.fontawesome.comhome.arpa
+0.0.0.0 dnsbl.test.kitfontawesome.com
 0.0.0.0 dnsbl.test.licensing.mp.microsoft.comhome.arpa
 0.0.0.0 dnsbl.test.licensing.mpmicrosoft.com
 0.0.0.0 dnsbl.test.ln-ring.msedge.nethome.arpa
@@ -1526,6 +1549,7 @@
 0.0.0.0 dnsbl.test.log-vatiktokv.com
 0.0.0.0 dnsbl.test.log16-normal-us-ttpcapcutapi.us
 0.0.0.0 dnsbl.test.mail-adsgoogle.com
+0.0.0.0 dnsbl.test.mask-apiicloud.com
 0.0.0.0 dnsbl.test.mediaethicalads.io
 0.0.0.0 dnsbl.test.metrics-fe-na1hubspot.com
 0.0.0.0 dnsbl.test.mon-boot.capcutapi.comhome.arpa
@@ -1541,15 +1565,21 @@
 0.0.0.0 dnsbl.test.ogads-pa.clients6google.com
 0.0.0.0 dnsbl.test.ogads-pagoogleapis.com
 0.0.0.0 dnsbl.test.ovh-cdnperfops.io
+0.0.0.0 dnsbl.test.p131-acsegateway.icloud.comhome.arpa
+0.0.0.0 dnsbl.test.p131-acsegatewayicloud.com
 0.0.0.0 dnsbl.test.pagead2googlesyndication.com
 0.0.0.0 dnsbl.test.pixel-staticspotify.com
 0.0.0.0 dnsbl.test.pixelspotify.com
 0.0.0.0 dnsbl.test.polyfill.iohome.arpa
+0.0.0.0 dnsbl.test.publicsuffix.orghome.arpa
 0.0.0.0 dnsbl.test.res.public.onecdn.static.microsofthome.arpa
 0.0.0.0 dnsbl.test.res.public.onecdnstatic.microsoft
 0.0.0.0 dnsbl.test.rest.iad-05braze.com
 0.0.0.0 dnsbl.test.rum-cdnperfops.net
 0.0.0.0 dnsbl.test.rum.perfops.cdb.cdnorange.com
+0.0.0.0 dnsbl.test.scone-pagoogleapis.com
+0.0.0.0 dnsbl.test.search.yahoo.comhome.arpa
+0.0.0.0 dnsbl.test.searchyahoo.com
 0.0.0.0 dnsbl.test.settings-win.datamicrosoft.com
 0.0.0.0 dnsbl.test.sf16-telemetry-proxy-ocitiktokcdn-us.com
 0.0.0.0 dnsbl.test.shepherd.ff.avast.com
@@ -1596,6 +1626,7 @@
 0.0.0.0 dnsbl.testhaxnode.net
 0.0.0.0 dnsbl.testhexagon-analytics.com
 0.0.0.0 dnsbl.testpolyfill.io
+0.0.0.0 dnsbl.testpublicsuffix.org
 0.0.0.0 dnsbl.testpush-sdk.com
 0.0.0.0 dnse5.com
 0.0.0.0 dobw5hakm0.adobestats.io
@@ -3106,6 +3137,7 @@
 0.0.0.0 pay-users-pa.googleapis.com
 0.0.0.0 pay-users-pagoogleapis.com
 0.0.0.0 payments-graph-fallback.facebook.com
+0.0.0.0 payments-graphfacebook.com
 0.0.0.0 payments.braintree-api.com
 0.0.0.0 pba.apple.com
 0.0.0.0 pbd.yahoo.com
@@ -4794,6 +4826,4 @@
 0.0.0.0 ztxgqqizv7.adobestats.io
 0.0.0.0 zu8yy3jkaz.adobestats.io
 0.0.0.0 zz8r2o83on.adobestats.io
-
-
 
