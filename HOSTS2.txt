@@ -12,7 +12,7 @@
 #
 # For example:
 #
-#	127.0.0.1       localhost (1419 active entries prepared by editor)
+#	127.0.0.1       localhost (1406 active entries prepared by editor)
 #	::1             localhost
 
 # --- Active Blocklist Entries (Cleaned & Sorted by Hosts File Editor v2.8.5) ---
@@ -1391,8 +1391,10 @@
 0.0.0.0 www.dellcdn.comakadns.net
 0.0.0.0 www.google-analytics.com
 0.0.0.0 www.googleadservices.com
+0.0.0.0 www.googleoptimize.com
 0.0.0.0 www.googleoptimize.comhome.arpa
 0.0.0.0 www.googletagmanager.com
+0.0.0.0 www.googletagservices.com
 0.0.0.0 www.gravatar.com
 0.0.0.0 www.greystar.com
 0.0.0.0 www.intensedebate.com
@@ -1402,6 +1404,7 @@
 0.0.0.0 www.msftncsi.comedgesuite.net
 0.0.0.0 www.pcwatch.com
 0.0.0.0 www.privateinternetaccess.com
+0.0.0.0 www.protectdvd.com
 0.0.0.0 www.rzmaf8trk.com
 0.0.0.0 www.rzmaf8trk.comhome.arpa
 0.0.0.0 www.scrapy.org
@@ -1410,24 +1413,8 @@
 0.0.0.0 www.tampermonkey.nethome.arpa
 0.0.0.0 www.tm.v4.a.prd.aadgakadns.net
 0.0.0.0 www.tm.v4.a.prd.aadgtrafficmanager.net
+0.0.0.0 www.toptenreviews.com
 0.0.0.0 www1.dell-cidrakadns.net
-0.0.0.0 wwwadobe.com
-0.0.0.0 wwwapollo.io
-0.0.0.0 wwwapple.com
-0.0.0.0 wwwcharityauctionstoday.com
-0.0.0.0 wwwchromium.org
-0.0.0.0 wwwdellcdn.com
-0.0.0.0 wwwgoogleoptimize.com
-0.0.0.0 wwwgoogletagservices.com
-0.0.0.0 wwwgravatar.com
-0.0.0.0 wwwgreystar.com
-0.0.0.0 wwwmalwarebytes.com
-0.0.0.0 wwwmsftncsi.com
-0.0.0.0 wwwpcwatch.com
-0.0.0.0 wwwprivateinternetaccess.com
-0.0.0.0 wwwprotectdvd.com
-0.0.0.0 wwwtampermonkey.net
-0.0.0.0 wwwtoptenreviews.com
 0.0.0.0 xgapromomanager-pa.googleapis.com
 0.0.0.0 xgapromomanager-pagoogleapis.com
 0.0.0.0 xiaoice.com
