@@ -1,0 +1,18 @@
+# Organized Hosts File (Blocked by 0.0.0.0)
+# Source: Dell services.
+
+################################################################################
+# CORE APIS & SERVICES
+################################################################################
+0.0.0.0 apigtwb2c.us.dell.com
+0.0.0.0 cirrus.ngwz.dell.com
+0.0.0.0 hb.apis.dell.com
+0.0.0.0 nexus.dell.com
+0.0.0.0 saservices.dell.com
+0.0.0.0 sm.dell.com
+
+################################################################################
+# TELEMETRY & ANALYTICS
+################################################################################
+0.0.0.0 boomerang.dell.com
+0.0.0.0 dellprod.analytics.org.coveo.com
