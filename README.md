@@ -6,7 +6,7 @@
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-> A modern, AMOLED-dark hosts-based ad blocker for rooted Android with VPN fallback, DNS logging, and a premium UI.
+> A modern, AMOLED-dark hosts-based ad blocker for rooted Android with VPN fallback, DNS logging, and a premium UI. Inspired by AdAway.
 
 <!-- ![Screenshot](screenshot.png) -->
 
