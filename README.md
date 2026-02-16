@@ -137,41 +137,6 @@ HostShield adds a modern Compose UI, DNS logging with app attribution, DoH suppo
 **Q: Where is the hosts file written?**
 Root mode: `/system/etc/hosts` (or `/data/adb/modules/hosts/system/etc/hosts` for Magisk systemless). VPN mode: in-memory only.
 
-## Changelog
-
-### v1.0.0 — Audit & Polish
-- **CRITICAL FIX**: VPN now uses DNS-only routing (no more dropped non-DNS traffic)
-- **CRITICAL FIX**: VPN mode now builds and loads the blocklist before starting
-- **CRITICAL FIX**: Added `<property>` tag for `specialUse` foreground service (Android 14+ crash fix)
-- **CRITICAL FIX**: `startForeground()` now passes `foregroundServiceType` (Android 14+ requirement)
-- **CRITICAL FIX**: Thread-safe TUN writes via Channel serializer (no more concurrent I/O)
-- **CRITICAL FIX**: NXDOMAIN response now sets AA/RA flags for proper resolver acceptance
-- Block/whitelist domains directly from DNS log entries (tap to expand, inline actions)
-- Log filtering: All / Blocked / Allowed filter chips with live counts
-- Detailed log expansion: query type badge, full timestamp, copy/block/whitelist buttons
-- Settings dialogs: IPv4/IPv6 redirect, update interval, and log retention all editable in-app
-- POST_NOTIFICATIONS permission request on Android 13+
-- Proper `enableEdgeToEdge()` + deprecation-safe status/nav bar coloring for API 35
-- Wildcard rules checked during VPN real-time filtering (not just hosts file build)
-- SharedBlocklistHolder pattern for safe ViewModel↔Service blocklist handoff
-- Daily stats aggregation from VPN service into BlockStats table
-- Boot receiver now re-schedules health and cleanup workers
-
-### v0.3.0 — Statistics & Health
-- Statistics dashboard with custom Canvas charts
-- Wildcard pattern blocking, source health monitoring
-- Onboarding wizard, log cleanup worker
-
-### v0.2.0 — VPN & Utilities
-- VPN DNS blocking, DoH resolver, homescreen widget
-- App exclusions, hosts diff viewer, backup/restore
-- Auto-updates via WorkManager, boot persistence
-
-### v0.1.0 — Foundation
-- MVVM architecture with Hilt DI, Room database
-- Root hosts file blocking with Magisk support
-- 8 pre-seeded sources, AMOLED dark theme
-
 ## License
 
 [GPLv3](LICENSE) — Free and open source.
