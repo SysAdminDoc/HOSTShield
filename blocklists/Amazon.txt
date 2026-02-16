@@ -1,0 +1,30 @@
+# Organized Hosts File (Blocked by 0.0.0.0)
+# Source: Amazon, AWS, Twitch, and related services.
+
+################################################################################
+# CORE SERVICES & DATA COLLECTION (fls, unagi, minerva, bugsnag)
+################################################################################
+0.0.0.0 5aa25954e40ffb18984989b59487dfe054549e213a2e64a12187f8deb5a4cb5.us-east-1.prod.service.minerva.devices.a2z.com 
+0.0.0.0 fls-na.amazon.com 
+0.0.0.0 gocart-web-prod-ue1-alb-1461435473.us-east-1.elb.amazonaws.com 
+0.0.0.0 session.mshopbugsnag.irm.amazon.dev 
+0.0.0.0 trace.mshopbugsnag.irm.amazon.dev 
+0.0.0.0 unagi-na.amazon.com 
+0.0.0.0 unagi.amazon.com 
+
+################################################################################
+# ADVERTISING & TRACKING
+################################################################################
+0.0.0.0 9plyrnbx.r.us-west-2.awstrack.me 
+0.0.0.0 aax-us-east-retail-direct.amazon.com 
+0.0.0.0 aes.us-east.ono.axp.amazon-adsystem.com 
+0.0.0.0 api.stores.us-east-1.prod.paets.advertising.amazon.dev 
+
+################################################################################
+# AWS & GENERIC INFRASTRUCTURE (CDN, ELB, S3)
+################################################################################
+0.0.0.0 brave-production-proxy-238320562.us-west-2.elb.amazonaws.com 
+0.0.0.0 fe-pew1-ext-openapi-lb-547958838.eu-west-1.elb.amazonaws.com 
+0.0.0.0 go-updater-1830831421.us-west-2.elb.amazonaws.com 
+0.0.0.0 health.aws.amazon.com 
+0.0.0.0 polymarket-upload.s3.us-east-2.amazonaws.com 

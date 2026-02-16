@@ -1,0 +1,2222 @@
+# ============================================
+# PFBLOCKER WHITELIST - CATEGORIZED (ENHANCED)
+# ============================================
+
+# --------------------------------------------
+# GOOGLE - CORE SERVICES
+# --------------------------------------------
+accounts.google.com # Google Accounts: Authentication, sign-in, profile management.
+www.googleapis.com # Google APIs: Secure API endpoint for web requests.
+apis.google.com # Google APIs: Legacy widget/script integration.
+ajax.googleapis.com # Google AJAX API: Libraries like jQuery, fonts loading.
+clients.l.google.com # Google Clients: Device connectivity, location services.
+clients2.google.com # Google Clients: Sync, app data exchange.
+clients3.google.com # Google Clients: Analytics, ad services.
+clients6.google.com # Google Clients: Modern app integrations, Firebase.
+clientservices.googleapis.com # Google Client Services: OAuth, identity verification.
+www3.l.google.com # Google: Regional load balancer for services.
+ogs.google.com # Google OGS: One Google Search, unified results.
+cse.google.com # Google Custom Search: Embedded search engines.
+connectivitycheck.gstatic.com # Google Connectivity Check: Android network test.
+
+# --------------------------------------------
+# GOOGLE - AUTHENTICATION & SECURITY
+# --------------------------------------------
+oauth2.googleapis.com # Google OAuth2: Token issuance, authorization.
+www.oauth2.googleapis.com # Google OAuth2: Secure token endpoint.
+oauthaccountmanager.googleapis.com # Google OAuth Account Manager: Multi-account handling.
+securetoken.googleapis.com # Google Secure Token: Firebase auth tokens.
+securitydomain-pa.googleapis.com # Google Security Domain: Device policy enforcement.
+cryptauthdevicesync.googleapis.com # Google CryptAuth: Device sync encryption.
+cryptauthenrollment.googleapis.com # Google CryptAuth: Device enrollment.
+cryptauthvault.googleapis.com # Google CryptAuth: Secure data vault.
+deviceintegritytokens-pa.googleapis.com # Google Device Integrity: SafetyNet attestation.
+iosantiabuse-pa.googleapis.com # Google iOS Anti-Abuse: App security checks.
+ondevicesafety-pa.googleapis.com # Google On-Device Safety: Malware scanning.
+accountcapabilities-pa.googleapis.com # Google Account Capabilities: Feature detection.
+
+# --------------------------------------------
+# GOOGLE - DRIVE & DOCS
+# --------------------------------------------
+drive.google.com # Google Drive: File storage, sharing, collaboration.
+drive.usercontent.google.com # Google Drive Content: User-uploaded files.
+drive-thirdparty.googleusercontent.com # Google Drive Third Party: Integrated apps access.
+drivefrontend-pa.clients6.google.com # Google Drive Frontend: Web interface rendering.
+docs.google.com # Google Docs: Document editor, sheets, slides.
+rr3---sn-vgqskne6.c.drive.google.com # Google Drive: Content delivery node.
+
+# --------------------------------------------
+# GOOGLE - GMAIL & EMAIL
+# --------------------------------------------
+imap.gmail.com # Gmail IMAP: Email protocol access.
+inbox.google.com # Google Inbox: Legacy email app (deprecated).
+mail-attachment.googleusercontent.com # Gmail Attachments: Secure file downloads.
+
+# --------------------------------------------
+# GOOGLE - CALENDAR, KEEP, TASKS
+# --------------------------------------------
+calendar.google.com # Google Calendar: Scheduling, events.
+calendar-pa.clients6.google.com # Google Calendar: API client endpoint.
+keep.google.com # Google Keep: Notes, lists app.
+keep-armful.google.com # Google Keep: Mobile sync endpoint.
+notes-pa.clients6.google.com # Google Notes: Backend for Keep.
+notes-pa.googleapis.com # Google Notes API: Data access.
+tasks-pa.googleapis.com # Google Tasks API: To-do management.
+taskassist-pa.googleapis.com # Google Task Assist: AI suggestions.
+reminders-pa.clients6.google.com # Google Reminders: Notifications.
+
+# --------------------------------------------
+# GOOGLE - CONTACTS & PEOPLE
+# --------------------------------------------
+contacts.google.com # Google Contacts: Address book.
+people-pa.clients6.google.com # Google People: Profile data.
+people-pa.googleapis.com # Google People API: Contacts sync.
+peoplestack-pa.clients6.google.com # Google People Stack: Integrated services.
+peoplestack-pa.googleapis.com # Google People Stack API: Data aggregation.
+
+# --------------------------------------------
+# GOOGLE - CHAT & MESSAGING
+# --------------------------------------------
+chat.google.com # Google Chat: Team messaging.
+2-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com # Google Chat Signaler: Real-time signaling.
+5-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com # Google Chat Signaler: US region variant.
+6-prod-dynamite-prod-08-us-signaler-pa.clients6.google.com # Google Chat Signaler: Load-balanced.
+prod-dynamite-prod-08-us-signaler-pa.clients6.google.com # Google Chat Signaler: Production endpoint.
+signaler-pa.clients6.google.com # Google Signaler: Chat connectivity.
+signaler-pa.googleapis.com # Google Signaler API: WebSocket setup.
+instantmessaging-pa-jms-us.googleapis.com # Google Instant Messaging: JMS backend.
+instantmessaging-pa.clients6.google.com # Google Instant Messaging: Client access.
+instantmessaging-pa.googleapis.com # Google Instant Messaging: API calls.
+mobile-gtalk.l.google.com # Google Talk Mobile: Legacy chat.
+mtalk.google.com # Google Mobile Talk: Push notifications.
+messages.google.com # Google Messages: SMS/RCS app.
+fp-us-verizon.rcs.telephony.goog # Google RCS Verizon: Carrier messaging.
+rcs-acs-tmo-us.jibe.google.com # Google RCS T-Mobile: Jibe platform.
+
+# --------------------------------------------
+# GOOGLE - MEET & VIDEO
+# --------------------------------------------
+meetings.googleapis.com # Google Meet API: Video calls.
+video.google.com # Google Video: Legacy hosting.
+workspacevideo-pa.clients6.google.com # Google Workspace Video: Enterprise meetings.
+
+# --------------------------------------------
+# GOOGLE - REMOTE DESKTOP
+# --------------------------------------------
+remotedesktop.google.com # Google Remote Desktop: Chrome Remote.
+remotedesktop-pa.googleapis.com # Google Remote Desktop: API access.
+
+# --------------------------------------------
+# GOOGLE - WORKSPACE
+# --------------------------------------------
+workspace.google.com # Google Workspace: Admin console.
+
+# --------------------------------------------
+# GOOGLE - PLAY STORE
+# --------------------------------------------
+play.google.com # Google Play Store: App marketplace.
+play.googleapis.com # Google Play API: Downloads, updates.
+play-fe.googleapis.com # Google Play Frontend: UI data.
+play-lh.googleusercontent.com # Google Play Images: App icons.
+www.play-lh.googleusercontent.com # Google Play Images: Hosted assets.
+play-apps-features.googleusercontent.com # Google Play Apps: Feature graphics.
+playatoms-pa.googleapis.com # Google Play Atoms: Modular updates.
+playstoregatewayadapter-pa.googleapis.com # Google Play Gateway: Connectivity.
+prod-lt-playstoregatewayadapter-pa.googleapis.com # Google Play Gateway: Prod endpoint.
+
+# --------------------------------------------
+# GOOGLE - AI SERVICES
+# --------------------------------------------
+gemini.google.com # Google Gemini AI: Conversational AI.
+deepmind.google # Google DeepMind: Research, AI models.
+appsgenaiserver-pa.clients6.google.com # Google AI Services: App integration.
+appsgenaiserver-pa.googleapis.com # Google AI Services API: Model calls.
+
+# --------------------------------------------
+# GOOGLE - MAPS
+# --------------------------------------------
+maps.google.com # Google Maps: Navigation, search.
+maps.googleapis.com # Google Maps API: Geocoding, directions.
+maps.gstatic.com # Google Maps Static: Tiles, images.
+
+# --------------------------------------------
+# GOOGLE - CHROME WEB STORE
+# --------------------------------------------
+chromewebstore.google.com # Chrome Web Store: Extensions marketplace.
+
+# --------------------------------------------
+# GOOGLE - FONTS & STATIC CONTENT
+# --------------------------------------------
+fonts.googleapis.com # Google Fonts: CSS requests.
+fonts.gstatic.com # Google Fonts Static: Font files.
+www.gstatic.com # Google Static: General assets.
+ssl.gstatic.com # Google SSL Static: Secure images.
+t0.gstatic.com # Google Static: Thumbnails variant.
+t1.gstatic.com # Google Static: Image hosting.
+t2.gstatic.com # Google Static: Content delivery.
+t3.gstatic.com # Google Static: Load-balanced.
+encrypted-tbn0.gstatic.com # Google Encrypted Thumbnails: Secure previews.
+www.encrypted-tbn0.gstatic.com # Google Encrypted Thumbnails: Web access.
+encrypted-tbn1.gstatic.com # Google Encrypted Thumbnails: Variant.
+encrypted-tbn2.gstatic.com # Google Encrypted Thumbnails: Variant.
+encrypted-tbn3.gstatic.com # Google Encrypted Thumbnails: Variant.
+encrypted-vtbn0.gstatic.com # Google Encrypted Video Thumbnails: Video previews.
+
+# --------------------------------------------
+# GOOGLE - USER CONTENT
+# --------------------------------------------
+githubusercontent.com # GitHub User Content: Raw files, images.
+lh2.l.google.com # Google Images: Legacy hosting.
+lh3.google.com # Google Images: User photos.
+lh3.googleusercontent.com # Google User Content: Photos app.
+lh5.googleusercontent.com # Google User Content: High-res images.
+lh6.googleusercontent.com # Google User Content: Variant hosting.
+ap2.googleusercontent.com # Google User Content: Asia-Pacific.
+ci3.googleusercontent.com # Google User Content: Internal.
+sp1.googleusercontent.com # Google User Content: Shared photos.
+blogger.googleusercontent.com # Blogger Content: Blog assets.
+clients2.googleusercontent.com # Google User Content: Client uploads.
+contribution.usercontent.google.com # Google User Content: Contributions.
+photos-ugc.l.googleusercontent.com # Google Photos UGC: User-generated.
+googlehosted.com # Google Hosted: Custom domains.
+googlehosted.l.googleusercontent.com # Google Hosted Content: Load-balanced.
+ghs4.googlehosted.com # Google Hosted Services: Sites hosting.
+ghs6.googlehosted.com # Google Hosted Services: Variant.
+
+# --------------------------------------------
+# GOOGLE - CLOUD STORAGE
+# --------------------------------------------
+storage.googleapis.com # Google Cloud Storage: Bucket access.
+gcs-blue-upload-us.l.googleusercontent.com # Google Cloud Storage Upload: US region.
+gcs-upload-us.l.googleusercontent.com # Google Cloud Storage Upload: General.
+gcs-us-00003.content-storage-upload.googleapis.com # Google Cloud Storage: Specific bucket.
+
+# --------------------------------------------
+# GOOGLE - FIREBASE
+# --------------------------------------------
+firebaseinstallations.googleapis.com # Firebase Installations: App IDs.
+www.firebaseinstallations.googleapis.com # Firebase Installations: Web access.
+firebaseremoteconfig.googleapis.com # Firebase Remote Config: Feature flags.
+firebaseremoteconfigrealtime.googleapis.com # Firebase Realtime Config: Live updates.
+s-gke-usc1-nssi3-16.firebaseio.com # Firebase: Realtime database.
+www.s-gke-usc1-nssi3-16.firebaseio.com # Firebase: Web database.
+swift-backup-31751.firebaseio.com # Swift Backup Firebase: App backup.
+ios-15-icon-pack-default-rtdb.europe-west1.firebasedatabase.app # Firebase iOS Icons: Database.
+
+# --------------------------------------------
+# GOOGLE - NOTIFICATIONS & PUSH
+# --------------------------------------------
+notifications-pa.googleapis.com # Google Notifications: Push service.
+searchnotifications-pa.googleapis.com # Google Search Notifications: Alerts.
+push.clients6.google.com # Google Push: FCM endpoint.
+www.push.clients6.google.com # Google Push: Web push.
+
+# --------------------------------------------
+# GOOGLE - ANDROID
+# --------------------------------------------
+android.apis.google.com # Google Android APIs: System integrations.
+android.clients.google.com # Google Android Clients: Play Services.
+www.android.clients.google.com # Google Android Clients: Web fallback.
+android.googleapis.com # Google Android API: Device management.
+www.android.googleapis.com # Google Android API: Secure calls.
+
+# --------------------------------------------
+# GOOGLE - PKI & CERTIFICATES
+# --------------------------------------------
+c.pki.goog # Google PKI: Certificate authority.
+o.pki.goog # Google PKI OCSP: Revocation checks.
+pki-goog.l.google.com # Google PKI: Management.
+
+# --------------------------------------------
+# GOOGLE - STUN
+# --------------------------------------------
+stun.l.google.com # Google STUN: WebRTC traversal.
+
+# --------------------------------------------
+# GOOGLE - MISC SERVICES
+# --------------------------------------------
+blobcomments-pa.clients6.google.com # Google Blob Comments: Storage comments.
+flexagon-pa.googleapis.com # Google Flexagon: Internal tool.
+jnn-pa.googleapis.com # Google JNN: Neural networks.
+www.jnn-pa.googleapis.com # Google JNN: Web access.
+voilatile-pa.googleapis.com # Google Voilatile: Volatile storage (typo? Volatile).
+voledevice-pa.googleapis.com # Google Vole Device: Device management.
+discover-pa.googleapis.com # Google Discover: Feed content.
+sticker-pa.googleapis.com # Google Stickers: Emoji packs.
+addons-pa.clients6.google.com # Google Addons: Workspace extensions.
+addons-pa.googleapis.com # Google Addons API: Integrations.
+content-autofill.googleapis.com # Google Autofill: Form data.
+content.googleapis.com # Google Content API: Media delivery.
+digitalassetlinks.googleapis.com # Google Digital Asset Links: App verification.
+www.digitalassetlinks.googleapis.com # Google Digital Asset Links: Web.
+mobileconfiguration-pa.googleapis.com # Google Mobile Config: Device setup.
+mobiledataplan-pa.googleapis.com # Google Mobile Data Plan: Fi service.
+remoteprovisioning.googleapis.com # Google Remote Provisioning: Zero-touch.
+update.googleapis.com # Google Update API: Software updates.
+waa-pa.clients6.google.com # Google WAA: Web App Auth.
+plus.l.google.com # Google Plus: Legacy social (deprecated).
+
+# --------------------------------------------
+# GOOGLE - VIDEO (GVT1)
+# --------------------------------------------
+gvt1.com # Google Video Transcoding: Media processing.
+edgedl.me.gvt1.com # Google Video Downloads: Edge delivery.
+redirector.gvt1.com # Google Redirector: URL handling.
+googlevideo.com # Google Video: YouTube hosting.
+rr1---sn-ab5sznzl.gvt1.com # Google Video: Regional server.
+rr1---sn-ab5sznzz.gvt1.com # Google Video: Cache node.
+rr1---sn-vgqskn6s.gvt1.com # Google Video: Streaming endpoint.
+rr1---sn-vgqsknse.gvt1.com # Google Video: Secure streaming.
+rr1---sn-vgqsknzz.gvt1.com # Google Video: Variant.
+rr1---sn-vgqsrn66.gvt1.com # Google Video: Node.
+rr1---sn-vgqsrnek.gvt1.com # Google Video: Edge.
+rr1---sn-vgqsrnld.googlevideo.com # Google Video: Load-balanced.
+rr1---sn-vgqsrnlz.gvt1.com # Google Video: Zone.
+rr1---sn-vgqsrns6.gvt1.com # Google Video: Server.
+rr2---sn-ab5l6nr6.gvt1.com # Google Video: Alternate.
+rr2---sn-ab5sznzy.gvt1.com # Google Video: Variant.
+rr2---sn-vgqskn67.gvt1.com # Google Video: Node.
+rr2---sn-vgqsknez.gvt1.com # Google Video: Edge.
+rr2---sn-vgqsknzr.gvt1.com # Google Video: Region.
+rr2---sn-vgqsrn6e.gvt1.com # Google Video: Server.
+rr2---sn-vgqsrnsd.gvt1.com # Google Video: Cache.
+rr2.sn-vgqsrnsd.gvt1.com # Google Video: Specific.
+rr3---sn-vgqskns7.gvt1.com # Google Video: Alternate.
+rr4---sn-2ovgq5-cw.gvt1.com # Google Video: Custom.
+rr4---sn-vgqskn67.gvt1.com # Google Video: Node.
+rr4---sn-vgqskne6.gvt1.com # Google Video: Edge.
+rr4---sn-vgqskns7.googlevideo.com # Google Video: Server.
+rr4---sn-vgqsknse.gvt1.com # Google Video: Secure.
+rr4---sn-vgqsrned.gvt1.com # Google Video: Node.
+rr5---sn-vgqskn67.gvt1.com # Google Video: Variant.
+rr5---sn-vgqskn6s.gvt1.com # Google Video: Streaming.
+rr5---sn-vgqsknz6.gvt1.com # Google Video: Zone.
+rr5---sn-vgqsrn67.googlevideo.com # Google Video: Region.
+rr5---sn-vgqsrnl6.gvt1.com # Google Video: Load.
+rr5---sn-vgqsrnlz.googlevideo.com # Google Video: Cache.
+
+# --------------------------------------------
+# YOUTUBE
+# --------------------------------------------
+youtube.com # YouTube: Video platform.
+www.youtube.com # YouTube: Main site.
+youtu.be # YouTube Short Links: URL shortener.
+music.youtube.com # YouTube Music: Streaming service.
+accounts.youtube.com # YouTube Accounts: Login, channels.
+youtube-ui.l.google.com # YouTube UI: Interface assets.
+youtube.googleapis.com # YouTube API: Data access.
+youtubei.googleapis.com # YouTube Internal API: Client calls.
+i.ytimg.com # YouTube Images: Thumbnails.
+i1.ytimg.com # YouTube Images: Variant.
+img.youtube.com # YouTube Images: Legacy.
+s.ytimg.com # YouTube Static: Scripts.
+ytimg.com # YouTube Images: General.
+ytimg.l.google.com # YouTube Images: Load-balanced.
+yt3.ggpht.com # YouTube Thumbnails: Channel art.
+yt4.ggpht.com # YouTube Thumbnails: Variant.
+yt3.googleusercontent.com # YouTube User Content: Uploads.
+
+# --------------------------------------------
+# FACEBOOK / META
+# --------------------------------------------
+facebook.com # Facebook: Social network.
+www.facebook.com # Facebook: Main site.
+web.facebook.com # Facebook Web: Lite version.
+www.web.facebook.com # Facebook Web: Secure access.
+web-fallback.facebook.com # Facebook Web Fallback: Backup.
+www.web-fallback.facebook.com # Facebook Web Fallback: Web.
+mobile.facebook.com # Facebook Mobile: App site.
+accountscenter.facebook.com # Facebook Account Center: Settings.
+portal.fb.com # Facebook Portal: Device portal.
+gateway.facebook.com # Facebook Gateway: API entry.
+graph.facebook.com # Facebook Graph API: Data queries.
+www.graph.facebook.com # Facebook Graph: Web API.
+graph-fallback.facebook.com # Facebook Graph Fallback: Backup.
+www.graph-fallback.facebook.com # Facebook Graph Fallback: Web.
+graph-video.facebook.com # Facebook Video Graph: Media API.
+b-graph.facebook.com # Facebook Graph API: Business.
+www.b-graph.facebook.com # Facebook Graph: Web business.
+z-p3-graph.facebook.com # Facebook Graph: Priority.
+api.facebook.com # Facebook API: General calls.
+b-api.facebook.com # Facebook API: Business.
+genai-graph.facebook.com # Facebook GenAI: AI features.
+lookaside.facebook.com # Facebook Lookaside: Cached content.
+rupload.facebook.com # Facebook Upload: Media uploads.
+vupload-edge.facebook.com # Facebook Upload Edge: Video.
+reg-e2ee.facebook.com # Facebook E2EE Registration: Encryption.
+web-chat-e2ee.facebook.com # Facebook E2EE Web Chat: Secure messaging.
+chat-e2ee-mini.facebook.com # Facebook E2EE Chat: Mini app.
+chat-e2ee-mini.c10r.facebook.com # Facebook E2EE Chat: Region.
+edge-chat.facebook.com # Facebook Edge Chat: Messaging.
+star.c10r.facebook.com # Facebook Star: Internal.
+star-mini.c10r.facebook.com # Facebook Star Mini: Variant.
+star.fallback.c10r.facebook.com # Facebook Star Fallback: Backup.
+z-p3.facebook.com # Facebook: Priority domain.
+z-p3.c10r.facebook.com # Facebook C10R: Region.
+z-m-gateway.facebook.com # Facebook Gateway: Mobile.
+dgw.c10r.facebook.com # Facebook Gateway: Data.
+dgw-mini.c10r.facebook.com # Facebook Gateway: Mini.
+mqtt.c10r.facebook.com # Facebook MQTT: Real-time.
+mqtt.fallback.c10r.facebook.com # Facebook MQTT Fallback: Backup.
+edge-mqtt.facebook.com # Facebook MQTT: Edge.
+edge-mqtt-fallback.facebook.com # Facebook MQTT Fallback: Edge.
+graph.fbpigeon.com # Facebook Pigeon: Messaging.
+www.graph.fbpigeon.com # Facebook Pigeon: Web.
+platform-lookaside.fbsbx.com # Facebook Platform: Assets.
+www.fbsbx.com # Facebook Sandbox: Testing.
+
+# --------------------------------------------
+# FACEBOOK CDN
+# --------------------------------------------
+traffic-nts-ip-assoc.xy.fbcdn.net # Facebook Traffic: Network assoc.
+www.traffic-nts-ip-assoc.xy.fbcdn.net # Facebook Traffic: Web.
+traffic-nts-ip-assoc.xz.fbcdn.net # Facebook Traffic: Variant.
+www.traffic-nts-ip-assoc.xz.fbcdn.net # Facebook Traffic: Web variant.
+static.xx.fbcdn.net # Facebook Static: Assets.
+scontent.xx.fbcdn.net # Facebook CDN: Content delivery.
+scontent-lga3-1.xx.fbcdn.net # Facebook CDN New York: Region 1.
+scontent-lga3-2.xx.fbcdn.net # Facebook CDN New York: Region 2.
+scontent-lga3-3.xx.fbcdn.net # Facebook CDN New York: Region 3.
+scontent-mia3-1.xx.fbcdn.net # Facebook CDN Miami: Region 1.
+scontent-mia3-3.xx.fbcdn.net # Facebook CDN Miami: Region 3.
+scontent-ord5-1.xx.fbcdn.net # Facebook CDN Chicago: Region 1.
+scontent-ord5-2.xx.fbcdn.net # Facebook CDN Chicago: Region 2.
+scontent-ord5-3.xx.fbcdn.net # Facebook CDN Chicago: Region 3.
+static-lga3-3.xx.fbcdn.net # Facebook Static New York: Region.
+static-ord5-2.xx.fbcdn.net # Facebook Static Chicago: Region.
+video-ord5-1.xx.fbcdn.net # Facebook Video Chicago: Region 1.
+video-ord5-2.xx.fbcdn.net # Facebook Video Chicago: Region 2.
+video-ord5-3.xx.fbcdn.net # Facebook Video Chicago: Region 3.
+external-ord5-2.xx.fbcdn.net # Facebook CDN Chicago: External.
+sonar-atl3-2.xx.fbcdn.net # Facebook Sonar Atlanta: Monitoring.
+sonar6-atl3-2.xx.fbcdn.net # Facebook Sonar Atlanta: Variant.
+sonar6.xy.fbcdn.net # Facebook Sonar: General monitoring.
+
+# --------------------------------------------
+# INSTAGRAM
+# --------------------------------------------
+instagram.com # Instagram: Photo sharing.
+www.instagram.com # Instagram: Main site.
+graph.instagram.com # Instagram Graph API: Data.
+www.graph.instagram.com # Instagram Graph: Web.
+graph-fallback.instagram.com # Instagram Graph Fallback: Backup.
+www.graph-fallback.instagram.com # Instagram Graph Fallback: Web.
+
+# --------------------------------------------
+# WHATSAPP
+# --------------------------------------------
+v.whatsapp.net # WhatsApp Video: Calls.
+www.v.whatsapp.net # WhatsApp Video: Web.
+graph.whatsapp.com # WhatsApp Graph API: Messaging.
+www.graph.whatsapp.com # WhatsApp Graph: Web.
+
+# --------------------------------------------
+# META OHTTP RELAY
+# --------------------------------------------
+meta-ohttp-relay-prod.fastly-edge.com # Meta OHTTP Relay: Privacy proxy.
+www.meta-ohttp-relay-prod.fastly-edge.com # Meta OHTTP Relay: Web.
+
+# --------------------------------------------
+# TWITTER / X
+# --------------------------------------------
+twitter.com # Twitter/X: Social platform.
+x.com # X (Twitter): Rebranded site.
+t.co # Twitter Short Links: URL shortening.
+platform.twitter.com # Twitter Platform: Widgets.
+api.twitter.com # Twitter API: Data access.
+api.twitter.com.cdn.cloudflare.net # Twitter API Cloudflare: CDN.
+api.x.com # X (Twitter) API: Rebranded.
+api.x.com.cdn.cloudflare.net # X API Cloudflare: CDN.
+api-stream.twitter.com # Twitter Streaming API: Real-time.
+api-stream.twitter.com.cdn.cloudflare.net # Twitter Streaming Cloudflare: CDN.
+syndication.twitter.com # Twitter Syndication: Embeds.
+abs.twimg.com # Twitter Media: Absolute assets.
+abs-0.twimg.com # Twitter Media: Variant.
+abs-zero.twimg.com # Twitter Media: Zero variant.
+pbs.twimg.com # Twitter Profile Images: Avatars.
+pbs.twimg.com.cdn.cloudflare.net # Twitter Profile Cloudflare: CDN.
+video.twimg.com # Twitter Video: Media.
+video.twimg.com.cdn.cloudflare.net # Twitter Video Cloudflare: CDN.
+twimg.twitter.map.fastly.net # Twitter Images Fastly: CDN.
+global.dev.cftls.t.co.cdn.cloudflare.net # Twitter Cloudflare: Dev.
+api.fxtwitter.com # FxTwitter Embed API: Third-party embeds.
+
+# --------------------------------------------
+# REDDIT
+# --------------------------------------------
+reddit.com # Reddit: Forums.
+www.reddit.com # Reddit: Main site.
+old.reddit.com # Old Reddit: Legacy interface.
+www.redditmedia.com # Reddit Media: Assets.
+www.redditstatic.com # Reddit Static: Scripts.
+gql-fed.reddit.com # Reddit GraphQL Federation: API.
+embed.redditmedia.com # Reddit Embeds: Previews.
+a.thumbs.redditmedia.com # Reddit Thumbnails: Variant A.
+b.thumbs.redditmedia.com # Reddit Thumbnails: Variant B.
+d.thumbs.redditmedia.com # Reddit Thumbnails: Variant D.
+external-preview.redd.it # Reddit External Preview: Links.
+preview.redd.it # Reddit Previews: Images.
+i.redd.it # Reddit Images: Uploads.
+v.redd.it # Reddit Videos: Hosting.
+reddit.map.fastly.net # Reddit Fastly: CDN.
+dualstack.reddit.map.fastly.net # Reddit Fastly CDN: Dual.
+reddit-image.s3.amazonaws.com # Reddit Images S3: Storage.
+redditstatic.s3.amazonaws.com # Reddit Static S3: Assets.
+
+# --------------------------------------------
+# TIKTOK - CORE
+# --------------------------------------------
+tiktok.com # TikTok: Video app.
+www.tiktok.com # TikTok: Web site.
+www.tiktok.com.edgesuite.net # TikTok Akamai: CDN.
+tiktokv.com # TikTok Video: Media domain.
+tiktokv.us # TikTok Video US: Region.
+tiktokw.us # TikTok Web US: Region.
+www.tiktokw.us # TikTok Web: Web region.
+www.tiktokw.us.edgesuite.net # TikTok Web Akamai: CDN.
+tiktokcdn.com # TikTok CDN: General.
+tiktokcdn-us.com # TikTok CDN US: Region.
+web-ttp2.us.tiktok.com # TikTok Web: Protocol.
+webcast.us.tiktok.com # TikTok Webcast: Live.
+webcast.us.tiktok.com.edgesuite.net # TikTok Webcast Akamai: CDN.
+im-ws.tiktok.com # TikTok IM WebSocket: Messaging.
+
+# --------------------------------------------
+# TIKTOK - API
+# --------------------------------------------
+api16-core-useast5.tiktokv.us # TikTok Core API: US East.
+api16-core-useast5.tiktokv.us.edgesuite.net # TikTok Core API Akamai: CDN.
+api16-normal-useast5.tiktokv.us # TikTok API: Normal US East.
+api16-normal-useast5.tiktokv.us.edgesuite.net # TikTok API Akamai: CDN.
+api19-core-useast5.tiktokv.us # TikTok Core API: Variant.
+api19-normal-useast5.tiktokv.us # TikTok API: Variant.
+ttp-api16-tiktok-com-apix.bytewlb.akadns.net # TikTok API Akadns: Load.
+aggr19-normal.tiktokv.us # TikTok API: Aggregation.
+cp-rp16-normal-useast5.tiktokv.us # TikTok API: Control plane.
+cp-rp16-normal-useast5.tiktokv.us.edgesuite.net # TikTok API Akamai: CDN.
+
+# --------------------------------------------
+# TIKTOK - SERVICES
+# --------------------------------------------
+bsync.tiktokv.us # TikTok Sync: Data sync.
+bsync.tiktokv.us.edgesuite.net # TikTok Sync Akamai: CDN.
+dig.tiktokv.us # TikTok Services: Diagnostics.
+frontier.tiktokv.us # TikTok Frontier: Edge service.
+www.frontier.tiktokv.us # TikTok Frontier: Web.
+hotapi16-normal-useast5.tiktokv.us # TikTok Hot API: Trending.
+libra16-normal-useast5.tiktokv.us # TikTok Libra API: Balance.
+libra16-normal-useast5.tiktokv.us.edgesuite.net # TikTok Libra Akamai: CDN.
+libraweb.tiktokw.us # TikTok Libra Web: Interface.
+log16-normal-useast5.tiktokv.us # TikTok Logging: Metrics.
+www.log16-normal-useast5.tiktokv.us # TikTok Logging: Web.
+mon-boot.tiktokv.com # TikTok Monitor Boot: Startup.
+www.mon-boot.tiktokv.com # TikTok Monitor: Web boot.
+mon16-normal-useast5.tiktokv.us # TikTok Monitor: US East.
+mon16-normal-useast5.tiktokv.us.edgesuite.net # TikTok Monitor Akamai: CDN.
+www.mon16-normal-useast5.tiktokv.us # TikTok Monitor: Web US East.
+mon16-normal-useast8.tiktokv.us # TikTok Monitor: Variant region.
+www.mon16-normal-useast8.tiktokv.us # TikTok Monitor: Web variant.
+mssdk-ttp2.tiktokw.us # TikTok MSSDK: SDK.
+mssdk-ttp2.tiktokw.us.edgesuite.net # TikTok MSSDK Akamai: CDN.
+mssdk16-normal-useast5.tiktokv.us # TikTok MSSDK: US East.
+mssdk16-normal-useast5.tiktokv.us.edgesuite.net # TikTok MSSDK Akamai: CDN.
+oec16-normal-useast5.tiktokv.us # TikTok OEC: E-commerce.
+oec16-normal-useast5.tiktokv.us.edgesuite.net # TikTok OEC Akamai: CDN.
+oec16-normal-useast8.tiktokv.us # TikTok OEC: Variant.
+oec19-normal-useast5.tiktokv.us # TikTok OEC: Variant.
+pitaya.tiktokv.us # TikTok Pitaya: Internal tool.
+rtlog16-normal-useast5.tiktokv.us # TikTok RT Logging: Real-time.
+www.rtlog16-normal-useast5.tiktokv.us # TikTok RT Logging: Web.
+starling-ttp2.tiktokv.us # TikTok Starling: Service.
+starling-ttp2.tiktokv.us.edgesuite.net # TikTok Starling Akamai: CDN.
+tnc0-normal-useast1a.tiktokv.com # TikTok TNC: Terms.
+www.tnc0-normal-useast1a.tiktokv.com # TikTok TNC: Web.
+tnc16-normal-useast5.tiktokv.us # TikTok TNC: US East.
+www.tnc16-normal-useast5.tiktokv.us # TikTok TNC: Web US East.
+tnc19-normal-useast5.tiktokv.us # TikTok TNC: Variant.
+www.tnc19-normal-useast5.tiktokv.us # TikTok TNC: Web variant.
+tnc19-normal-useast8.tiktokv.us # TikTok TNC: Variant region.
+www.tnc19-normal-useast8.tiktokv.us # TikTok TNC: Web variant.
+ug-attribution.tiktokv.us # TikTok Attribution: Ads tracking.
+ug-attribution.tiktokv.us.edgesuite.net # TikTok Attribution Akamai: CDN.
+vcs16-normal-useast5.tiktokv.us # TikTok VCS: Version control.
+vcs16-normal-useast5.tiktokv.us.edgesuite.net # TikTok VCS Akamai: CDN.
+gecko16-normal-useast5.tiktokv.us # TikTok Gecko API: Rendering.
+gecko16-normal-useast5.tiktokv.us.edgesuite.net # TikTok Gecko Akamai: CDN.
+jsb16-normal-useast5.tiktokv.us # TikTok JSB: JavaScript bundle.
+webcast-ws16-normal-useast5.tiktokv.us # TikTok Webcast WS: Live WS.
+webcast-ws16-normal-useast5.tiktokv.us.edgesuite.net # TikTok Webcast Akamai: CDN.
+webcast16-normal-useast5.tiktokv.us # TikTok Webcast: Live.
+webcast16-normal-useast5.tiktokv.us.edgesuite.net # TikTok Webcast Akamai: CDN.
+webcast19-normal-useast5.tiktokv.us # TikTok Webcast: Variant.
+perf.rpm.ttoverseaus.net # TikTok Performance: Metrics.
+
+# --------------------------------------------
+# TIKTOK - CDN CONTENT
+# --------------------------------------------
+lf16-cdn-tos.tiktokcdn-us.com # TikTok CDN Content: TOS.
+lf16-cdn-tos.tiktokcdn-us.com.edgesuite.net # TikTok CDN Akamai: TOS.
+lf16-effectcdn-us.tiktokcdn-us.com # TikTok Effects CDN: Filters.
+lf16-effectcdn-us.tiktokcdn-us.com.edgesuite.net # TikTok Effects Akamai: CDN.
+lf16-effectcdn.byteeffecttos-g.com # ByteDance Effects CDN: Global.
+lf16-gecko-source.tiktokcdn-us.com # TikTok Gecko Source: Code.
+lf16-gecko-source.tiktokcdn-us.com.edgesuite.net # TikTok Gecko Akamai: CDN.
+lf16-geckocdn.tiktokcdn-us.com # TikTok Gecko CDN: Rendering.
+lf16-tiktok-common.ibytedtos.com # TikTok Common CDN: Shared.
+lf16-tiktok-common.tiktokcdn-us.com # TikTok Common CDN: US.
+lf16-tiktok-common.tiktokcdn-us.com.edgesuite.net # TikTok Common Akamai: CDN.
+lf16-tiktok-web.tiktokcdn-us.com # TikTok Web CDN: Interface.
+lf16-tiktok-web.tiktokcdn-us.com.edgesuite.net # TikTok Web Akamai: CDN.
+lf19-gecko-source.tiktokcdn-us.com # TikTok Gecko Source: Variant.
+lf19-geckocdn.tiktokcdn-us.com # TikTok Gecko CDN: Variant.
+lf19-pitaya-pkg-sign.tiktokcdn-us.com # TikTok Pitaya CDN: Packages.
+p16-comment-sg-sign.tiktokcdn-us.com # TikTok Comments CDN: Singapore.
+p16-comment-sg-sign.tiktokcdn-us.com.edgesuite.net # TikTok Comments Akamai: CDN.
+p16-comment-sign-useast8.tiktokcdn-us.com # TikTok Comments CDN: US East.
+p16-comment-sign-useast8.tiktokcdn-us.com.edgesuite.net # TikTok Comments Akamai: CDN.
+p16-comment-sign.tiktokcdn-us.com # TikTok Comments CDN: General.
+p16-comment-sign.tiktokcdn-us.com.edgesuite.net # TikTok Comments Akamai: CDN.
+p16-comment-va-sign.tiktokcdn-us.com # TikTok Comments CDN: Virginia.
+p16-comment-va-sign.tiktokcdn-us.com.edgesuite.net # TikTok Comments Akamai: CDN.
+p16-common-sign.tiktokcdn-us.com # TikTok Common CDN: Signed.
+p16-common-sign.tiktokcdn-us.com.edgesuite.net # TikTok Common Akamai: CDN.
+p16-common.tiktokcdn-us.com # TikTok Common CDN: General.
+p16-common.tiktokcdn-us.com.edgesuite.net # TikTok Common Akamai: CDN.
+p16-oec-ttp.tiktokcdn-us.com # TikTok OEC CDN: E-com protocol.
+p16-oec-ttp.tiktokcdn-us.com.edgesuite.net # TikTok OEC Akamai: CDN.
+p19-comment-sign-useast8.tiktokcdn-us.com # TikTok Comments CDN: Variant.
+p19-comment-sign.tiktokcdn-us.com # TikTok Comments CDN: Variant.
+p19-common-sign.tiktokcdn-us.com # TikTok Common CDN: Variant signed.
+p19-common.tiktokcdn-us.com # TikTok Common CDN: Variant.
+p19-oec-general.ttcdn-us.com # TikTok OEC CDN: General.
+p19-oec-va.ibyteimg.com # TikTok OEC Images: Virginia.
+sf-ssp.tiktokcdn-us.com # TikTok SSP CDN: Server-side.
+sf-ssp.tiktokcdn-us.com.edgesuite.net # TikTok SSP Akamai: CDN.
+sf16-muse-va.ibytedtos.com # TikTok Muse CDN: Creative.
+sf16-passport-va.ibytedtos.com # TikTok Passport CDN: Auth.
+sf16-sg.tiktokcdn.com # TikTok Singapore CDN: Region.
+sf16-tiktok-im-scp-sign.tiktokcdn-us.com # TikTok IM CDN: Messaging.
+sf16-website-login.neutral.ttwstatic.com # TikTok Website Login: Neutral.
+sf16-website-login.neutral.ttwstatic.com.edgesuite.net # TikTok Login Akamai: CDN.
+v16-webapp-prime.us.tiktok.com # TikTok Web App: Prime US.
+v16-webapp-prime.us.tiktok.com.edgesuite.net # TikTok Web App Akamai: CDN.
+v16m.tiktokcdn-us.com # TikTok Video CDN: Medium.
+v16m.tiktokcdn-us.com.akamaized.net # TikTok Video Akamai: CDN.
+v19.tiktokcdn-us.com # TikTok Video CDN: Variant.
+v45-p.tiktokcdn-us.com # TikTok Video CDN: Protocol.
+v45-ttp.gpm.ttoverseaus.net # TikTok Video GPM: Overseas.
+v45.tiktokcdn-us.com # TikTok Video CDN: US.
+
+# --------------------------------------------
+# TIKTOK - PULL CDN
+# --------------------------------------------
+pull-a5-tt02-infra.fcdn.us.tiktokv.com # TikTok Pull CDN: Infra.
+pull-c5-gcp01.tiktokcdn-us.com # TikTok Pull CDN GCP: Cloud.
+pull-c5-gcp01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok Pull ByteCDN: Byte.
+pull-c5-tt01.tiktokcdn-us.com # TikTok Pull CDN: Node 1.
+pull-c5-tt01.tiktokcdn-us.com.c.worldfcdn2.com # TikTok Pull WorldCDN: World.
+pull-c5-tt02.tiktokcdn-us.com # TikTok Pull CDN: Node 2.
+pull-c5-tt02.tiktokcdn-us.com.c.worldfcdn2.com # TikTok Pull WorldCDN: Variant.
+pull-c5-tt04.tiktokcdn-us.com # TikTok Pull CDN: Node 4.
+pull-c5-tt04.tiktokcdn-us.com.c.worldfcdn2.com # TikTok Pull WorldCDN: Variant.
+pull-cmaf-f16-sg01.tiktokcdn-us.com # TikTok CMAF CDN: Format Singapore.
+pull-cmaf-f16-tt01.fcdn.us.tiktokv.com # TikTok CMAF CDN: Node 1.
+pull-cmaf-f16-tt01.tiktokcdn-us.com # TikTok CMAF CDN: General 1.
+pull-cmaf-f16-tt02.fcdn.us.tiktokv.com # TikTok CMAF CDN: Node 2.
+pull-cmaf-f16-tt02.tiktokcdn-us.com # TikTok CMAF CDN: General 2.
+pull-cmaf-f16-tt04.tiktokcdn-us.com # TikTok CMAF CDN: Node 4.
+pull-cmaf-f16-va01.tiktokcdn-us.com # TikTok CMAF CDN: Virginia.
+pull-cmaf-f77-sg01.tiktokcdn-us.com # TikTok CMAF CDN: Variant Singapore.
+pull-cmaf-f77-tt01.tiktokcdn-us.com # TikTok CMAF CDN: Variant 1.
+pull-cmaf-f77-tt02.tiktokcdn-us.com # TikTok CMAF CDN: Variant 2.
+pull-cmaf-f77-tt03.tiktokcdn-us.com # TikTok CMAF CDN: Variant 3.
+pull-cmaf-f77-tt04.tiktokcdn-us.com # TikTok CMAF CDN: Variant 4.
+pull-cmaf-f77-va01.tiktokcdn-us.com # TikTok CMAF CDN: Variant Virginia.
+pull-f5-gcp01.fcdn.us.tiktokv.com # TikTok Pull CDN GCP: Cloud.
+pull-f5-gcp01.fcdn.us.tiktokv.com.c.worldfcdn2.com # TikTok Pull WorldCDN: Cloud.
+pull-f5-sg01.tiktokcdn-us.com # TikTok Pull CDN Singapore: Region.
+pull-f5-sg01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok Pull ByteCDN: Singapore.
+pull-f5-tt01.fcdn.us.tiktokv.com # TikTok Pull CDN: Node 1.
+pull-f5-tt01.fcdn.us.tiktokv.com.c.worldfcdn2.com # TikTok Pull WorldCDN: Node 1.
+pull-f5-tt01.tiktokcdn-us.com # TikTok Pull CDN: General 1.
+pull-f5-tt01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok Pull ByteCDN: 1.
+pull-f5-tt02-infra.fcdn.us.gts.ttoverseaus.net # TikTok Pull Infra: Overseas.
+pull-f5-tt02.fcdn.us.tiktokv.com # TikTok Pull CDN: Node 2.
+pull-f5-tt02.fcdn.us.tiktokv.com.c.worldfcdn2.com # TikTok Pull WorldCDN: Node 2.
+pull-f5-tt02.tiktokcdn-us.com # TikTok Pull CDN: General 2.
+pull-f5-tt02.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok Pull ByteCDN: 2.
+pull-f5-tt03.fcdn.us.tiktokv.com # TikTok Pull CDN: Node 3.
+pull-f5-tt03.fcdn.us.tiktokv.com.c.worldfcdn2.com # TikTok Pull WorldCDN: Node 3.
+pull-f5-tt03.tiktokcdn-us.com # TikTok Pull CDN: General 3.
+pull-f5-tt03.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok Pull ByteCDN: 3.
+pull-f5-tt04.tiktokcdn-us.com # TikTok Pull CDN: General 4.
+pull-f5-tt04.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok Pull ByteCDN: 4.
+pull-f5-va01.tiktokcdn-us.com # TikTok Pull CDN Virginia: Region.
+pull-f5-va01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok Pull ByteCDN: Virginia.
+pull-fcdn-ttp1.s.bytefcdn-ttpus.com # TikTok ByteCDN: Pull 1.
+pull-fcdn-ttp1.s.worldfcdn2.com # TikTok WorldCDN: Pull 1.
+pull-fcdn-ttp2.s.bytefcdn-ttpus.com # TikTok ByteCDN: Pull 2.
+pull-fcdn-ttp2.s.worldfcdn2.com # TikTok WorldCDN: Pull 2.
+pull-fcdn-ttp3.s.bytefcdn-ttpus.com # TikTok ByteCDN: Pull 3.
+pull-fcdn-ttp3.s.worldfcdn2.com # TikTok WorldCDN: Pull 3.
+pull-fcdn-ttp4.s.bytefcdn-ttpus.com # TikTok ByteCDN: Pull 4.
+pull-fcdn-ttp4.s.worldfcdn2.com # TikTok WorldCDN: Pull 4.
+pull-fcdn-ttp5.s.worldfcdn2.com # TikTok WorldCDN: Pull 5.
+pull-fcdn-ttp6.s.worldfcdn2.com # TikTok WorldCDN: Pull 6.
+pull-fcdn-ttp7.s.worldfcdn2.com # TikTok WorldCDN: Pull 7.
+pull-fcdn-ttp8.s.worldfcdn2.com # TikTok WorldCDN: Pull 8.
+pull-flv-f60-tt01.tiktokcdn-us.com # TikTok FLV CDN: Format 1.
+pull-flv-f60-tt01.tiktokcdn-us.com.galaxy-cdn.com # TikTok Galaxy CDN: 1.
+pull-flv-f60-tt02.tiktokcdn-us.com # TikTok FLV CDN: Format 2.
+pull-flv-f60-tt02.tiktokcdn-us.com.galaxy-cdn.com # TikTok Galaxy CDN: 2.
+pull-flv-f77-sg01.tiktokcdn-us.com # TikTok FLV CDN: Variant Singapore.
+pull-flv-f77-tt01.fcdn.us.tiktokv.com # TikTok FLV CDN: Variant 1.
+pull-flv-f77-tt01.tiktokcdn-us.com # TikTok FLV CDN: General variant 1.
+pull-flv-f77-tt02.fcdn.us.tiktokv.com # TikTok FLV CDN: Variant 2.
+pull-flv-f77-tt02.tiktokcdn-us.com # TikTok FLV CDN: General variant 2.
+pull-flv-f77-tt04.tiktokcdn-us.com # TikTok FLV CDN: Variant 4.
+pull-flv-f77-va01.tiktokcdn-us.com # TikTok FLV CDN: Variant Virginia.
+pull-flv-l60-tt03.tiktokcdn-us.com # TikTok FLV CDN: Low 3.
+pull-flv-l60-tt03.tiktokcdn-us.com.galaxy-cdn.com # TikTok Galaxy CDN: Low 3.
+pull-flv-l60-tt04.tiktokcdn-us.com # TikTok FLV CDN: Low 4.
+pull-flv-l77-gcp01.tiktokcdn-us.com # TikTok FLV GCP: Cloud.
+pull-flv-l77-sg01.tiktokcdn-us.com # TikTok FLV Singapore: Region.
+pull-flv-l77-tt01.tiktokcdn-us.com # TikTok FLV CDN: Low variant 1.
+pull-flv-l77-tt02.tiktokcdn-us.com # TikTok FLV CDN: Low variant 2.
+pull-flv-l77-tt04.tiktokcdn-us.com # TikTok FLV CDN: Low variant 4.
+pull-flv-l77-va01.tiktokcdn-us.com # TikTok FLV Virginia: Low.
+pull-flv-o77-sg01.tiktokcdn-us.com # TikTok FLV Singapore: O variant.
+pull-flv-o77-va01.tiktokcdn-us.com # TikTok FLV Virginia: O variant.
+pull-flv-q77-sg01.tiktokcdn-us.com # TikTok FLV Singapore: Q variant.
+pull-flv-q77-va01.tiktokcdn-us.com # TikTok FLV Virginia: Q variant.
+pull-flv-w77-sg01.tiktokcdn-us.com # TikTok FLV Singapore: W variant.
+pull-flv-w77-va01.tiktokcdn-us.com # TikTok FLV Virginia: W variant.
+pull-g5-tt03.tiktokcdn-us.com # TikTok Pull CDN: G variant 3.
+pull-g5-tt03.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok ByteCDN: G 3.
+pull-g5-tt04.tiktokcdn-us.com # TikTok Pull CDN: G variant 4.
+pull-g5-tt04.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok ByteCDN: G 4.
+pull-o5-sg01.tiktokcdn-us.com # TikTok Pull Singapore: O variant.
+pull-o5-sg01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok ByteCDN: O Singapore.
+pull-o5-va01.tiktokcdn-us.com # TikTok Pull Virginia: O variant.
+pull-o5-va01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok ByteCDN: O Virginia.
+pull-q5-sg01.tiktokcdn-us.com # TikTok Pull Singapore: Q variant.
+pull-q5-sg01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok ByteCDN: Q Singapore.
+pull-q5-va01.tiktokcdn-us.com # TikTok Pull Virginia: Q variant.
+pull-q5-va01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok ByteCDN: Q Virginia.
+pull-w5-sg01.tiktokcdn-us.com # TikTok Pull Singapore: W variant.
+pull-w5-sg01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok ByteCDN: W Singapore.
+pull-w5-va01.tiktokcdn-us.com # TikTok Pull Virginia: W variant.
+pull-w5-va01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok ByteCDN: W Virginia.
+
+# --------------------------------------------
+# TIKTOK - PUSH CDN
+# --------------------------------------------
+push-fcdn-ttp1.s.bytefcdn-ttpus.com # TikTok Push ByteCDN: 1.
+push-fcdn-ttp2.s.bytefcdn-ttpus.com # TikTok Push ByteCDN: 2.
+push-fcdn-ttp3.s.bytefcdn-ttpus.com # TikTok Push ByteCDN: 3.
+push-fcdn-ttp4.s.bytefcdn-ttpus.com # TikTok Push ByteCDN: 4.
+push-rtmp-f5-tt01.fcdn.us.tiktokv.com # TikTok RTMP Push: Format 1.
+push-rtmp-f5-tt01.fcdn.us.tiktokv.com.c.worldfcdn2.com # TikTok RTMP WorldCDN: 1.
+push-rtmp-f5-tt01.tiktokcdn-us.com # TikTok RTMP Push: General 1.
+push-rtmp-f5-tt01.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok RTMP ByteCDN: 1.
+push-rtmp-f5-tt02.fcdn.us.tiktokv.com # TikTok RTMP Push: Format 2.
+push-rtmp-f5-tt02.fcdn.us.tiktokv.com.c.worldfcdn2.com # TikTok RTMP WorldCDN: 2.
+push-rtmp-f5-tt02.tiktokcdn-us.com # TikTok RTMP Push: General 2.
+push-rtmp-f5-tt02.tiktokcdn-us.com.c.bytefcdn-ttpus.com # TikTok RTMP ByteCDN: 2.
+push-rtmp-l77-tt01.tiktokcdn-us.com # TikTok RTMP Push: Low variant 1.
+push-rtmp-l77-tt02.tiktokcdn-us.com # TikTok RTMP Push: Low variant 2.
+
+# --------------------------------------------
+# BYTEDANCE / CAPCUT
+# --------------------------------------------
+byteeffecttos-g.com # ByteDance Effects: Global filters.
+ibyteimg.com # ByteDance Images: Hosting.
+0rtt.us.bytedance.map.fastly.net # ByteDance CDN: Zero-RTT US.
+dualstack.h2.bytedance.map.fastly.net # ByteDance Fastly CDN: Dual HTTP2.
+us.bytedance.map.fastly.net # ByteDance Fastly: US.
+video.us.bytedance.map.fastly.net # ByteDance Video Fastly: US.
+frontier.capcutw.us # CapCut Frontier: Editing edge.
+mcs16-normal-us-ttp.capcutapi.us # CapCut API: Media control.
+mon.capcutapi.us # CapCut Monitor: Metrics.
+pc-mon16-normal-us-ttp.capcutapi.us # CapCut PC Monitor: Desktop.
+
+# --------------------------------------------
+# MICROSOFT - CORE
+# --------------------------------------------
+go.microsoft.com # Microsoft Go Links: Redirects.
+go.microsoft.com.edgekey.net # Microsoft Go Akamai: CDN.
+support.microsoft.com # Microsoft Support: Help docs.
+aka.ms # Microsoft Short Links: Aliases.
+
+# --------------------------------------------
+# MICROSOFT - AUTHENTICATION
+# --------------------------------------------
+login.live.com # Microsoft Live Login: Consumer auth.
+login.microsoftonline.com # Microsoft Online Login: Azure AD.
+login.msa.msidentity.com # Microsoft Identity: MSA auth.
+login.mso.msidentity.com # Microsoft Identity: Org auth.
+aadcdn.msauth.net # Microsoft Authentication CDN: Assets.
+tm.v4.a.prd.aadg.akadns.net # Microsoft AAD: Token management.
+www.tm.v4.a.prd.aadg.akadns.net # Microsoft AAD: Web token.
+
+# --------------------------------------------
+# MICROSOFT - EDGE
+# --------------------------------------------
+fp.msedge.net # Microsoft Edge: Feature policy.
+a-msedge.net # Microsoft Edge CDN: Assets.
+shed.dual-low.part-0013.t-0009.t-msedge.net # Microsoft Edge: Update shed.
+
+# --------------------------------------------
+# MICROSOFT - WINDOWS UPDATE
+# --------------------------------------------
+ctldl.windowsupdate.com # Windows Update CTL: Cert lists.
+www.ctldl.windowsupdate.com # Windows Update CTL: Web.
+download.windowsupdate.com # Windows Update Downloads: Patches.
+sls.update.microsoft.com # Microsoft SLS Update: Licensing.
+slscr.update.microsoft.com # Microsoft SLSCR Update: Cert revocation.
+tas02.sls.update.microsoft.com # Microsoft Update: Telemetry.
+www.tas02.sls.update.microsoft.com # Microsoft Update: Web telemetry.
+fe2cr.update.microsoft.com # Microsoft Update: Frontend.
+
+# --------------------------------------------
+# MICROSOFT - DELIVERY / STORE
+# --------------------------------------------
+dl.delivery.mp.microsoft.com # Microsoft Delivery: Downloads.
+fe3cr.delivery.mp.microsoft.com # Microsoft Delivery: Frontend.
+www.fe3cr.delivery.mp.microsoft.com # Microsoft Delivery: Web frontend.
+collections.mp.microsoft.com # Microsoft Store Collections: Apps.
+www.collections.mp.microsoft.com # Microsoft Collections: Web.
+displaycatalog.mp.microsoft.com # Microsoft Store Catalog: Listings.
+www.displaycatalog.mp.microsoft.com # Microsoft Display Catalog: Web.
+purchase.mp.microsoft.com # Microsoft Store Purchase: Transactions.
+www.purchase.mp.microsoft.com # Microsoft Purchase: Web.
+titles.prod.mos.microsoft.com # Microsoft Titles: App metadata.
+store-images.microsoft.com # Microsoft Store Images: Icons.
+store-images.s-microsoft.com # Microsoft Store Images: Secure.
+storeedgefd.dsx.mp.microsoft.com # Microsoft Store Edge: Delivery.
+www.storeedgefd.dsx.mp.microsoft.com # Microsoft Store Edge: Web.
+storecatalogrevocation.storequality.microsoft.com # Microsoft Store Catalog: Revocation.
+glb.cws.prod.dcat.dsp.trafficmanager.net # Microsoft Traffic Manager: Global.
+www.glb.cws.prod.dcat.dsp.trafficmanager.net # Microsoft Traffic Manager: Web.
+geo.prod.do.dsp.mp.microsoft.com # Microsoft Geo: Location.
+cp801.prod.do.dsp.mp.microsoft.com # Microsoft Delivery: Control.
+kv801.prod.do.dsp.mp.microsoft.com # Microsoft KV: Key vault.
+tm-onegetcdn.trafficmanager.net # Microsoft OneGet CDN: Packages.
+
+# --------------------------------------------
+# MICROSOFT - CDN / WINGET
+# --------------------------------------------
+cdn.winget.microsoft.com # Windows Package Manager CDN: Winget.
+www.cdn.winget.microsoft.com # WinGet CDN: Web.
+winget-cache-pme-cxfsgwfxarb8hwg0.z01.azurefd.net # WinGet Cache: Azure.
+
+# --------------------------------------------
+# MICROSOFT - CONNECTIVITY
+# --------------------------------------------
+msftconnecttest.com # Microsoft Connectivity Test: Network check.
+www.msftconnecttest.com # Microsoft Connectivity Test: Web.
+ipv6.msftconnecttest.com # Microsoft IPv6 Test: IPv6 check.
+www.ipv6.msftconnecttest.com # Microsoft IPv6 Test: Web.
+www.msftncsi.com # Microsoft NCSI: Connectivity indicator.
+
+# --------------------------------------------
+# MICROSOFT - OFFICE / OUTLOOK
+# --------------------------------------------
+outlook.live.com # Outlook.com: Personal email.
+outlook.office.com # Outlook Office: Web app.
+outlook.office365.com # Outlook Office 365: Enterprise.
+outlook.ms-acdc.office.com # Outlook Office: Data center.
+eas.outlook.com # Outlook Exchange ActiveSync: Mobile sync.
+
+# --------------------------------------------
+# MICROSOFT - OCSP
+# --------------------------------------------
+oneocsp.microsoft.com # Microsoft OCSP: Cert checks.
+
+# --------------------------------------------
+# MICROSOFT - LEARN
+# --------------------------------------------
+learn.microsoft.com # Microsoft Learn: Training docs.
+learn-attachment.microsoft.com # Microsoft Learn Attachments: Files.
+
+# --------------------------------------------
+# MICROSOFT - STATIC
+# --------------------------------------------
+wcpstatic.microsoft.com # Microsoft WCP Static: Assets.
+vlscppe.microsoft.com # Microsoft VLSC PPE: Licensing.
+
+# --------------------------------------------
+# MICROSOFT - TRAFFIC MANAGER
+# --------------------------------------------
+wu-b-net.trafficmanager.net # Microsoft Traffic Manager: Updates.
+twc.trafficmanager.net # Weather Channel Traffic Manager: Weather.
+
+# --------------------------------------------
+# AMAZON / AWS
+# --------------------------------------------
+amazonaws.com # Amazon Web Services: Cloud platform.
+s3.amazonaws.com # Amazon S3: Storage.
+api.amazon.com # Amazon API: Services.
+data.amazon.com # Amazon Data: Analytics.
+completion.amazon.com # Amazon Autocomplete: Search suggestions.
+msh.amazon.com # Amazon MSH: Internal.
+dcape-na.amazon.com # Amazon DCAPE: North America.
+arcus-uswest.amazon.com # Amazon Arcus Service: Monitoring.
+appx.transient.amazon.com # Amazon App Services: Transient apps.
+a.media-amazon.com # Amazon Media: Assets A.
+a.media-amazon.com.akamaized.net # Amazon Media Akamai: CDN.
+c.media-amazon.com # Amazon Media: Assets C.
+f.media-amazon.com # Amazon Media: Assets F.
+m.media-amazon.com # Amazon Mobile Media: Mobile assets.
+images-na.ssl-images-amazon.com # Amazon Images: Secure NA.
+media.amazon.map.fastly.net # Amazon Media Fastly: CDN.
+tp.c47710ee9-frontier.media-amazon.com # Amazon Frontier: Media edge.
+prod-1.us-east-1.mdcs.mshop.amazon.dev # Amazon Prod: Dev shop.
+www.2.amazon.pool.ntp.org # Amazon NTP Pool: Time.
+
+# --------------------------------------------
+# AWS - SERVICES
+# --------------------------------------------
+health.aws.amazon.com # AWS Health: Status.
+console.aws.amazon.com # AWS Console: Management.
+.us-east-2.token.awswaf.com # AWS WAF Token: US East 2.
+.edge.sdk.awswaf.com # AWS WAF SDK: Edge.
+
+# --------------------------------------------
+# AWS - CLOUDFRONT CDN
+# --------------------------------------------
+d13643hualop71.cloudfront.net # CloudFront CDN: General.
+d1vbftvkf37ah3.cloudfront.net # CloudFront CDN: Variant.
+d1vwehpzunaxib.cloudfront.net # CloudFront CDN: Variant.
+d22ohr3ltkx6p.cloudfront.net # CloudFront CDN: Variant.
+d22p9r14gd7p23.cloudfront.net # CloudFront CDN: Variant.
+d2a2w09i90ub4j.cloudfront.net # CloudFront CDN: Variant.
+d2bytcopxu066p.cloudfront.net # CloudFront CDN: Variant.
+d2tzf0x91zo2h0.cloudfront.net # CloudFront CDN: Variant.
+d2yc0o7ycjs17k.cloudfront.net # CloudFront CDN: Variant.
+d329pwx05honv5.cloudfront.net # CloudFront CDN: Variant.
+d3n74dh0u3nhmn.cloudfront.net # CloudFront CDN: Variant.
+d3unf4s5rp9dfh.cloudfront.net # CloudFront CDN: Variant.
+d56vh6ph4jjmq.cloudfront.net # CloudFront CDN: Variant.
+db187550c7dkf.cloudfront.net # CloudFront CDN: Variant.
+dc2aeltros3w0.cloudfront.net # CloudFront CDN: Variant.
+ddxslzlhgvhap.cloudfront.net # CloudFront CDN: Variant.
+de4ertp2vqlc5.cloudfront.net # CloudFront CDN: Variant.
+dh66rxmh2149d.cloudfront.net # CloudFront CDN: Variant.
+dqpnq362acqdi.cloudfront.net # CloudFront CDN: Variant.
+drzetlglcbfx.cloudfront.net # CloudFront CDN: Variant.
+
+# --------------------------------------------
+# AWS - S3 (SPECIFIC BUCKETS)
+# --------------------------------------------
+bcw-media.s3.ap-northeast-1.amazonaws.com # AWS S3 Media: Asia NE.
+production-pdx-555773567328-web-recordings.s3.us-west-2.amazonaws.com # AWS Recordings: US West.
+github-cloud.s3.amazonaws.com # GitHub Cloud Storage: S3.
+greasyfork.s3.us-east-2.amazonaws.com # GreasyFork S3: Scripts.
+
+# --------------------------------------------
+# SPOTIFY
+# --------------------------------------------
+accounts.spotify.com # Spotify Accounts: Login.
+api-partner.spotify.com # Spotify Partner API: Integrations.
+spclient.wg.spotify.com # Spotify Client: Web gateway.
+apresolve.spotify.com # Spotify AP Resolver: Access points.
+gue1-spclient.spotify.com # Spotify Client: GUE region.
+ap-gue1.spotify.com # Spotify Access Point: GUE.
+scdn.co # Spotify CDN: General.
+spotifycdn.com # Spotify CDN: Assets.
+audio-cf.spotifycdn.com # Spotify Audio CDN: Tracks.
+audio-cf.spotifycdn.com.cdn.cloudflare.net # Spotify Audio Cloudflare: CDN.
+canvaz.scdn.co # Spotify Canvas: Visuals.
+daylist.spotifycdn.com # Spotify Daylist: Playlists.
+heads-fa-tls13.spotifycdn.com # Spotify Heads CDN: TLS.
+i.scdn.co # Spotify Images: Covers.
+pickasso.spotifycdn.com # Spotify Pickasso: Art.
+video-akpcw.spotifycdn.com # Spotify Video CDN: Clips.
+xpui.app.spotify.com # Spotify XPUI: UI app.
+
+# --------------------------------------------
+# DROPBOX
+# --------------------------------------------
+api.dropbox.com # Dropbox API: Data access.
+client.dropbox.com # Dropbox Client: Sync.
+d.dropbox.com # Dropbox: General.
+www.d.dropbox.com # Dropbox: Web general.
+bolt.dropbox.com # Dropbox Bolt: Fast sync.
+www.bolt.dropbox.com # Dropbox Bolt: Web.
+connectivitycheck.getdropbox.com # Dropbox Connectivity Check: Network.
+netmon-control.dropbox.com # Dropbox Network Monitor: Metrics.
+nsf-3.dropbox.com # Dropbox NSF: File system.
+photos-thumb.dropbox.com # Dropbox Photo Thumbnails: Previews.
+cfl.dropboxstatic.com # Dropbox Static CDN: Assets.
+cfl.dropboxstatic.com.cdn.cloudflare.net # Dropbox Static Cloudflare: CDN.
+client-env.dropbox-dns.com # Dropbox Client DNS: Env.
+edge-block-previews-env.dropbox-dns.com # Dropbox Edge: Previews.
+edge-misc-env.dropbox-dns.com # Dropbox Edge: Misc.
+nsf-env-3.dropbox-dns.com # Dropbox NSF DNS: Env.
+www-env.dropbox-dns.com # Dropbox WWW DNS: Env.
+
+# --------------------------------------------
+# GAMING - STEAM
+# --------------------------------------------
+steampowered.com # Steam: Gaming platform.
+store.steampowered.com # Steam Store: Purchases.
+www.store.steampowered.com # Steam Store: Web.
+steamcommunity.com # Steam Community: Forums.
+www.steamcommunity.com # Steam Community: Web.
+steamcontent.com # Steam Content: Downloads.
+steamserver.net # Steam Server: Multiplayer.
+steamstatic.com # Steam Static: Assets.
+test.steampowered.com # Steam Test: Beta.
+api.steampowered.com # Steam API: Data.
+client-update.fastly.steamstatic.com # Steam Client Update: Fastly.
+clientconfig.akamai.steamstatic.com # Steam Client Config: Akamai.
+community.steamstatic.com # Steam Community Static: Assets.
+www.community.steamstatic.com # Steam Community Static: Web.
+shared.steamstatic.com # Steam Shared Static: Shared.
+shared.akamai.steamstatic.com # Steam Shared Akamai: CDN.
+store.akamai.steamstatic.com # Steam Store Akamai: CDN.
+www.store.akamai.steamstatic.com # Steam Store Akamai: Web.
+shared.valve.map.fastly.net # Valve Fastly: CDN.
+cmp1-atl3.steamserver.net # Steam Server Atlanta: CMP.
+cmp1-iad1.steamserver.net # Steam Server IAD: CMP.
+cmp1-ord1.steamserver.net # Steam Server Chicago: CMP.
+cmp2-dfw2.steamserver.net # Steam Server Dallas: CMP.
+cmp2-iad1.steamserver.net # Steam Server IAD: CMP 2.
+ipv6check-http.steamserver.net # Steam IPv6 Check: HTTP.
+ipv6check-udp.steamserver.net # Steam IPv6 Check UDP: UDP.
+p2p-atl3.discovery.steamserver.net # Steam P2P Atlanta: Discovery.
+p2p-ord1.discovery.steamserver.net # Steam P2P Chicago: Discovery.
+
+# --------------------------------------------
+# GAMING - EPIC GAMES
+# --------------------------------------------
+epicgames.com # Epic Games: Company site.
+www.epicgames.com # Epic Games: Web.
+www.epicgames.com.cdn.cloudflare.net # Epic Games Cloudflare: CDN.
+epicgames.dev # Epic Games Developer: Portal.
+api.epicgames.dev # Epic Games Developer API: Calls.
+store.epicgames.com # Epic Games Store: Marketplace.
+store.epicgames.com.cdn.cloudflare.net # Epic Games Store Cloudflare: CDN.
+account-public-service-prod03.ol.epicgames.com # Epic Games Account Service: Auth.
+datarouter.ol.epicgames.com # Epic Games Data Router: Routing.
+distro-gateway-prod.ol.epicgames.com.cdn.cloudflare.net # Epic Games Gateway: Distro.
+download.epicgames.com # Epic Games Downloads: Files.
+egs-platform-service-weighted-cdn.epicgames.com # Epic Games Platform: Weighted.
+egs-platform-service.store.epicgames.com # Epic Games Store Platform: Service.
+egs-platform-service.store.epicgames.com.cdn.cloudflare.net # Epic Games Cloudflare: Store.
+fastly-download.epicgames.com # Epic Games Fastly Downloads: CDN.
+launcher-public-service-prod06.ol.epicgames.com # Epic Games Launcher: Service.
+media-cdn.epicgames.com # Epic Games Media CDN: Assets.
+static-assets-help-prod.epicgames.com # Epic Games Help Assets: Static.
+static-assets-help-prod.epicgames.com.cdn.cloudflare.net # Epic Games Help Cloudflare: CDN.
+static-assets-prod-dest.epicgames.com # Epic Games Static Dest: Prod.
+static-assets-prod.epicgames.com # Epic Games Static: Prod.
+static-assets-prod.epicgames.com.cdn.cloudflare.net # Epic Games Static Cloudflare: CDN.
+store-site-backend-static-ipv4.ak.epicgames.com # Epic Games Store Backend: Static.
+store-weighted-cdn.epicgames.com # Epic Games Store CDN: Weighted.
+weighted-launcher-public-service-prod06.ol.epicgames.com # Epic Games Launcher: Weighted.
+weighted-row-www.epicgames.com # Epic Games Web: Weighted.
+cdn1.epicgames.com # Epic Games CDN: 1.
+cdn2.epicgames.com # Epic Games CDN: 2.
+epicgames-download1.akamaized.net # Epic Games Akamai Downloads: CDN.
+
+# --------------------------------------------
+# GAMING - UNREAL ENGINE
+# --------------------------------------------
+cdn1.unrealengine.com # Unreal Engine CDN: Asset delivery.
+cdn2.unrealengine.com # Unreal Engine CDN: Variant hosting.
+cms-assets.unrealengine.com # Unreal Engine CMS: Content management.
+components.unrealengine.com # Unreal Engine Components: Modules.
+static-assets-prod-dest.unrealengine.com # Unreal Engine Static Dest: Production assets.
+static-assets-prod.unrealengine.com # Unreal Engine Static: Prod files.
+static-assets-prod.unrealengine.com.cdn.cloudflare.net # Unreal Engine Cloudflare: Static CDN.
+
+# --------------------------------------------
+# GAMING - CALL OF DUTY / ACTIVISION
+# --------------------------------------------
+activision.com # Activision Gaming: Publisher site.
+callofduty.com # Call of Duty: Game portal.
+www.callofduty.com # Call of Duty: Main site.
+cod-assets.cdn.callofduty.com # Call of Duty Assets: Game files.
+ingest.datax.activision.com # Activision Data Ingest: Analytics.
+prod.cdni.callofduty.com # Call of Duty CDN: Production.
+
+# --------------------------------------------
+# GAMING - DEMONWARE
+# --------------------------------------------
+demonware.net # Demonware Gaming Services: Multiplayer backend.
+cer-steam-loginservice.prod.demonware.net # Steam Login Demonware: Integration.
+genesis.stun.eu.demonware.net # Demonware STUN EU: Traversal.
+genesis.stun.us.demonware.net # Demonware STUN US: Traversal.
+lsg.7300.prod.demonware.net # Demonware LSG: Leaderboards.
+
+# --------------------------------------------
+# AI SERVICES - ANTHROPIC (CLAUDE)
+# --------------------------------------------
+a-api.anthropic.com # Anthropic Claude API: Model access.
+a-cdn.anthropic.com # Anthropic Claude CDN: Assets.
+s-cdn.anthropic.com # Anthropic CDN: Static.
+
+# --------------------------------------------
+# AI SERVICES - OPENAI (CHATGPT)
+# --------------------------------------------
+chatgpt.com # OpenAI ChatGPT: Conversational AI.
+ab.chatgpt.com # OpenAI ChatGPT: Variant.
+ws.chatgpt.com # ChatGPT WebSocket: Real-time.
+auth.openai.com # OpenAI Authentication: Login.
+auth.openai.com.cdn.cloudflare.net # OpenAI Auth Cloudflare: CDN.
+cdn.oaistatic.com # OpenAI Static CDN: Assets.
+files.oaiusercontent.com # OpenAI User Files: Uploads.
+sdmntprcentralus.oaiusercontent.com # OpenAI User Content: Central US.
+sdmntprwestus.oaiusercontent.com # OpenAI User Content: West US.
+
+# --------------------------------------------
+# AI SERVICES - OTHER
+# --------------------------------------------
+grok.com # xAI Grok: AI chatbot.
+vpax.ai # VPax AI: Medical imaging cloud PACS with AI.
+patientimage.ai # Patient Image AI: Chiropractic AI tools for imaging.
+
+# --------------------------------------------
+# VPN / PRIVACY - PIA
+# --------------------------------------------
+api.privateinternetaccess.com # PIA VPN API: Connectivity.
+www.api.privateinternetaccess.com # PIA VPN API: Web.
+apiv2.privateinternetaccess.com # PIA VPN API v2: Updated.
+installers.privateinternetaccess.com # PIA VPN Installers: Downloads.
+www.privateinternetaccess.com # PIA VPN: Site.
+api.piaproxy.net # PIA Proxy API: Proxies.
+apiv2.piaproxy.net # PIA Proxy API v2: Updated.
+
+# --------------------------------------------
+# VPN / PRIVACY - PROTON
+# --------------------------------------------
+account.proton.me # Proton Account: Management.
+account-api.proton.me # Proton Account API: Calls.
+api.protonmail.ch # ProtonMail API: Email.
+mail.proton.me # Proton Mail: Webmail.
+mail-api.proton.me # Proton Mail API: Access.
+
+# --------------------------------------------
+# VPN / PRIVACY - NEXTDNS
+# --------------------------------------------
+api.nextdns.io # NextDNS API: Config.
+favicons.nextdns.io # NextDNS Favicons: Icons.
+my.nextdns.io # NextDNS Dashboard: UI.
+nextdns.io # NextDNS: Site.
+nextdns.forumbee.com # NextDNS Forum: Community.
+
+# --------------------------------------------
+# SECURITY / CERTIFICATES - DIGICERT
+# --------------------------------------------
+digicert.com # DigiCert Certificate Authority: Issuance.
+crl.edge.digicert.com # DigiCert CRL: Revocation list.
+crl3.digicert.com # DigiCert CRL: Variant 3.
+www.crl3.digicert.com # DigiCert CRL: Web 3.
+crl4.digicert.com # DigiCert CRL: Variant 4.
+ocsp.digicert.com # DigiCert OCSP: Status.
+www.ocsp.digicert.com # DigiCert OCSP: Web.
+ocsp.digicert.com.cdn.cloudflare.net # DigiCert OCSP Cloudflare: CDN.
+ocsp.edge.digicert.com # DigiCert Edge OCSP: Edge.
+cac-ocsp.digicert.com.edgekey.net # DigiCert OCSP: CA.
+
+# --------------------------------------------
+# SECURITY / CERTIFICATES - LET'S ENCRYPT
+# --------------------------------------------
+crl.root-x1.letsencrypt.org.edgekey.net # Let's Encrypt CRL: Root.
+lencr.org # Let's Encrypt: Authority.
+r13.c.lencr.org # Let's Encrypt R13: Intermediate.
+x1.c.lencr.org # Let's Encrypt X1: Cross-signed.
+
+# --------------------------------------------
+# SECURITY / CERTIFICATES - GEOTRUST
+# --------------------------------------------
+geotrust.com # GeoTrust Certificate Authority: Issuance.
+cdp.geotrust.com # GeoTrust CDP: Distribution.
+status.geotrust.com # GeoTrust Status: Checks.
+
+# --------------------------------------------
+# SECURITY / CERTIFICATES - GLOBALSIGN
+# --------------------------------------------
+ocsp.globalsign.com # GlobalSign OCSP: Status.
+ocsp2.globalsign.com # GlobalSign OCSP: Variant.
+cdn-default.globalsigncdn.com # GlobalSign CDN: Default.
+prod.globalsign.map.fastly.net # GlobalSign Fastly: Prod CDN.
+
+# --------------------------------------------
+# SECURITY / CERTIFICATES - COMODO / SECTIGO
+# --------------------------------------------
+comodoca.com # Comodo CA: Authority.
+crl.comodoca.com # Comodo CRL: Revocation.
+crl.comodoca.com.cdn.cloudflare.net # Comodo CRL Cloudflare: CDN.
+ocsp.comodoca.com # Comodo OCSP: Status.
+ocsp.comodoca.com.cdn.cloudflare.net # Comodo OCSP Cloudflare: CDN.
+sectigo.com # Sectigo Certificate Authority: Issuance.
+ocsp.sectigo.com # Sectigo OCSP: Status.
+
+# --------------------------------------------
+# SECURITY / CERTIFICATES - AMAZON TRUST
+# --------------------------------------------
+ocsp.r2m04.amazontrust.com # Amazon Trust OCSP: R2M04.
+ocsp.rootca1.amazontrust.com # Amazon Trust Root OCSP: Root CA1.
+
+# --------------------------------------------
+# SECURITY / CERTIFICATES - OTHER
+# --------------------------------------------
+ocsp.godaddy.com # GoDaddy OCSP: Status.
+usertrust.com # UserTrust CA: Authority.
+ocsp.usertrust.com # UserTrust OCSP: Status.
+ocsps.ssl.com # SSL.com OCSP: Plural.
+certum.pl # Certum Certificate Authority: Issuance.
+
+# --------------------------------------------
+# CDN - AKAMAI
+# --------------------------------------------
+a1361.us.akamai.net # Akamai CDN: US region.
+a1446.dscr.akamai.net # Akamai CDN: Secure.
+a155.dscd.akamai.net # Akamai CDN: Content.
+a1744.dscw154.akamai.net # Akamai CDN: Wide.
+a175.b.akamai.net # Akamai CDN: Variant.
+a1918.us.akamai.net # Akamai CDN: US.
+a1931.dscgi3.akamai.net # Akamai CDN: GI3.
+a1994.dscr.akamai.net # Akamai CDN: Secure.
+a2023.mm3.akamai.net # Akamai CDN: Media.
+a2030.dscapi9.akamai.net # Akamai CDN: API.
+a2047.api10.akamai.net # Akamai CDN: API10.
+a2047.w181.akamai.net # Akamai CDN: W181.
+a2047.w182.akamai.net # Akamai CDN: W182.
+a2047.w183.akamai.net # Akamai CDN: W183.
+a2047.w184.akamai.net # Akamai CDN: W184.
+a2047.w185.akamai.net # Akamai CDN: W185.
+a2049.dscapi7.akamai.net # Akamai CDN: API7.
+a29.us.akamai.net # Akamai CDN: US small.
+a516.mm3.akamai.net # Akamai CDN: Media small.
+a874.b.akamai.net # Akamai CDN: Variant small.
+a880.us.akamai.net # Akamai CDN: US variant.
+a892.mm3.akamai.net # Akamai CDN: Media variant.
+a981.b.akamai.net # Akamai CDN: Variant.
+whoami.akamai.net # Akamai Whoami: Diagnostic.
+e1329.g.akamaiedge.net # Akamai Edge: General.
+e13678.dscb.akamaiedge.net # Akamai Edge: Secure.
+e3913.cd.akamaiedge.net # Akamai Edge: Content.
+
+# --------------------------------------------
+# CDN - CLOUDFLARE
+# --------------------------------------------
+cloudflare.net # Cloudflare: Network.
+challenges.cloudflare.com # Cloudflare Challenges: CAPTCHA.
+cdnjs.cloudflare.com # Cloudflare JS CDN: Libraries.
+cp10.cloudflare.com # Cloudflare: Control panel.
+pages.dev # Cloudflare Pages: Hosting.
+
+# --------------------------------------------
+# CDN - FASTLY
+# --------------------------------------------
+fastly.net # Fastly CDN: Delivery.
+dualstack.n.sni.global.fastly.net # Fastly Global CDN: Dual.
+dualstack.n.sni.us-eu.fastly.net # Fastly US-EU CDN: Dual.
+dualstack.osff.map.fastly.net # Fastly CDN: OSFF.
+dualstack.python.map.fastly.net # Python Fastly CDN: Packages.
+dualstack.com.imgix.map.fastly.net # Imgix Fastly CDN: Images.
+p2.shared.global.fastly.net # Fastly Shared Global: Shared.
+split.map.fastly.net # Split.io Fastly: A/B testing.
+jwplayer-dualstack.map.fastly.net # JW Player Fastly: Video.
+
+# --------------------------------------------
+# CDN - JSDELIVR
+# --------------------------------------------
+cdn.jsdelivr.net # jsDelivr CDN: Open-source.
+cdn.jsdelivr.net.cdn.cloudflare.net # jsDelivr Cloudflare: CDN.
+jsdelivr.net # jsDelivr CDN: Main.
+jsdelivr.map.fastly.net # jsDelivr Fastly: CDN.
+
+# --------------------------------------------
+# CDN - AMP
+# --------------------------------------------
+cdn-content.ampproject.org # AMP CDN Content: Accelerated.
+cdn.ampproject.org # AMP CDN: Framework.
+cdn-v4.amp-endpoint3.com # AMP Endpoint: V4.
+cdn-v6.amp-endpoint3.com # AMP Endpoint: V6 IPv6.
+ngx-v4.amp-endpoint2.com # AMP Nginx Endpoint: V4.
+ngx-v6.amp-endpoint2.com # AMP Nginx Endpoint: V6 IPv6.
+
+# --------------------------------------------
+# CDN - JW PLAYER
+# --------------------------------------------
+content.jwplatform.com # JW Player Content: Hosting.
+ssl.p.jwpcdn.com # JW Player SSL: Secure CDN.
+
+# --------------------------------------------
+# CDN - CLOUDINARY
+# --------------------------------------------
+res.cloudinary.com # Cloudinary Images: Optimization.
+resc.cloudinary.com.cdn.cloudflare.net # Cloudinary Cloudflare: Resized.
+
+# --------------------------------------------
+# CDN - OTHER
+# --------------------------------------------
+cdn.statically.io # Statically CDN: Static assets.
+cdn.sstatic.net # Stack Exchange CDN: Assets.
+i.sstatic.net # Stack Exchange Images: User content.
+use.typekit.net # Adobe Typekit: Fonts.
+cdn.shopify.com # Shopify CDN: E-commerce.
+myshopify.com # Shopify Stores: Custom shops.
+cdn.tailwindcss.com # Tailwind CSS CDN: Framework.
+code.jquery.com # jQuery CDN: Library.
+cdn-jnkep.nitrocdn.com # Nitro CDN: Optimization.
+
+# --------------------------------------------
+# CDN - YANDEX
+# --------------------------------------------
+yandex.com # Yandex: Search engine.
+yastatic.net # Yandex Static: Assets.
+
+# --------------------------------------------
+# GITHUB
+# --------------------------------------------
+github.com # GitHub: Code hosting.
+api.github.com # GitHub API: Access.
+github.io # GitHub Pages: Sites.
+raw.githubusercontent.com # GitHub Raw Content: Files.
+avatars.githubusercontent.com # GitHub Avatars: Users.
+avatars1.githubusercontent.com # GitHub Avatars: Variant 1.
+avatars2.githubusercontent.com # GitHub Avatars: Variant 2.
+avatars3.githubusercontent.com # GitHub Avatars: Variant 3.
+camo.githubusercontent.com # GitHub Camo Proxy: Images.
+gist.githubusercontent.com # GitHub Gist Content: Snippets.
+private-user-images.githubusercontent.com # GitHub Private Images: Secure.
+release-assets.githubusercontent.com # GitHub Release Assets: Downloads.
+user-images.githubusercontent.com # GitHub User Images: Uploads.
+github.githubassets.com # GitHub Assets: Platform.
+alive.github.com # GitHub Status: Alive check.
+
+# --------------------------------------------
+# GITLAB
+# --------------------------------------------
+gitlab.com # GitLab: Code hosting.
+gitlab.io # GitLab Pages: Sites.
+malware-filter.gitlab.io # Malware Filter Lists GitLab: Blocklists.
+
+# --------------------------------------------
+# DEVELOPER - NPM
+# --------------------------------------------
+www.npmjs.com # NPM: Package manager.
+registry.npmjs.org # NPM Registry: Downloads.
+static-production.npmjs.com # NPM Static: Prod assets.
+
+# --------------------------------------------
+# DEVELOPER - PYTHON
+# --------------------------------------------
+pypi.org # Python Package Index: PyPI.
+files.pythonhosted.org # Python Packages: Hosted files.
+www.python.org # Python: Official site.
+
+# --------------------------------------------
+# DEVELOPER - NODE.JS / ELECTRON
+# --------------------------------------------
+nodejs.org # Node.js: Runtime.
+electronjs.org # Electron Framework: Desktop apps.
+www.electronjs.org # Electron JS: Site.
+www.electron.build # Electron Build: Tools.
+
+# --------------------------------------------
+# DEVELOPER - TOOLS
+# --------------------------------------------
+regexr.com # RegExr Tool: Regex testing.
+
+# --------------------------------------------
+# BROWSER EXTENSIONS - GREASYFORK
+# --------------------------------------------
+greasyfork.org # GreasyFork Userscripts: Scripts.
+update.greasyfork.org # GreasyFork Updates: Checks.
+
+# --------------------------------------------
+# BROWSER EXTENSIONS - USERSTYLES
+# --------------------------------------------
+userstyles.org # Userstyles.org: CSS themes.
+userstyles.world # Userstyles.world: Modern themes.
+userstyles.catppuccin.com # Catppuccin Userstyles: Palette.
+
+# --------------------------------------------
+# BROWSER EXTENSIONS - UBLOCK ORIGIN
+# --------------------------------------------
+ublockorigin.github.io # uBlock Origin GitHub: Repo.
+ublockorigin.pages.dev # uBlock Origin Pages: Dev.
+raymondhill.net # Raymond Hill (uBlock Origin): Developer.
+
+# --------------------------------------------
+# BROWSER EXTENSIONS - ADGUARD
+# --------------------------------------------
+adguardteam.github.io # AdGuard Filter Lists: Blocklists.
+
+# --------------------------------------------
+# BROWSER EXTENSIONS - TAMPERMONKEY
+# --------------------------------------------
+blacklist.tampermonkey.net # Tampermonkey Blacklist: Scripts.
+
+# --------------------------------------------
+# BROWSER EXTENSIONS - REVANCED / VANCED
+# --------------------------------------------
+revanced.app # ReVanced: YouTube mod.
+www.revanced.app # ReVanced: Site.
+api.revanced.app # ReVanced API: Updates.
+vanced.to # Vanced: Legacy YouTube mod.
+www.vanced.to # Vanced: Site.
+
+# --------------------------------------------
+# AD BLOCKING / FILTER LISTS
+# --------------------------------------------
+easylist.to # EasyList Ad Blocking: Lists.
+easylist-downloads.adblockplus.org # EasyList Ad Blocking: Downloads.
+production-filterlist-delivery.easylist-downloads.adblockplus.org.edgesuite.net # EasyList Akamai: Delivery.
+secure.fanboy.co.nz # Fanboy Filter Lists: Adblock.
+pgl.yoyo.org # Peter Lowe's Ad List: Blocklist.
+filters.adtidy.org # AdGuard Filters: Adblock.
+winhelp2002.mvps.org # MVPS Hosts File: Blocklist.
+
+# --------------------------------------------
+# THREAT INTELLIGENCE / SECURITY LISTS
+# --------------------------------------------
+adaway.org # AdAway Ad Blocker: Mobile.
+app.adaway.org # AdAway App: Android.
+azorult-tracker.net # Azorult Malware Tracker: Intel.
+binarydefense.com # Binary Defense Threat Intel: Bans.
+blocklist.greensnow.co # GreenSnow Blocklist: IPs.
+botscout.com # BotScout Anti-Bot Service: Protection.
+cinsarmy.com # CINS Army Threat Intel: Scores.
+danger.rulez.sk # Danger Rulez Blocklist: Threats.
+enumer.org # Enumer Security: Scans.
+feodotracker.abuse.ch # Feodo Malware Tracker: Botnets.
+hybrid-analysis.com # Hybrid Analysis Malware: Sandbox.
+isc.sans.edu # SANS Internet Storm Center: Alerts.
+lists.blocklist.de # Blocklist.de Lists: Attacks.
+pulsedive.com # Pulsedive Threat Intel: Scans.
+reputation.alienvault.com # AlienVault OTX: Reputation.
+reputation.alienvault.io # AlienVault OTX: IO.
+rules.emergingthreats.net # Emerging Threats Rules: IDS.
+sslbl.abuse.ch # SSL Blocklist: Certs.
+talosintelligence.com # Cisco Talos Intel: Threats.
+wonderland.rulez.sk # Wonderland Blocklist: Malware.
+www.botvrij.eu # Botvrij Blocklist: Bots.
+www.ipspamlist.com # IP Spam List: Spammers.
+www.spamhaus.org # Spamhaus: Blocklists.
+www.spamhaus.org.cdn.cloudflare.net # Spamhaus Cloudflare: CDN.
+malware-filter.pages.dev # Malware Filter Lists: Dev.
+
+# --------------------------------------------
+# MOZILLA / FIREFOX
+# --------------------------------------------
+addons.mozilla.org # Firefox Add-ons: Extensions.
+ciscobinary.openh264.org # Cisco OpenH264: Codec.
+download.mozilla.org # Mozilla Downloads: Files.
+www.download.mozilla.org # Mozilla Downloads: Web.
+download-installer.cdn.mozilla.net # Mozilla Download Installer: CDN.
+www.download-installer.cdn.mozilla.net # Mozilla Download: Web CDN.
+
+# --------------------------------------------
+# BRAVE BROWSER
+# --------------------------------------------
+brave-core-ext.s3.brave.com # Brave Extensions: Core.
+brave-production-proxy-238320562.us-west-2.elb.amazonaws.com # Brave Proxy: Prod.
+cdn.search.brave.com # Brave Search CDN: Results.
+crxdownload.brave.com # Brave Extension Downloads: CRX.
+extensionupdater.brave.com # Brave Extension Updates: Checks.
+go-updater.brave.com # Brave Updater: Go.
+www.go-updater.brave.com # Brave Updater: Web.
+go-updater-1830831421.us-west-2.elb.amazonaws.com # Brave Updater: ELB.
+translate.brave.com # Brave Translate: Service.
+www.translate.brave.com # Brave Translate: Web.
+updates.bravesoftware.com # Brave Updates: Software.
+detectportal.brave-http-only.com # Brave Captive Portal: Detection.
+www.detectportal.brave-http-only.com # Brave Captive Portal: Web.
+
+# --------------------------------------------
+# BITWARDEN
+# --------------------------------------------
+vault.bitwarden.com # Bitwarden Vault: Passwords.
+api.bitwarden.com # Bitwarden Password Manager API: Calls.
+identity.bitwarden.com # Bitwarden Identity: Auth.
+icons.bitwarden.net # Bitwarden Icons: Favicons.
+notifications.bitwarden.com # Bitwarden Notifications: Alerts.
+www.notifications.bitwarden.com # Bitwarden Notifications: Web.
+mbz100.bitwarden.map.fastly.net # Bitwarden Fastly: CDN.
+
+# --------------------------------------------
+# TEAMVIEWER
+# --------------------------------------------
+teamviewer.com # TeamViewer: Remote access.
+client.teamviewer.com # TeamViewer Client: App.
+customdesignservice.teamviewer.com # TeamViewer Custom Design: Branding.
+customdesignservice.azurewebsites.net # TeamViewer Custom Design: Azure.
+hapi.teamviewer.com # TeamViewer HAPI: API.
+router1.teamviewer.com # TeamViewer Router: Connectivity.
+router5.teamviewer.com # TeamViewer Router: Variant.
+router11.teamviewer.com # TeamViewer Router: Variant.
+router12.teamviewer.com # TeamViewer Router: Variant.
+router14.teamviewer.com # TeamViewer Router: Variant.
+us-iad-gcp-r002.router.teamviewer.com # TeamViewer Router: US IAD.
+us-mia-anx-r007.router.teamviewer.com # TeamViewer Router: US MIA.
+us-mks-gcp-r002.router.teamviewer.com # TeamViewer Router: US MKS.
+us-njc-anx-r013.router.teamviewer.com # TeamViewer Router: US NJC.
+
+# --------------------------------------------
+# ANYDESK
+# --------------------------------------------
+anydesk.com # AnyDesk Remote Desktop: Access.
+
+# --------------------------------------------
+# FOOD DELIVERY - DOORDASH
+# --------------------------------------------
+doordash.com # DoorDash Food Delivery: Service.
+www.doordash.com # DoorDash: Site.
+.doordash.com # DoorDash API: General.
+423b12fd7b819ec52acafed4ef462cb2.doordash.com # DoorDash API: Specific.
+a5tfzk-p.doordash.com # DoorDash API: Variant.
+a5tfzk.doordash.com # DoorDash API: Variant.
+cdn.doordash.com # DoorDash CDN: Assets.
+consumer-mobile-bff.doordash.com # DoorDash Mobile API: BFF.
+dasher-dropoff-photos.doordash.com # DoorDash Dasher Photos: Uploads.
+dx-delivery-fulfillment-photos.doordash.com # DoorDash Delivery Photos: Fulfillment.
+dynamic-values-edge-service.doordash.com # DoorDash Edge Service: Values.
+identity.doordash.com # DoorDash Identity: Auth.
+realtime-service.doordash.com # DoorDash Realtime: Updates.
+typography.doordash.com # DoorDash Typography: Fonts.
+zgqup7.doordash.com # DoorDash API: Variant.
+dnsbl.test.otel-mobile.doordash.com # DoorDash DNS Test: Telemetry.
+cdn4dd.com # DoorDash CDN: 4DD.
+img.cdn4dd.com # DoorDash Images: CDN.
+web-assets.cdn4dd.com # DoorDash Web Assets: CDN.
+
+# --------------------------------------------
+# DOORDASH - SENDBIRD CHAT
+# --------------------------------------------
+sendbird.com # SendBird Chat: Messaging.
+api-0f7bbb82-3d8f-4f04-b7e6-3f51c0e4da04.sendbird.com # SendBird Chat API: Specific.
+api-direct-doordash.sendbird.com # DoorDash SendBird Chat: Direct.
+ws-0f7bbb82-3d8f-4f04-b7e6-3f51c0e4da04.sendbird.com # SendBird WebSocket: Specific.
+ws-doordash.sendbird.com # DoorDash SendBird WS: Chat.
+
+# --------------------------------------------
+# COMMUNICATION - TWILIO
+# --------------------------------------------
+twilio.com # Twilio Communications: API.
+chunderm.gll.twilio.com # Twilio Services: Chunder.
+ers.twilio.com # Twilio ERS: Emergency.
+eventgw.twilio.com # Twilio Event Gateway: Events.
+eventgw.us1.twilio.com # Twilio Event Gateway US: Region.
+global.stun.twilio.com # Twilio Global STUN: Traversal.
+global.turn.twilio.com # Twilio Global TURN: Relay.
+voice-js.roaming.twilio.com # Twilio Voice JS: Roaming.
+
+# --------------------------------------------
+# COMMUNICATION - TELEGRAM
+# --------------------------------------------
+t.me # Telegram Links: Short.
+telegram.org # Telegram: Messaging app.
+cdn4.telesco.pe # Telegram CDN: Telesco.
+
+# --------------------------------------------
+# VIDEO - VIMEO
+# --------------------------------------------
+player.vimeo.com # Vimeo Player: Embed.
+player.vimeo.com.cdn.cloudflare.net # Vimeo Player Cloudflare: CDN.
+f.vimeocdn.com # Vimeo CDN: Files.
+i.vimeocdn.com # Vimeo Images: Thumbs.
+
+# --------------------------------------------
+# VIDEO - NETFLIX / OTHER
+# --------------------------------------------
+nflxvideo.net # Netflix Video: Streaming.
+videostr.net # Video Streaming: General.
+
+# --------------------------------------------
+# VIDEO - PERISCOPE
+# --------------------------------------------
+prod-fastly-us-east-1.video.pscp.tv # Periscope Video: Fastly US.
+proxsee.pscp.tv # Periscope Proxy: Access.
+video.pscp.tv.map.fastly.net # Periscope Video Fastly: CDN.
+
+# --------------------------------------------
+# VIDEO - RUMBLE
+# --------------------------------------------
+rumble.com # Rumble Video: Platform.
+1a-1791.com # Rumble Video CDN: Hosting.
+
+# --------------------------------------------
+# IMDB
+# --------------------------------------------
+www.imdb.com # IMDB: Movie database.
+api.graphql.imdb.com # IMDB GraphQL API: Queries.
+caching.graphql.imdb.com # IMDB GraphQL Cache: Optimized.
+assets.video.media-imdb.com # IMDB Video Assets: Clips.
+imdb-video.media-imdb.com # IMDB Video: Streaming.
+tp.391b988c0-frontier.imdb.com # IMDB Frontier: Edge.
+
+# --------------------------------------------
+# WEATHER - WEATHER.COM
+# --------------------------------------------
+weather.com # Weather.com: Forecasts.
+www.weather.com # Weather.com: Site.
+api.weather.com # Weather.com API: Data.
+api.weather.com.edgesuite.net # Weather.com Akamai: API CDN.
+dsx.weather.com # Weather.com Data: Exchange.
+s.w-x.co # Weather.com Static: Assets.
+v.w-x.co # Weather.com Video: Clips.
+w-x.co # Weather.com: Short.
+
+# --------------------------------------------
+# WEATHER - MYRADAR / ACME AOM
+# --------------------------------------------
+myradar.com # MyRadar Weather App: Mobile.
+myradar-readonly.acmeaom.com # MyRadar Readonly: Data.
+airspace-cdn.acmeaom.com # MyRadar Weather CDN: Airspace.
+cyclones.acmeaom.com # MyRadar Cyclones: Tracking.
+etc-content.acmeaom.com # MyRadar Content: ETC.
+etc.acmeaom.com # MyRadar ETC: General.
+forecast.acmeaom.com # MyRadar Forecast: Predictions.
+futureradar.acmeaom.com # MyRadar Future Radar: Projections.
+hdradcache.acmeaom.com # MyRadar HD Cache: High-def.
+lightning.acmeaom.com # MyRadar Lightning: Strikes.
+map2.acmeaom.com # MyRadar Map: Variant.
+obs.acmeaom.com # MyRadar Observations: Data.
+dnsbl.test.quakes.acmeaom.com # MyRadar DNS Test: Quakes.
+
+# --------------------------------------------
+# WEATHER - RAINVIEWER
+# --------------------------------------------
+api.rainviewer.com # RainViewer Weather API: Radar.
+
+# --------------------------------------------
+# FLIGHT TRACKING
+# --------------------------------------------
+www.flightradar24.com # Flightradar24: Tracking.
+adsb.lol # ADS-B Flight Tracking: Open.
+airplanes.live # Flight Tracking: Live.
+api.airplanes.live # Flight Tracking API: Data.
+globe.airplanes.live # Airplanes.live Globe: Map.
+globe.adsbexchange.com # ADS-B Exchange Globe: Map.
+map.adsbexchange.com # ADS-B Exchange Map: View.
+api.planespotters.net # Planespotters API: Aircraft.
+t.plnspttrs.net # Planespotters Tracking: Short.
+ws.airframes.io # Airframes WebSocket: Data.
+
+# --------------------------------------------
+# MAPS / GEO
+# --------------------------------------------
+openstreetmap.org # OpenStreetMap: Maps.
+tile.openstreetmap.org # OpenStreetMap Tiles: Images.
+osm.org # OpenStreetMap Short: Alias.
+api.mapbox.com # Mapbox Maps API: Rendering.
+config.mapbox.com # Mapbox Config: Settings.
+api.radar.io # Radar Geolocation API: Location.
+
+# --------------------------------------------
+# SEARCH ENGINES
+# --------------------------------------------
+duckduckgo.com # DuckDuckGo Search: Privacy.
+links.duckduckgo.com # DuckDuckGo Links: Redirects.
+external-content.duckduckgo.com # DuckDuckGo External Content: Safe.
+startpage.com # Startpage Search: Private.
+www.qwant.com # Qwant Search: European.
+cdn.ecosia.org # Ecosia Search CDN: Assets.
+cdn.ecosia.org.cdn.cloudflare.net # Ecosia Cloudflare: CDN.
+
+# --------------------------------------------
+# IMAGE HOSTING
+# --------------------------------------------
+imgur.com # Imgur Image Host: Uploads.
+i.imgur.com # Imgur Images: Direct.
+api.imgur.com # Imgur API: Access.
+i.ibb.co # ImgBB Images: Hosting.
+i.postimg.cc # PostImages: Direct.
+files.catbox.moe # Catbox File Host: Temp files.
+fastpic.org # FastPic Image Host: Uploads.
+fastpic.ru # FastPic Image Host Russia: Region.
+pinimg.com # Pinterest Images: Pins.
+flickr.com # Flickr Photos: Sharing.
+live.staticflickr.com # Flickr Static: Live.
+
+# --------------------------------------------
+# IMAGE HOSTING - TENOR
+# --------------------------------------------
+c.tenor.com # Tenor GIFs: Content.
+media.tenor.com # Tenor Media: Files.
+
+# --------------------------------------------
+# IMAGE HOSTING - IMGIX (ARTLIST)
+# --------------------------------------------
+artgrid.imgix.net # Artgrid Video CDN: Stock.
+artlist-albums.imgix.net # Artlist Albums CDN: Music.
+artlist-content-images.imgix.net # Artlist Content CDN: Images.
+www.artlist-content-images.imgix.net # Artlist Images: Web.
+artlist-dev.imgix.net # Artlist Dev CDN: Testing.
+artlist-images.imgix.net # Artlist Images CDN: Assets.
+footage-private.imgix.net # Artlist Footage CDN: Videos.
+www.footage-private.imgix.net # Artlist Footage: Web.
+
+# --------------------------------------------
+# 4CHAN / ARCHIVES
+# --------------------------------------------
+4cdn.org # 4chan CDN: Assets.
+a.4cdn.org # 4chan CDN: Alternate.
+i.4cdn.org # 4chan Images: Thumbs.
+s.4cdn.org # 4chan Static: Scripts.
+sys.4chan.org # 4chan System: Backend.
+boards.4chan.org # 4chan Boards: Forums.
+archive.4plebs.org # 4plebs Archive: Threads.
+archived.moe # Archived.moe 4chan Archive: Moe.
+
+# --------------------------------------------
+# ARCHIVE.ORG
+# --------------------------------------------
+archive.org # Internet Archive: Wayback.
+web-static.archive.org # Archive.org Static: Assets.
+wayback-api.archive.org # Wayback Machine API: Access.
+
+# --------------------------------------------
+# TORRENT TRACKERS
+# --------------------------------------------
+1337x.to # Torrent Site: Search.
+rutracker.org # RuTracker Torrents: Russian.
+tracker.leechers-paradise.org # Torrent Tracker: Leechers.
+
+# --------------------------------------------
+# VK (RUSSIAN SOCIAL NETWORK)
+# --------------------------------------------
+vk.com # VK Social Network: Platform.
+st6-22.vk.com # VK Static: Variant.
+www.st6-22.vk.com # VK Static: Web.
+
+# --------------------------------------------
+# HUBSPOT
+# --------------------------------------------
+hubspot.com # HubSpot CRM: Marketing.
+api.hubspot.com # HubSpot API: General.
+api-na1.hubspot.com # HubSpot North America API: Region.
+app.hubspot.com # HubSpot App: Dashboard.
+api-app.hubspot.com # HubSpot App API: Calls.
+exceptions.hubspot.com # HubSpot Exceptions: Errors.
+wtcfns.hubspot.com # HubSpot WTCFNS: Tracking.
+hubspotusercontent-na1.net # HubSpot User Content: NA1.
+.cdnp1.hubspotusercontent-na1.net # HubSpot CDN: P1.
+.hs1.hscontentproxy-na1.net # HubSpot Content Proxy: HS1.
+static.hsappstatic.net # HubSpot Static: Apps.
+avatars.hubspot.net # HubSpot Avatars: Profiles.
+na1.hubspot-logos.com # HubSpot Logos: NA1.
+t.sidekickopen71.com # HubSpot Sidekick: Tracking.
+
+# --------------------------------------------
+# HUBSPOT - ABLY REALTIME
+# --------------------------------------------
+global.a.fallback.hubspot.cluster.ably-realtime.com # HubSpot Ably Realtime: Global A.
+global.b.fallback.hubspot.cluster.ably-realtime.com # HubSpot Ably Realtime: Global B.
+global.c.fallback.hubspot.cluster.ably-realtime.com # HubSpot Ably Realtime: Global C.
+global.d.fallback.hubspot.cluster.ably-realtime.com # HubSpot Ably Realtime: Global D.
+global.e.fallback.hubspot.cluster.ably-realtime.com # HubSpot Ably Realtime: Global E.
+hubspot-na1-a-fallback.ably-realtime.com # HubSpot Ably: NA1 A.
+hubspot-na1-b-fallback.ably-realtime.com # HubSpot Ably: NA1 B.
+hubspot-na1-c-fallback.ably-realtime.com # HubSpot Ably: NA1 C.
+hubspot-na1-d-fallback.ably-realtime.com # HubSpot Ably: NA1 D.
+hubspot-na1-e-fallback.ably-realtime.com # HubSpot Ably: NA1 E.
+hubspot-na1-realtime.ably.io # HubSpot Ably Realtime: NA1.
+hubspot-na1-rest.ably.io # HubSpot Ably REST: NA1.
+hubspot-na1.a.fallback.ably-realtime.com # HubSpot Ably: NA1 A variant.
+hubspot-na1.b.fallback.ably-realtime.com # HubSpot Ably: NA1 B variant.
+hubspot-na1.c.fallback.ably-realtime.com # HubSpot Ably: NA1 C variant.
+hubspot-na1.d.fallback.ably-realtime.com # HubSpot Ably: NA1 D variant.
+hubspot-na1.e.fallback.ably-realtime.com # HubSpot Ably: NA1 E variant.
+hubspot-na1.realtime.ably.net # HubSpot Ably Realtime: NA1 net.
+
+# --------------------------------------------
+# AIRCALL
+# --------------------------------------------
+aircall.io # Aircall Phone System: VoIP.
+assets.aircall.io # Aircall Assets: Files.
+cdn.aircall.io # Aircall CDN: Delivery.
+dashboard.aircall.io # Aircall Dashboard: UI.
+dashboard-extensions.aircall.io # Aircall Dashboard: Extensions.
+electron.aircall.io # Aircall Electron App: Desktop.
+id.aircall.io # Aircall Identity: Auth.
+internal.aircall.io # Aircall Internal: Backend.
+internal-api.aircall.io # Aircall Internal API: Calls.
+internal-mobile.aircall.io # Aircall Mobile: App.
+workspace.aircall.io # Aircall Workspace: Team.
+web.pdx.555773567328.aircall.io # Aircall Web: PDX.
+aircall-dataplane.rudderstack.com # Aircall Analytics: Dataplane.
+growthbook-api.production.aircall.tech # Aircall GrowthBook: Features.
+www.growthbook-api.production.aircall.tech # Aircall GrowthBook: Web.
+
+# --------------------------------------------
+# STRIPE / PAYMENTS
+# --------------------------------------------
+stripe.com # Stripe Payments: Processing.
+www.stripe.com # Stripe Payments: Site.
+js.stripe.com # Stripe JS: Client.
+www.js.stripe.com # Stripe JS: Web.
+m.stripe.com # Stripe Mobile: App.
+stripe.network # Stripe Network: Connectivity.
+payments.braintree-api.com # Braintree Payments: API.
+cdn.paddle.com # Paddle Payments CDN: Billing.
+affirm.com # Affirm Payments: BNPL.
+js.chargebee.com # Chargebee JS: Subscriptions.
+
+# --------------------------------------------
+# HCAPTCHA / RECAPTCHA
+# --------------------------------------------
+api.hcaptcha.com # hCaptcha API: Verification.
+api2.hcaptcha.com # hCaptcha API: Variant.
+js.hcaptcha.com # hCaptcha JS: Script.
+newassets.hcaptcha.com # hCaptcha Assets: New.
+www.recaptcha.net # reCAPTCHA: Verification.
+
+# --------------------------------------------
+# BANKING / FINANCE
+# --------------------------------------------
+achievacu.com # Achieva Credit Union: Banking.
+www.achievacu.com # Achieva Credit Union: Site.
+banking.achievacu.com # Achieva Credit Union Banking: Online.
+alkamitech.com # Alkami Banking Platform: Tech.
+assets.orb.alkamitech.com # Alkami Banking Assets: Files.
+dnsbl.test.assets.orb.alkamitech.com # Alkami DNS Test: Assets.
+iris.alkamitech.com # Alkami Iris: Security.
+dnsbl.test.iris.alkamitech.com # Alkami DNS Test: Iris.
+www.wpcuonline.net # WPCU Online Banking: Wright-Patt.
+www.wpcuonline.net.cdn.cloudflare.net # WPCU Cloudflare: CDN.
+
+# --------------------------------------------
+# BANKING - CREDIT KARMA / SAVVYMONEY
+# --------------------------------------------
+cdn.native.creditkarma.com # Credit Karma CDN: Native.
+embedded.creditkarma.com # Credit Karma Embedded: Widgets.
+cdn.savvymoney.com # SavvyMoney CDN: Finance.
+www.savvymoney.com # SavvyMoney: Site.
+widgets.moneydesktop.com # MoneyDesktop Widgets: Finance.
+glia.com # Glia Customer Service: Chat.
+
+# --------------------------------------------
+# PROPERTY MANAGEMENT - APPFOLIO
+# --------------------------------------------
+account.appfolio.com # AppFolio Property Management: Accounts.
+compassmgmt.appfolio.com # AppFolio Property Management: Compass.
+images.cdn.appfolio.com # AppFolio Images: CDN.
+propertyqa.cdn.appfolio.com # AppFolio QA CDN: Testing.
+public.cdn.appfolio.com # AppFolio Public CDN: Assets.
+publicdevelopment.cdn.appfolio.com # AppFolio Dev CDN: Dev.
+tportal.cdn.appfolio.com # AppFolio Portal CDN: Tenant.
+
+# --------------------------------------------
+# SMART HOME - DREO
+# --------------------------------------------
+dreo-tech.com # Dreo Smart Home: Appliances.
+www.dreo-tech.com # Dreo Tech: Site.
+app-api-us.dreo-tech.com # Dreo Smart Home API: US.
+www.dreo-cloud.com # Dreo Cloud: Backend.
+iot.dreo-cloud.com # Dreo IoT Cloud: Devices.
+mqtts-us.dreo-cloud.com # Dreo MQTT: Secure.
+www.mqtts-us.dreo-cloud.com # Dreo MQTT: Web secure.
+wsb-us.dreo-tech.com # Dreo WebSocket: Broadcast.
+
+# --------------------------------------------
+# FITNESS
+# --------------------------------------------
+identity.mapmyfitness.com # MapMyFitness Identity: Auth.
+mobile-api.mapmyfitness.com # MapMyFitness Mobile API: App.
+static.mapmyfitness.com # MapMyFitness Static: Assets.
+
+# --------------------------------------------
+# EERO
+# --------------------------------------------
+api-user.e2ro.com # Eero User API: Management.
+edge.e2ro.com # Eero Edge: Connectivity.
+node.e2ro.com # Eero Node: Devices.
+
+# --------------------------------------------
+# TOPAZ LABS
+# --------------------------------------------
+api.topaz-labs.net # Topaz Labs API: Updates.
+api.topazlabs.com # Topaz Labs API: Variant.
+downloads.topazlabs.com # Topaz Labs Downloads: Software.
+veai-models.topazlabs.com # Topaz Video AI Models: AI.
+
+# --------------------------------------------
+# ARTLIST
+# --------------------------------------------
+artlist.io # Artlist Stock Media: Assets with AI.
+www.artlist.io # Artlist Stock Media: Site.
+api.artlist.io # Artlist Stock Media API: Access.
+www.api.artlist.io # Artlist API: Web.
+cms-public-artifacts.artlist.io # Artlist CMS: Public.
+search-api.artlist.io # Artlist Search API: Queries.
+www.search-api.artlist.io # Artlist Search: Web.
+
+# --------------------------------------------
+# FILE HOSTING / DOWNLOADS - MEDIAFIRE
+# --------------------------------------------
+www.mediafire.com # MediaFire: Hosting.
+download1339.mediafire.com # MediaFire Downloads: Server.
+download1346.mediafire.com # MediaFire Downloads: Variant.
+download1348.mediafire.com # MediaFire Downloads: Variant.
+download1503.mediafire.com # MediaFire Downloads: Variant.
+download1587.mediafire.com # MediaFire Downloads: Variant.
+download1640.mediafire.com # MediaFire Downloads: Variant.
+download2263.mediafire.com # MediaFire Downloads: Variant.
+
+# --------------------------------------------
+# FILE HOSTING - OTHER
+# --------------------------------------------
+file-upload.org # File Upload Host: Sharing.
+www.file-upload.org # File Upload: Site.
+userdrive.org # UserDrive File Host: Storage.
+cca.megafiles.store # Megafiles Storage: CCA.
+
+# --------------------------------------------
+# JDOWNLOADER
+# --------------------------------------------
+api.jdownloader.org # JDownloader API: Control.
+board.jdownloader.org # JDownloader Forum: Community.
+update.jdownloader.org # JDownloader Updates: Checks.
+
+# --------------------------------------------
+# ESET SECURITY
+# --------------------------------------------
+help.eset.com # ESET Help: Docs.
+help.gtm.eset.com # ESET GTM Help: Tracking.
+ts.eset.com # ESET Threat Sense: Updates.
+dnsbl.test.ts.eset.com # ESET DNS Test: Threat.
+
+# --------------------------------------------
+# SPONSORBLOCK / DEARROW
+# --------------------------------------------
+sponsor.ajay.app # SponsorBlock: Segments.
+dearrow-thumb.ajay.app # DeArrow Thumbnails: Titles.
+
+# --------------------------------------------
+# WIKIPEDIA / WIKIS
+# --------------------------------------------
+en.wikipedia.org # Wikipedia English: Encyclopedia.
+dewpoint34.wiki # Wiki Site: General.
+
+# --------------------------------------------
+# FORUMS & COMMUNITIES
+# --------------------------------------------
+stackoverflow.com # Stack Overflow: Q&A.
+news.ycombinator.com # Hacker News: Discussions.
+xdaforums.com # XDA Developers Forums: Android.
+community.netgear.com # Netgear Community: Support.
+community.spiceworks.com # Spiceworks Community: IT.
+www.elevenforum.com # Eleven Forum Windows 11: Help.
+www.tenforums.com # Ten Forums Windows 10: Help.
+forums.androidcentral.com # Android Central Forums: Mobile.
+global.discourse-cdn.com # Discourse CDN: Forums.
+sea2.discourse-cdn.com # Discourse CDN Seattle: Region.
+avatars.discourse-cdn.com # Discourse Forum Avatars: Profiles.
+
+# --------------------------------------------
+# TECH BLOGS / NEWS
+# --------------------------------------------
+www.bleepingcomputer.com # BleepingComputer: Security news.
+www.bleepstatic.com # BleepingComputer Static: Assets.
+www.ghacks.net # gHacks Tech News: Tips.
+christitus.com # Chris Titus Tech Blog: Windows.
+
+# --------------------------------------------
+# OBS PROJECT
+# --------------------------------------------
+obsproject.com # OBS Studio: Streaming.
+
+# --------------------------------------------
+# NINITE
+# --------------------------------------------
+ninite.com # Ninite Installer: Bulk.
+
+# --------------------------------------------
+# NETGATE / PFSENSE
+# --------------------------------------------
+netgate.com # Netgate pfSense: Firewall.
+docs.netgate.com # Netgate pfSense Docs: Guides.
+ews.netgate.com # Netgate EWS: Early warning.
+forum.netgate.com # Netgate pfSense Forum: Community.
+kb.netgear.com # Netgear Knowledge Base: Support.
+pfrest.org # pfSense REST: API.
+pfsense-plus-pkg00.atx.netgate.com # pfSense Plus Packages: ATX 00.
+pfsense-plus-pkg01.atx.netgate.com # pfSense Plus Packages: ATX 01.
+www.2.pfsense.pool.ntp.org # pfSense NTP Pool: Time.
+
+# --------------------------------------------
+# NTP / TIME SERVERS
+# --------------------------------------------
+ntp.org # NTP Pool Project: Servers.
+pool.ntp.org # NTP Pool: General.
+north-america.pool.ntp.org # North America NTP Pool: Region.
+www.north-america.pool.ntp.org # North America NTP: Web.
+nts.netnod.se # Netnod NTS: Secure time.
+
+# --------------------------------------------
+# DNS TOOLS
+# --------------------------------------------
+dnschecker.org # DNS Checker Tool: Propagation.
+www.nslookup.io # NSLookup Tool: Queries.
+
+# --------------------------------------------
+# IP LOOKUP / GEO
+# --------------------------------------------
+ip-api.com # IP API Geolocation: Data.
+www.ip-api.com # IP API: Site.
+myip.ms # MyIP Lookup: Address.
+maxmind.com # MaxMind GeoIP: Database.
+www.maxmind.com # MaxMind GeoIP: Site.
+download.db-ip.com # DB-IP Database: Downloads.
+cfwho.com # Cloudflare Who: Diagnostic.
+
+# --------------------------------------------
+# CDN TOOLS
+# --------------------------------------------
+cdnplanet.com # CDN Planet: Comparisons.
+www.cdnplanet.com # CDN Planet: Site.
+api.cdnplanet.com # CDN Planet API: Data.
+eo-perfops1.qcloudteo.com # Tencent CDN: Perfops.
+
+# --------------------------------------------
+# SPEED TEST
+# --------------------------------------------
+fast.com # Netflix Speed Test: Bandwidth.
+api.fast.com # Netflix Fast.com Speed Test API: Data.
+
+# --------------------------------------------
+# PHONE / SMS SERVICES
+# --------------------------------------------
+spc.myvzw.com # Verizon SPC: Service.
+spc.gtm.myvzw.com # Verizon SPC GTM: Tracking.
+lpa.live.esimdiscovery.com # eSIM Discovery: Provisioning.
+aapi.shouldianswer.net # Should I Answer App API: Spam.
+
+# --------------------------------------------
+# PHONE - 3GPP NETWORK
+# --------------------------------------------
+epdg.epc.mnc240.mcc310.pub.3gppnetwork.org # 3GPP Network T-Mobile: EPDG 240.
+www.epdg.epc.mnc240.mcc310.pub.3gppnetwork.org # 3GPP Network: Web 240.
+epdg.epc.mnc260.mcc310.pub.3gppnetwork.org # 3GPP Network T-Mobile: EPDG 260.
+www.epdg.epc.mnc260.mcc310.pub.3gppnetwork.org # 3GPP Network: Web 260.
+
+# --------------------------------------------
+# MOBILE APPS - F-DROID
+# --------------------------------------------
+f-droid.org # F-Droid App Store: Open-source.
+apt.izzysoft.de # IzzyOnDroid F-Droid Repo: Additional.
+
+# --------------------------------------------
+# MOBILE APPS - AURORA STORE
+# --------------------------------------------
+auroraoss.com # Aurora Store: Google Play alternative.
+
+# --------------------------------------------
+# MOBILE APPS - LITEAPKS
+# --------------------------------------------
+liteapks.com # LiteAPKs: Modded apps.
+update.liteapks.com # LiteAPKs Updates: Checks.
+
+# --------------------------------------------
+# MOBILE APPS - SHIZUKU
+# --------------------------------------------
+shizuku.rikka.app # Shizuku Android App: ADB.
+
+# --------------------------------------------
+# MOBILE APPS - PLEXUS
+# --------------------------------------------
+plexus.fly.dev # Plexus App Compatibility: Checks.
+
+# --------------------------------------------
+# SAMSUNG
+# --------------------------------------------
+fota-cloud-dn.ospserver.net # Samsung FOTA: Updates.
+dms.ospserver.net # Samsung DMS: Management.
+
+# --------------------------------------------
+# XBOX
+# --------------------------------------------
+images-eds-ssl.xboxlive.com # Xbox Live Images: Assets.
+
+# --------------------------------------------
+# AZURE SERVICES
+# --------------------------------------------
+api-tvclient-sc1.azurewebsites.net # Azure TV Client: App.
+waws-prod-am2-447.sip.azurewebsites.windows.net # Azure Web Apps: Prod AM2.
+waws-prod-am2-447-0ca6.westeurope.cloudapp.azure.com # Azure Web Apps: Europe.
+vsblobprodscussu5shard27.blob.core.windows.net # Azure Blob Storage: Shard.
+techprofile.blob.core.windows.net # Azure Tech Profile: Blob.
+mr-z01.tm-azurefd.net # Azure Front Door: MR Z01.
+
+# --------------------------------------------
+# GIGYA
+# --------------------------------------------
+cdns.us1.gigya.com # Gigya CDN: US1.
+www.cdns.us1.gigya.com # Gigya CDN: Web US1.
+
+# --------------------------------------------
+# ONETRUST
+# --------------------------------------------
+mobile-data.onetrust.io # OneTrust Mobile Data: Compliance.
+
+# --------------------------------------------
+# NCR (BANKING/RETAIL)
+# --------------------------------------------
+prd.dbk.ncr.com # NCR Banking: Prod.
+fmi-pfd-1.prd.dbk.ncr.com # NCR Banking: FMI.
+pingfederate-engine.fmis.prd.dbk.ncr.com # NCR PingFederate: Auth.
+
+# --------------------------------------------
+# PUSHER / REALTIME
+# --------------------------------------------
+ws-us3.pusher.com # Pusher WebSocket: US3.
+
+# --------------------------------------------
+# ENTE (PHOTOS)
+# --------------------------------------------
+ente.io # Ente Photos: Secure storage.
+
+# --------------------------------------------
+# BALENA
+# --------------------------------------------
+balena.io # Balena IoT Platform: Containers.
+
+# --------------------------------------------
+# KEYGEN
+# --------------------------------------------
+keygen.sh # Keygen Licensing: Software.
+
+# --------------------------------------------
+# TWRP
+# --------------------------------------------
+twrp.me # TWRP Android Recovery: Custom.
+
+# --------------------------------------------
+# GRAYLOG
+# --------------------------------------------
+graylog.org # Graylog Logging: Analytics.
+
+# --------------------------------------------
+# WORKFLOWY
+# --------------------------------------------
+workflowy.com # WorkFlowy: Notes app.
+
+# --------------------------------------------
+# CATPPUCCIN (THEMES)
+# --------------------------------------------
+catppuccin.com # Catppuccin Theme: Palette.
+catppuccin.github.io # Catppuccin GitHub: Repo.
+
+# --------------------------------------------
+# ALLERGAN (MEDICAL / PHARMACY)
+# --------------------------------------------
+alldaychemist.com # All Day Chemist Pharmacy: Generics.
+www.alldaychemist.com # All Day Chemist: Site.
+
+# --------------------------------------------
+# URBAN DICTIONARY
+# --------------------------------------------
+www.urbandictionary.com # Urban Dictionary: Slang.
+
+# --------------------------------------------
+# TRAVEL
+# --------------------------------------------
+www.allegiantair.com # Allegiant Air: Flights.
+
+# --------------------------------------------
+# GEICO
+# --------------------------------------------
+ecams.geico.com # GEICO eCAMS: Claims.
+
+# --------------------------------------------
+# DICE (JOBS)
+# --------------------------------------------
+click.dice.com # Dice Jobs: Clicks.
+www.click.dice.com # Dice Jobs: Web.
+
+# --------------------------------------------
+# EMBEDLY / NOEMBED
+# --------------------------------------------
+cdn.embed.ly.cdn.cloudflare.net # Embedly Cloudflare: CDN.
+cdn.embedly.com # Embedly CDN: Embeds.
+noembed.com # NoEmbed Service: OEmbed.
+
+# --------------------------------------------
+# SHIELDS.IO
+# --------------------------------------------
+img.shields.io # Shields.io Badges: Dynamic.
+
+# --------------------------------------------
+# SIMILARWEB
+# --------------------------------------------
+www.similarweb.com # SimilarWeb: Analytics.
+site-images.similarcdn.com # SimilarWeb Images: CDN.
+static-us-east-1.similarcdn.com # SimilarWeb Static: US East.
+
+# --------------------------------------------
+# MISC TOOLS & SERVICES
+# --------------------------------------------
+cdn.gifo.wisestamp.com # WiseStamp GIF CDN: Signatures.
+cdn.smootify.io # Smootify CDN: E-commerce.
+calc-backend-prod.herokuapp.com # Calculator Backend: Compute.
+adbappcontrol.com # ADB AppControl: Android manager.
+
+# --------------------------------------------
+# MISC WEBSITES
+# --------------------------------------------
+www.digitalinsight.com # Digital Insight: Banking.
+www.godlikeproductions.com # Godlike Productions: Conspiracy.
+www.nirsoft.net # NirSoft Tools: Utilities.
+www.psdly.io # PSDLY: Downloads.
+www.voidtools.com # Voidtools Everything Search: Finder.
+www.syslog-ng.com # Syslog-ng: Logging.
+thebaldgeek.github.io # The Bald Geek GitHub: ACARS notes.
+curbengh.github.io # Curbengh GitHub: Blocklists mirror.
+
+# --------------------------------------------
+# GPS - XTRACLOUD (QUALCOMM)
+# --------------------------------------------
+path1.xtracloud.net # Qualcomm GPS: Path 1.
+path3.xtracloud.net # Qualcomm GPS: Path 3.
+
+# --------------------------------------------
+# VERCEL
+# --------------------------------------------
+cname.vercel-dns.com # Vercel DNS: CNAME.
+vercel-dns.com # Vercel DNS: Resolution.
+
+# --------------------------------------------
+# WATCH MOVIES FREE
+# --------------------------------------------
+arc018.to # Watch Movies for Free.
+f.woowoowoowoo.net # Misc CDN: Suspicious streaming.
+eeroup.com # Misc Website: Eero related.
+foggycrest91.online # Misc Website: Suspicious streaming.
+frostveil88.live # Misc Website: Suspicious live.
+hailglow59.site # Misc Website: Suspicious site.
+hailmist36.pro # Misc Website: Suspicious pro.
+stormgleam42.xyz # Misc Website: Suspicious xyz.
+sunhaze44.site # Misc Website: Suspicious site.
+sunmelt27.xyz # Misc Website: Suspicious xyz.
+
+# --------------------------------------------
+# WORDPRESS
+# --------------------------------------------
+s.w.org # WordPress Static: Assets.
+
+# --------------------------------------------
+# YAHOO
+# --------------------------------------------
+s.yimg.com # Yahoo Images: Assets.
+
+# --------------------------------------------
+# SPECIAL / RESERVED DOMAINS (ARPA)
+# --------------------------------------------
+in-addr.arpa # Reverse DNS ARPA: Lookup.
+ipv4only.arpa # IPv4 ARPA Reserved: NAT64.
+resolver.arpa # Resolver ARPA: DNS.
+home.arpa # Home ARPA Reserved: Local.
+
+# --------------------------------------------
+# OPENDNS
+# --------------------------------------------
+resolver1.opendns.com # OpenDNS Resolver: DNS.
