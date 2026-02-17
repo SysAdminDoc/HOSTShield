@@ -1,0 +1,22 @@
+v1.6.0 - Stability & Update Checker
+
+Critical Fixes:
+- Fixed VPN infinite cycling caused by network callback firing on VPN's own interface (5s cooldown + onLost tracking)
+- Fixed Root mode showing no live DNS activity (switched to proxy-only blocking architecture)
+- Fixed App Activity screen showing empty data (consequence of VPN cycling + hosts-file bypass)
+- Fixed network callback accumulation on VPN restarts (proper unregister before re-register)
+- Fixed background workers reverting proxy-only blocking by writing full hosts file
+
+Architecture Change:
+- Root mode now uses DNS proxy as sole blocker instead of /etc/hosts file
+- All DNS queries flow through the proxy for logging and per-app attribution
+- Hosts file contains only localhost entries; blocking handled by iptables NAT redirect to proxy
+
+New Features:
+- GitHub release update checker in Settings (checks api.github.com for new APK releases)
+- Dynamic version display from BuildConfig (no more stale hardcoded version strings)
+- View on GitHub link in Settings
+
+Code Quality:
+- Removed unused imports across workers
+- Version bumped to v1.6.0 across all 54 source files

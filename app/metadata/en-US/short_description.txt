@@ -1,0 +1,1 @@
+System-wide ad and tracker blocker with root DNS proxy and iptables firewall
