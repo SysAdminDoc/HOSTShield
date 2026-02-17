@@ -1,0 +1,26 @@
+v1.4.0 - Performance & Security Audit
+
+DNS Bypass Prevention:
+- Block 15+ DoH/DoT/DoQ endpoints at DNS level (Firefox canary, Google, Cloudflare, Quad9, NextDNS, AdGuard, OpenDNS)
+- Root mode: block DoT (port 853), DoH (port 443 TCP), DoQ (port 443 UDP) via iptables
+- VPN mode: silent drop of non-DNS traffic to trapped DoH provider IPs
+- Firefox DoH canary (use-application-dns.net) returns NXDOMAIN to disable browser DoH
+
+Performance:
+- 10-50x faster DNS log writes via batched inserts (flush every 2s or 500 entries)
+- Stats accumulator eliminates per-query DB reads
+- Composite index on (blocked, timestamp) for instant filtered log queries
+- ANR-safe iterative batch log cleanup (1000 rows/batch with 50ms yield)
+- Eliminated redundant in-memory domain Set (saves ~50% blocklist memory)
+- Volatile trie root for thread-safe concurrent reads
+
+Custom DNS:
+- VPN mode now properly uses custom upstream DNS from settings
+- Supports multiple servers (comma/semicolon separated) with automatic fallback
+
+Bug Fixes:
+- Fixed SOA serial using dynamic date instead of hardcoded value
+- Fixed network change handler preserving blocklist (no re-download)
+- Fixed log buffer flushing on VPN stop (no lost final entries)
+- Fixed QUIC (UDP 443) bypass in root mode
+- Database migration v4->v5 for new indexes

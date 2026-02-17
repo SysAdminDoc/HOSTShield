@@ -1,0 +1,17 @@
+v1.5.0 - Dashboard Redesign
+
+Dashboard:
+- Premium redesigned home screen with shield orb, protection module cards, live DNS feed, and quick action tools
+- Live DNS Activity feed shows real-time blocked/allowed queries on the dashboard
+- Protection Module cards for one-tap switching between Root, VPN, and Firewall modes
+- Feature access cards for DNS Logs, Firewall Log, App Activity, and Firewall Rules
+
+Logging Pipeline Fixes:
+- Fixed VPN stop killing logs before final flush (runBlocking synchronous flush)
+- Fixed stats race condition with AtomicInteger counters
+- Fixed silent error swallowing in log flusher with per-cycle try/catch
+- Fixed mutable list race with immutable batch snapshots
+
+Database:
+- Added MIGRATION_4_5 for source_ip and query_type columns on dns_logs
+- Added indices on dns_logs (hostname, app_package) for query performance

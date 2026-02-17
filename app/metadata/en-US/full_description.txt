@@ -1,0 +1,38 @@
+HostShield is a powerful system-wide ad blocker and network firewall for Android. It blocks ads, trackers, malware domains, and telemetry at the DNS level before they reach your apps.
+
+Two blocking modes:
+- VPN Mode (no root): Creates a local VPN to intercept DNS queries. Works on any device.
+- Root Mode: Runs a DNS proxy with iptables NAT redirect for zero-overhead blocking with per-app attribution.
+
+Network Firewall (root):
+- AFWall+-style iptables firewall with per-app WiFi, mobile data, and VPN control
+- Automatic rule re-application on network changes and device boot
+- Connection logging via NFLOG with blocked traffic analysis
+- Bulk operations and diagnostic tools
+
+DNS Tools:
+- DNS lookup with blocklist checking
+- Batch domain testing
+- Ping and traceroute diagnostics
+- DNS cache viewer and flush
+- DNS-over-HTTPS support (Cloudflare, Google, Quad9, AdGuard, Mullvad)
+
+Privacy Features:
+- DoH/DoT bypass prevention (blocks encrypted DNS from apps)
+- Private DNS detection with warnings
+- Battery optimization detection with OEM-specific guidance
+- Per-app DNS blocking
+- No data collection, no analytics, no ads
+
+Advanced Features:
+- Multiple blocklist sources (hosts files, ABP format)
+- Trie-optimized domain matching for fast lookups
+- Blocking profiles with time-based scheduling
+- Backup/restore with cross-device portability
+- Quick Settings tile for instant toggle
+- Home screen widget
+- Tasker/MacroDroid automation API
+- Per-app network usage statistics
+- Customizable upstream DNS servers
+
+HostShield is free, open source, and contains no ads or tracking.

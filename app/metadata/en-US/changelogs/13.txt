@@ -1,0 +1,13 @@
+v1.3.0
+- Root DNS proxy with per-app attribution via verbose DnsResolver logging
+- AFWall+-style iptables network firewall (per-app WiFi/Mobile/VPN control)
+- Connection logging via NFLOG with blocked traffic analysis
+- DNS Tools: batch domain testing, ping, traceroute diagnostics
+- Quick Settings tile for instant protection toggle
+- Tasker/MacroDroid automation API (enable/disable/toggle/firewall)
+- Network change auto-reapply for iptables rules
+- Foreground service for root mode (prevents Android 14+ kills)
+- Block notification alerts for high-frequency tracker apps
+- Per-app network usage statistics
+- Proper database migrations (v1-v4)
+- Comprehensive ProGuard/R8 rules for release builds
