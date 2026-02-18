@@ -118,7 +118,8 @@ object DatabaseModule {
             HostShieldDatabase::class.java,
             "hostshield.db"
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
+                com.hostshield.data.database.Migrations.MIGRATION_5_6)
             .fallbackToDestructiveMigration() // safety net for unhandled versions
             .build()
     }

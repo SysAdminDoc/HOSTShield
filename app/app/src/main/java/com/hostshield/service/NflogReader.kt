@@ -15,20 +15,25 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Reads iptables NFLOG group 40 (from IptablesManager's reject chain)
- * and kernel LOG events to populate the connection log.
+ * Reads iptables log events to populate the connection log.
  *
- * Two data sources:
- * 1. dmesg -w (kernel log) -- captures iptables LOG target output
- * 2. Periodic iptables -L -n -v -- captures packet/byte counters per rule
+ * Supports two logging backends (auto-detected):
+ * 1. NFLOG target -- netlink-based, no dmesg spam. Preferred.
+ *    Read via `nflog` netlink or by checking iptables counters.
+ * 2. LOG target -- writes to kernel ring buffer (dmesg).
+ *    Fallback for Samsung and other kernels missing nfnetlink module.
  *
- * LOG output format (from IptablesManager's NFLOG prefix "HSBlock"):
+ * IptablesManager's reject chain installs whichever target is available
+ * using `NFLOG ... || LOG ...` shell fallback.
+ *
+ * LOG output format (iptables LOG with --log-uid):
  *   [timestamp] HSBlock IN= OUT=wlan0 SRC=10.0.0.5 DST=142.250.80.46
  *   LEN=60 TOS=0x00 PREC=0x00 TTL=64 PROTO=TCP SPT=43210 DPT=443
  *   UID=10234
  *
- * Note: On many Samsung devices, NFLOG requires nfnetlink kernel module.
- * We fall back to iptables LOG target + dmesg if NFLOG is unavailable.
+ * We always tail dmesg regardless of which target was used, since both
+ * NFLOG and LOG output to the kernel ring buffer on most kernels, and
+ * dmesg is the most portable collection method without native code.
  */
 @Singleton
 class NflogReader @Inject constructor(
@@ -57,18 +62,50 @@ class NflogReader @Inject constructor(
     private val recentHashes = LinkedHashSet<Long>()
     private val maxRecentHashes = 500
 
+    private var logTarget = "UNKNOWN" // "NFLOG", "LOG", or "NONE"
+
     /**
-     * Install LOG rules alongside the existing NFLOG rules.
-     * LOG writes to kernel log (dmesg), which we can tail with root.
+     * Detect which logging target the kernel supports and ensure it's installed.
+     * IptablesManager's reject chain already tries `NFLOG ... || LOG ...`
+     * but we verify here and install a supplementary LOG rule if needed
+     * (NFLOG doesn't always write to dmesg, which is what we tail).
      */
     suspend fun installLogRules() {
-        // Add LOG target to hs-reject chain (before the REJECT rule)
-        // This ensures blocked packets are logged to dmesg
-        Shell.cmd(
-            "iptables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true",
-            "ip6tables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true"
+        // Probe: is NFLOG available?
+        val nflogProbe = Shell.cmd(
+            "iptables -A OUTPUT -j NFLOG --nflog-prefix HSProbe --nflog-group 41 2>&1 && " +
+            "iptables -D OUTPUT -j NFLOG --nflog-prefix HSProbe --nflog-group 41 2>/dev/null"
         ).exec()
-        Log.i(TAG, "LOG rules installed in hs-reject chain")
+
+        if (nflogProbe.isSuccess) {
+            logTarget = "NFLOG"
+            // NFLOG may not write to dmesg on all kernels. Add a supplementary
+            // LOG rule so we can tail dmesg reliably as well.
+            Shell.cmd(
+                "iptables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true",
+                "ip6tables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true"
+            ).exec()
+            Log.i(TAG, "Log target: NFLOG (with LOG supplement for dmesg tailing)")
+        } else {
+            // Probe: is LOG available?
+            val logProbe = Shell.cmd(
+                "iptables -A OUTPUT -j LOG --log-prefix HSProbe 2>&1 && " +
+                "iptables -D OUTPUT -j LOG --log-prefix HSProbe 2>/dev/null"
+            ).exec()
+
+            if (logProbe.isSuccess) {
+                logTarget = "LOG"
+                // Ensure LOG rule is in hs-reject (IptablesManager may have already added it)
+                Shell.cmd(
+                    "iptables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true",
+                    "ip6tables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true"
+                ).exec()
+                Log.i(TAG, "Log target: LOG (NFLOG unavailable — Samsung kernel?)")
+            } else {
+                logTarget = "NONE"
+                Log.w(TAG, "No log target available (neither NFLOG nor LOG). Connection logging disabled.")
+            }
+        }
     }
 
     fun start() {
@@ -77,6 +114,11 @@ class NflogReader @Inject constructor(
         dmesgJob = scope.launch {
             _isRunning.value = true
             installLogRules()
+            if (logTarget == "NONE") {
+                Log.w(TAG, "No log target — connection logging unavailable")
+                _isRunning.value = false
+                return@launch
+            }
             try {
                 tailDmesg()
             } catch (_: CancellationException) { }

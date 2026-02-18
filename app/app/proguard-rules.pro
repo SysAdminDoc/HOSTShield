@@ -58,6 +58,17 @@
 -keep class com.hostshield.service.DnsVpnService { *; }
 -keep class com.hostshield.service.RootDnsService { *; }
 -keep class com.hostshield.service.HostShieldTileService { *; }
+-keep class com.hostshield.service.DnsPacketBuilder { *; }
+-keep class com.hostshield.service.DnsCache { *; }
+-keep class com.hostshield.service.DnsCache$CacheKey { *; }
+-keep class com.hostshield.service.DnsCache$CacheStats { *; }
+-keep class com.hostshield.service.CnameCloakDetector { *; }
+-keep class com.hostshield.service.CnameCloakDetector$CnameResult { *; }
+-keep class com.hostshield.service.DohBypassUpdater { *; }
+-keep class com.hostshield.service.DohResolver { *; }
+-keep class com.hostshield.service.IptablesManager { *; }
+-keep class com.hostshield.service.IptablesBinaryManager { *; }
+-keep class com.hostshield.util.DiagnosticExporter { *; }
 
 # ── Room TypeConverters ──────────────────────────────────────
 -keep class com.hostshield.data.database.Converters { *; }

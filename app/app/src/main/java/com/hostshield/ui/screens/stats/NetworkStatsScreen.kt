@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.hostshield.service.NetworkStatsTracker
 import com.hostshield.service.NetworkStatsTracker.AppNetStats
+import com.hostshield.service.formatBytes
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -53,7 +54,6 @@ fun NetworkStatsScreen(
     val stats by viewModel.appStats.collectAsStateWithLifecycle()
     val totalRx by viewModel.totalRx.collectAsStateWithLifecycle()
     val totalTx by viewModel.totalTx.collectAsStateWithLifecycle()
-    val tracker = viewModel.tracker
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         // Header
@@ -80,14 +80,14 @@ fun NetworkStatsScreen(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Filled.ArrowDownward,
                 label = "Download",
-                value = tracker.formatBytes(totalRx),
+                value = formatBytes(totalRx),
                 color = Teal
             )
             OverviewCard(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Filled.ArrowUpward,
                 label = "Upload",
-                value = tracker.formatBytes(totalTx),
+                value = formatBytes(totalTx),
                 color = Blue
             )
             OverviewCard(
@@ -119,7 +119,7 @@ fun NetworkStatsScreen(
 
         LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)) {
             itemsIndexed(stats, key = { _, s -> s.uid }) { index, stat ->
-                AppStatsRow(index + 1, stat, maxBytes, tracker)
+                AppStatsRow(index + 1, stat, maxBytes)
                 HorizontalDivider(color = Surface2.copy(alpha = 0.3f))
             }
 
@@ -143,8 +143,7 @@ fun NetworkStatsScreen(
 private fun AppStatsRow(
     rank: Int,
     stat: AppNetStats,
-    maxBytes: Long,
-    tracker: NetworkStatsTracker
+    maxBytes: Long
 ) {
     val ratio = if (maxBytes > 0) stat.totalBytes.toFloat() / maxBytes else 0f
 
@@ -185,7 +184,7 @@ private fun AppStatsRow(
 
         // WiFi
         Text(
-            tracker.formatBytes(stat.wifiRxBytes + stat.wifiTxBytes),
+            formatBytes(stat.wifiRxBytes + stat.wifiTxBytes),
             modifier = Modifier.width(60.dp),
             color = TextSecondary, fontSize = 10.sp,
             textAlign = androidx.compose.ui.text.style.TextAlign.End
@@ -193,7 +192,7 @@ private fun AppStatsRow(
 
         // Mobile
         Text(
-            tracker.formatBytes(stat.mobileRxBytes + stat.mobileTxBytes),
+            formatBytes(stat.mobileRxBytes + stat.mobileTxBytes),
             modifier = Modifier.width(60.dp),
             color = TextSecondary, fontSize = 10.sp,
             textAlign = androidx.compose.ui.text.style.TextAlign.End
@@ -201,7 +200,7 @@ private fun AppStatsRow(
 
         // Total
         Text(
-            tracker.formatBytes(stat.totalBytes),
+            formatBytes(stat.totalBytes),
             modifier = Modifier.width(64.dp),
             color = Teal, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
             textAlign = androidx.compose.ui.text.style.TextAlign.End

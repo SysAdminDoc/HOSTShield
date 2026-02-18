@@ -1,4 +1,4 @@
-// HostShield v1.6.0
+// HostShield v3.0.0
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,8 +15,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 35
-        versionCode = 16
-        versionName = "1.6.0"
+        versionCode = 30
+        versionName = "3.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -54,6 +54,26 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    // ── Product Flavors ─────────────────────────────────────
+    // "full": GitHub/F-Droid release — QUERY_ALL_PACKAGES for complete app listing
+    // "play": Play Store — uses <queries> intent filters (Google rejects QUERY_ALL_PACKAGES)
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("full") {
+            dimension = "distribution"
+            // QUERY_ALL_PACKAGES in main manifest covers this flavor.
+            // All system apps visible in firewall and per-app screens.
+        }
+        create("play") {
+            dimension = "distribution"
+            applicationIdSuffix = ".play"
+            // QUERY_ALL_PACKAGES removed via manifest overlay.
+            // Limited to <queries> declarations — user-installed apps still visible,
+            // some system apps may be missing from firewall/exclusion lists.
+            // This is a known tradeoff required for Play Store publication.
+        }
     }
 }
 

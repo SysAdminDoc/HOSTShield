@@ -112,6 +112,15 @@ fun SettingsScreen(
                 Icons.Filled.FilterAlt,
                 state.dnsTrapEnabled
             ) { viewModel.setDnsTrapEnabled(it) }
+            Spacer(Modifier.height(8.dp))
+            // Block response type selector
+            Text("Block Response", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                "How blocked domains are answered",
+                color = TextDim, fontSize = 11.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            BlockResponseSelector(state.blockResponseType) { viewModel.setBlockResponseType(it) }
         }
 
         // VPN Settings
@@ -289,6 +298,15 @@ fun SettingsScreen(
             ) {
                 viewModel.exportShareableBlocklist()
             }
+        }
+
+        // Diagnostics
+        SettingsSection("Diagnostics", Icons.Filled.BugReport, Yellow) {
+            SettingsRow(
+                "Generate diagnostic report",
+                "Device info, config, logs, network state",
+                Icons.Filled.Description
+            ) { viewModel.generateDiagnosticReport() }
         }
 
         // About
@@ -606,6 +624,47 @@ private fun DohProviderSelector(current: String, onSelect: (String) -> Unit) {
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BlockResponseSelector(current: String, onSelect: (String) -> Unit) {
+    val options = listOf(
+        Triple("nxdomain", "NXDOMAIN", "Standard (domain not found)"),
+        Triple("zero_ip", "Null IP", "0.0.0.0 / :: (recommended)"),
+        Triple("refused", "Refused", "Administrative refusal")
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        options.forEach { (key, label, desc) ->
+            val selected = current == key
+            Surface(
+                onClick = { onSelect(key) },
+                shape = RoundedCornerShape(8.dp),
+                color = if (selected) Blue.copy(alpha = 0.12f) else Surface2,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = selected,
+                        onClick = { onSelect(key) },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = Blue,
+                            unselectedColor = TextDim
+                        ),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column {
+                        Text(label, color = if (selected) Blue else TextPrimary,
+                            fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(desc, color = TextDim, fontSize = 10.sp)
+                    }
+                }
             }
         }
     }

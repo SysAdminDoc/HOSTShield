@@ -22,6 +22,7 @@ import com.hostshield.service.IptablesManager
 import com.hostshield.service.NflogReader
 import com.hostshield.service.RootDnsService
 import com.hostshield.util.PrivateDnsDetector
+import com.hostshield.util.PrivateSpaceDetector
 import com.hostshield.util.BatteryOptimizationUtil
 import com.hostshield.util.RootUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,6 +59,8 @@ data class HomeUiState(
     val firewalledApps: Int = 0,
     /** Battery optimization warning. */
     val batteryWarning: String? = null,
+    /** Android Private Space / work profile VPN bypass warning. */
+    val privateSpaceWarning: String? = null,
     /** Network firewall (iptables) active. */
     val networkFirewallActive: Boolean = false,
     /** Network firewall blocked rule count. */
@@ -87,8 +90,19 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    /** Live DNS log feed for the dashboard — last 50 entries, auto-updates. */
+    /** Live DNS log feed for the dashboard — last 50 entries from database, auto-updates. */
     val liveLogs: StateFlow<List<DnsLogEntry>> = dnsLogDao.getRecentLogs(50)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * Real-time DNS query stream — directly from VPN packet processing.
+     * Unlike liveLogs (database-backed, 2s batch delay), this emits instantly
+     * as each query is processed. Used for the live tail view.
+     */
+    val liveQueryStream: StateFlow<List<DnsLogEntry>> = DnsVpnService.liveQueries
+        .runningFold(emptyList<DnsLogEntry>()) { acc, entry ->
+            (listOf(entry) + acc).take(200) // keep last 200, newest first
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -100,6 +114,7 @@ class HomeViewModel @Inject constructor(
         scheduleAutoUpdate()
         checkPrivateDns()
         checkBattery()
+        checkPrivateSpace()
         resumeBlockingIfNeeded()
     }
 
@@ -136,6 +151,18 @@ class HomeViewModel @Inject constructor(
     }
 
     fun dismissBatteryWarning() { _uiState.update { it.copy(batteryWarning = null) } }
+
+    private fun checkPrivateSpace() {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (PrivateSpaceDetector.hasPrivateSpace(getApplication())) {
+                val isVpnMode = _uiState.value.blockMethod == BlockMethod.VPN
+                val warning = PrivateSpaceDetector.getWarningMessage(isVpnMode)
+                _uiState.update { it.copy(privateSpaceWarning = warning) }
+            }
+        }
+    }
+
+    fun dismissPrivateSpaceWarning() { _uiState.update { it.copy(privateSpaceWarning = null) } }
 
     /**
      * Request battery optimization exemption with automatic fallback.

@@ -71,7 +71,11 @@ data class DnsLogEntry(
     @ColumnInfo(name = "app_label") val appLabel: String = "",
     @ColumnInfo(name = "timestamp") val timestamp: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "source_ip") val sourceIp: String = "",
-    @ColumnInfo(name = "query_type") val queryType: String = "A"
+    @ColumnInfo(name = "query_type") val queryType: String = "A",
+    @ColumnInfo(name = "response_time_ms") val responseTimeMs: Int = 0,
+    @ColumnInfo(name = "upstream_server") val upstreamServer: String = "",
+    @ColumnInfo(name = "cname_chain") val cnameChain: String = "",   // comma-separated CNAME targets
+    @ColumnInfo(name = "resolved_ips") val resolvedIps: String = ""  // comma-separated answer IPs
 )
 
 @Entity(tableName = "block_stats")

@@ -89,6 +89,7 @@ class NetworkStatsTracker @Inject constructor(
             // WiFi stats
             try {
                 val bucket = NetworkStats.Bucket()
+                @Suppress("DEPRECATION")
                 val wifiStats = nsm.querySummary(
                     ConnectivityManager.TYPE_WIFI, null, dayAgo, now
                 )
@@ -112,6 +113,7 @@ class NetworkStatsTracker @Inject constructor(
             // Mobile stats
             try {
                 val bucket = NetworkStats.Bucket()
+                @Suppress("DEPRECATION")
                 val mobileStats = nsm.querySummary(
                     ConnectivityManager.TYPE_MOBILE, null, dayAgo, now
                 )
@@ -223,14 +225,16 @@ class NetworkStatsTracker @Inject constructor(
             pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
         } catch (_: Exception) { "UID $uid" }
     }
+}
 
-    /**
-     * Format bytes to human-readable string.
-     */
-    fun formatBytes(bytes: Long): String = when {
-        bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> "%.1f KB".format(bytes / 1024.0)
-        bytes < 1024 * 1024 * 1024 -> "%.1f MB".format(bytes / (1024.0 * 1024))
-        else -> "%.2f GB".format(bytes / (1024.0 * 1024 * 1024))
-    }
+/**
+ * Format bytes to human-readable string.
+ * Top-level so it can be used from any file via `import com.hostshield.service.formatBytes`.
+ */
+fun formatBytes(bytes: Long): String = when {
+    bytes < 0 -> "0 B"
+    bytes < 1024 -> "$bytes B"
+    bytes < 1024 * 1024 -> "%.1f KB".format(bytes / 1024.0)
+    bytes < 1024 * 1024 * 1024 -> "%.1f MB".format(bytes / (1024.0 * 1024))
+    else -> "%.2f GB".format(bytes / (1024.0 * 1024 * 1024))
 }

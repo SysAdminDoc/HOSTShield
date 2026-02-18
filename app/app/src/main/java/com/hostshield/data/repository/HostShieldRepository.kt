@@ -63,6 +63,8 @@ class HostShieldRepository @Inject constructor(
     fun getAllAppsWithCounts(): Flow<List<AppQueryStat>> = logDao.getAllAppsWithCounts()
     fun getDomainsForApp(pkg: String, limit: Int = 200): Flow<List<AppDomainStat>> = logDao.getDomainsForApp(pkg, limit)
     fun getMostQueriedDomains(since: Long, limit: Int = 30): Flow<List<TopHostname>> = logDao.getMostQueriedDomains(since, limit)
+
+    fun getDailyBreakdown(since: Long): Flow<List<com.hostshield.data.database.DailyBreakdown>> = logDao.getDailyBreakdown(since)
     suspend fun logDnsQuery(entry: DnsLogEntry) = logDao.insert(entry)
     suspend fun clearOldLogs(olderThanMs: Long) = logDao.deleteOlderThan(System.currentTimeMillis() - olderThanMs)
     suspend fun clearAllLogs() = logDao.deleteAll()

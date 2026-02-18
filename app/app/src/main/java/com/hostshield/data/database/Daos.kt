@@ -165,6 +165,24 @@ interface DnsLogDao {
     @Query("SELECT COUNT(*) FROM dns_logs")
     suspend fun getTotalLogCount(): Int
 
+    /** Get logs filtered by app package with full detail. */
+    @Query("SELECT * FROM dns_logs WHERE app_package = :pkg ORDER BY timestamp DESC LIMIT :limit")
+    fun getLogsForApp(pkg: String, limit: Int = 500): Flow<List<DnsLogEntry>>
+
+    /** Get a single log entry by ID (for detail view). */
+    @Query("SELECT * FROM dns_logs WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): DnsLogEntry?
+
+    /** Daily breakdown: blocked + total per day for trend chart. */
+    @Query("""
+        SELECT date(timestamp / 1000, 'unixepoch', 'localtime') as day,
+            COUNT(*) as total,
+            SUM(CASE WHEN blocked = 1 THEN 1 ELSE 0 END) as blocked
+        FROM dns_logs WHERE timestamp > :since
+        GROUP BY day ORDER BY day ASC
+    """)
+    fun getDailyBreakdown(since: Long): Flow<List<DailyBreakdown>>
+
     /** Get all domains queried by a specific app package. */
     @Query("""
         SELECT hostname, MAX(blocked) as blocked, COUNT(*) as cnt
@@ -351,4 +369,10 @@ data class FirewallTopApp(
     @ColumnInfo(name = "package_name") val packageName: String,
     @ColumnInfo(name = "app_label") val appLabel: String,
     val cnt: Int
+)
+
+data class DailyBreakdown(
+    val day: String,
+    val total: Int,
+    val blocked: Int
 )

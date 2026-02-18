@@ -34,6 +34,7 @@ import com.hostshield.data.database.FirewallRuleDao
 import com.hostshield.data.model.FirewallRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.service.IptablesManager
+import com.hostshield.service.NflogReader
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +52,8 @@ import javax.inject.Inject
 class FirewallViewModel @Inject constructor(
     private val prefs: AppPreferences,
     private val firewallRuleDao: FirewallRuleDao,
-    private val iptablesManager: IptablesManager
+    private val iptablesManager: IptablesManager,
+    private val nflogReader: NflogReader
 ) : ViewModel() {
     // DNS-level blocking (preferences-based, works in VPN + root)
     val blockedApps: StateFlow<Set<String>> = prefs.blockedApps
@@ -141,11 +143,13 @@ class FirewallViewModel @Inject constructor(
     fun applyIptables() {
         viewModelScope.launch(Dispatchers.IO) {
             iptablesManager.applyRules()
+            nflogReader.start()
         }
     }
 
     fun clearIptables() {
         viewModelScope.launch(Dispatchers.IO) {
+            nflogReader.stop()
             iptablesManager.clearRules()
         }
     }

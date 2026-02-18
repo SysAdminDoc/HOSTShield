@@ -10,6 +10,7 @@ import android.net.NetworkRequest
 import android.util.Log
 import com.hostshield.data.database.FirewallRuleDao
 import com.hostshield.data.model.FirewallRule
+import com.hostshield.util.IptablesBinaryManager
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
@@ -24,25 +25,33 @@ import javax.inject.Singleton
  *
  * Manages per-app network access using iptables OUTPUT chain rules
  * with `-m owner --uid-owner <uid>`. Creates a hierarchy of custom
- * chains to separate WiFi, mobile data, and VPN traffic.
+ * chains to separate WiFi, mobile data, VPN, and tethering traffic.
  *
  * Chain hierarchy:
  *   OUTPUT -> hs-main
- *     |-- hs-wifi    (matched by -o wlan+, -o eth+)
- *     |-- hs-mobile  (matched by -o rmnet+, -o ccmni+, -o pdp+)
- *     |-- hs-vpn     (matched by -o tun+, -o ppp+)
+ *     |-- hs-wifi    (matched by -o wlan+, -o eth+, etc.)
+ *     |-- hs-mobile  (matched by -o rmnet+, -o ccmni+, -o seth_w+, -o clat4+, etc.)
+ *     |-- hs-vpn     (matched by -o tun+, -o tap+, etc.)
+ *     |-- hs-tether  (matched by -o rndis+, -o usb+, -o bt-pan, etc.)
  *     `-- hs-lan     (matched by -d 10.0.0.0/8, 192.168.0.0/16, 172.16.0.0/12)
+ *
+ * Interface patterns sourced from AFWall+ v3.6.0 to cover all known chipsets:
+ * Qualcomm (rmnet, qmi), MediaTek (ccmni, ccemni, ccinet, cc2mni),
+ * Samsung Exynos (seth_w, svnet0), CLAT/464XLAT (clat4, v4-rmnet).
+ * Missing any pattern = firewall silently fails on that chipset.
  *
  * Modes:
  *   BLACKLIST (default): Allow all, block selected apps
  *   WHITELIST: Block all, allow selected apps
  *
  * Logging: Uses NFLOG group 40 for blocked connection logging.
+ * Falls back to LOG target + dmesg if NFLOG is unavailable.
  */
 @Singleton
 class IptablesManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val firewallRuleDao: FirewallRuleDao
+    private val firewallRuleDao: FirewallRuleDao,
+    private val iptablesBin: IptablesBinaryManager
 ) {
     companion object {
         private const val TAG = "IptablesManager"
@@ -50,21 +59,47 @@ class IptablesManager @Inject constructor(
         private const val CHAIN_WIFI = "hs-wifi"
         private const val CHAIN_MOBILE = "hs-mobile"
         private const val CHAIN_VPN = "hs-vpn"
+        private const val CHAIN_TETHER = "hs-tether"
         private const val CHAIN_LAN = "hs-lan"
         private const val CHAIN_REJECT = "hs-reject"
         private const val NFLOG_GROUP = 40
         private const val NFLOG_PREFIX = "HSBlock"
 
-        // WiFi interfaces
-        private val WIFI_IFACES = arrayOf("wlan+", "eth+", "ap+")
-        // Mobile data interfaces (varies by OEM)
+        // WiFi interfaces (AFWall+ complete list)
+        private val WIFI_IFACES = arrayOf(
+            "wlan+", "eth+", "ap+",
+            "tiwlan+",   // TI WiFi (older devices)
+            "ra+",       // Ralink/MediaTek WiFi
+            "bnep+"      // Bluetooth Network Encapsulation (BT tethering)
+        )
+        // Mobile data interfaces (AFWall+ complete list — covers all known chipsets)
         private val MOBILE_IFACES = arrayOf(
-            "rmnet+", "rmnet_data+", "ccmni+", "pdp+",
-            "ppp+", "uwbr+", "wimax+", "vsnet+",
-            "rmnet_ipa+", "rev_rmnet+"
+            // Qualcomm (most common)
+            "rmnet+", "rmnet_data+", "rmnet_sdio+", "rmnet_ipa+",
+            "rmnet_smux+", "r_rmnet_data+", "rev_rmnet+",
+            "rmnet_usb+", "qmi+",
+            // MediaTek
+            "ccmni+", "ccemni+", "ccinet+", "cc2mni+",
+            // Samsung Exynos
+            "seth_w+", "svnet0+",
+            // CLAT/464XLAT (IPv4-over-IPv6 translation, critical for IPv6-only carriers)
+            "clat4+", "v4-rmnet+", "v4-rmnet_data+",
+            // Legacy/misc
+            "pdp+", "ppp+", "uwbr+", "wimax+", "vsnet+",
+            "cdma_rmnet+", "bond1+", "wwan+"
         )
         // VPN interfaces
-        private val VPN_IFACES = arrayOf("tun+", "pptp+", "l2tp+", "ipsec+")
+        private val VPN_IFACES = arrayOf("tun+", "tap+", "pptp+", "l2tp+", "ipsec+")
+        // Tethering interfaces (USB, Bluetooth, WiFi hotspot)
+        private val TETHER_IFACES = arrayOf(
+            "rndis+",      // USB tethering (Linux RNDIS)
+            "usb+",        // USB tethering (generic)
+            "rmnet_usb+",  // USB tethering (Qualcomm)
+            "bt-pan",      // Bluetooth PAN tethering
+            "ap+",         // WiFi hotspot
+            "swlan+",      // Samsung WiFi hotspot
+            "wl0.1+"       // Some Broadcom hotspot interfaces
+        )
         // LAN ranges
         private val LAN_RANGES = arrayOf("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
 
@@ -137,6 +172,25 @@ class IptablesManager @Inject constructor(
     }
 
     /**
+     * Resolve iptables/ip6tables binary paths in command strings.
+     * Uses IptablesBinaryManager to find the best available binary
+     * (bundled > system > PATH fallback).
+     */
+    private fun resolveCmd(cmds: List<String>): Array<String> {
+        val ipt = iptablesBin.iptables()
+        val ip6t = iptablesBin.ip6tables()
+        // Only substitute if we have a non-default path
+        return if (ipt == "iptables") {
+            cmds.toTypedArray()
+        } else {
+            cmds.map { cmd ->
+                cmd.replace("ip6tables ", "$ip6t ")
+                    .replace("iptables ", "$ipt ")
+            }.toTypedArray()
+        }
+    }
+
+    /**
      * Apply all firewall rules. Rebuilds the entire chain hierarchy.
      * Safe to call multiple times -- clears old chains first.
      */
@@ -150,16 +204,19 @@ class IptablesManager @Inject constructor(
             return
         }
 
+        // Resolve binary path once per apply
+        iptablesBin.resolve()
+
         val rules = firewallRuleDao.getAllRulesList()
         val script = buildScript(rules, mode)
-        val result = Shell.cmd(*script.toTypedArray()).exec()
+        val result = Shell.cmd(*resolveCmd(script)).exec()
 
         if (result.isSuccess) {
             _isActive.value = true
             _lastApplyCount.value = rules.size
             _lastError.value = ""
             registerNetworkCallback()
-            Log.i(TAG, "Firewall applied: ${rules.size} rules, mode=$mode")
+            Log.i(TAG, "Firewall applied: ${rules.size} rules, mode=$mode, bin=${iptablesBin.iptables()}")
         } else {
             val err = result.err.joinToString("\n").take(500)
             _lastError.value = "iptables failed: $err"
@@ -172,7 +229,7 @@ class IptablesManager @Inject constructor(
      */
     suspend fun clearRules() {
         val script = buildClearScript()
-        Shell.cmd(*script.toTypedArray()).exec()
+        Shell.cmd(*resolveCmd(script)).exec()
         _isActive.value = false
         unregisterNetworkCallback()
         Log.i(TAG, "Firewall rules cleared")
@@ -203,7 +260,7 @@ class IptablesManager @Inject constructor(
             cmds.add("ip6tables -A $CHAIN_MOBILE -m owner --uid-owner $hexUid -j $CHAIN_REJECT")
         }
 
-        Shell.cmd(*cmds.toTypedArray()).exec()
+        Shell.cmd(*resolveCmd(cmds)).exec()
     }
 
     /**
@@ -255,14 +312,19 @@ class IptablesManager @Inject constructor(
         cmds.addAll(buildClearScript())
 
         // Create chains
-        for (chain in arrayOf(CHAIN_MAIN, CHAIN_WIFI, CHAIN_MOBILE, CHAIN_VPN, CHAIN_LAN, CHAIN_REJECT)) {
+        for (chain in arrayOf(CHAIN_MAIN, CHAIN_WIFI, CHAIN_MOBILE, CHAIN_VPN, CHAIN_TETHER, CHAIN_LAN, CHAIN_REJECT)) {
             cmds.add("iptables -N $chain 2>/dev/null")
             cmds.add("ip6tables -N $chain 2>/dev/null")
         }
 
-        // Reject chain: log + reject
-        cmds.add("iptables -A $CHAIN_REJECT -j NFLOG --nflog-prefix \"$NFLOG_PREFIX\" --nflog-group $NFLOG_GROUP 2>/dev/null || true")
+        // Reject chain: log + reject.
+        // Try NFLOG first (netlink-based, more reliable, no dmesg spam).
+        // Fall back to LOG if NFLOG is unavailable (some Samsung kernels).
+        cmds.add("iptables -A $CHAIN_REJECT -j NFLOG --nflog-prefix \"$NFLOG_PREFIX\" --nflog-group $NFLOG_GROUP 2>/dev/null || " +
+            "iptables -A $CHAIN_REJECT -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true")
         cmds.add("iptables -A $CHAIN_REJECT -j REJECT --reject-with icmp-port-unreachable")
+        cmds.add("ip6tables -A $CHAIN_REJECT -j NFLOG --nflog-prefix \"$NFLOG_PREFIX\" --nflog-group $NFLOG_GROUP 2>/dev/null || " +
+            "ip6tables -A $CHAIN_REJECT -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true")
         cmds.add("ip6tables -A $CHAIN_REJECT -j REJECT --reject-with icmp6-port-unreachable")
 
         // Main chain: route to interface-specific chains
@@ -283,6 +345,10 @@ class IptablesManager @Inject constructor(
             cmds.add("iptables -A $CHAIN_MAIN -o $iface -j $CHAIN_VPN")
             cmds.add("ip6tables -A $CHAIN_MAIN -o $iface -j $CHAIN_VPN")
         }
+        for (iface in TETHER_IFACES) {
+            cmds.add("iptables -A $CHAIN_MAIN -o $iface -j $CHAIN_TETHER")
+            cmds.add("ip6tables -A $CHAIN_MAIN -o $iface -j $CHAIN_TETHER")
+        }
 
         // LAN chain (always allow local traffic)
         for (range in LAN_RANGES) {
@@ -291,7 +357,7 @@ class IptablesManager @Inject constructor(
 
         // Always allow critical system UIDs
         for (uid in arrayOf(UID_ROOT, UID_DNS, UID_SYSTEM)) {
-            for (chain in arrayOf(CHAIN_WIFI, CHAIN_MOBILE, CHAIN_VPN)) {
+            for (chain in arrayOf(CHAIN_WIFI, CHAIN_MOBILE, CHAIN_VPN, CHAIN_TETHER)) {
                 cmds.add("iptables -A $chain -m owner --uid-owner $uid -j RETURN")
                 cmds.add("ip6tables -A $chain -m owner --uid-owner $uid -j RETURN")
             }
@@ -310,6 +376,9 @@ class IptablesManager @Inject constructor(
                     if (!rule.mobileAllowed) {
                         cmds.add("iptables -A $CHAIN_MOBILE -m owner --uid-owner ${rule.uid} -j $CHAIN_REJECT")
                         cmds.add("ip6tables -A $CHAIN_MOBILE -m owner --uid-owner ${rule.uid} -j $CHAIN_REJECT")
+                        // Tethering shares mobile data — block here too
+                        cmds.add("iptables -A $CHAIN_TETHER -m owner --uid-owner ${rule.uid} -j $CHAIN_REJECT")
+                        cmds.add("ip6tables -A $CHAIN_TETHER -m owner --uid-owner ${rule.uid} -j $CHAIN_REJECT")
                     }
                     if (!rule.vpnAllowed) {
                         cmds.add("iptables -A $CHAIN_VPN -m owner --uid-owner ${rule.uid} -j $CHAIN_REJECT")
@@ -328,6 +397,8 @@ class IptablesManager @Inject constructor(
                     if (rule.mobileAllowed) {
                         cmds.add("iptables -A $CHAIN_MOBILE -m owner --uid-owner ${rule.uid} -j RETURN")
                         cmds.add("ip6tables -A $CHAIN_MOBILE -m owner --uid-owner ${rule.uid} -j RETURN")
+                        cmds.add("iptables -A $CHAIN_TETHER -m owner --uid-owner ${rule.uid} -j RETURN")
+                        cmds.add("ip6tables -A $CHAIN_TETHER -m owner --uid-owner ${rule.uid} -j RETURN")
                     }
                     if (rule.vpnAllowed) {
                         cmds.add("iptables -A $CHAIN_VPN -m owner --uid-owner ${rule.uid} -j RETURN")
@@ -335,7 +406,7 @@ class IptablesManager @Inject constructor(
                     }
                 }
                 // Default reject at end of each chain
-                for (chain in arrayOf(CHAIN_WIFI, CHAIN_MOBILE, CHAIN_VPN)) {
+                for (chain in arrayOf(CHAIN_WIFI, CHAIN_MOBILE, CHAIN_VPN, CHAIN_TETHER)) {
                     cmds.add("iptables -A $chain -j $CHAIN_REJECT")
                     cmds.add("ip6tables -A $chain -j $CHAIN_REJECT")
                 }
@@ -359,7 +430,7 @@ class IptablesManager @Inject constructor(
         }
 
         // Flush and delete chains
-        for (chain in arrayOf(CHAIN_MAIN, CHAIN_WIFI, CHAIN_MOBILE, CHAIN_VPN, CHAIN_LAN, CHAIN_REJECT)) {
+        for (chain in arrayOf(CHAIN_MAIN, CHAIN_WIFI, CHAIN_MOBILE, CHAIN_VPN, CHAIN_TETHER, CHAIN_LAN, CHAIN_REJECT)) {
             cmds.add("iptables -F $chain 2>/dev/null || true")
             cmds.add("ip6tables -F $chain 2>/dev/null || true")
             cmds.add("iptables -X $chain 2>/dev/null || true")
@@ -373,12 +444,13 @@ class IptablesManager @Inject constructor(
      * Generate a human-readable dump of current iptables rules.
      */
     suspend fun dumpCurrentRules(): String {
+        val ipt = iptablesBin.iptables()
         val result = Shell.cmd(
-            "echo '=== IPv4 ===' && iptables -L OUTPUT -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '=== hs-main ===' && iptables -L $CHAIN_MAIN -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '=== hs-wifi ===' && iptables -L $CHAIN_WIFI -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '=== hs-mobile ===' && iptables -L $CHAIN_MOBILE -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '=== hs-reject ===' && iptables -L $CHAIN_REJECT -n -v --line-numbers 2>/dev/null"
+            "echo '=== IPv4 ===' && $ipt -L OUTPUT -n -v --line-numbers 2>/dev/null",
+            "echo '' && echo '=== hs-main ===' && $ipt -L $CHAIN_MAIN -n -v --line-numbers 2>/dev/null",
+            "echo '' && echo '=== hs-wifi ===' && $ipt -L $CHAIN_WIFI -n -v --line-numbers 2>/dev/null",
+            "echo '' && echo '=== hs-mobile ===' && $ipt -L $CHAIN_MOBILE -n -v --line-numbers 2>/dev/null",
+            "echo '' && echo '=== hs-reject ===' && $ipt -L $CHAIN_REJECT -n -v --line-numbers 2>/dev/null"
         ).exec()
         return result.out.joinToString("\n")
     }
@@ -399,28 +471,32 @@ class IptablesManager @Inject constructor(
         parts.add("Active: ${_isActive.value}, Rules: ${_lastApplyCount.value}")
         parts.add("")
 
+        val ipt = iptablesBin.iptables()
         val rules = Shell.cmd(
             "echo '--- iptables OUTPUT ---'",
-            "iptables -L OUTPUT -n -v --line-numbers 2>/dev/null | head -30",
+            "$ipt -L OUTPUT -n -v --line-numbers 2>/dev/null | head -30",
             "echo '' && echo '--- hs-main ---'",
-            "iptables -L $CHAIN_MAIN -n -v --line-numbers 2>/dev/null",
+            "$ipt -L $CHAIN_MAIN -n -v --line-numbers 2>/dev/null",
             "echo '' && echo '--- hs-wifi ---'",
-            "iptables -L $CHAIN_WIFI -n -v --line-numbers 2>/dev/null",
+            "$ipt -L $CHAIN_WIFI -n -v --line-numbers 2>/dev/null",
             "echo '' && echo '--- hs-mobile ---'",
-            "iptables -L $CHAIN_MOBILE -n -v --line-numbers 2>/dev/null",
+            "$ipt -L $CHAIN_MOBILE -n -v --line-numbers 2>/dev/null",
             "echo '' && echo '--- hs-vpn ---'",
-            "iptables -L $CHAIN_VPN -n -v --line-numbers 2>/dev/null",
+            "$ipt -L $CHAIN_VPN -n -v --line-numbers 2>/dev/null",
+            "echo '' && echo '--- hs-tether ---'",
+            "$ipt -L $CHAIN_TETHER -n -v --line-numbers 2>/dev/null",
             "echo '' && echo '--- hs-reject ---'",
-            "iptables -L $CHAIN_REJECT -n -v --line-numbers 2>/dev/null",
+            "$ipt -L $CHAIN_REJECT -n -v --line-numbers 2>/dev/null",
             "echo '' && echo '--- NAT ---'",
-            "iptables -t nat -L OUTPUT -n -v --line-numbers 2>/dev/null | head -20",
+            "$ipt -t nat -L OUTPUT -n -v --line-numbers 2>/dev/null | head -20",
             "echo '' && echo '--- Interfaces ---'",
             "ip link show 2>/dev/null | grep -E 'state|mtu'",
             "echo '' && echo '--- Active DNS ---'",
             "getprop net.dns1 2>/dev/null", "getprop net.dns2 2>/dev/null",
             "echo '' && echo '--- Kernel iptables modules ---'",
             "cat /proc/net/ip_tables_targets 2>/dev/null",
-            "cat /proc/net/ip_tables_matches 2>/dev/null | head -20"
+            "cat /proc/net/ip_tables_matches 2>/dev/null | head -20",
+            "echo '' && echo '--- Binary: ${iptablesBin.getVersionInfo()} ---'"
         ).exec()
 
         parts.addAll(rules.out)
@@ -444,4 +520,7 @@ class IptablesManager @Inject constructor(
         }
         return sb.toString()
     }
+
+    /** Alias for DiagnosticExporter compatibility. */
+    suspend fun getDiagnosticDump(): String = dumpFullDiagnostic()
 }

@@ -35,10 +35,13 @@ data class SettingsUiState(
     val wifiOnly: Boolean = true,
     val dnsLogging: Boolean = true,
     val logRetentionDays: Int = 7,
+    val connectionLogRetentionDays: Int = 3,
     val showNotification: Boolean = true,
     val dohEnabled: Boolean = false,
     val dohProvider: String = "cloudflare",
     val dnsTrapEnabled: Boolean = true,
+    /** Block response type: "nxdomain", "zero_ip", "refused" */
+    val blockResponseType: String = "nxdomain",
     val isRootAvailable: Boolean = false,
     val systemInfo: Map<String, String> = emptyMap(),
     val exportResult: String? = null,
@@ -69,7 +72,8 @@ class SettingsViewModel @Inject constructor(
     private val backupRestore: BackupRestoreUtil,
     private val batteryUtil: BatteryOptimizationUtil,
     private val pcapExporter: PcapExporter,
-    private val updateChecker: UpdateChecker
+    private val updateChecker: UpdateChecker,
+    private val diagnosticExporter: com.hostshield.util.DiagnosticExporter
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -95,6 +99,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { prefs.dohEnabled.collect { v -> _uiState.update { it.copy(dohEnabled = v) } } }
         viewModelScope.launch { prefs.dohProvider.collect { v -> _uiState.update { it.copy(dohProvider = v) } } }
         viewModelScope.launch { prefs.dnsTrapEnabled.collect { v -> _uiState.update { it.copy(dnsTrapEnabled = v) } } }
+        viewModelScope.launch { prefs.blockResponseType.collect { v -> _uiState.update { it.copy(blockResponseType = v) } } }
         viewModelScope.launch { prefs.blockedApps.collect { apps -> _uiState.update { it.copy(firewalledApps = apps.size) } } }
         viewModelScope.launch(Dispatchers.IO) {
             val available = rootUtil.isRootAvailable()
@@ -174,6 +179,7 @@ class SettingsViewModel @Inject constructor(
     fun setIpv4Redirect(ip: String) { viewModelScope.launch { prefs.setIpv4Redirect(ip) } }
     fun setIpv6Redirect(ip: String) { viewModelScope.launch { prefs.setIpv6Redirect(ip) } }
     fun setLogRetention(days: Int) { viewModelScope.launch { prefs.setLogRetentionDays(days) } }
+    fun setBlockResponseType(type: String) { viewModelScope.launch { prefs.setBlockResponseType(type) } }
 
     /** Export rules JSON directly to a SAF URI. */
     fun exportRulesToUri(uri: Uri) {
@@ -333,4 +339,14 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun dismissUpdateMessage() { _uiState.update { it.copy(updateMessage = null) } }
+
+    fun generateDiagnosticReport() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                diagnosticExporter.generateAndShare(getApplication())
+            } catch (e: Exception) {
+                android.util.Log.e("Settings", "Diagnostic export failed: ${e.message}", e)
+            }
+        }
+    }
 }
