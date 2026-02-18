@@ -27,26 +27,32 @@ import javax.inject.Singleton
 /**
  * Root-mode DNS proxy with per-app attribution.
  *
- * Architecture (3 coroutines):
+ * Architecture (2 coroutines):
  *
- *  1. DNS PROXY on 127.0.0.1:5454 -- receives all DNS queries via iptables
- *     NAT redirect. Parses hostname from raw DNS packets, checks blocklist,
- *     returns NXDOMAIN for blocked domains or forwards upstream. Logs every
- *     query to Room database.
+ *  1. DNS PROXY on 127.0.0.1:5454 + [::1]:5454 -- receives all DNS queries
+ *     via iptables NAT redirect. Parses hostname from raw DNS packets, checks
+ *     blocklist, returns NXDOMAIN for blocked domains or forwards upstream.
+ *     Logs every query to Room database. UID attribution uses /proc/net/udp
+ *     port-to-UID mapping as a fast-path before falling back to the
+ *     hostname->UID cache populated by the dumpsys poller.
  *
- *  2. UID RESOLVER -- enables Android DnsResolver verbose logging via
- *     `service call dnsresolver 10 i32 0`, then tails logcat for resolv/
- *     DnsProxyListener tags. These log lines contain both the hostname AND
- *     the requesting app's UID (extracted via SO_PEERCRED inside netd).
- *     Builds a hostname->UID cache for the proxy to use.
+ *  2. DUMPSYS POLLER -- polls `dumpsys dnsresolver` every 3s for the
+ *     DnsQueryLog ring buffer. Extracts hostname->UID mappings and enriches
+ *     DB entries that were inserted without app info.
  *
- *  3. DUMPSYS POLLER (fallback) -- polls `dumpsys dnsresolver` every 3s
- *     for the DnsQueryLog ring buffer. Catches queries the logcat reader
- *     may have missed. Also enriches entries already in the database.
+ * UID attribution note: The previous logcat-based approach (`service call
+ * dnsresolver 10 i32 0` to enable verbose logging, then tail logcat) was
+ * removed in v1.7.0. The binder transaction code is an AOSP implementation
+ * detail that varies across Android versions and OEM ROMs, and AOSP warns
+ * it logs PII. The /proc/net + dumpsys approach is stable and portable.
+ *
+ * Security: route_localnet=1 is required for DNAT to loopback. Compensating
+ * iptables INPUT rules block external access to 127.0.0.0/8 to mitigate
+ * the CVE-2020-8558 attack vector (LAN hosts reaching loopback services).
  *
  * On start: disables Private DNS (forces netd to use port 53), installs
- * iptables NAT redirect, enables verbose resolver logging.
- * On stop: restores Private DNS, removes iptables, resets log level.
+ * iptables NAT redirect with route_localnet hardening.
+ * On stop: restores Private DNS, removes iptables, resets route_localnet.
  */
 @Singleton
 class RootDnsLogger @Inject constructor(
@@ -66,10 +72,9 @@ class RootDnsLogger @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var proxyJob: Job? = null
-    private var logcatJob: Job? = null
     private var dumpsysJob: Job? = null
     private var proxySocket: DatagramSocket? = null
-    private var logcatProcess: Process? = null
+    private var proxySocket6: DatagramSocket? = null
 
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -88,50 +93,52 @@ class RootDnsLogger @Inject constructor(
     // Stats flusher job
     private var logFlushJob: Job? = null
     private var loggingEnabled = true
+    private var blockResponseType = "nxdomain"
     private val pendingBlockedStats = java.util.concurrent.atomic.AtomicInteger(0)
     private val pendingAllowedStats = java.util.concurrent.atomic.AtomicInteger(0)
 
     fun start() {
         if (proxyJob?.isActive == true) return
 
+        // Gate so the proxy waits until iptables is fully installed.
+        val setupDone = CompletableDeferred<Unit>()
+
         scope.launch {
-            // Read logging preference
-            loggingEnabled = try { prefs.dnsLogging.first() } catch (_: Exception) { true }
-            Log.i(TAG, "Root DNS starting (logging=$loggingEnabled)")
+            try {
+                // Read logging preference
+                loggingEnabled = try { prefs.dnsLogging.first() } catch (_: Exception) { true }
+                blockResponseType = try { prefs.blockResponseType.first() } catch (_: Exception) { "nxdomain" }
+                Log.i(TAG, "Root DNS starting (logging=$loggingEnabled, blockResponse=$blockResponseType)")
 
-            // Step 1: Disable Private DNS so netd uses plain port 53
-            disablePrivateDns()
+                // Step 1: Disable Private DNS so netd uses plain port 53
+                disablePrivateDns()
 
-            // Step 2: Resolve upstream DNS
-            upstreamDns = resolveUpstreamDns()
-            Log.i(TAG, "Upstream DNS: ${upstreamDns.hostAddress}")
+                // Step 2: Resolve upstream DNS
+                upstreamDns = resolveUpstreamDns()
+                Log.i(TAG, "Upstream DNS: ${upstreamDns.hostAddress}")
 
-            // Step 3: Enable verbose DnsResolver logging
-            enableVerboseLogging()
+                // Step 3: Install iptables NAT redirect (with route_localnet hardening)
+                removeIptablesRules()
+                installIptablesRules()
 
-            // Step 4: Install iptables NAT redirect
-            removeIptablesRules()
-            installIptablesRules()
+                Log.i(TAG, "Setup complete — signalling proxy to start")
+            } finally {
+                setupDone.complete(Unit)
+            }
         }
 
         // Start periodic stats flusher (every 2s)
         startStatsFlusher()
 
-        // Coroutine 1: Tail logcat for UID attribution
-        logcatJob = scope.launch {
-            delay(800)
-            readLogcatDns()
-        }
-
-        // Coroutine 2: Fallback dumpsys poller
+        // Coroutine 1: Dumpsys poller for UID attribution
         dumpsysJob = scope.launch {
             delay(2000)
             pollDumpsys()
         }
 
-        // Coroutine 3: DNS proxy
+        // Coroutine 2: DNS proxy — waits for setup to finish before binding
         proxyJob = scope.launch {
-            delay(1000) // let setup complete
+            setupDone.await()  // block until iptables + Private DNS are ready
             _isRunning.value = true
             try {
                 runDnsProxy()
@@ -142,13 +149,13 @@ class RootDnsLogger @Inject constructor(
     }
 
     fun stop() {
-        logcatJob?.cancel(); logcatJob = null
         dumpsysJob?.cancel(); dumpsysJob = null
         proxyJob?.cancel(); proxyJob = null
         logFlushJob?.cancel(); logFlushJob = null
         try { proxySocket?.close() } catch (_: Exception) { }
+        try { proxySocket6?.close() } catch (_: Exception) { }
         proxySocket = null
-        logcatProcess?.destroy(); logcatProcess = null
+        proxySocket6 = null
         // Flush remaining stats synchronously before teardown
         try {
             kotlinx.coroutines.runBlocking(Dispatchers.IO) {
@@ -161,8 +168,14 @@ class RootDnsLogger @Inject constructor(
         pendingUidLookup.clear()
         scope.launch {
             removeIptablesRules()
+            // Restore route_localnet to default (0) and remove compensating INPUT rules
+            Shell.cmd(
+                "sysctl -w net.ipv4.conf.all.route_localnet=0 2>/dev/null",
+                "sysctl -w net.ipv4.conf.default.route_localnet=0 2>/dev/null",
+                "iptables -D INPUT -d 127.0.0.0/8 ! -i lo -j DROP 2>/dev/null",
+                "ip6tables -D INPUT -d ::1/128 ! -i lo -j DROP 2>/dev/null"
+            ).exec()
             restorePrivateDns()
-            resetLogLevel()
         }
     }
 
@@ -196,33 +209,45 @@ class RootDnsLogger @Inject constructor(
         } catch (_: Exception) { }
     }
 
-    // ---- Verbose DnsResolver Logging ----------------------------
-
-    private suspend fun enableVerboseLogging() {
-        // Transaction 10 = setLogSeverity, i32 0 = VERBOSE
-        val r = Shell.cmd("service call dnsresolver 10 i32 0").exec()
-        if (r.isSuccess) Log.i(TAG, "DnsResolver verbose logging enabled")
-        else Log.w(TAG, "Failed to enable verbose logging: ${r.err}")
-    }
-
-    private suspend fun resetLogLevel() {
-        // Reset to WARNING (default)
-        Shell.cmd("service call dnsresolver 10 i32 3").exec()
-    }
-
     // ---- iptables Management ------------------------------------
 
-    private fun natRule(): String {
+    private fun natRule4(): String {
         val myUid = android.os.Process.myUid()
         return "-p udp --dport 53 -m owner ! --uid-owner $myUid " +
             "-j DNAT --to-destination 127.0.0.1:$PROXY_PORT"
     }
 
+    private fun natRule6(): String {
+        val myUid = android.os.Process.myUid()
+        return "-p udp --dport 53 -m owner ! --uid-owner $myUid " +
+            "-j DNAT --to-destination [::1]:$PROXY_PORT"
+    }
+
     private suspend fun installIptablesRules() {
         val myUid = android.os.Process.myUid()
+
+        // SECURITY: Compensating INPUT rules MUST be installed BEFORE enabling
+        // route_localnet. Without these, setting route_localnet=1 allows hosts
+        // on the same LAN to reach loopback-bound services on this device
+        // (CVE-2020-8558 attack vector). These rules ensure only the loopback
+        // interface can deliver packets to 127.0.0.0/8 and ::1.
+        Shell.cmd(
+            "iptables -I INPUT -d 127.0.0.0/8 ! -i lo -j DROP",
+            "ip6tables -I INPUT -d ::1/128 ! -i lo -j DROP"
+        ).exec()
+        Log.i(TAG, "Compensating INPUT rules installed (loopback protection)")
+
+        // Now enable route_localnet so the kernel allows DNAT to 127.0.0.1.
+        // Without this sysctl, packets redirected to loopback are silently dropped.
+        Shell.cmd(
+            "sysctl -w net.ipv4.conf.all.route_localnet=1",
+            "sysctl -w net.ipv4.conf.default.route_localnet=1"
+        ).exec()
+        Log.i(TAG, "route_localnet enabled (hardened with INPUT DROP rules)")
+
         // 1. Redirect all DNS (UDP port 53) to local proxy
-        Shell.cmd("iptables -t nat -I OUTPUT ${natRule()}").exec()
-        Shell.cmd("ip6tables -t nat -I OUTPUT ${natRule()}").exec()
+        Shell.cmd("iptables -t nat -I OUTPUT ${natRule4()}").exec()
+        Shell.cmd("ip6tables -t nat -I OUTPUT ${natRule6()}").exec()
 
         // 2. Block DNS-over-TLS (port 853) to prevent Private DNS bypass.
         // Apps/system using DoT will fail and fall back to port 53 (which we redirect).
@@ -253,8 +278,8 @@ class RootDnsLogger @Inject constructor(
     private suspend fun removeIptablesRules() {
         val myUid = android.os.Process.myUid()
         for (i in 0..4) {
-            val a = Shell.cmd("iptables -t nat -D OUTPUT ${natRule()} 2>/dev/null").exec()
-            val b = Shell.cmd("ip6tables -t nat -D OUTPUT ${natRule()} 2>/dev/null").exec()
+            val a = Shell.cmd("iptables -t nat -D OUTPUT ${natRule4()} 2>/dev/null").exec()
+            val b = Shell.cmd("ip6tables -t nat -D OUTPUT ${natRule6()} 2>/dev/null").exec()
             if (!a.isSuccess && !b.isSuccess) break
         }
         // Clean up DoT blocking rules
@@ -271,84 +296,68 @@ class RootDnsLogger @Inject constructor(
         }
         // Clean up TCP DNS redirect
         Shell.cmd("iptables -t nat -D OUTPUT -p tcp --dport 53 -m owner ! --uid-owner $myUid -j DNAT --to-destination 127.0.0.1:$PROXY_PORT 2>/dev/null").exec()
+        // Clean up compensating loopback protection INPUT rules
+        Shell.cmd(
+            "iptables -D INPUT -d 127.0.0.0/8 ! -i lo -j DROP 2>/dev/null",
+            "ip6tables -D INPUT -d ::1/128 ! -i lo -j DROP 2>/dev/null"
+        ).exec()
     }
 
-    // ---- Logcat UID Reader --------------------------------------
+    // ---- /proc/net UID Fast-Path ---------------------------------
 
     /**
-     * With verbose logging enabled, DnsResolver logs queries with UIDs:
-     *   resolv  : res_nsend: ... uid=10234 host=example.com
-     *   DnsProxyListener: ... uid 10234 ... example.com
-     *   resolv  : getaddrinfo: ... host=example.com ... uid=10234
-     * Format varies by Android version; we use flexible regex.
+     * Fast-path UID lookup via /proc/net/udp and /proc/net/udp6.
+     * When the proxy receives a DNAT'd packet, the original source port
+     * may still be visible in the kernel's UDP socket table. This avoids
+     * waiting for the 3s dumpsys poll cycle.
+     *
+     * /proc/net/udp format:
+     *   sl  local_address:port rem_address:port st ... uid ...
+     *   0:  0100007F:1234      00000000:0000   07 ... 10234 ...
+     *
+     * Returns UID > 0 on success, -1 on failure.
      */
-    private suspend fun readLogcatDns() {
-        // Clear old logcat
-        Shell.cmd("logcat -c -b main 2>/dev/null").exec()
-
-        val su = Runtime.getRuntime().exec(arrayOf(
-            "su", "-c",
-            "logcat -v brief -b main -s resolv:V DnsProxyListener:V DnsResolver:V netd:V 2>/dev/null"
-        ))
-        logcatProcess = su
-        val reader = su.inputStream.bufferedReader()
-
-        // Multiple regex patterns for different Android versions
-        val patterns = arrayOf(
-            // Android 12+: "resolv  : ... uid=10234 ... example.com"
-            Regex("""uid[=: ]+(\d+).*?([a-z0-9][-a-z0-9.]+\.[a-z]{2,})""", RegexOption.IGNORE_CASE),
-            // Reverse: "example.com ... uid=10234"
-            Regex("""([a-z0-9][-a-z0-9.]+\.[a-z]{2,}).*?uid[=: ]+(\d+)""", RegexOption.IGNORE_CASE),
-            // Android 10-11: "getaddrinfo ... host=example.com ... uid 10234"
-            Regex("""host[=: ]+([a-z0-9][-a-z0-9.]+\.[a-z]{2,}).*?uid[=: ]+(\d+)""", RegexOption.IGNORE_CASE)
-        )
-
-        try {
-            while (currentCoroutineContext().isActive) {
-                val line = withContext(Dispatchers.IO) { reader.readLine() } ?: break
-
-                for (pattern in patterns) {
-                    val match = pattern.find(line) ?: continue
-
-                    var uid: Int? = null
-                    var host: String? = null
-
-                    // First pattern: uid first, host second
-                    // Second pattern: host first, uid second
-                    // Third pattern: host first, uid second
-                    if (pattern == patterns[0]) {
-                        uid = match.groupValues[1].toIntOrNull()
-                        host = match.groupValues[2].lowercase()
-                    } else {
-                        host = match.groupValues[1].lowercase()
-                        uid = match.groupValues[2].toIntOrNull()
+    private fun findUidFromSourcePort(srcPort: Int): Int {
+        if (srcPort <= 0) return -1
+        val hex = String.format("%04X", srcPort).uppercase()
+        for (path in arrayOf("/proc/net/udp", "/proc/net/udp6")) {
+            try {
+                for (line in java.io.File(path).readLines()) {
+                    val parts = line.trim().split(Regex("\\s+"))
+                    if (parts.size >= 8 && parts[1].uppercase().endsWith(":$hex")) {
+                        val uid = parts[7].toIntOrNull() ?: -1
+                        if (uid > 0) return uid
                     }
-
-                    if (uid != null && uid > 0 && host != null && host.length >= 4
-                        && !host.endsWith(".arpa") && !host.endsWith(".local")
-                    ) {
-                        hostnameUidMap[host] = uid to System.currentTimeMillis()
-
-                        // Enrich any pending DB entries
-                        enrichPendingEntry(host, uid)
-                    }
-                    break
                 }
-
-                // Evict stale cache entries
-                if (hostnameUidMap.size > 1000) {
-                    val cutoff = System.currentTimeMillis() - 30_000L
-                    hostnameUidMap.entries.removeAll { it.value.second < cutoff }
-                }
-            }
-        } catch (_: CancellationException) { }
-        catch (e: Exception) { Log.w(TAG, "Logcat reader stopped: ${e.message}") }
-        finally { su.destroy(); logcatProcess = null }
+            } catch (_: Exception) { }
+        }
+        return -1
     }
 
     /**
-     * When the logcat reader finds a UID for a hostname, update any
-     * recently-inserted DB entries that were missing the app info.
+     * Resolve app for a query using all available attribution methods.
+     * Priority: 1) /proc/net source port lookup, 2) hostname->UID cache
+     * from dumpsys poller, 3) return empty (will be enriched later).
+     */
+    private fun resolveAppForQuery(hostname: String, clientPort: Int): Pair<String, String> {
+        // Fast-path: check /proc/net for the client's source port
+        val procUid = findUidFromSourcePort(clientPort)
+        if (procUid > 0) {
+            val result = resolvePackage(procUid)
+            if (result.first.isNotEmpty()) {
+                // Cache for future lookups of this hostname
+                hostnameUidMap[hostname] = procUid to System.currentTimeMillis()
+                return result
+            }
+        }
+
+        // Fallback: dumpsys-populated hostname->UID cache
+        return resolveAppByHostname(hostname)
+    }
+
+    /**
+     * When the dumpsys poller (or /proc/net lookup) finds a UID for a hostname,
+     * update any recently-inserted DB entries that were missing the app info.
      */
     private suspend fun enrichPendingEntry(hostname: String, uid: Int) {
         val id = pendingUidLookup.remove(hostname) ?: return
@@ -414,12 +423,52 @@ class RootDnsLogger @Inject constructor(
     // ---- DNS Proxy ----------------------------------------------
 
     private suspend fun runDnsProxy() {
-        val socket = DatagramSocket(PROXY_PORT, InetAddress.getByName("127.0.0.1"))
-        proxySocket = socket
-        socket.soTimeout = 0
+        // Bind IPv4 proxy socket with retry for quick stop/start cycles.
+        var socket4: DatagramSocket? = null
+        for (attempt in 1..5) {
+            try {
+                socket4 = DatagramSocket(null).apply {
+                    reuseAddress = true
+                    bind(java.net.InetSocketAddress(InetAddress.getByName("127.0.0.1"), PROXY_PORT))
+                }
+                break
+            } catch (e: java.net.BindException) {
+                Log.w(TAG, "Proxy IPv4 bind attempt $attempt failed: ${e.message}")
+                if (attempt == 5) throw e
+                delay(500L * attempt)
+            }
+        }
+        proxySocket = socket4!!
+        socket4.soTimeout = 0
 
-        Log.i(TAG, "DNS proxy on 127.0.0.1:$PROXY_PORT")
+        // Bind IPv6 proxy socket — receives DNS redirected via ip6tables.
+        try {
+            val s6 = DatagramSocket(null).apply {
+                reuseAddress = true
+                bind(java.net.InetSocketAddress(InetAddress.getByName("::1"), PROXY_PORT))
+            }
+            s6.soTimeout = 0
+            proxySocket6 = s6
+            Log.i(TAG, "DNS proxy on 127.0.0.1:$PROXY_PORT + [::1]:$PROXY_PORT")
 
+            // Launch IPv6 receive loop as a child coroutine
+            scope.launch {
+                try { proxyReceiveLoop(s6) }
+                catch (_: java.net.SocketException) { }
+                catch (e: Exception) { Log.w(TAG, "IPv6 proxy ended: ${e.message}") }
+            }
+        } catch (e: Exception) {
+            // IPv6 proxy is non-critical; log and continue with IPv4 only
+            Log.w(TAG, "IPv6 proxy bind failed (IPv4 only): ${e.message}")
+        }
+
+        // IPv4 receive loop (main)
+        proxyReceiveLoop(socket4)
+        socket4.close()
+    }
+
+    /** Shared receive loop for both IPv4 and IPv6 proxy sockets. */
+    private suspend fun proxyReceiveLoop(socket: DatagramSocket) {
         while (currentCoroutineContext().isActive) {
             try {
                 val buf = ByteArray(1500)
@@ -432,7 +481,6 @@ class RootDnsLogger @Inject constructor(
             } catch (_: java.net.SocketException) { break }
             catch (e: Exception) { Log.w(TAG, "Proxy recv: ${e.message}") }
         }
-        socket.close()
     }
 
     private suspend fun handleQuery(
@@ -450,10 +498,10 @@ class RootDnsLogger @Inject constructor(
             val isBlocked = blocklist.isBlocked(hostname)
 
             if (isBlocked) {
-                val nx = buildNxdomainResponse(data)
+                val resp = buildBlockResponse(data, queryType)
                 withContext(Dispatchers.IO) {
                     synchronized(socket) {
-                        socket.send(DatagramPacket(nx, nx.size, clientAddr, clientPort))
+                        socket.send(DatagramPacket(resp, resp.size, clientAddr, clientPort))
                     }
                 }
             } else {
@@ -467,8 +515,8 @@ class RootDnsLogger @Inject constructor(
             // Only write to DB if logging is enabled
             if (!loggingEnabled) return
 
-            // Resolve app from logcat/dumpsys UID cache
-            val (appPkg, appLabel) = resolveAppByHostname(hostname)
+            // Resolve app: /proc/net source-port fast-path, then dumpsys cache
+            val (appPkg, appLabel) = resolveAppForQuery(hostname, clientPort)
 
             try {
                 val entryId = dnsLogDao.insertAndGetId(DnsLogEntry(
@@ -576,11 +624,81 @@ class RootDnsLogger @Inject constructor(
         } catch (_: Exception) { return "A" }
     }
 
+    /**
+     * Build a block response based on the configured response type.
+     * Dispatches to NXDOMAIN, zero-IP, or REFUSED builder.
+     */
+    private fun buildBlockResponse(query: ByteArray, queryType: String): ByteArray {
+        return when (blockResponseType) {
+            "zero_ip" -> buildZeroIpResponse(query, queryType) ?: buildNxdomainResponse(query)
+            "refused" -> buildRefusedResponse(query)
+            else -> buildNxdomainResponse(query) // "nxdomain" (default)
+        }
+    }
+
     private fun buildNxdomainResponse(query: ByteArray): ByteArray {
         if (query.size < 12) return query
         val r = query.copyOf()
         r[2] = ((0x80 or 0x04) or (query[2].toInt() and 0x01)).toByte()
         r[3] = (0x80 or 0x03).toByte()
+        r[6] = 0; r[7] = 0; r[8] = 0; r[9] = 0; r[10] = 0; r[11] = 0
+        return r
+    }
+
+    /**
+     * Zero-IP response: RCODE=0 (NOERROR) with A=0.0.0.0 or AAAA=::.
+     * Only for A/AAAA queries; other types return null (caller falls back).
+     */
+    private fun buildZeroIpResponse(query: ByteArray, queryType: String): ByteArray? {
+        if (query.size < 12) return null
+        val rdata = when (queryType) {
+            "A" -> byteArrayOf(0, 0, 0, 0)
+            "AAAA" -> ByteArray(16)
+            else -> return null
+        }
+        val rdataType = when (queryType) {
+            "A" -> byteArrayOf(0, 1)
+            "AAAA" -> byteArrayOf(0, 28)
+            else -> return null
+        }
+
+        // Skip query name to find where answer starts
+        var off = 12
+        while (off < query.size) {
+            val len = query[off].toInt() and 0xFF
+            if (len == 0) { off++; break }
+            if (len and 0xC0 == 0xC0) { off += 2; break }
+            off += 1 + len
+        }
+        off += 4 // QTYPE + QCLASS
+
+        // Build answer: pointer to query name + TYPE + CLASS + TTL + RDLENGTH + RDATA
+        val answer = byteArrayOf(0xC0.toByte(), 0x0C) + rdataType + byteArrayOf(
+            0, 1,                       // CLASS IN
+            0, 0, 1, 0x2C.toByte(),     // TTL 300s
+            (rdata.size shr 8 and 0xFF).toByte(), (rdata.size and 0xFF).toByte()
+        ) + rdata
+
+        val resp = ByteArray(off + answer.size)
+        System.arraycopy(query, 0, resp, 0, off.coerceAtMost(query.size))
+        if (resp.size >= 12) {
+            resp[2] = (0x84 or (query[2].toInt() and 0x01)).toByte() // QR=1, AA=1, RD preserved
+            resp[3] = 0x80.toByte()  // RA=1, RCODE=0 (NOERROR)
+            resp[4] = 0; resp[5] = 1    // QDCOUNT=1
+            resp[6] = 0; resp[7] = 1    // ANCOUNT=1
+            resp[8] = 0; resp[9] = 0    // NSCOUNT=0
+            resp[10] = 0; resp[11] = 0  // ARCOUNT=0
+        }
+        System.arraycopy(answer, 0, resp, off, answer.size)
+        return resp
+    }
+
+    /** REFUSED response: RCODE=5. */
+    private fun buildRefusedResponse(query: ByteArray): ByteArray {
+        if (query.size < 12) return query
+        val r = query.copyOf()
+        r[2] = (0x84 or (query[2].toInt() and 0x01)).toByte()
+        r[3] = 0x85.toByte()  // RA=1, RCODE=5
         r[6] = 0; r[7] = 0; r[8] = 0; r[9] = 0; r[10] = 0; r[11] = 0
         return r
     }

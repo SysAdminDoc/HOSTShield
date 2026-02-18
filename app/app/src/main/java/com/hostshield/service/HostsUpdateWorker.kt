@@ -75,6 +75,9 @@ class HostsUpdateWorker @AssistedInject constructor(
 
             WorkManager.getInstance(context).enqueue(request)
         }
+
+        /** Alias for automation API. */
+        fun runOnce(context: Context) = runNow(context)
     }
 
     override suspend fun doWork(): Result {

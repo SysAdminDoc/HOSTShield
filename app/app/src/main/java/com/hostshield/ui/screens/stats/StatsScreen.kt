@@ -55,7 +55,8 @@ data class StatsUiState(
     val dailyStats: List<BlockStats> = emptyList(),
     val topDomains: List<TopHostname> = emptyList(),
     val topApps: List<TopApp> = emptyList(),
-    val mostQueried: List<TopHostname> = emptyList() // Network insights: aggressive domains
+    val mostQueried: List<TopHostname> = emptyList(), // Network insights: aggressive domains
+    val dailyTrend: List<com.hostshield.data.database.DailyBreakdown> = emptyList() // 7-day trend
 )
 
 @HiltViewModel
@@ -88,6 +89,7 @@ class StatsViewModel @Inject constructor(
         viewModelScope.launch { repository.getTopBlockedApps(10).collect { a -> _uiState.update { it.copy(topApps = a) } } }
         viewModelScope.launch { repository.getHourlyBlocked(todayStart).collect { h -> _uiState.update { it.copy(hourlyBlocked = h) } } }
         viewModelScope.launch { repository.getMostQueriedDomains(weekStart, 15).collect { m -> _uiState.update { it.copy(mostQueried = m) } } }
+        viewModelScope.launch { repository.getDailyBreakdown(weekStart).collect { d -> _uiState.update { it.copy(dailyTrend = d) } } }
     }
 }
 
@@ -138,6 +140,29 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     } else {
                         Box(modifier = Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
                             Text("Charts populate with VPN mode logging.", color = TextDim, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // 7-Day Trend Line Chart
+        item {
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(Blue.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Filled.TrendingUp, null, tint = Blue, modifier = Modifier.size(14.dp))
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text("7-Day Trend", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    if (state.dailyTrend.size >= 2) {
+                        TrendLineChart(data = state.dailyTrend, modifier = Modifier.fillMaxWidth().height(140.dp))
+                    } else {
+                        Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
+                            Text("Trend charts need at least 2 days of data.", color = TextDim, fontSize = 12.sp)
                         }
                     }
                 }
@@ -387,5 +412,69 @@ private fun DomainBar(rank: Int, hostname: String, count: Int, maxCount: Int) {
         }
         Spacer(Modifier.width(8.dp))
         Text(NumberFormat.getNumberInstance().format(count), color = Red, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(44.dp))
+    }
+}
+
+@Composable
+private fun TrendLineChart(data: List<com.hostshield.data.database.DailyBreakdown>, modifier: Modifier) {
+    val textMeasurer = rememberTextMeasurer()
+    Canvas(modifier = modifier) {
+        if (data.size < 2) return@Canvas
+        val maxVal = data.maxOfOrNull { it.total }?.coerceAtLeast(1)?.toFloat() ?: 1f
+        val chartW = size.width - 40f
+        val chartH = size.height - 24f
+        val stepX = chartW / (data.size - 1).coerceAtLeast(1)
+
+        // Grid lines
+        for (i in 0..3) {
+            val y = chartH * (1 - i / 4f)
+            drawLine(Surface3, Offset(30f, y), Offset(size.width, y), strokeWidth = 0.5f)
+        }
+
+        // Total queries line (blue)
+        val totalPath = Path()
+        data.forEachIndexed { idx, d ->
+            val x = 30f + idx * stepX
+            val y = chartH * (1 - d.total / maxVal)
+            if (idx == 0) totalPath.moveTo(x, y) else totalPath.lineTo(x, y)
+        }
+        drawPath(totalPath, Blue.copy(alpha = 0.6f), style = Stroke(width = 2f, cap = StrokeCap.Round))
+
+        // Blocked line (red)
+        val blockedPath = Path()
+        data.forEachIndexed { idx, d ->
+            val x = 30f + idx * stepX
+            val y = chartH * (1 - d.blocked / maxVal)
+            if (idx == 0) blockedPath.moveTo(x, y) else blockedPath.lineTo(x, y)
+        }
+        drawPath(blockedPath, Red.copy(alpha = 0.8f), style = Stroke(width = 2.5f, cap = StrokeCap.Round))
+
+        // Data points on blocked line
+        data.forEachIndexed { idx, d ->
+            val x = 30f + idx * stepX
+            val y = chartH * (1 - d.blocked / maxVal)
+            drawCircle(Red, 3f, Offset(x, y))
+        }
+
+        // Day labels
+        val labelIndices = when {
+            data.size <= 7 -> data.indices.toList()
+            else -> listOf(0, data.size / 2, data.size - 1)
+        }
+        for (idx in labelIndices) {
+            val x = 30f + idx * stepX
+            val label = data[idx].day.takeLast(5) // MM-DD
+            drawText(textMeasurer = textMeasurer, text = label,
+                topLeft = Offset(x - 12f, chartH + 6f),
+                style = TextStyle(color = TextDim, fontSize = 8.sp))
+        }
+
+        // Legend
+        drawCircle(Red, 4f, Offset(size.width - 90f, 8f))
+        drawText(textMeasurer, "Blocked", Offset(size.width - 82f, 0f),
+            TextStyle(color = Red, fontSize = 9.sp))
+        drawCircle(Blue.copy(alpha = 0.6f), 4f, Offset(size.width - 35f, 8f))
+        drawText(textMeasurer, "Total", Offset(size.width - 27f, 0f),
+            TextStyle(color = Blue, fontSize = 9.sp))
     }
 }

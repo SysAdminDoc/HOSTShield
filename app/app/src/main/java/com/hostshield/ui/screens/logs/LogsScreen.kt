@@ -53,7 +53,12 @@ data class DedupedLogEntry(
     val hitCount: Int,
     val latestTimestamp: Long,
     val appLabel: String,
-    val appPackage: String
+    val appPackage: String,
+    val queryType: String = "A",
+    val responseTimeMs: Int = 0,
+    val upstreamServer: String = "",
+    val cnameChain: String = "",
+    val resolvedIps: String = ""
 )
 
 @HiltViewModel
@@ -138,6 +143,7 @@ class LogsViewModel @Inject constructor(
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)? = null) {
     val logs by viewModel.logs.collectAsStateWithLifecycle()
@@ -145,18 +151,27 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val blockedFilter by viewModel.showBlocked.collectAsStateWithLifecycle()
     val blockedSet by viewModel.blockedHostnames.collectAsStateWithLifecycle()
 
+    var selectedEntry by remember { mutableStateOf<DedupedLogEntry?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     val deduped = remember(logs, query, blockedFilter, blockedSet) {
         logs
             .groupBy { it.hostname.lowercase() }
             .map { (hostname, entries) ->
                 val isBlocked = hostname in blockedSet || entries.any { it.blocked }
+                val latest = entries.maxByOrNull { it.timestamp }
                 DedupedLogEntry(
                     hostname = hostname,
                     blocked = isBlocked,
                     hitCount = entries.size,
                     latestTimestamp = entries.maxOf { it.timestamp },
                     appLabel = entries.firstOrNull { it.appLabel.isNotEmpty() }?.appLabel ?: "",
-                    appPackage = entries.firstOrNull { it.appPackage.isNotEmpty() }?.appPackage ?: ""
+                    appPackage = entries.firstOrNull { it.appPackage.isNotEmpty() }?.appPackage ?: "",
+                    queryType = latest?.queryType ?: "A",
+                    responseTimeMs = latest?.responseTimeMs ?: 0,
+                    upstreamServer = latest?.upstreamServer ?: "",
+                    cnameChain = latest?.cnameChain ?: "",
+                    resolvedIps = latest?.resolvedIps ?: ""
                 )
             }
             .filter { entry ->
@@ -238,11 +253,24 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                     LogItem(
                         entry = entry,
                         onBlock = { viewModel.blockDomain(entry.hostname) },
-                        onAllow = { viewModel.allowDomain(entry.hostname) }
+                        onAllow = { viewModel.allowDomain(entry.hostname) },
+                        onTap = { selectedEntry = entry }
                     )
                 }
                 item { Spacer(Modifier.height(16.dp)) }
             }
+        }
+    }
+
+    // Detail bottom sheet
+    if (selectedEntry != null) {
+        ModalBottomSheet(
+            onDismissRequest = { selectedEntry = null },
+            sheetState = sheetState,
+            containerColor = Surface1,
+            scrimColor = Color.Black.copy(alpha = 0.6f)
+        ) {
+            QueryDetailSheet(entry = selectedEntry!!, onDismiss = { selectedEntry = null })
         }
     }
 }
@@ -265,7 +293,7 @@ private fun LogFilter(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> Unit) {
+private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> Unit, onTap: () -> Unit = {}) {
     var expanded by remember { mutableStateOf(false) }
 
     val blocked = entry.blocked
@@ -394,6 +422,24 @@ private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> 
                         } else {
                             Spacer(Modifier.weight(1f))
                         }
+
+                        // Detail button
+                        Surface(
+                            onClick = onTap,
+                            shape = RoundedCornerShape(8.dp),
+                            color = Blue.copy(alpha = 0.1f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Filled.Info, null, tint = Blue, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Details", color = Blue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                        Spacer(Modifier.width(6.dp))
+
                         if (!blocked) {
                             Surface(
                                 onClick = onBlock,
@@ -435,3 +481,86 @@ private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> 
 private fun formatTime(ms: Long): String = try {
     Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("h:mm:ss a"))
 } catch (_: Exception) { "" }
+
+@Composable
+private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .padding(bottom = 32.dp)
+    ) {
+        // Title
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                if (entry.blocked) Icons.Filled.Block else Icons.Filled.CheckCircle,
+                null,
+                tint = if (entry.blocked) Red else Green,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(Modifier.width(10.dp))
+            Text("Query Details", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Domain
+        DetailRow("Domain", entry.hostname)
+        DetailRow("Status", if (entry.blocked) "BLOCKED" else "ALLOWED",
+            valueColor = if (entry.blocked) Red else Green)
+        DetailRow("Query Type", entry.queryType)
+        DetailRow("Hit Count", "${entry.hitCount}x")
+        DetailRow("Last Seen", formatTime(entry.latestTimestamp))
+
+        if (entry.appLabel.isNotEmpty()) {
+            DetailRow("App", entry.appLabel)
+        }
+        if (entry.appPackage.isNotEmpty()) {
+            DetailRow("Package", entry.appPackage)
+        }
+        if (entry.responseTimeMs > 0) {
+            DetailRow("Response Time", "${entry.responseTimeMs} ms")
+        }
+        if (entry.upstreamServer.isNotEmpty()) {
+            DetailRow("Upstream Server", entry.upstreamServer)
+        }
+        if (entry.cnameChain.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text("CNAME Chain", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            entry.cnameChain.split(",").filter { it.isNotBlank() }.forEach { cname ->
+                Row(modifier = Modifier.padding(start = 8.dp, top = 2.dp)) {
+                    Text("\u2192 ", color = TextDim, fontSize = 12.sp)
+                    Text(cname.trim(), color = TextSecondary, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                }
+            }
+        }
+        if (entry.resolvedIps.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text("Resolved IPs", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            entry.resolvedIps.split(",").filter { it.isNotBlank() }.forEach { ip ->
+                Text(
+                    ip.trim(),
+                    color = TextSecondary, fontSize = 12.sp, fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.padding(start = 8.dp, top = 1.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailRow(label: String, value: String, valueColor: Color = TextPrimary) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, color = TextDim, fontSize = 12.sp, modifier = Modifier.weight(0.35f))
+        Text(
+            value, color = valueColor, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+            fontFamily = if (label == "Domain" || label == "Package") FontFamily.Monospace else FontFamily.Default,
+            modifier = Modifier.weight(0.65f),
+            maxLines = 2
+        )
+    }
+}

@@ -14,6 +14,13 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
+    <!-- Signature-level permission for automation API.
+         Only apps signed with the same key (or granted via adb) can send
+         control intents. Shell/root callers bypass this check. -->
+    <permission
+        android:name="com.hostshield.permission.AUTOMATION"
+        android:protectionLevel="signature" />
+
     <application
         android:name=".HostShieldApp"
         android:allowBackup="true"
@@ -95,7 +102,8 @@
         <!-- Tasker / MacroDroid / shell automation API -->
         <receiver
             android:name=".service.AutomationReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:permission="com.hostshield.permission.AUTOMATION">
             <intent-filter>
                 <action android:name="com.hostshield.ACTION_ENABLE" />
                 <action android:name="com.hostshield.ACTION_DISABLE" />
@@ -103,6 +111,7 @@
                 <action android:name="com.hostshield.ACTION_APPLY_FIREWALL" />
                 <action android:name="com.hostshield.ACTION_CLEAR_FIREWALL" />
                 <action android:name="com.hostshield.ACTION_STATUS" />
+                <action android:name="com.hostshield.ACTION_REFRESH_BLOCKLIST" />
             </intent-filter>
         </receiver>
 
@@ -127,6 +136,16 @@
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup"
                 tools:node="remove" />
+        </provider>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
         </provider>
 
     </application>

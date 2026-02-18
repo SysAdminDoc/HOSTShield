@@ -7,6 +7,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.hostshield.data.model.BlockMethod
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -50,6 +51,10 @@ class AppPreferences @Inject constructor(
         val AUTO_APPLY_FIREWALL = booleanPreferencesKey("auto_apply_firewall")
         val CONNECTION_LOG_ENABLED = booleanPreferencesKey("connection_log_enabled")
         val CUSTOM_UPSTREAM_DNS = stringPreferencesKey("custom_upstream_dns")
+        val BLOCK_RESPONSE_TYPE = stringPreferencesKey("block_response_type")
+        val REMOTE_DOH_DOMAINS = stringPreferencesKey("remote_doh_domains")
+        val REMOTE_DOH_WILDCARDS = stringPreferencesKey("remote_doh_wildcards")
+        val REMOTE_DOH_VERSION = intPreferencesKey("remote_doh_version")
     }
 
     // ── Blocking ─────────────────────────────────────────────
@@ -148,4 +153,20 @@ class AppPreferences @Inject constructor(
     // ── Custom Upstream DNS ─────────────────────────────────
     val customUpstreamDns: Flow<String> = ds.data.map { it[Keys.CUSTOM_UPSTREAM_DNS] ?: "" }
     suspend fun setCustomUpstreamDns(dns: String) = ds.edit { it[Keys.CUSTOM_UPSTREAM_DNS] = dns }
+
+    // ── Block Response Type ──────────────────────────────────
+    // "nxdomain" = RCODE 3, "zero_ip" = 0.0.0.0/:: A/AAAA, "refused" = RCODE 5
+    val blockResponseType: Flow<String> = ds.data.map { it[Keys.BLOCK_RESPONSE_TYPE] ?: "nxdomain" }
+    suspend fun setBlockResponseType(type: String) = ds.edit { it[Keys.BLOCK_RESPONSE_TYPE] = type }
+
+    // ── Remote DoH Bypass List ──────────────────────────────
+    // Supplementary DoH domains fetched from GitHub, merged at blocklist reload.
+    suspend fun setRemoteDohBypassList(domains: String, wildcards: String, version: Int) = ds.edit {
+        it[Keys.REMOTE_DOH_DOMAINS] = domains
+        it[Keys.REMOTE_DOH_WILDCARDS] = wildcards
+        it[Keys.REMOTE_DOH_VERSION] = version
+    }
+    suspend fun getRemoteDohDomains(): String = ds.data.map { it[Keys.REMOTE_DOH_DOMAINS] ?: "" }.first()
+    suspend fun getRemoteDohWildcards(): String = ds.data.map { it[Keys.REMOTE_DOH_WILDCARDS] ?: "" }.first()
+    suspend fun getRemoteDohVersion(): Int = ds.data.map { it[Keys.REMOTE_DOH_VERSION] ?: 0 }.first()
 }

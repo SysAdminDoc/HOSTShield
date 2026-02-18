@@ -12,8 +12,10 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 
-// HostShield v1.6.0 - Log Cleanup Worker
-// Cleans dns_logs and connection_log tables based on retention setting.
+// HostShield v2.0.0 - Log Cleanup Worker
+// Cleans dns_logs and connection_log tables based on retention settings.
+// DNS logs: user-configurable (default 7 days)
+// Connection logs: 3 days (shorter — these are higher volume from iptables)
 
 @HiltWorker
 class LogCleanupWorker @AssistedInject constructor(
@@ -26,6 +28,7 @@ class LogCleanupWorker @AssistedInject constructor(
 
     companion object {
         const val WORK_NAME = "hostshield_log_cleanup"
+        private const val CONNECTION_LOG_RETENTION_DAYS = 3
 
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<LogCleanupWorker>(
@@ -44,22 +47,25 @@ class LogCleanupWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         return try {
             val retentionDays = prefs.logRetentionDays.first()
-            val cutoff = System.currentTimeMillis() - (retentionDays.toLong() * 24 * 60 * 60 * 1000)
+            val dnsCutoff = System.currentTimeMillis() - (retentionDays.toLong() * 24 * 60 * 60 * 1000)
 
             // Iterative batch deletion -- avoids ANR on large tables.
             // Deletes 1000 rows at a time with 50ms yield between batches.
             var totalDeleted = 0
             var deleted: Int
             do {
-                deleted = logDao.deleteOldestBatch(cutoff, 1000)
+                deleted = logDao.deleteOldestBatch(dnsCutoff, 1000)
                 totalDeleted += deleted
                 if (deleted > 0) kotlinx.coroutines.delay(50) // yield to other DB ops
             } while (deleted >= 1000)
 
-            // Clean connection (firewall) logs -- typically much smaller
-            connectionLogDao.deleteOlderThan(cutoff)
+            // Clean connection (firewall) logs — shorter retention (higher volume)
+            val connCutoff = System.currentTimeMillis() -
+                (CONNECTION_LOG_RETENTION_DAYS.toLong() * 24 * 60 * 60 * 1000)
+            connectionLogDao.deleteOlderThan(connCutoff)
 
-            Log.i("LogCleanup", "Cleaned $totalDeleted DNS logs (retention: ${retentionDays}d)")
+            Log.i("LogCleanup", "Cleaned $totalDeleted DNS logs (retention: ${retentionDays}d), " +
+                "connection logs (retention: ${CONNECTION_LOG_RETENTION_DAYS}d)")
 
             Result.success()
         } catch (e: Exception) {

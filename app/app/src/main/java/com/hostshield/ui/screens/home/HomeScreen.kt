@@ -301,6 +301,51 @@ fun HomeScreen(
             }
         }
 
+        // Private Space / work profile VPN bypass warning
+        state.privateSpaceWarning?.let { warning ->
+            Spacer(Modifier.height(8.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Red.copy(alpha = 0.08f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        Icons.Filled.Security, null,
+                        tint = Red,
+                        modifier = Modifier.size(16.dp).padding(top = 2.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Private Space Detected",
+                            color = Red,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            warning,
+                            color = Red.copy(alpha = 0.8f),
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
+                        )
+                    }
+                    IconButton(
+                        onClick = { viewModel.dismissPrivateSpaceWarning() },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+        }
+
         // Feature status pills (VPN mode only)
         if (state.isEnabled && state.blockMethod == com.hostshield.data.model.BlockMethod.VPN) {
             Spacer(Modifier.height(8.dp))
