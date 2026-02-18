@@ -1,146 +1,118 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![License](https://img.shields.io/badge/license-GPLv3-green)
-![Platform](https://img.shields.io/badge/platform-Android%208.0+-3DDC84?logo=android&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white)
+![Version](https://img.shields.io/badge/version-3.0.0-blue)
+![License](https://img.shields.io/badge/license-GPL--3.0-green)
+![Platform](https://img.shields.io/badge/platform-Android%207+-3DDC84?logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-> A modern, AMOLED-dark hosts-based ad blocker for rooted Android with VPN fallback, DNS logging, and a premium UI. Inspired by AdAway.
-
-<!-- ![Screenshot](screenshot.png) -->
+> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, DNS response caching, DoH with certificate pinning, and a professional dark-themed UI.
 
 ## Quick Start
 
-```bash
-git clone https://github.com/SysAdminDoc/HostShield.git
-```
-
-1. Open in **Android Studio** (Ladybug or newer)
-2. Let Gradle sync
-3. Connect a rooted Android device via USB (Developer Options → USB Debugging)
-4. Hit **Run** — deploys directly to device
+1. Download the latest APK from [Releases](https://github.com/SysAdminDoc/HostShield/releases)
+2. Install and launch — the onboarding wizard guides you through setup
+3. Choose **VPN mode** (no root) or **Root mode** (better battery life)
+4. Enable blocking — ads and trackers are filtered immediately
 
 ## Features
 
-| Feature | Description | Status |
-|---------|-------------|--------|
-| Root Hosts Blocking | Writes merged blocklist to `/system/etc/hosts` | ✅ |
-| VPN DNS Blocking | Local VPN tunnel for non-root devices | ✅ |
-| Magisk Systemless | Auto-detects and uses systemless hosts overlay | ✅ |
-| DNS Query Logging | Real-time log with blocked/allowed status | ✅ |
-| DNS over HTTPS | Cloudflare, Google, Quad9 provider support | ✅ |
-| 8 Built-in Sources | StevenBlack, OISD, AdAway, GoodbyeAds, more | ✅ |
-| Custom Sources | Add any hosts-format URL | ✅ |
-| User Rules | Per-domain block, allow, and redirect rules | ✅ |
-| Auto-Updates | WorkManager scheduled source updates | ✅ |
-| App Exclusions | Bypass VPN blocking per-app | ✅ |
-| Import/Export | JSON and hosts-format import/export | ✅ |
-| Full Backup/Restore | SAF file picker, all config included | ✅ |
-| Hosts File Viewer | Syntax-highlighted viewer with line numbers | ✅ |
-| Homescreen Widget | Quick toggle with block count | ✅ |
-| Boot Persistence | Auto-restarts VPN/reschedules updates on boot | ✅ |
-| AMOLED Dark Theme | Catppuccin Mocha palette, glassmorphism | ✅ |
-| Category Tagging | Sources tagged: Ads, Trackers, Malware, Adult | ✅ |
-| Wildcard Blocking | Pattern rules like *.ads.* or *tracking* | ✅ |
-| Statistics Dashboard | Hourly charts, top domains, per-app stats | ✅ |
-| Source Health Monitor | Detects stale, errored, or dead sources | ✅ |
-| Onboarding Wizard | First-launch setup with mode selection | ✅ |
-| Log Cleanup | Automatic purge based on retention setting | ✅ |
-| Block/Whitelist from Logs | Tap any log entry to add rules inline | ✅ |
-| Log Filtering | Filter by blocked/allowed, search by domain | ✅ |
-| Detailed Log View | Expand entries for query type, timestamp, actions | ✅ |
-| Settings Dialogs | Edit IP redirect, interval, retention in-app | ✅ |
-| Notification Permission | Android 13+ POST_NOTIFICATIONS flow | ✅ |
-| Android 14/15 Compat | foregroundServiceType, ServiceCompat, edge-to-edge | ✅ |
-
-## Built-in Hosts Sources
-
-| Source | Entries | Category |
-|--------|---------|----------|
-| StevenBlack Unified | ~79,000 | Ads |
-| AdAway Default | ~400 | Ads |
-| Peter Lowe's List | ~3,000 | Ads |
-| OISD Small | ~70,000 | Ads |
-| OISD Big | ~200,000+ | Ads |
-| GoodbyeAds | Aggressive | Ads |
-| StevenBlack Extended | Fakenews/Gambling/Porn | Adult |
-| URLHaus Malware Filter | Variable | Malware |
+| Feature | Description |
+|---------|-------------|
+| **DNS Blocking** | Trie-based O(m) domain lookup with 200K+ domains from curated blocklists |
+| **CNAME Cloaking Detection** | Inspects CNAME chains in DNS responses — catches first-party tracking that bypasses other blockers |
+| **DNS Response Cache** | 2000-entry LRU cache with TTL-aware expiration — 60-70% cache hit rate reduces latency |
+| **VPN Mode** | Local DNS filtering via Android VPN API — no root required, per-app stats |
+| **Root Mode** | Direct `/etc/hosts` modification + iptables firewall — zero battery overhead |
+| **Per-App Firewall** | Block Wi-Fi, mobile data, or VPN per-app with iptables (root) |
+| **DoH (DNS-over-HTTPS)** | Cloudflare, Google, Quad9, NextDNS, AdGuard — with SHA-256 certificate pinning |
+| **DoH Bypass Prevention** | Blocks 53+ known DoH provider domains + wildcard patterns to prevent apps bypassing DNS filtering |
+| **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through the VPN tunnel |
+| **TCP DNS Handling** | Full TCP DNS support for responses >512 bytes |
+| **IPv6 Support** | Full IPv6 DNS processing + UID attribution via `/proc/net/tcp6` |
+| **Block Response Types** | NXDOMAIN (with SOA), Null IP (0.0.0.0/::), or REFUSED — configurable |
+| **Blocking Profiles** | Switch between profile sets on schedule |
+| **Live Query Stream** | Real-time DNS log feed with zero-latency SharedFlow |
+| **7-Day Trend Charts** | Blocked vs. total queries line chart, hourly bar chart, daily history |
+| **Per-Query Detail View** | Query type, response time, upstream server, CNAME chain, resolved IPs |
+| **Diagnostic Export** | One-tap shareable report with device info, config, logs, network state |
+| **AdAway Import** | Import hosts files, sources, and rules from AdAway backups |
+| **Remote DoH Updates** | Supplementary DoH bypass domains fetched from GitHub without app updates |
+| **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
 
 ## How It Works
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  Hosts Sources   │────>│   Parser &       │────>│  /system/etc/    │
-│  (Remote URLs)   │     │   Merger         │     │  hosts           │
-│  StevenBlack,    │     │                  │     │  (Root mode)     │
-│  OISD, AdAway    │     │  + User Rules    │     │                  │
-└─────────────────┘     │  (allow/block/   │     └─────────────────┘
-                        │   redirect)      │
-                        └────────┬─────────┘     ┌─────────────────┐
-                                 │              │  Local VPN       │
-                                 └─────────────>│  DNS Filter      │
-                                                │  (Non-root mode) │
-                                                └─────────────────┘
+┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   App DNS    │────>│  HostShield VPN  │────>│  DNS Response   │
+│   Query      │     │  Packet Engine   │     │  Cache (LRU)    │
+└─────────────┘     └────────┬─────────┘     └────────┬────────┘
+                             │                         │
+                    ┌────────▼─────────┐      Cache    │ Miss
+                    │  BlocklistHolder │      Hit ◄────┘
+                    │  (Trie Lookup)   │               │
+                    └────────┬─────────┘      ┌────────▼────────┐
+                             │                │  Upstream DNS   │
+                    Blocked? │                │  (UDP/DoH)      │
+                 ┌───────────┼───────────┐    └────────┬────────┘
+                 │           │           │             │
+           ┌─────▼────┐  ┌──▼───┐  ┌────▼────┐  ┌────▼─────────┐
+           │ NXDOMAIN  │  │ 0.0.0│  │ REFUSED │  │ CNAME Cloak  │
+           │ + SOA     │  │ .0   │  │         │  │ Detection    │
+           └──────────┘  └──────┘  └─────────┘  └──────────────┘
 ```
 
-**Root Mode:** Downloads and parses all enabled hosts sources, deduplicates, applies user allow/block/redirect rules, then writes the merged file to `/system/etc/hosts` (or Magisk systemless overlay). DNS cache is flushed automatically.
+## Build
 
-**VPN Mode:** Runs a local VPN service that intercepts DNS queries. Blocked domains receive NXDOMAIN responses. Supports DNS-over-HTTPS for encrypted resolution. Logs all queries with app attribution.
+```bash
+# Prerequisites: JDK 17, Android SDK 34
 
-## Architecture
-
-- **Language:** Kotlin 2.1
-- **UI:** Jetpack Compose + Material 3
-- **Database:** Room with Flow-based reactive queries
-- **DI:** Hilt
-- **Networking:** OkHttp with ETag caching
-- **Root:** libsu (supports Magisk, KernelSU, SuperSU)
-- **Background:** WorkManager for scheduled updates
-- **Preferences:** DataStore
+./gradlew assembleFullDebug     # Full flavor (root features)
+./gradlew assemblePlayDebug     # Play Store flavor
+./gradlew testFullDebugUnitTest # Run unit tests
+```
 
 ## Configuration
 
-All settings are accessible from the Settings screen:
+### Blocklist Sources
+Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Add custom URL sources via Settings → Sources in standard hosts file format.
 
-- **IPv4/IPv6 redirect IPs** — defaults to `0.0.0.0` / `::`
-- **Auto-update interval** — 1-168 hours
-- **WiFi-only updates** — skip on metered connections
-- **DNS logging** — enable/disable query recording
-- **Log retention** — 1-30 days
-- **DNS over HTTPS** — Cloudflare, Google, or Quad9
-- **Persistent notification** — show block count in status bar
-- **App exclusions** — exempt specific apps from VPN filtering
+### Automation API
+Broadcast intents for Tasker/MacroDroid (requires signature permission or ADB grant):
 
-## Permissions
-
-| Permission | Reason |
-|------------|--------|
-| `INTERNET` | Download hosts sources, forward DNS queries |
-| `ACCESS_NETWORK_STATE` | WiFi-only update constraint |
-| `RECEIVE_BOOT_COMPLETED` | Restart VPN / reschedule updates on boot |
-| `FOREGROUND_SERVICE` | VPN service persistence |
-| `POST_NOTIFICATIONS` | Block count notification |
-| `QUERY_ALL_PACKAGES` | App exclusion list with labels |
+```bash
+adb shell am broadcast -a com.hostshield.action.ENABLE -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.action.DISABLE -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.action.STATUS -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.action.REFRESH_BLOCKLIST -n com.hostshield/.service.AutomationReceiver
+```
 
 ## FAQ
 
-**Q: Does it work without root?**
-Yes — VPN mode provides DNS-level blocking without root. Root mode is more efficient and system-wide.
+**VPN mode vs Root mode?** Root mode: zero battery overhead, requires rooted device. VPN mode: works on any device, ~1-3% battery, persistent notification.
 
-**Q: Will it break apps?**
-Use the allowlist to whitelist domains that break specific apps, or exclude entire apps from VPN filtering.
+**Why does it use a VPN?** Entirely local — no traffic goes to a remote server. Standard technique used by NetGuard, RethinkDNS, Blokada.
 
-**Q: How is this different from AdAway?**
-HostShield adds a modern Compose UI, DNS logging with app attribution, DoH support, blocking profiles, import/export, homescreen widget, and a premium AMOLED dark theme.
+**How is this different from AdAway?** CNAME cloaking detection, DNS response caching, DoH with cert pinning, per-app firewall, live query streaming, 7-day trend charts, and modern Material 3 dark UI.
 
-**Q: Where is the hosts file written?**
-Root mode: `/system/etc/hosts` (or `/data/adb/modules/hosts/system/etc/hosts` for Magisk systemless). VPN mode: in-memory only.
+## Project Structure
 
-## License
-
-[GPLv3](LICENSE) — Free and open source.
+```
+app/src/main/java/com/hostshield/
+├── data/           # Room DB, DAOs, entities, preferences, repository
+├── di/             # Hilt dependency injection modules
+├── domain/         # BlocklistHolder (trie), HostsParser
+├── service/        # VPN, root logger, iptables, DoH, DNS cache,
+│                   # CNAME detector, packet builder, workers
+├── ui/screens/     # Home, Logs, Stats, Settings, Firewall,
+│                   # Onboarding, DNS Tools, Rules
+└── util/           # Root utils, backup, import/export, diagnostics
+```
 
 ## Contributing
 
-Issues and PRs welcome. Please test on a real rooted device before submitting.
+Issues and PRs welcome. Run `./gradlew testFullDebugUnitTest` before submitting.
+
+## License
+
+GPL-3.0
