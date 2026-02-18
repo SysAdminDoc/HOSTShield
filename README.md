@@ -44,9 +44,9 @@
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   App DNS    │────>│  HostShield VPN  │────>│  DNS Response   │
-│   Query      │     │  Packet Engine   │     │  Cache (LRU)    │
-└─────────────┘     └────────┬─────────┘     └────────┬────────┘
+│   App DNS   │────>│  HostShield VPN  │────>│  DNS Response   │
+│   Query     │     │  Packet Engine   │     │  Cache (LRU)    │
+└─────────────┘     └────────┬─────────┘     └─────────┬───────┘
                              │                         │
                     ┌────────▼─────────┐      Cache    │ Miss
                     │  BlocklistHolder │      Hit ◄────┘
@@ -57,8 +57,8 @@
                  ┌───────────┼───────────┐    └────────┬────────┘
                  │           │           │             │
            ┌─────▼────┐  ┌──▼───┐  ┌────▼────┐  ┌────▼─────────┐
-           │ NXDOMAIN  │  │ 0.0.0│  │ REFUSED │  │ CNAME Cloak  │
-           │ + SOA     │  │ .0   │  │         │  │ Detection    │
+           │ NXDOMAIN │  │0.0.0.0  │ REFUSED │  │ CNAME Cloak  │
+           │ + SOA    │  │      │  │         │  │ Detection    │
            └──────────┘  └──────┘  └─────────┘  └──────────────┘
 ```
 
