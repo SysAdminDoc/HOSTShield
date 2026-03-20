@@ -296,6 +296,7 @@ private fun categoryColor(cat: SourceCategory): Color = when (cat) {
     SourceCategory.ADULT -> Flamingo
     SourceCategory.SOCIAL -> Mauve
     SourceCategory.CRYPTO -> Peach
+    SourceCategory.ALLOWLIST -> Green
     SourceCategory.CUSTOM -> Yellow
 }
 

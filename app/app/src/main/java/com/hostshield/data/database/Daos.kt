@@ -52,6 +52,12 @@ interface HostSourceDao {
 
     @Query("SELECT * FROM host_sources WHERE health = 'ERROR' OR health = 'DEAD'")
     fun getUnhealthySources(): Flow<List<HostSource>>
+
+    @Query("SELECT * FROM host_sources WHERE enabled = 1 AND category = 'ALLOWLIST'")
+    suspend fun getEnabledAllowlistSources(): List<HostSource>
+
+    @Query("SELECT * FROM host_sources WHERE enabled = 1 AND category != 'ALLOWLIST'")
+    suspend fun getEnabledBlockSources(): List<HostSource>
 }
 
 @Dao

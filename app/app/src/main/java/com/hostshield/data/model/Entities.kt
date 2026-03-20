@@ -5,7 +5,7 @@ import androidx.room.*
 // HostShield v1.6.0 - Data Models
 
 enum class SourceCategory {
-    ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, CUSTOM
+    ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM
 }
 
 enum class RuleType {

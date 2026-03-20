@@ -41,7 +41,8 @@ fun SettingsScreen(
     onNavigateToFirewall: () -> Unit = {},
     onNavigateToConnectionLog: () -> Unit = {},
     onNavigateToDnsTools: () -> Unit = {},
-    onNavigateToNetworkStats: () -> Unit = {}
+    onNavigateToNetworkStats: () -> Unit = {},
+    onNavigateToOverlapAnalysis: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -254,6 +255,8 @@ fun SettingsScreen(
         SettingsSection("Tools", Icons.Filled.Build, Peach) {
             SettingsRow("View hosts file", "Inspect current blocking rules", Icons.Filled.Description, onClick = onNavigateToHostsDiff)
             Spacer(Modifier.height(4.dp))
+            SettingsRow("Overlap analysis", "Find redundant domains across sources", Icons.Filled.CompareArrows, onClick = onNavigateToOverlapAnalysis)
+            Spacer(Modifier.height(4.dp))
             SettingsRow("Import rules", "From JSON or hosts file", Icons.Filled.FileUpload) {
                 importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
             }
@@ -300,13 +303,49 @@ fun SettingsScreen(
             }
         }
 
-        // Diagnostics
-        SettingsSection("Diagnostics", Icons.Filled.BugReport, Yellow) {
+        // Diagnostics & Export
+        SettingsSection("Diagnostics & Export", Icons.Filled.BugReport, Yellow) {
             SettingsRow(
                 "Generate diagnostic report",
                 "Device info, config, logs, network state",
                 Icons.Filled.Description
             ) { viewModel.generateDiagnosticReport() }
+            Spacer(Modifier.height(4.dp))
+
+            val csvMessage by viewModel.csvMessage.collectAsStateWithLifecycle()
+            val isExportingCsv by viewModel.isExportingCsv.collectAsStateWithLifecycle()
+
+            val csvLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.CreateDocument("text/csv")
+            ) { uri -> uri?.let { viewModel.writeCsvToUri(it) } }
+
+            val pendingCsv by viewModel.pendingCsv.collectAsStateWithLifecycle()
+            LaunchedEffect(pendingCsv) {
+                if (pendingCsv != null) {
+                    csvLauncher.launch("hostshield_stats_${java.time.LocalDate.now()}.csv")
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { viewModel.exportStatsCsv() },
+                    enabled = !isExportingCsv,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Yellow)
+                ) {
+                    if (isExportingCsv) CircularProgressIndicator(Modifier.size(12.dp), color = Yellow, strokeWidth = 1.5.dp)
+                    else Icon(Icons.Filled.TableChart, null, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Export Stats CSV", fontSize = 10.sp)
+                }
+            }
+            csvMessage?.let { msg ->
+                Text(msg, color = TextDim, fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
+            }
         }
 
         // About

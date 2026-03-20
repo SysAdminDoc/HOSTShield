@@ -530,6 +530,30 @@ private fun ConfigTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
             }
         }
 
+        // Custom upstream DNS servers
+        item {
+            GlassInfoCard("Upstream DNS Servers") {
+                Text("Comma-separated list with fallback order:", color = TextDim, fontSize = 11.sp)
+                Spacer(Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = state.customUpstreamDns,
+                    onValueChange = { viewModel.setCustomUpstreamDns(it) },
+                    placeholder = { Text("1.1.1.1, 8.8.8.8, 9.9.9.9", color = TextDim) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true, shape = RoundedCornerShape(8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Teal, unfocusedBorderColor = Surface3,
+                        cursorColor = Teal, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
+                    )
+                )
+                val count = state.customUpstreamDns.split(",").filter { it.trim().isNotBlank() }.size
+                if (state.customUpstreamDns.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text("$count server(s) configured. First available is used; others are fallbacks.", color = TextDim, fontSize = 10.sp)
+                }
+            }
+        }
+
         // DoH provider selection
         item {
             GlassInfoCard("DoH Provider") {

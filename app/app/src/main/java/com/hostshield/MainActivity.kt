@@ -250,7 +250,8 @@ private fun HostShieldMainApp(activity: MainActivity) {
                     onNavigateToFirewall = { navController.navigate(SubScreen.FIREWALL) },
                     onNavigateToConnectionLog = { navController.navigate(SubScreen.CONNECTION_LOG) },
                     onNavigateToDnsTools = { navController.navigate(SubScreen.DNS_TOOLS) },
-                    onNavigateToNetworkStats = { navController.navigate(SubScreen.NETWORK_STATS) }
+                    onNavigateToNetworkStats = { navController.navigate(SubScreen.NETWORK_STATS) },
+                    onNavigateToOverlapAnalysis = { navController.navigate(SubScreen.OVERLAP_ANALYSIS) }
                 )
             }
             composable(SubScreen.APP_EXCLUSIONS) {
@@ -282,6 +283,11 @@ private fun HostShieldMainApp(activity: MainActivity) {
             }
             composable(SubScreen.NETWORK_STATS) {
                 com.hostshield.ui.screens.stats.NetworkStatsScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.OVERLAP_ANALYSIS) {
+                com.hostshield.ui.screens.sources.OverlapAnalysisScreen(
                     onBack = { navController.popBackStack() }
                 )
             }

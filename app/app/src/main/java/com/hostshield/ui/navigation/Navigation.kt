@@ -38,4 +38,5 @@ object SubScreen {
     const val CONNECTION_LOG = "connection_log"
     const val DNS_TOOLS = "dns_tools"
     const val NETWORK_STATS = "network_stats"
+    const val OVERLAP_ANALYSIS = "overlap_analysis"
 }
