@@ -83,8 +83,10 @@ class DnsVpnService : VpnService() {
     companion object {
         const val ACTION_START = "com.hostshield.VPN_START"
         const val ACTION_STOP = "com.hostshield.VPN_STOP"
+        const val ACTION_PAUSE = "com.hostshield.VPN_PAUSE"
         const val ACTION_WATCHDOG = "com.hostshield.VPN_WATCHDOG"
         const val CHANNEL_ID = "hostshield_vpn"
+        const val ALERT_CHANNEL_ID = "hostshield_alerts"
         const val NOTIFICATION_ID = 1
         private const val TAG = "HostShield"
         private const val WATCHDOG_INTERVAL_MS = 600_000L  // 10 minutes
@@ -259,6 +261,10 @@ class DnsVpnService : VpnService() {
     private var vpnStartTime = 0L
     @Volatile private var stabilityFlushJob: Job? = null
 
+    // Pause state: when paused, all queries are allowed (no blocking)
+    @Volatile private var isPaused = false
+    private var pauseResumeJob: Job? = null
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -267,6 +273,19 @@ class DnsVpnService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> { stopVpn(); return START_NOT_STICKY }
+            ACTION_PAUSE -> {
+                val mins = intent.getIntExtra("pause_minutes", 5)
+                if (mins <= 0) {
+                    // Resume immediately
+                    isPaused = false
+                    pauseResumeJob?.cancel(); pauseResumeJob = null
+                    Log.i(TAG, "Blocking resumed (manual)")
+                    updateNotification(blockedCount)
+                } else {
+                    pauseBlocking(mins)
+                }
+                return START_STICKY
+            }
             ACTION_WATCHDOG -> {
                 // OEM battery managers (Samsung, Xiaomi, Huawei) kill VPN services.
                 // This alarm fires every 10 min to detect and recover.
@@ -1042,7 +1061,10 @@ class DnsVpnService : VpnService() {
      * Handles exact match, www. prefix, wildcard allow/block.
      * Replaces the old linear Set.contains() + wildcard scan.
      */
-    private fun isDomainBlocked(domain: String): Boolean = blocklist.isBlocked(domain)
+    private fun isDomainBlocked(domain: String): Boolean {
+        if (isPaused) return false
+        return blocklist.isBlocked(domain)
+    }
 
     // ── Packet Parsing ───────────────────────────────────────
 
@@ -1920,10 +1942,29 @@ class DnsVpnService : VpnService() {
 
     // ── Notifications ────────────────────────────────────────
 
+    /** Pause DNS blocking for a specified number of minutes. */
+    private fun pauseBlocking(minutes: Int) {
+        isPaused = true
+        pauseResumeJob?.cancel()
+        pauseResumeJob = serviceScope.launch {
+            Log.i(TAG, "Blocking paused for ${minutes} minutes")
+            updateNotification(blockedCount)
+            delay(minutes * 60_000L)
+            isPaused = false
+            pauseResumeJob = null
+            Log.i(TAG, "Blocking resumed after ${minutes}-minute pause")
+            updateNotification(blockedCount)
+        }
+    }
+
     private fun createNotificationChannel() {
+        val nm = getSystemService(NotificationManager::class.java)
         NotificationChannel(CHANNEL_ID, "HostShield VPN", NotificationManager.IMPORTANCE_LOW).apply {
             description = "VPN blocking status"; setShowBadge(false)
-        }.let { getSystemService(NotificationManager::class.java).createNotificationChannel(it) }
+        }.let { nm.createNotificationChannel(it) }
+        NotificationChannel(ALERT_CHANNEL_ID, "HostShield Alerts", NotificationManager.IMPORTANCE_DEFAULT).apply {
+            description = "Source health and system alerts"
+        }.let { nm.createNotificationChannel(it) }
     }
 
     private fun buildNotification(blocked: Int): Notification {
@@ -1932,18 +1973,42 @@ class DnsVpnService : VpnService() {
         val si = PendingIntent.getService(this, 1,
             Intent(this, DnsVpnService::class.java).apply { action = ACTION_STOP },
             PendingIntent.FLAG_IMMUTABLE)
+        val pauseIntent = PendingIntent.getService(this, 2,
+            Intent(this, DnsVpnService::class.java).apply {
+                action = ACTION_PAUSE; putExtra("pause_minutes", 5)
+            },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val title = if (isPaused) "HostShield Paused" else "HostShield Active"
         val sub = buildString {
-            append(if (blocked > 0) "$blocked blocked" else "DNS filtering active")
-            if (useDoH) append(" | DoH")
-            if (dnsTrapEnabled) append(" | Trap")
+            if (isPaused) append("Blocking paused")
+            else {
+                append(if (blocked > 0) "$blocked blocked" else "DNS filtering active")
+                if (useDoH) append(" | DoH")
+                if (dnsTrapEnabled) append(" | Trap")
+            }
         }
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("HostShield Active").setContentText(sub)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title).setContentText(sub)
             .setSmallIcon(android.R.drawable.ic_lock_lock).setOngoing(true)
             .setContentIntent(ci)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", si)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setPriority(NotificationCompat.PRIORITY_LOW).build()
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+
+        if (isPaused) {
+            // Show resume action when paused
+            val resumeIntent = PendingIntent.getService(this, 3,
+                Intent(this, DnsVpnService::class.java).apply {
+                    action = ACTION_PAUSE; putExtra("pause_minutes", 0)
+                },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            builder.addAction(android.R.drawable.ic_media_play, "Resume", resumeIntent)
+        } else {
+            builder.addAction(android.R.drawable.ic_media_pause, "Pause 5m", pauseIntent)
+        }
+        builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", si)
+
+        return builder.build()
     }
 
     private fun updateNotification(blocked: Int) {
