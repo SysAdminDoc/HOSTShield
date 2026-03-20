@@ -51,18 +51,19 @@ class GeoIpLookup @Inject constructor() {
     private val backoffUntil = AtomicLong(0)
     private val consecutiveBackoffs = AtomicInteger(0)
 
-    /** Check if we're within rate limits. */
+    /** Check if we're within rate limits. Thread-safe with CAS. */
     private fun canMakeRequest(): Boolean {
         val now = System.currentTimeMillis()
 
         // Exponential backoff active?
         if (now < backoffUntil.get()) return false
 
-        // Reset window if expired
+        // Atomic window reset — only one thread wins the CAS
         val start = windowStart.get()
         if (now - start > WINDOW_MS) {
-            windowStart.set(now)
-            requestCount.set(0)
+            if (windowStart.compareAndSet(start, now)) {
+                requestCount.set(0)
+            }
         }
 
         return requestCount.get() < MAX_REQUESTS_PER_MINUTE

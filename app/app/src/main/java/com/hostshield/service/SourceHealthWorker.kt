@@ -1,7 +1,9 @@
 package com.hostshield.service
 
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
@@ -116,6 +118,15 @@ class SourceHealthWorker @AssistedInject constructor(
     private fun notifyDeadSources(labels: List<String>) {
         try {
             val nm = applicationContext.getSystemService(NotificationManager::class.java) ?: return
+
+            // Ensure alert channel exists (VPN service may not have created it yet)
+            NotificationChannel(
+                DnsVpnService.ALERT_CHANNEL_ID,
+                "HostShield Alerts",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply { description = "Source health and system alerts" }
+                .let { nm.createNotificationChannel(it) }
+
             val text = if (labels.size == 1) {
                 "${labels[0]} is unreachable after $DEAD_FAILURE_THRESHOLD failures"
             } else {
