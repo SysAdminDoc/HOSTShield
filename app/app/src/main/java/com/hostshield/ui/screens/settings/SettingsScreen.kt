@@ -44,7 +44,8 @@ fun SettingsScreen(
     onNavigateToNetworkStats: () -> Unit = {},
     onNavigateToOverlapAnalysis: () -> Unit = {},
     onNavigateToDnsLeakTest: () -> Unit = {},
-    onNavigateToRuleTest: () -> Unit = {}
+    onNavigateToRuleTest: () -> Unit = {},
+    onNavigateToHostsEditor: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -305,6 +306,8 @@ fun SettingsScreen(
         SettingsSection("Tools", Icons.Filled.Build, Peach) {
             SettingsRow("View hosts file", "Inspect current blocking rules", Icons.Filled.Description, onClick = onNavigateToHostsDiff)
             Spacer(Modifier.height(4.dp))
+            SettingsRow("Edit hosts file", "Direct editor for /etc/hosts (root)", Icons.Filled.Edit, onClick = onNavigateToHostsEditor)
+            Spacer(Modifier.height(4.dp))
             SettingsRow("Overlap analysis", "Find redundant domains across sources", Icons.Filled.CompareArrows, onClick = onNavigateToOverlapAnalysis)
             Spacer(Modifier.height(4.dp))
             SettingsRow("Rule tester", "Test if domains match your rules", Icons.Filled.Science, onClick = onNavigateToRuleTest)
@@ -341,6 +344,10 @@ fun SettingsScreen(
             Spacer(Modifier.height(4.dp))
             SettingsRow("Hosts file", "Standard hosts format from any blocker", Icons.Filled.Description) {
                 importLauncher.launch(arrayOf("text/plain", "*/*"))
+            }
+            Spacer(Modifier.height(4.dp))
+            SettingsRow("Pi-hole teleporter", "domainlist CSV or gravity list export", Icons.Filled.Dns) {
+                importLauncher.launch(arrayOf("text/csv", "text/plain", "*/*"))
             }
         }
 

@@ -41,4 +41,5 @@ object SubScreen {
     const val OVERLAP_ANALYSIS = "overlap_analysis"
     const val DNS_LEAK_TEST = "dns_leak_test"
     const val RULE_TEST = "rule_test"
+    const val HOSTS_EDITOR = "hosts_editor"
 }

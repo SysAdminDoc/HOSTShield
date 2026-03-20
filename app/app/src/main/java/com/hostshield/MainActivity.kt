@@ -103,6 +103,22 @@ class MainActivity : ComponentActivity() {
             "com.hostshield.SHORTCUT_LOGS" -> {
                 pendingDeepLink = SubScreen.LOGS
             }
+            Intent.ACTION_VIEW -> {
+                // Handle hostshield:// deep links
+                // hostshield://logs, hostshield://stats, hostshield://settings, hostshield://sources
+                val path = intent.data?.host ?: intent.data?.path?.removePrefix("/") ?: ""
+                pendingDeepLink = when (path.lowercase()) {
+                    "logs" -> SubScreen.LOGS
+                    "stats" -> Screen.Stats.route
+                    "settings" -> Screen.Settings.route
+                    "sources" -> Screen.Sources.route
+                    "rules" -> Screen.Rules.route
+                    "firewall" -> SubScreen.FIREWALL
+                    "dns-tools" -> SubScreen.DNS_TOOLS
+                    "leak-test" -> SubScreen.DNS_LEAK_TEST
+                    else -> null
+                }
+            }
         }
     }
 
@@ -191,6 +207,16 @@ private fun HostShieldMainApp(activity: MainActivity) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val showBottomBar = currentDestination?.route in bottomNavScreens.map { it.route }
+
+    // Handle pending deep link from shortcuts/intents
+    LaunchedEffect(Unit) {
+        val deepLink = activity.consumeDeepLink()
+        if (deepLink != null) {
+            navController.navigate(deepLink) {
+                launchSingleTop = true
+            }
+        }
+    }
 
     Scaffold(
         containerColor = Color.Black,
@@ -290,7 +316,8 @@ private fun HostShieldMainApp(activity: MainActivity) {
                     onNavigateToNetworkStats = { navController.navigate(SubScreen.NETWORK_STATS) },
                     onNavigateToOverlapAnalysis = { navController.navigate(SubScreen.OVERLAP_ANALYSIS) },
                     onNavigateToDnsLeakTest = { navController.navigate(SubScreen.DNS_LEAK_TEST) },
-                    onNavigateToRuleTest = { navController.navigate(SubScreen.RULE_TEST) }
+                    onNavigateToRuleTest = { navController.navigate(SubScreen.RULE_TEST) },
+                    onNavigateToHostsEditor = { navController.navigate(SubScreen.HOSTS_EDITOR) }
                 )
             }
             composable(SubScreen.APP_EXCLUSIONS) {
@@ -337,6 +364,11 @@ private fun HostShieldMainApp(activity: MainActivity) {
             }
             composable(SubScreen.RULE_TEST) {
                 com.hostshield.ui.screens.settings.RuleTestScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.HOSTS_EDITOR) {
+                com.hostshield.ui.screens.settings.HostsEditorScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
