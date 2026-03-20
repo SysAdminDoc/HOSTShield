@@ -135,7 +135,40 @@ fun SourcesScreen(
                     Spacer(Modifier.height(4.dp))
                     Text(msg, color = TextDim, fontSize = 11.sp)
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
+
+                // Summary stats
+                val totalDomains = sources.filter { it.enabled }.sumOf { it.entryCount }
+                val totalSize = sources.filter { it.enabled }.sumOf { it.sizeBytes }
+                val unhealthy = sources.count { it.health == SourceHealth.ERROR || it.health == SourceHealth.DEAD }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(shape = RoundedCornerShape(8.dp), color = Surface2, modifier = Modifier.weight(1f)) {
+                        Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(NumberFormat.getNumberInstance().format(totalDomains), color = Teal, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Domains", color = TextDim, fontSize = 9.sp)
+                        }
+                    }
+                    Surface(shape = RoundedCornerShape(8.dp), color = Surface2, modifier = Modifier.weight(1f)) {
+                        Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            val sizeLabel = if (totalSize > 1_000_000) "${"%.1f".format(totalSize / 1_000_000f)} MB"
+                                else if (totalSize > 1000) "${totalSize / 1000} KB" else "$totalSize B"
+                            Text(sizeLabel, color = Blue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Total Size", color = TextDim, fontSize = 9.sp)
+                        }
+                    }
+                    if (unhealthy > 0) {
+                        Surface(shape = RoundedCornerShape(8.dp), color = Red.copy(alpha = 0.08f), modifier = Modifier.weight(1f)) {
+                            Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("$unhealthy", color = Red, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("Unhealthy", color = Red.copy(alpha = 0.7f), fontSize = 9.sp)
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
             }
 
             val grouped = sources.groupBy { it.category }
