@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-3.4.0-blue)
+![Version](https://img.shields.io/badge/version-3.5.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%207+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)
@@ -61,6 +61,12 @@
 | **Query Type Filter** | Filter DNS logs by record type (A, AAAA, CNAME, MX, TXT) |
 | **Suspicious TLD Detection** | Flag queries to high-abuse TLDs (.tk, .xyz, .onion, etc.) |
 | **Batch Source Health** | One-tap reachability test for all enabled sources |
+| **Rule Tester** | Test if domains match your exact, wildcard, or regex rules |
+| **Temporary Allow** | Allow a blocked domain for 5/15/30/60 minutes |
+| **Domain Age Check** | Flag newly registered domains via RDAP lookup |
+| **Stats Widget** | Second widget with blocked count, queries, and block rate |
+| **Privacy Score Card** | 0-100 score with pass/fail breakdown on Home dashboard |
+| **Search History** | Recent searches remembered in DNS logs |
 | **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
 
 ## How It Works

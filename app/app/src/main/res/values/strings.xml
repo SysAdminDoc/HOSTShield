@@ -8,4 +8,5 @@
     <string name="shortcut_refresh_long">Refresh Blocklists</string>
     <string name="shortcut_logs">Logs</string>
     <string name="shortcut_logs_long">View DNS Logs</string>
+    <string name="stats_widget_description">Blocking statistics dashboard</string>
 </resources>
