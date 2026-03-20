@@ -421,6 +421,56 @@ fun HomeScreen(
             }
         }
 
+        // Privacy Score card
+        if (state.privacyScore > 0) {
+            Spacer(Modifier.height(10.dp))
+            GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+                Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    val scoreColor = when {
+                        state.privacyScore >= 80 -> Green
+                        state.privacyScore >= 50 -> Yellow
+                        else -> Red
+                    }
+                    Box(
+                        modifier = Modifier.size(44.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            progress = { state.privacyScore / 100f },
+                            modifier = Modifier.size(44.dp),
+                            color = scoreColor,
+                            trackColor = Surface3,
+                            strokeWidth = 4.dp
+                        )
+                        Text(
+                            "${state.privacyScore}",
+                            color = scoreColor, fontWeight = FontWeight.Bold, fontSize = 14.sp
+                        )
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Privacy Score", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        val passCount = state.privacyItems.count { it.passed }
+                        val totalCount = state.privacyItems.size
+                        Text("$passCount/$totalCount checks passed", color = TextDim, fontSize = 11.sp)
+                    }
+                    val failedItems = state.privacyItems.filter { !it.passed }
+                    if (failedItems.isNotEmpty()) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Yellow.copy(alpha = 0.1f)
+                        ) {
+                            Text(
+                                "${failedItems.size} tips",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = Yellow, fontSize = 10.sp, fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         Spacer(Modifier.height(20.dp))
 
         // ── Protection Modules ──────────────────────────────

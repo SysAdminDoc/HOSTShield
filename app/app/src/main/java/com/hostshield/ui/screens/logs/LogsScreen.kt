@@ -76,6 +76,8 @@ class LogsViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
+    private val _searchHistory = MutableStateFlow<List<String>>(emptyList())
+    val searchHistory = _searchHistory.asStateFlow()
     private val _showBlocked = MutableStateFlow<Boolean?>(null)
     val showBlocked = _showBlocked.asStateFlow()
 
@@ -110,7 +112,13 @@ class LogsViewModel @Inject constructor(
         }
     }
 
-    fun setSearch(q: String) { _searchQuery.value = q }
+    fun setSearch(q: String) {
+        _searchQuery.value = q
+        if (q.length >= 3 && q !in _searchHistory.value) {
+            _searchHistory.update { (listOf(q) + it).distinct().take(10) }
+        }
+    }
+    fun clearSearchHistory() { _searchHistory.value = emptyList() }
     fun setFilter(blocked: Boolean?) { _showBlocked.value = blocked }
 
     fun blockDomain(hostname: String) {
@@ -162,6 +170,25 @@ class LogsViewModel @Inject constructor(
 
     val pinnedDomains: StateFlow<Set<String>> = prefs.pinnedDomains
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    /** Temporarily allow a domain for N minutes, then re-block. */
+    fun temporaryAllow(hostname: String, minutes: Int) {
+        val host = hostname.lowercase()
+        _blockedHostnames.update { it - host }
+        blocklist.removeDomain(host)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val method = prefs.blockMethod.first()
+            if (method == BlockMethod.ROOT_HOSTS) rootUtil.removeHostEntry(host)
+
+            // Wait then re-block
+            kotlinx.coroutines.delay(minutes * 60_000L)
+
+            _blockedHostnames.update { it + host }
+            blocklist.addDomain(host)
+            if (method == BlockMethod.ROOT_HOSTS) rootUtil.appendHostEntry(host)
+        }
+    }
 
     fun togglePin(domain: String) {
         viewModelScope.launch {
@@ -435,7 +462,8 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                 entry = selectedEntry!!,
                 onDismiss = { selectedEntry = null },
                 isPinned = selectedEntry!!.hostname in pinnedSet,
-                onTogglePin = { viewModel.togglePin(selectedEntry!!.hostname) }
+                onTogglePin = { viewModel.togglePin(selectedEntry!!.hostname) },
+                onTemporaryAllow = { mins -> viewModel.temporaryAllow(selectedEntry!!.hostname, mins) }
             )
         }
     }
@@ -653,7 +681,7 @@ private fun formatTime(ms: Long): String = try {
 } catch (_: Exception) { "" }
 
 @Composable
-private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}) {
+private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}, onTemporaryAllow: (Int) -> Unit = {}) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
@@ -723,6 +751,25 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
                     color = TextSecondary, fontSize = 12.sp, fontFamily = FontFamily.Monospace,
                     modifier = Modifier.padding(start = 8.dp, top = 1.dp)
                 )
+            }
+        }
+
+        // Temporary allow (for blocked domains)
+        if (entry.blocked) {
+            Spacer(Modifier.height(12.dp))
+            Text("TEMPORARY ALLOW", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(5 to "5 min", 15 to "15 min", 30 to "30 min", 60 to "1 hour").forEach { (mins, label) ->
+                    Surface(
+                        onClick = { onTemporaryAllow(mins); onDismiss() },
+                        shape = RoundedCornerShape(8.dp),
+                        color = Yellow.copy(alpha = 0.1f)
+                    ) {
+                        Text(label, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            color = Yellow, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
 

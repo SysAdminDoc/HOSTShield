@@ -289,7 +289,8 @@ private fun HostShieldMainApp(activity: MainActivity) {
                     onNavigateToDnsTools = { navController.navigate(SubScreen.DNS_TOOLS) },
                     onNavigateToNetworkStats = { navController.navigate(SubScreen.NETWORK_STATS) },
                     onNavigateToOverlapAnalysis = { navController.navigate(SubScreen.OVERLAP_ANALYSIS) },
-                    onNavigateToDnsLeakTest = { navController.navigate(SubScreen.DNS_LEAK_TEST) }
+                    onNavigateToDnsLeakTest = { navController.navigate(SubScreen.DNS_LEAK_TEST) },
+                    onNavigateToRuleTest = { navController.navigate(SubScreen.RULE_TEST) }
                 )
             }
             composable(SubScreen.APP_EXCLUSIONS) {
@@ -331,6 +332,11 @@ private fun HostShieldMainApp(activity: MainActivity) {
             }
             composable(SubScreen.DNS_LEAK_TEST) {
                 com.hostshield.ui.screens.settings.DnsLeakTestScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.RULE_TEST) {
+                com.hostshield.ui.screens.settings.RuleTestScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
