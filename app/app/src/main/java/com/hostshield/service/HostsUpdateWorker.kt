@@ -24,7 +24,8 @@ class HostsUpdateWorker @AssistedInject constructor(
     private val repository: HostShieldRepository,
     private val prefs: AppPreferences,
     private val downloader: SourceDownloader,
-    private val blocklistHolder: BlocklistHolder
+    private val blocklistHolder: BlocklistHolder,
+    private val dohBypassUpdater: DohBypassUpdater
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -82,26 +83,37 @@ class HostsUpdateWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
+            // Refresh remote DoH bypass list on every periodic run
+            try { dohBypassUpdater.fetchAndStore() } catch (_: Exception) { }
+
             val isEnabled = prefs.isEnabled.first()
             if (!isEnabled) return Result.success()
 
             val method = prefs.blockMethod.first()
 
             when (method) {
-                BlockMethod.ROOT_HOSTS -> {
-                    // Root mode: re-download sources and rebuild in-memory blocklist.
-                    // The running DNS proxy (RootDnsLogger) reads from BlocklistHolder,
-                    // so this takes effect immediately. No hosts file write needed —
-                    // blocking is handled entirely by the proxy.
-                    val sources = repository.getEnabledSourcesList()
+                BlockMethod.ROOT_HOSTS, BlockMethod.VPN -> {
+                    // Download block sources and rebuild in-memory blocklist.
+                    // Both root (RootDnsLogger) and VPN (DnsVpnService) read from
+                    // BlocklistHolder, so updates take effect immediately.
+                    val blockSources = repository.getEnabledBlockSources()
                     val allDomains = mutableSetOf<String>()
 
-                    for (source in sources) {
-                        val result = downloader.download(source)
-                        result.onSuccess { dl ->
+                    for (source in blockSources) {
+                        downloader.download(source).onSuccess { dl ->
                             if (!dl.notModified) {
-                                val parsed = HostsParser.parse(dl.content)
-                                parsed.forEach { allDomains.add(it.hostname) }
+                                HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
+                            }
+                        }
+                    }
+
+                    // Download allowlist sources and subtract their domains
+                    val allowlistSources = repository.getEnabledAllowlistSources()
+                    val sourceAllowDomains = mutableSetOf<String>()
+                    for (source in allowlistSources) {
+                        downloader.download(source).onSuccess { dl ->
+                            if (!dl.notModified) {
+                                HostsParser.parse(dl.content).forEach { sourceAllowDomains.add(it.hostname) }
                             }
                         }
                     }
@@ -110,33 +122,9 @@ class HostsUpdateWorker @AssistedInject constructor(
                     blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
                     val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
                     allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-                    val wildcards = repository.getEnabledWildcards()
-                    blocklistHolder.update(allDomains, wildcards)
+                    // Remove allowlist source domains
+                    allDomains.removeAll(sourceAllowDomains)
 
-                    prefs.setLastApplyTime(System.currentTimeMillis())
-                    prefs.setLastApplyCount(allDomains.size)
-                }
-                BlockMethod.VPN -> {
-                    // VPN mode: re-download sources and rebuild in-memory blocklist.
-                    // The running VPN service reads from BlocklistHolder, so this
-                    // takes effect immediately for all future DNS queries.
-                    val sources = repository.getEnabledSourcesList()
-                    val allDomains = mutableSetOf<String>()
-
-                    for (source in sources) {
-                        val result = downloader.download(source)
-                        result.onSuccess { dl ->
-                            if (!dl.notModified) {
-                                val parsed = HostsParser.parse(dl.content)
-                                parsed.forEach { allDomains.add(it.hostname) }
-                            }
-                        }
-                    }
-
-                    val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-                    blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
-                    val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-                    allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
                     val wildcards = repository.getEnabledWildcards()
                     blocklistHolder.update(allDomains, wildcards)
 

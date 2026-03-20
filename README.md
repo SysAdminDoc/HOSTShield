@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-3.0.0-blue)
+![Version](https://img.shields.io/badge/version-3.1.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%207+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)
@@ -38,6 +38,11 @@
 | **Diagnostic Export** | One-tap shareable report with device info, config, logs, network state |
 | **AdAway Import** | Import hosts files, sources, and rules from AdAway backups |
 | **Remote DoH Updates** | Supplementary DoH bypass domains fetched from GitHub without app updates |
+| **Multiple Upstream DNS** | Comma-separated DNS servers with automatic fallback ordering |
+| **Allowlist Sources** | Curated allowlists (Anudeep, HaGeZi) prevent common false positives |
+| **Blocklist Overlap Analysis** | Identify redundant domains across enabled sources to optimize lists |
+| **Stats CSV Export** | Export daily stats, top blocked domains, and top apps as shareable CSV |
+| **Auto Update Check** | Silent check on settings open, with changelog and direct APK download |
 | **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
 
 ## How It Works

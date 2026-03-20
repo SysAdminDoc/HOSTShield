@@ -151,8 +151,16 @@ class AppPreferences @Inject constructor(
     suspend fun setConnectionLogEnabled(enabled: Boolean) = ds.edit { it[Keys.CONNECTION_LOG_ENABLED] = enabled }
 
     // ── Custom Upstream DNS ─────────────────────────────────
+    // Supports comma-separated list for fallback: "1.1.1.1,8.8.8.8,9.9.9.9"
     val customUpstreamDns: Flow<String> = ds.data.map { it[Keys.CUSTOM_UPSTREAM_DNS] ?: "" }
     suspend fun setCustomUpstreamDns(dns: String) = ds.edit { it[Keys.CUSTOM_UPSTREAM_DNS] = dns }
+
+    /** Parse upstream DNS list into ordered list of servers. */
+    suspend fun getUpstreamDnsList(): List<String> {
+        val raw = customUpstreamDns.first()
+        return if (raw.isBlank()) emptyList()
+        else raw.split(",").map { it.trim() }.filter { it.isNotBlank() }
+    }
 
     // ── Block Response Type ──────────────────────────────────
     // "nxdomain" = RCODE 3, "zero_ip" = 0.0.0.0/:: A/AAAA, "refused" = RCODE 5

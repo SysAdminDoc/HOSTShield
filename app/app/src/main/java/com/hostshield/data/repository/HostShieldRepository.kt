@@ -32,6 +32,8 @@ class HostShieldRepository @Inject constructor(
     fun getTotalEnabledEntries(): Flow<Int?> = sourceDao.getTotalEnabledEntries()
     fun getUnhealthySources(): Flow<List<HostSource>> = sourceDao.getUnhealthySources()
     suspend fun getEnabledSourcesList(): List<HostSource> = sourceDao.getEnabledSources()
+    suspend fun getEnabledBlockSources(): List<HostSource> = sourceDao.getEnabledBlockSources()
+    suspend fun getEnabledAllowlistSources(): List<HostSource> = sourceDao.getEnabledAllowlistSources()
     suspend fun addSource(source: HostSource): Long = sourceDao.insert(source)
     suspend fun updateSource(source: HostSource) = sourceDao.update(source)
     suspend fun deleteSource(source: HostSource) = sourceDao.delete(source)
@@ -227,6 +229,32 @@ class HostShieldRepository @Inject constructor(
                 description = "Known malware distribution domains from abuse.ch.",
                 category = SourceCategory.MALWARE,
                 isBuiltin = true
+            ),
+            // ── Allowlist Sources ──
+            // Domains in these lists are automatically excluded from blocking.
+            HostSource(
+                url = "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt",
+                label = "Anudeep's Whitelist",
+                description = "Curated allowlist preventing common false positives. ~400 domains.",
+                category = SourceCategory.ALLOWLIST,
+                isBuiltin = true,
+                enabled = false
+            ),
+            HostSource(
+                url = "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt",
+                label = "Anudeep's Optional Whitelist",
+                description = "Extended allowlist including CDNs, analytics safe domains. ~100 domains.",
+                category = SourceCategory.ALLOWLIST,
+                isBuiltin = true,
+                enabled = false
+            ),
+            HostSource(
+                url = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist.txt",
+                label = "HaGeZi Whitelist",
+                description = "Referral allowlist preventing breakage from aggressive blocklists.",
+                category = SourceCategory.ALLOWLIST,
+                isBuiltin = true,
+                enabled = false
             )
         )
 

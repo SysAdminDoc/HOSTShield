@@ -83,6 +83,8 @@ class SettingsViewModel @Inject constructor(
         observePrefs()
         loadSystemInfo()
         checkBattery()
+        // Auto-check for updates when settings screen opens (silent, no error display)
+        autoCheckForUpdate()
     }
 
     private fun observePrefs() {
@@ -339,6 +341,97 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun dismissUpdateMessage() { _uiState.update { it.copy(updateMessage = null) } }
+
+    /** Silent auto-check: only shows result if an update is available (no error/no "up to date"). */
+    private fun autoCheckForUpdate() {
+        viewModelScope.launch(Dispatchers.IO) {
+            updateChecker.check().onSuccess { info ->
+                if (info.hasUpdate) {
+                    _uiState.update {
+                        it.copy(
+                            updateAvailable = true,
+                            latestVersion = info.latestVersion,
+                            updateDownloadUrl = info.downloadUrl,
+                            updateReleaseNotes = info.releaseNotes,
+                            updatePublishedAt = info.publishedAt,
+                            updateHtmlUrl = info.htmlUrl,
+                            updateMessage = "Update available: v${info.latestVersion}"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Stats CSV Export ──────────────────────────────────────
+
+    private val _csvMessage = MutableStateFlow<String?>(null)
+    val csvMessage: StateFlow<String?> = _csvMessage.asStateFlow()
+    private val _isExportingCsv = MutableStateFlow(false)
+    val isExportingCsv: StateFlow<Boolean> = _isExportingCsv.asStateFlow()
+    private val _pendingCsv = MutableStateFlow<String?>(null)
+    val pendingCsv: StateFlow<String?> = _pendingCsv.asStateFlow()
+
+    fun exportStatsCsv() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isExportingCsv.value = true
+            try {
+                val stats = repository.getRecentStats(90).first()
+                val topBlocked = repository.getTopBlocked(50).first()
+                val topApps = repository.getTopBlockedApps(30).first()
+
+                val sb = StringBuilder()
+                sb.appendLine("HostShield Statistics Report")
+                sb.appendLine("Generated,${java.time.Instant.now()}")
+                sb.appendLine()
+
+                // Daily stats
+                sb.appendLine("=== Daily Statistics ===")
+                sb.appendLine("Date,Blocked,Allowed,Total Queries")
+                stats.forEach { day ->
+                    sb.appendLine("${day.date},${day.blockedCount},${day.allowedCount},${day.totalQueries}")
+                }
+                sb.appendLine()
+
+                // Top blocked domains
+                sb.appendLine("=== Top Blocked Domains ===")
+                sb.appendLine("Domain,Block Count")
+                topBlocked.forEach { sb.appendLine("${it.hostname},${it.cnt}") }
+                sb.appendLine()
+
+                // Top apps
+                sb.appendLine("=== Top Blocked Apps ===")
+                sb.appendLine("Package,Label,Block Count")
+                topApps.forEach { sb.appendLine("${it.appPackage},${it.appLabel},${it.cnt}") }
+
+                _pendingCsv.value = sb.toString()
+                _csvMessage.value = "CSV ready (${stats.size} days, ${topBlocked.size} domains, ${topApps.size} apps)"
+            } catch (e: Exception) {
+                _csvMessage.value = "Export failed: ${e.message}"
+            } finally {
+                _isExportingCsv.value = false
+            }
+        }
+    }
+
+    fun writeCsvToUri(uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val content = _pendingCsv.value
+                if (content != null) {
+                    getApplication<android.app.Application>().contentResolver.openOutputStream(uri)?.use {
+                        it.write(content.toByteArray())
+                    }
+                    _pendingCsv.value = null
+                    _csvMessage.value = "Stats CSV saved"
+                }
+            } catch (e: Exception) {
+                _csvMessage.value = "Save failed: ${e.message}"
+            }
+        }
+    }
+
+    fun clearCsvMessage() { _csvMessage.value = null }
 
     fun generateDiagnosticReport() {
         viewModelScope.launch(Dispatchers.IO) {
