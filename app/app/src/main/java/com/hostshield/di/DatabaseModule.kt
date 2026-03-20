@@ -10,9 +10,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
-// HostShield v1.6.0 - Database DI Module
+// HostShield v4.0.0 - Database & Network DI Module
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -119,7 +121,7 @@ object DatabaseModule {
             "hostshield.db"
         )
             .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
-                com.hostshield.data.database.Migrations.MIGRATION_5_6)
+                *com.hostshield.data.database.Migrations.ALL)
             .fallbackToDestructiveMigration() // safety net for unhandled versions
             .build()
     }
@@ -131,4 +133,14 @@ object DatabaseModule {
     @Provides fun provideProfileDao(db: HostShieldDatabase): ProfileDao = db.profileDao()
     @Provides fun provideFirewallRuleDao(db: HostShieldDatabase): FirewallRuleDao = db.firewallRuleDao()
     @Provides fun provideConnectionLogDao(db: HostShieldDatabase): ConnectionLogDao = db.connectionLogDao()
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
+
+    @Provides fun provideTrackerScanCacheDao(db: HostShieldDatabase): TrackerScanCacheDao = db.trackerScanCacheDao()
+    @Provides fun provideAutomationAuditDao(db: HostShieldDatabase): AutomationAuditDao = db.automationAuditDao()
+    @Provides fun provideVpnStabilityDao(db: HostShieldDatabase): VpnStabilityDao = db.vpnStabilityDao()
 }

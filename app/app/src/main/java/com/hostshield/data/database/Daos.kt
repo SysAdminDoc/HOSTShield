@@ -2,6 +2,9 @@ package com.hostshield.data.database
 
 import androidx.room.*
 import com.hostshield.data.model.*
+import com.hostshield.data.model.AutomationAuditEntry
+import com.hostshield.data.model.TrackerScanCacheEntry
+import com.hostshield.data.model.VpnStabilityEntry
 import kotlinx.coroutines.flow.Flow
 
 // HostShield v1.6.0 - Data Access Objects
@@ -432,4 +435,73 @@ data class DailyBreakdown(
     val day: String,
     val total: Int,
     val blocked: Int
+)
+
+@Dao
+interface TrackerScanCacheDao {
+    @Query("SELECT * FROM tracker_scan_cache WHERE package_name = :pkg LIMIT 1")
+    suspend fun getByPackage(pkg: String): TrackerScanCacheEntry?
+
+    @Query("SELECT * FROM tracker_scan_cache ORDER BY tracker_count DESC")
+    fun getAll(): Flow<List<TrackerScanCacheEntry>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entry: TrackerScanCacheEntry)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(entries: List<TrackerScanCacheEntry>)
+
+    @Query("DELETE FROM tracker_scan_cache WHERE package_name = :pkg")
+    suspend fun deleteByPackage(pkg: String)
+
+    @Query("DELETE FROM tracker_scan_cache")
+    suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM tracker_scan_cache")
+    suspend fun count(): Int
+}
+
+@Dao
+interface AutomationAuditDao {
+    @Query("SELECT * FROM automation_audit_log ORDER BY timestamp DESC LIMIT :limit")
+    fun getRecent(limit: Int = 100): Flow<List<AutomationAuditEntry>>
+
+    @Insert
+    suspend fun insert(entry: AutomationAuditEntry)
+
+    @Query("DELETE FROM automation_audit_log WHERE timestamp < :before")
+    suspend fun deleteOlderThan(before: Long)
+
+    @Query("SELECT COUNT(*) FROM automation_audit_log WHERE action = :action AND timestamp > :since")
+    suspend fun countActionSince(action: String, since: Long): Int
+}
+
+@Dao
+interface VpnStabilityDao {
+    @Query("SELECT * FROM vpn_stability WHERE date = :date LIMIT 1")
+    suspend fun getByDate(date: String): VpnStabilityEntry?
+
+    @Query("SELECT * FROM vpn_stability ORDER BY date DESC LIMIT :days")
+    fun getRecent(days: Int = 7): Flow<List<VpnStabilityEntry>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entry: VpnStabilityEntry)
+
+    @Query("""
+        SELECT COALESCE(SUM(uptime_ms), 0) as total_uptime,
+            COALESCE(SUM(rebuild_count), 0) as total_rebuilds,
+            COALESCE(SUM(fd_errors), 0) as total_errors,
+            COALESCE(SUM(dropped_queries), 0) as total_dropped,
+            COALESCE(SUM(total_queries), 0) as total_queries
+        FROM vpn_stability WHERE date >= :since
+    """)
+    suspend fun getAggregated(since: String): VpnStabilityAggregated
+}
+
+data class VpnStabilityAggregated(
+    @ColumnInfo(name = "total_uptime") val totalUptime: Long,
+    @ColumnInfo(name = "total_rebuilds") val totalRebuilds: Int,
+    @ColumnInfo(name = "total_errors") val totalErrors: Int,
+    @ColumnInfo(name = "total_dropped") val totalDropped: Int,
+    @ColumnInfo(name = "total_queries") val totalQueries: Int
 )
