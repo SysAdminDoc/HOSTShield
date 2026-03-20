@@ -59,6 +59,10 @@ class AppPreferences @Inject constructor(
         val AUTO_BACKUP_ENABLED = booleanPreferencesKey("auto_backup_enabled")
         val AUTO_BACKUP_INTERVAL_DAYS = intPreferencesKey("auto_backup_interval_days")
         val PINNED_DOMAINS = stringPreferencesKey("pinned_domains")
+        val SCHEDULE_ENABLED = booleanPreferencesKey("schedule_enabled")
+        val SCHEDULE_START = stringPreferencesKey("schedule_start")   // HH:mm
+        val SCHEDULE_END = stringPreferencesKey("schedule_end")       // HH:mm
+        val SCHEDULE_MODE = stringPreferencesKey("schedule_mode")     // "block" or "unblock"
     }
 
     // ── Blocking ─────────────────────────────────────────────
@@ -209,4 +213,19 @@ class AppPreferences @Inject constructor(
         val current = pinnedDomains.first()
         setPinnedDomains(current - domain.lowercase())
     }
+
+    // ── Scheduled Blocking ───────────────────────────────────
+    // "block" mode: blocking is ACTIVE during schedule window
+    // "unblock" mode: blocking is DISABLED during schedule window (bedtime whitelist)
+    val scheduleEnabled: Flow<Boolean> = ds.data.map { it[Keys.SCHEDULE_ENABLED] ?: false }
+    suspend fun setScheduleEnabled(enabled: Boolean) = ds.edit { it[Keys.SCHEDULE_ENABLED] = enabled }
+
+    val scheduleStart: Flow<String> = ds.data.map { it[Keys.SCHEDULE_START] ?: "22:00" }
+    suspend fun setScheduleStart(time: String) = ds.edit { it[Keys.SCHEDULE_START] = time }
+
+    val scheduleEnd: Flow<String> = ds.data.map { it[Keys.SCHEDULE_END] ?: "07:00" }
+    suspend fun setScheduleEnd(time: String) = ds.edit { it[Keys.SCHEDULE_END] = time }
+
+    val scheduleMode: Flow<String> = ds.data.map { it[Keys.SCHEDULE_MODE] ?: "block" }
+    suspend fun setScheduleMode(mode: String) = ds.edit { it[Keys.SCHEDULE_MODE] = mode }
 }

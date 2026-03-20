@@ -243,6 +243,52 @@ fun SettingsScreen(
             }
         }
 
+        // Scheduled Blocking
+        SettingsSection("Schedule", Icons.Filled.Schedule, Sky) {
+            SettingsToggle(
+                "Scheduled blocking", "Auto-enable/disable at set times",
+                Icons.Filled.Timer, state.scheduleEnabled
+            ) { viewModel.setScheduleEnabled(it) }
+            if (state.scheduleEnabled) {
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val modes = listOf("block" to "Block during", "unblock" to "Unblock during")
+                    modes.forEach { (key, label) ->
+                        val selected = state.scheduleMode == key
+                        Surface(
+                            onClick = { viewModel.setScheduleMode(key) },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (selected) Sky.copy(alpha = 0.12f) else Surface2
+                        ) {
+                            Text(label, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                color = if (selected) Sky else TextDim, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text("Start", color = TextDim, fontSize = 10.sp)
+                        Text(state.scheduleStart, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+                    Icon(Icons.Filled.ArrowForward, null, tint = TextDim, modifier = Modifier.padding(top = 12.dp).size(16.dp))
+                    Column {
+                        Text("End", color = TextDim, fontSize = 10.sp)
+                        Text(state.scheduleEnd, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    if (state.scheduleMode == "block") "Blocking is active ${state.scheduleStart} - ${state.scheduleEnd}"
+                    else "Blocking is paused ${state.scheduleStart} - ${state.scheduleEnd} (bedtime mode)",
+                    color = TextDim, fontSize = 10.sp
+                )
+            }
+        }
+
         // Hosts Configuration
         SettingsSection("Configuration", Icons.Filled.Tune, Yellow) {
             SettingsToggle("Include IPv6", "Block domains on IPv6 as well", Icons.Filled.Language, state.includeIpv6) {

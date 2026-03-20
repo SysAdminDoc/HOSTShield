@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-3.3.0-blue)
+![Version](https://img.shields.io/badge/version-3.4.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%207+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)
@@ -56,6 +56,11 @@
 | **Auto Backup** | Scheduled backup to app storage with 5-backup rotation |
 | **IP Blocking** | Block connections to specific IP addresses |
 | **Domain Pinning** | Pin/star domains in logs for monitoring |
+| **Privacy Score** | 0-100 protection rating based on current configuration |
+| **Scheduled Blocking** | Auto-enable/disable by time (bedtime mode / work hours) |
+| **Query Type Filter** | Filter DNS logs by record type (A, AAAA, CNAME, MX, TXT) |
+| **Suspicious TLD Detection** | Flag queries to high-abuse TLDs (.tk, .xyz, .onion, etc.) |
+| **Batch Source Health** | One-tap reachability test for all enabled sources |
 | **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
 
 ## How It Works

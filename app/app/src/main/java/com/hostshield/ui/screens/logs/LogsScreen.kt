@@ -203,7 +203,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     var multiSelectMode by remember { mutableStateOf(false) }
     var selectedHostnames by remember { mutableStateOf(setOf<String>()) }
 
-    val deduped = remember(logs, query, blockedFilter, blockedSet) {
+    val deduped = remember(logs, query, blockedFilter, blockedSet, queryTypeFilter) {
         logs
             .groupBy { it.hostname.lowercase() }
             .map { (hostname, entries) ->
@@ -225,7 +225,8 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             }
             .filter { entry ->
                 (query.isBlank() || entry.hostname.contains(query, ignoreCase = true) || entry.appPackage.contains(query, ignoreCase = true)) &&
-                (blockedFilter == null || entry.blocked == blockedFilter)
+                (blockedFilter == null || entry.blocked == blockedFilter) &&
+                (queryTypeFilter == null || entry.queryType.equals(queryTypeFilter, ignoreCase = true))
             }
             .sortedByDescending { it.latestTimestamp }
     }
@@ -341,6 +342,29 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             LogFilter("All", blockedFilter == null) { viewModel.setFilter(null) }
             LogFilter("Blocked", blockedFilter == true) { viewModel.setFilter(true) }
             LogFilter("Allowed", blockedFilter == false) { viewModel.setFilter(false) }
+        }
+
+        // Query type filter
+        var queryTypeFilter by remember { mutableStateOf<String?>(null) }
+        Spacer(Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            val types = listOf(null to "All Types", "A" to "A", "AAAA" to "AAAA", "CNAME" to "CNAME", "MX" to "MX", "TXT" to "TXT")
+            types.forEach { (type, label) ->
+                val selected = queryTypeFilter == type
+                Surface(
+                    onClick = { queryTypeFilter = type },
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (selected) Blue.copy(alpha = 0.12f) else Surface2
+                ) {
+                    Text(
+                        label, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = if (selected) Blue else TextDim, fontSize = 10.sp, fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
         }
 
         Spacer(Modifier.height(8.dp))
