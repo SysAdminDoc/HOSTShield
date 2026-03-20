@@ -1,0 +1,1132 @@
+package com.hostshield;
+
+import android.app.Activity;
+import android.app.Service;
+import android.content.Context;
+import android.view.View;
+import androidx.fragment.app.Fragment;
+import androidx.hilt.work.HiltWorkerFactory;
+import androidx.hilt.work.WorkerAssistedFactory;
+import androidx.hilt.work.WorkerFactoryModule_ProvideFactoryFactory;
+import androidx.lifecycle.SavedStateHandle;
+import androidx.lifecycle.ViewModel;
+import androidx.work.ListenableWorker;
+import androidx.work.WorkerParameters;
+import com.hostshield.data.database.BlockStatsDao;
+import com.hostshield.data.database.ConnectionLogDao;
+import com.hostshield.data.database.DnsLogDao;
+import com.hostshield.data.database.FirewallRuleDao;
+import com.hostshield.data.database.HostShieldDatabase;
+import com.hostshield.data.database.HostSourceDao;
+import com.hostshield.data.database.ProfileDao;
+import com.hostshield.data.database.UserRuleDao;
+import com.hostshield.data.preferences.AppPreferences;
+import com.hostshield.data.repository.HostShieldRepository;
+import com.hostshield.data.source.SourceDownloader;
+import com.hostshield.di.DatabaseModule_ProvideBlockStatsDaoFactory;
+import com.hostshield.di.DatabaseModule_ProvideConnectionLogDaoFactory;
+import com.hostshield.di.DatabaseModule_ProvideDatabaseFactory;
+import com.hostshield.di.DatabaseModule_ProvideDnsLogDaoFactory;
+import com.hostshield.di.DatabaseModule_ProvideFirewallRuleDaoFactory;
+import com.hostshield.di.DatabaseModule_ProvideHostSourceDaoFactory;
+import com.hostshield.di.DatabaseModule_ProvideProfileDaoFactory;
+import com.hostshield.di.DatabaseModule_ProvideUserRuleDaoFactory;
+import com.hostshield.domain.BlocklistHolder;
+import com.hostshield.service.AutoBackupWorker;
+import com.hostshield.service.AutoBackupWorker_AssistedFactory;
+import com.hostshield.service.AutomationReceiver;
+import com.hostshield.service.AutomationReceiver_MembersInjector;
+import com.hostshield.service.BlockNotificationService;
+import com.hostshield.service.BlockingScheduleWorker;
+import com.hostshield.service.BlockingScheduleWorker_AssistedFactory;
+import com.hostshield.service.BootReceiver;
+import com.hostshield.service.BootReceiver_MembersInjector;
+import com.hostshield.service.DnsVpnService;
+import com.hostshield.service.DnsVpnService_MembersInjector;
+import com.hostshield.service.DohBypassUpdater;
+import com.hostshield.service.DohResolver;
+import com.hostshield.service.HostShieldTileService;
+import com.hostshield.service.HostShieldTileService_MembersInjector;
+import com.hostshield.service.HostsUpdateWorker;
+import com.hostshield.service.HostsUpdateWorker_AssistedFactory;
+import com.hostshield.service.IptablesManager;
+import com.hostshield.service.LogCleanupWorker;
+import com.hostshield.service.LogCleanupWorker_AssistedFactory;
+import com.hostshield.service.NetworkChangeReceiver;
+import com.hostshield.service.NetworkChangeReceiver_MembersInjector;
+import com.hostshield.service.NetworkStatsTracker;
+import com.hostshield.service.NflogReader;
+import com.hostshield.service.ProfileScheduleWorker;
+import com.hostshield.service.ProfileScheduleWorker_AssistedFactory;
+import com.hostshield.service.RootDnsLogger;
+import com.hostshield.service.RootDnsService;
+import com.hostshield.service.RootDnsService_MembersInjector;
+import com.hostshield.service.SourceHealthWorker;
+import com.hostshield.service.SourceHealthWorker_AssistedFactory;
+import com.hostshield.ui.screens.apps.AppsViewModel;
+import com.hostshield.ui.screens.apps.AppsViewModel_HiltModules;
+import com.hostshield.ui.screens.apps.AppsViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.apps.AppsViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.home.HomeViewModel;
+import com.hostshield.ui.screens.home.HomeViewModel_HiltModules;
+import com.hostshield.ui.screens.home.HomeViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.home.HomeViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.lists.RulesViewModel;
+import com.hostshield.ui.screens.lists.RulesViewModel_HiltModules;
+import com.hostshield.ui.screens.lists.RulesViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.lists.RulesViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.logs.ConnectionLogViewModel;
+import com.hostshield.ui.screens.logs.ConnectionLogViewModel_HiltModules;
+import com.hostshield.ui.screens.logs.ConnectionLogViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.logs.ConnectionLogViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.logs.LogsViewModel;
+import com.hostshield.ui.screens.logs.LogsViewModel_HiltModules;
+import com.hostshield.ui.screens.logs.LogsViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.logs.LogsViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.settings.AppExclusionsViewModel;
+import com.hostshield.ui.screens.settings.AppExclusionsViewModel_HiltModules;
+import com.hostshield.ui.screens.settings.AppExclusionsViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.settings.AppExclusionsViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.settings.DnsLeakTestViewModel;
+import com.hostshield.ui.screens.settings.DnsLeakTestViewModel_HiltModules;
+import com.hostshield.ui.screens.settings.DnsLeakTestViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.settings.DnsLeakTestViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.settings.DnsToolsViewModel;
+import com.hostshield.ui.screens.settings.DnsToolsViewModel_HiltModules;
+import com.hostshield.ui.screens.settings.DnsToolsViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.settings.DnsToolsViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.settings.FirewallViewModel;
+import com.hostshield.ui.screens.settings.FirewallViewModel_HiltModules;
+import com.hostshield.ui.screens.settings.FirewallViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.settings.FirewallViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.settings.HostsDiffViewModel;
+import com.hostshield.ui.screens.settings.HostsDiffViewModel_HiltModules;
+import com.hostshield.ui.screens.settings.HostsDiffViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.settings.HostsDiffViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.settings.HostsEditorViewModel;
+import com.hostshield.ui.screens.settings.HostsEditorViewModel_HiltModules;
+import com.hostshield.ui.screens.settings.HostsEditorViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.settings.HostsEditorViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.settings.RuleTestViewModel;
+import com.hostshield.ui.screens.settings.RuleTestViewModel_HiltModules;
+import com.hostshield.ui.screens.settings.RuleTestViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.settings.RuleTestViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.settings.SettingsViewModel;
+import com.hostshield.ui.screens.settings.SettingsViewModel_HiltModules;
+import com.hostshield.ui.screens.settings.SettingsViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.settings.SettingsViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.sources.OverlapViewModel;
+import com.hostshield.ui.screens.sources.OverlapViewModel_HiltModules;
+import com.hostshield.ui.screens.sources.OverlapViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.sources.OverlapViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.sources.SourcesViewModel;
+import com.hostshield.ui.screens.sources.SourcesViewModel_HiltModules;
+import com.hostshield.ui.screens.sources.SourcesViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.sources.SourcesViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.stats.NetworkStatsViewModel;
+import com.hostshield.ui.screens.stats.NetworkStatsViewModel_HiltModules;
+import com.hostshield.ui.screens.stats.NetworkStatsViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.stats.NetworkStatsViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.ui.screens.stats.StatsViewModel;
+import com.hostshield.ui.screens.stats.StatsViewModel_HiltModules;
+import com.hostshield.ui.screens.stats.StatsViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.hostshield.ui.screens.stats.StatsViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import com.hostshield.util.BackupRestoreUtil;
+import com.hostshield.util.BatteryOptimizationUtil;
+import com.hostshield.util.DiagnosticExporter;
+import com.hostshield.util.ImportExportUtil;
+import com.hostshield.util.IptablesBinaryManager;
+import com.hostshield.util.PcapExporter;
+import com.hostshield.util.PrivacyScorer;
+import com.hostshield.util.PrivateDnsDetector;
+import com.hostshield.util.RootUtil;
+import com.hostshield.util.UpdateChecker;
+import dagger.hilt.android.ActivityRetainedLifecycle;
+import dagger.hilt.android.ViewModelLifecycle;
+import dagger.hilt.android.internal.builders.ActivityComponentBuilder;
+import dagger.hilt.android.internal.builders.ActivityRetainedComponentBuilder;
+import dagger.hilt.android.internal.builders.FragmentComponentBuilder;
+import dagger.hilt.android.internal.builders.ServiceComponentBuilder;
+import dagger.hilt.android.internal.builders.ViewComponentBuilder;
+import dagger.hilt.android.internal.builders.ViewModelComponentBuilder;
+import dagger.hilt.android.internal.builders.ViewWithFragmentComponentBuilder;
+import dagger.hilt.android.internal.lifecycle.DefaultViewModelFactories;
+import dagger.hilt.android.internal.lifecycle.DefaultViewModelFactories_InternalFactoryFactory_Factory;
+import dagger.hilt.android.internal.managers.ActivityRetainedComponentManager_LifecycleModule_ProvideActivityRetainedLifecycleFactory;
+import dagger.hilt.android.internal.managers.SavedStateHandleHolder;
+import dagger.hilt.android.internal.modules.ApplicationContextModule;
+import dagger.hilt.android.internal.modules.ApplicationContextModule_ProvideApplicationFactory;
+import dagger.hilt.android.internal.modules.ApplicationContextModule_ProvideContextFactory;
+import dagger.internal.DaggerGenerated;
+import dagger.internal.DoubleCheck;
+import dagger.internal.LazyClassKeyMap;
+import dagger.internal.MapBuilder;
+import dagger.internal.Preconditions;
+import dagger.internal.Provider;
+import dagger.internal.SingleCheck;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import javax.annotation.processing.Generated;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes",
+    "KotlinInternal",
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
+})
+public final class DaggerHostShieldApp_HiltComponents_SingletonC {
+  private DaggerHostShieldApp_HiltComponents_SingletonC() {
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static final class Builder {
+    private ApplicationContextModule applicationContextModule;
+
+    private Builder() {
+    }
+
+    public Builder applicationContextModule(ApplicationContextModule applicationContextModule) {
+      this.applicationContextModule = Preconditions.checkNotNull(applicationContextModule);
+      return this;
+    }
+
+    public HostShieldApp_HiltComponents.SingletonC build() {
+      Preconditions.checkBuilderRequirement(applicationContextModule, ApplicationContextModule.class);
+      return new SingletonCImpl(applicationContextModule);
+    }
+  }
+
+  private static final class ActivityRetainedCBuilder implements HostShieldApp_HiltComponents.ActivityRetainedC.Builder {
+    private final SingletonCImpl singletonCImpl;
+
+    private SavedStateHandleHolder savedStateHandleHolder;
+
+    private ActivityRetainedCBuilder(SingletonCImpl singletonCImpl) {
+      this.singletonCImpl = singletonCImpl;
+    }
+
+    @Override
+    public ActivityRetainedCBuilder savedStateHandleHolder(
+        SavedStateHandleHolder savedStateHandleHolder) {
+      this.savedStateHandleHolder = Preconditions.checkNotNull(savedStateHandleHolder);
+      return this;
+    }
+
+    @Override
+    public HostShieldApp_HiltComponents.ActivityRetainedC build() {
+      Preconditions.checkBuilderRequirement(savedStateHandleHolder, SavedStateHandleHolder.class);
+      return new ActivityRetainedCImpl(singletonCImpl, savedStateHandleHolder);
+    }
+  }
+
+  private static final class ActivityCBuilder implements HostShieldApp_HiltComponents.ActivityC.Builder {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl;
+
+    private Activity activity;
+
+    private ActivityCBuilder(SingletonCImpl singletonCImpl,
+        ActivityRetainedCImpl activityRetainedCImpl) {
+      this.singletonCImpl = singletonCImpl;
+      this.activityRetainedCImpl = activityRetainedCImpl;
+    }
+
+    @Override
+    public ActivityCBuilder activity(Activity activity) {
+      this.activity = Preconditions.checkNotNull(activity);
+      return this;
+    }
+
+    @Override
+    public HostShieldApp_HiltComponents.ActivityC build() {
+      Preconditions.checkBuilderRequirement(activity, Activity.class);
+      return new ActivityCImpl(singletonCImpl, activityRetainedCImpl, activity);
+    }
+  }
+
+  private static final class FragmentCBuilder implements HostShieldApp_HiltComponents.FragmentC.Builder {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl;
+
+    private final ActivityCImpl activityCImpl;
+
+    private Fragment fragment;
+
+    private FragmentCBuilder(SingletonCImpl singletonCImpl,
+        ActivityRetainedCImpl activityRetainedCImpl, ActivityCImpl activityCImpl) {
+      this.singletonCImpl = singletonCImpl;
+      this.activityRetainedCImpl = activityRetainedCImpl;
+      this.activityCImpl = activityCImpl;
+    }
+
+    @Override
+    public FragmentCBuilder fragment(Fragment fragment) {
+      this.fragment = Preconditions.checkNotNull(fragment);
+      return this;
+    }
+
+    @Override
+    public HostShieldApp_HiltComponents.FragmentC build() {
+      Preconditions.checkBuilderRequirement(fragment, Fragment.class);
+      return new FragmentCImpl(singletonCImpl, activityRetainedCImpl, activityCImpl, fragment);
+    }
+  }
+
+  private static final class ViewWithFragmentCBuilder implements HostShieldApp_HiltComponents.ViewWithFragmentC.Builder {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl;
+
+    private final ActivityCImpl activityCImpl;
+
+    private final FragmentCImpl fragmentCImpl;
+
+    private View view;
+
+    private ViewWithFragmentCBuilder(SingletonCImpl singletonCImpl,
+        ActivityRetainedCImpl activityRetainedCImpl, ActivityCImpl activityCImpl,
+        FragmentCImpl fragmentCImpl) {
+      this.singletonCImpl = singletonCImpl;
+      this.activityRetainedCImpl = activityRetainedCImpl;
+      this.activityCImpl = activityCImpl;
+      this.fragmentCImpl = fragmentCImpl;
+    }
+
+    @Override
+    public ViewWithFragmentCBuilder view(View view) {
+      this.view = Preconditions.checkNotNull(view);
+      return this;
+    }
+
+    @Override
+    public HostShieldApp_HiltComponents.ViewWithFragmentC build() {
+      Preconditions.checkBuilderRequirement(view, View.class);
+      return new ViewWithFragmentCImpl(singletonCImpl, activityRetainedCImpl, activityCImpl, fragmentCImpl, view);
+    }
+  }
+
+  private static final class ViewCBuilder implements HostShieldApp_HiltComponents.ViewC.Builder {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl;
+
+    private final ActivityCImpl activityCImpl;
+
+    private View view;
+
+    private ViewCBuilder(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+        ActivityCImpl activityCImpl) {
+      this.singletonCImpl = singletonCImpl;
+      this.activityRetainedCImpl = activityRetainedCImpl;
+      this.activityCImpl = activityCImpl;
+    }
+
+    @Override
+    public ViewCBuilder view(View view) {
+      this.view = Preconditions.checkNotNull(view);
+      return this;
+    }
+
+    @Override
+    public HostShieldApp_HiltComponents.ViewC build() {
+      Preconditions.checkBuilderRequirement(view, View.class);
+      return new ViewCImpl(singletonCImpl, activityRetainedCImpl, activityCImpl, view);
+    }
+  }
+
+  private static final class ViewModelCBuilder implements HostShieldApp_HiltComponents.ViewModelC.Builder {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl;
+
+    private SavedStateHandle savedStateHandle;
+
+    private ViewModelLifecycle viewModelLifecycle;
+
+    private ViewModelCBuilder(SingletonCImpl singletonCImpl,
+        ActivityRetainedCImpl activityRetainedCImpl) {
+      this.singletonCImpl = singletonCImpl;
+      this.activityRetainedCImpl = activityRetainedCImpl;
+    }
+
+    @Override
+    public ViewModelCBuilder savedStateHandle(SavedStateHandle handle) {
+      this.savedStateHandle = Preconditions.checkNotNull(handle);
+      return this;
+    }
+
+    @Override
+    public ViewModelCBuilder viewModelLifecycle(ViewModelLifecycle viewModelLifecycle) {
+      this.viewModelLifecycle = Preconditions.checkNotNull(viewModelLifecycle);
+      return this;
+    }
+
+    @Override
+    public HostShieldApp_HiltComponents.ViewModelC build() {
+      Preconditions.checkBuilderRequirement(savedStateHandle, SavedStateHandle.class);
+      Preconditions.checkBuilderRequirement(viewModelLifecycle, ViewModelLifecycle.class);
+      return new ViewModelCImpl(singletonCImpl, activityRetainedCImpl, savedStateHandle, viewModelLifecycle);
+    }
+  }
+
+  private static final class ServiceCBuilder implements HostShieldApp_HiltComponents.ServiceC.Builder {
+    private final SingletonCImpl singletonCImpl;
+
+    private Service service;
+
+    private ServiceCBuilder(SingletonCImpl singletonCImpl) {
+      this.singletonCImpl = singletonCImpl;
+    }
+
+    @Override
+    public ServiceCBuilder service(Service service) {
+      this.service = Preconditions.checkNotNull(service);
+      return this;
+    }
+
+    @Override
+    public HostShieldApp_HiltComponents.ServiceC build() {
+      Preconditions.checkBuilderRequirement(service, Service.class);
+      return new ServiceCImpl(singletonCImpl, service);
+    }
+  }
+
+  private static final class ViewWithFragmentCImpl extends HostShieldApp_HiltComponents.ViewWithFragmentC {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl;
+
+    private final ActivityCImpl activityCImpl;
+
+    private final FragmentCImpl fragmentCImpl;
+
+    private final ViewWithFragmentCImpl viewWithFragmentCImpl = this;
+
+    private ViewWithFragmentCImpl(SingletonCImpl singletonCImpl,
+        ActivityRetainedCImpl activityRetainedCImpl, ActivityCImpl activityCImpl,
+        FragmentCImpl fragmentCImpl, View viewParam) {
+      this.singletonCImpl = singletonCImpl;
+      this.activityRetainedCImpl = activityRetainedCImpl;
+      this.activityCImpl = activityCImpl;
+      this.fragmentCImpl = fragmentCImpl;
+
+
+    }
+  }
+
+  private static final class FragmentCImpl extends HostShieldApp_HiltComponents.FragmentC {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl;
+
+    private final ActivityCImpl activityCImpl;
+
+    private final FragmentCImpl fragmentCImpl = this;
+
+    private FragmentCImpl(SingletonCImpl singletonCImpl,
+        ActivityRetainedCImpl activityRetainedCImpl, ActivityCImpl activityCImpl,
+        Fragment fragmentParam) {
+      this.singletonCImpl = singletonCImpl;
+      this.activityRetainedCImpl = activityRetainedCImpl;
+      this.activityCImpl = activityCImpl;
+
+
+    }
+
+    @Override
+    public DefaultViewModelFactories.InternalFactoryFactory getHiltInternalFactoryFactory() {
+      return activityCImpl.getHiltInternalFactoryFactory();
+    }
+
+    @Override
+    public ViewWithFragmentComponentBuilder viewWithFragmentComponentBuilder() {
+      return new ViewWithFragmentCBuilder(singletonCImpl, activityRetainedCImpl, activityCImpl, fragmentCImpl);
+    }
+  }
+
+  private static final class ViewCImpl extends HostShieldApp_HiltComponents.ViewC {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl;
+
+    private final ActivityCImpl activityCImpl;
+
+    private final ViewCImpl viewCImpl = this;
+
+    private ViewCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+        ActivityCImpl activityCImpl, View viewParam) {
+      this.singletonCImpl = singletonCImpl;
+      this.activityRetainedCImpl = activityRetainedCImpl;
+      this.activityCImpl = activityCImpl;
+
+
+    }
+  }
+
+  private static final class ActivityCImpl extends HostShieldApp_HiltComponents.ActivityC {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl;
+
+    private final ActivityCImpl activityCImpl = this;
+
+    private ActivityCImpl(SingletonCImpl singletonCImpl,
+        ActivityRetainedCImpl activityRetainedCImpl, Activity activityParam) {
+      this.singletonCImpl = singletonCImpl;
+      this.activityRetainedCImpl = activityRetainedCImpl;
+
+
+    }
+
+    @Override
+    public void injectMainActivity(MainActivity mainActivity) {
+      injectMainActivity2(mainActivity);
+    }
+
+    @Override
+    public DefaultViewModelFactories.InternalFactoryFactory getHiltInternalFactoryFactory() {
+      return DefaultViewModelFactories_InternalFactoryFactory_Factory.newInstance(getViewModelKeys(), new ViewModelCBuilder(singletonCImpl, activityRetainedCImpl));
+    }
+
+    @Override
+    public Map<Class<?>, Boolean> getViewModelKeys() {
+      return LazyClassKeyMap.<Boolean>of(MapBuilder.<String, Boolean>newMapBuilder(17).put(AppExclusionsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, AppExclusionsViewModel_HiltModules.KeyModule.provide()).put(AppsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, AppsViewModel_HiltModules.KeyModule.provide()).put(ConnectionLogViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, ConnectionLogViewModel_HiltModules.KeyModule.provide()).put(DnsLeakTestViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, DnsLeakTestViewModel_HiltModules.KeyModule.provide()).put(DnsToolsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, DnsToolsViewModel_HiltModules.KeyModule.provide()).put(FirewallViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, FirewallViewModel_HiltModules.KeyModule.provide()).put(HomeViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, HomeViewModel_HiltModules.KeyModule.provide()).put(HostsDiffViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, HostsDiffViewModel_HiltModules.KeyModule.provide()).put(HostsEditorViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, HostsEditorViewModel_HiltModules.KeyModule.provide()).put(LogsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, LogsViewModel_HiltModules.KeyModule.provide()).put(NetworkStatsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, NetworkStatsViewModel_HiltModules.KeyModule.provide()).put(OverlapViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, OverlapViewModel_HiltModules.KeyModule.provide()).put(RuleTestViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, RuleTestViewModel_HiltModules.KeyModule.provide()).put(RulesViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, RulesViewModel_HiltModules.KeyModule.provide()).put(SettingsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SettingsViewModel_HiltModules.KeyModule.provide()).put(SourcesViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SourcesViewModel_HiltModules.KeyModule.provide()).put(StatsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, StatsViewModel_HiltModules.KeyModule.provide()).build());
+    }
+
+    @Override
+    public ViewModelComponentBuilder getViewModelComponentBuilder() {
+      return new ViewModelCBuilder(singletonCImpl, activityRetainedCImpl);
+    }
+
+    @Override
+    public FragmentComponentBuilder fragmentComponentBuilder() {
+      return new FragmentCBuilder(singletonCImpl, activityRetainedCImpl, activityCImpl);
+    }
+
+    @Override
+    public ViewComponentBuilder viewComponentBuilder() {
+      return new ViewCBuilder(singletonCImpl, activityRetainedCImpl, activityCImpl);
+    }
+
+    private MainActivity injectMainActivity2(MainActivity instance) {
+      MainActivity_MembersInjector.injectPrefs(instance, singletonCImpl.appPreferencesProvider.get());
+      MainActivity_MembersInjector.injectRootUtil(instance, singletonCImpl.rootUtilProvider.get());
+      return instance;
+    }
+  }
+
+  private static final class ViewModelCImpl extends HostShieldApp_HiltComponents.ViewModelC {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl;
+
+    private final ViewModelCImpl viewModelCImpl = this;
+
+    private Provider<AppExclusionsViewModel> appExclusionsViewModelProvider;
+
+    private Provider<AppsViewModel> appsViewModelProvider;
+
+    private Provider<ConnectionLogViewModel> connectionLogViewModelProvider;
+
+    private Provider<DnsLeakTestViewModel> dnsLeakTestViewModelProvider;
+
+    private Provider<DnsToolsViewModel> dnsToolsViewModelProvider;
+
+    private Provider<FirewallViewModel> firewallViewModelProvider;
+
+    private Provider<HomeViewModel> homeViewModelProvider;
+
+    private Provider<HostsDiffViewModel> hostsDiffViewModelProvider;
+
+    private Provider<HostsEditorViewModel> hostsEditorViewModelProvider;
+
+    private Provider<LogsViewModel> logsViewModelProvider;
+
+    private Provider<NetworkStatsViewModel> networkStatsViewModelProvider;
+
+    private Provider<OverlapViewModel> overlapViewModelProvider;
+
+    private Provider<RuleTestViewModel> ruleTestViewModelProvider;
+
+    private Provider<RulesViewModel> rulesViewModelProvider;
+
+    private Provider<SettingsViewModel> settingsViewModelProvider;
+
+    private Provider<SourcesViewModel> sourcesViewModelProvider;
+
+    private Provider<StatsViewModel> statsViewModelProvider;
+
+    private ViewModelCImpl(SingletonCImpl singletonCImpl,
+        ActivityRetainedCImpl activityRetainedCImpl, SavedStateHandle savedStateHandleParam,
+        ViewModelLifecycle viewModelLifecycleParam) {
+      this.singletonCImpl = singletonCImpl;
+      this.activityRetainedCImpl = activityRetainedCImpl;
+
+      initialize(savedStateHandleParam, viewModelLifecycleParam);
+
+    }
+
+    @SuppressWarnings("unchecked")
+    private void initialize(final SavedStateHandle savedStateHandleParam,
+        final ViewModelLifecycle viewModelLifecycleParam) {
+      this.appExclusionsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 0);
+      this.appsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
+      this.connectionLogViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 2);
+      this.dnsLeakTestViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 3);
+      this.dnsToolsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 4);
+      this.firewallViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 5);
+      this.homeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 6);
+      this.hostsDiffViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 7);
+      this.hostsEditorViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 8);
+      this.logsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 9);
+      this.networkStatsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 10);
+      this.overlapViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 11);
+      this.ruleTestViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 12);
+      this.rulesViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 13);
+      this.settingsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 14);
+      this.sourcesViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 15);
+      this.statsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 16);
+    }
+
+    @Override
+    public Map<Class<?>, javax.inject.Provider<ViewModel>> getHiltViewModelMap() {
+      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(17).put(AppExclusionsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) appExclusionsViewModelProvider)).put(AppsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) appsViewModelProvider)).put(ConnectionLogViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) connectionLogViewModelProvider)).put(DnsLeakTestViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) dnsLeakTestViewModelProvider)).put(DnsToolsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) dnsToolsViewModelProvider)).put(FirewallViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) firewallViewModelProvider)).put(HomeViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) homeViewModelProvider)).put(HostsDiffViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) hostsDiffViewModelProvider)).put(HostsEditorViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) hostsEditorViewModelProvider)).put(LogsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) logsViewModelProvider)).put(NetworkStatsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) networkStatsViewModelProvider)).put(OverlapViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) overlapViewModelProvider)).put(RuleTestViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) ruleTestViewModelProvider)).put(RulesViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) rulesViewModelProvider)).put(SettingsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) settingsViewModelProvider)).put(SourcesViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) sourcesViewModelProvider)).put(StatsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) statsViewModelProvider)).build());
+    }
+
+    @Override
+    public Map<Class<?>, Object> getHiltViewModelAssistedMap() {
+      return Collections.<Class<?>, Object>emptyMap();
+    }
+
+    private static final class SwitchingProvider<T> implements Provider<T> {
+      private final SingletonCImpl singletonCImpl;
+
+      private final ActivityRetainedCImpl activityRetainedCImpl;
+
+      private final ViewModelCImpl viewModelCImpl;
+
+      private final int id;
+
+      SwitchingProvider(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+          ViewModelCImpl viewModelCImpl, int id) {
+        this.singletonCImpl = singletonCImpl;
+        this.activityRetainedCImpl = activityRetainedCImpl;
+        this.viewModelCImpl = viewModelCImpl;
+        this.id = id;
+      }
+
+      @SuppressWarnings("unchecked")
+      @Override
+      public T get() {
+        switch (id) {
+          case 0: // com.hostshield.ui.screens.settings.AppExclusionsViewModel 
+          return (T) new AppExclusionsViewModel(singletonCImpl.appPreferencesProvider.get());
+
+          case 1: // com.hostshield.ui.screens.apps.AppsViewModel 
+          return (T) new AppsViewModel(singletonCImpl.dnsLogDao(), singletonCImpl.hostShieldRepositoryProvider.get(), singletonCImpl.blocklistHolderProvider.get(), singletonCImpl.appPreferencesProvider.get(), singletonCImpl.rootUtilProvider.get());
+
+          case 2: // com.hostshield.ui.screens.logs.ConnectionLogViewModel 
+          return (T) new ConnectionLogViewModel(singletonCImpl.connectionLogDao(), singletonCImpl.nflogReaderProvider.get());
+
+          case 3: // com.hostshield.ui.screens.settings.DnsLeakTestViewModel 
+          return (T) new DnsLeakTestViewModel(singletonCImpl.blocklistHolderProvider.get());
+
+          case 4: // com.hostshield.ui.screens.settings.DnsToolsViewModel 
+          return (T) new DnsToolsViewModel(singletonCImpl.appPreferencesProvider.get(), singletonCImpl.blocklistHolderProvider.get());
+
+          case 5: // com.hostshield.ui.screens.settings.FirewallViewModel 
+          return (T) new FirewallViewModel(singletonCImpl.appPreferencesProvider.get(), singletonCImpl.firewallRuleDao(), singletonCImpl.iptablesManagerProvider.get(), singletonCImpl.nflogReaderProvider.get());
+
+          case 6: // com.hostshield.ui.screens.home.HomeViewModel 
+          return (T) new HomeViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.hostShieldRepositoryProvider.get(), singletonCImpl.rootUtilProvider.get(), singletonCImpl.appPreferencesProvider.get(), singletonCImpl.sourceDownloaderProvider.get(), singletonCImpl.blocklistHolderProvider.get(), singletonCImpl.privateDnsDetectorProvider.get(), singletonCImpl.batteryOptimizationUtilProvider.get(), singletonCImpl.iptablesManagerProvider.get(), singletonCImpl.nflogReaderProvider.get(), singletonCImpl.dnsLogDao(), singletonCImpl.connectionLogDao(), singletonCImpl.privacyScorerProvider.get());
+
+          case 7: // com.hostshield.ui.screens.settings.HostsDiffViewModel 
+          return (T) new HostsDiffViewModel(singletonCImpl.rootUtilProvider.get());
+
+          case 8: // com.hostshield.ui.screens.settings.HostsEditorViewModel 
+          return (T) new HostsEditorViewModel(singletonCImpl.rootUtilProvider.get());
+
+          case 9: // com.hostshield.ui.screens.logs.LogsViewModel 
+          return (T) new LogsViewModel(singletonCImpl.hostShieldRepositoryProvider.get(), singletonCImpl.blocklistHolderProvider.get(), singletonCImpl.rootUtilProvider.get(), singletonCImpl.appPreferencesProvider.get());
+
+          case 10: // com.hostshield.ui.screens.stats.NetworkStatsViewModel 
+          return (T) new NetworkStatsViewModel(singletonCImpl.networkStatsTrackerProvider.get());
+
+          case 11: // com.hostshield.ui.screens.sources.OverlapViewModel 
+          return (T) new OverlapViewModel(singletonCImpl.hostShieldRepositoryProvider.get(), singletonCImpl.sourceDownloaderProvider.get());
+
+          case 12: // com.hostshield.ui.screens.settings.RuleTestViewModel 
+          return (T) new RuleTestViewModel(singletonCImpl.blocklistHolderProvider.get(), singletonCImpl.hostShieldRepositoryProvider.get());
+
+          case 13: // com.hostshield.ui.screens.lists.RulesViewModel 
+          return (T) new RulesViewModel(singletonCImpl.hostShieldRepositoryProvider.get());
+
+          case 14: // com.hostshield.ui.screens.settings.SettingsViewModel 
+          return (T) new SettingsViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.appPreferencesProvider.get(), singletonCImpl.hostShieldRepositoryProvider.get(), singletonCImpl.rootUtilProvider.get(), singletonCImpl.importExportUtilProvider.get(), singletonCImpl.backupRestoreUtilProvider.get(), singletonCImpl.batteryOptimizationUtilProvider.get(), singletonCImpl.pcapExporterProvider.get(), singletonCImpl.updateCheckerProvider.get(), singletonCImpl.diagnosticExporterProvider.get());
+
+          case 15: // com.hostshield.ui.screens.sources.SourcesViewModel 
+          return (T) new SourcesViewModel(singletonCImpl.hostShieldRepositoryProvider.get(), singletonCImpl.sourceDownloaderProvider.get());
+
+          case 16: // com.hostshield.ui.screens.stats.StatsViewModel 
+          return (T) new StatsViewModel(singletonCImpl.hostShieldRepositoryProvider.get());
+
+          default: throw new AssertionError(id);
+        }
+      }
+    }
+  }
+
+  private static final class ActivityRetainedCImpl extends HostShieldApp_HiltComponents.ActivityRetainedC {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ActivityRetainedCImpl activityRetainedCImpl = this;
+
+    private Provider<ActivityRetainedLifecycle> provideActivityRetainedLifecycleProvider;
+
+    private ActivityRetainedCImpl(SingletonCImpl singletonCImpl,
+        SavedStateHandleHolder savedStateHandleHolderParam) {
+      this.singletonCImpl = singletonCImpl;
+
+      initialize(savedStateHandleHolderParam);
+
+    }
+
+    @SuppressWarnings("unchecked")
+    private void initialize(final SavedStateHandleHolder savedStateHandleHolderParam) {
+      this.provideActivityRetainedLifecycleProvider = DoubleCheck.provider(new SwitchingProvider<ActivityRetainedLifecycle>(singletonCImpl, activityRetainedCImpl, 0));
+    }
+
+    @Override
+    public ActivityComponentBuilder activityComponentBuilder() {
+      return new ActivityCBuilder(singletonCImpl, activityRetainedCImpl);
+    }
+
+    @Override
+    public ActivityRetainedLifecycle getActivityRetainedLifecycle() {
+      return provideActivityRetainedLifecycleProvider.get();
+    }
+
+    private static final class SwitchingProvider<T> implements Provider<T> {
+      private final SingletonCImpl singletonCImpl;
+
+      private final ActivityRetainedCImpl activityRetainedCImpl;
+
+      private final int id;
+
+      SwitchingProvider(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+          int id) {
+        this.singletonCImpl = singletonCImpl;
+        this.activityRetainedCImpl = activityRetainedCImpl;
+        this.id = id;
+      }
+
+      @SuppressWarnings("unchecked")
+      @Override
+      public T get() {
+        switch (id) {
+          case 0: // dagger.hilt.android.ActivityRetainedLifecycle 
+          return (T) ActivityRetainedComponentManager_LifecycleModule_ProvideActivityRetainedLifecycleFactory.provideActivityRetainedLifecycle();
+
+          default: throw new AssertionError(id);
+        }
+      }
+    }
+  }
+
+  private static final class ServiceCImpl extends HostShieldApp_HiltComponents.ServiceC {
+    private final SingletonCImpl singletonCImpl;
+
+    private final ServiceCImpl serviceCImpl = this;
+
+    private ServiceCImpl(SingletonCImpl singletonCImpl, Service serviceParam) {
+      this.singletonCImpl = singletonCImpl;
+
+
+    }
+
+    @Override
+    public void injectDnsVpnService(DnsVpnService dnsVpnService) {
+      injectDnsVpnService2(dnsVpnService);
+    }
+
+    @Override
+    public void injectHostShieldTileService(HostShieldTileService hostShieldTileService) {
+      injectHostShieldTileService2(hostShieldTileService);
+    }
+
+    @Override
+    public void injectRootDnsService(RootDnsService rootDnsService) {
+      injectRootDnsService2(rootDnsService);
+    }
+
+    private DnsVpnService injectDnsVpnService2(DnsVpnService instance) {
+      DnsVpnService_MembersInjector.injectDnsLogDao(instance, singletonCImpl.dnsLogDao());
+      DnsVpnService_MembersInjector.injectBlockStatsDao(instance, singletonCImpl.blockStatsDao());
+      DnsVpnService_MembersInjector.injectBlocklist(instance, singletonCImpl.blocklistHolderProvider.get());
+      DnsVpnService_MembersInjector.injectPrefs(instance, singletonCImpl.appPreferencesProvider.get());
+      DnsVpnService_MembersInjector.injectRepository(instance, singletonCImpl.hostShieldRepositoryProvider.get());
+      DnsVpnService_MembersInjector.injectDownloader(instance, singletonCImpl.sourceDownloaderProvider.get());
+      DnsVpnService_MembersInjector.injectDohResolver(instance, singletonCImpl.dohResolverProvider.get());
+      return instance;
+    }
+
+    private HostShieldTileService injectHostShieldTileService2(HostShieldTileService instance2) {
+      HostShieldTileService_MembersInjector.injectPrefs(instance2, singletonCImpl.appPreferencesProvider.get());
+      return instance2;
+    }
+
+    private RootDnsService injectRootDnsService2(RootDnsService instance3) {
+      RootDnsService_MembersInjector.injectRootDnsLogger(instance3, singletonCImpl.rootDnsLoggerProvider.get());
+      RootDnsService_MembersInjector.injectBlockNotificationService(instance3, singletonCImpl.blockNotificationServiceProvider.get());
+      return instance3;
+    }
+  }
+
+  private static final class SingletonCImpl extends HostShieldApp_HiltComponents.SingletonC {
+    private final ApplicationContextModule applicationContextModule;
+
+    private final SingletonCImpl singletonCImpl = this;
+
+    private Provider<AppPreferences> appPreferencesProvider;
+
+    private Provider<HostShieldDatabase> provideDatabaseProvider;
+
+    private Provider<BackupRestoreUtil> backupRestoreUtilProvider;
+
+    private Provider<AutoBackupWorker_AssistedFactory> autoBackupWorker_AssistedFactoryProvider;
+
+    private Provider<BlockingScheduleWorker_AssistedFactory> blockingScheduleWorker_AssistedFactoryProvider;
+
+    private Provider<SourceDownloader> sourceDownloaderProvider;
+
+    private Provider<RootUtil> rootUtilProvider;
+
+    private Provider<HostShieldRepository> hostShieldRepositoryProvider;
+
+    private Provider<BlocklistHolder> blocklistHolderProvider;
+
+    private Provider<DohBypassUpdater> dohBypassUpdaterProvider;
+
+    private Provider<HostsUpdateWorker_AssistedFactory> hostsUpdateWorker_AssistedFactoryProvider;
+
+    private Provider<LogCleanupWorker_AssistedFactory> logCleanupWorker_AssistedFactoryProvider;
+
+    private Provider<IptablesBinaryManager> iptablesBinaryManagerProvider;
+
+    private Provider<IptablesManager> iptablesManagerProvider;
+
+    private Provider<ProfileScheduleWorker_AssistedFactory> profileScheduleWorker_AssistedFactoryProvider;
+
+    private Provider<SourceHealthWorker_AssistedFactory> sourceHealthWorker_AssistedFactoryProvider;
+
+    private Provider<NflogReader> nflogReaderProvider;
+
+    private Provider<PrivateDnsDetector> privateDnsDetectorProvider;
+
+    private Provider<BatteryOptimizationUtil> batteryOptimizationUtilProvider;
+
+    private Provider<PrivacyScorer> privacyScorerProvider;
+
+    private Provider<NetworkStatsTracker> networkStatsTrackerProvider;
+
+    private Provider<ImportExportUtil> importExportUtilProvider;
+
+    private Provider<PcapExporter> pcapExporterProvider;
+
+    private Provider<UpdateChecker> updateCheckerProvider;
+
+    private Provider<DiagnosticExporter> diagnosticExporterProvider;
+
+    private Provider<DohResolver> dohResolverProvider;
+
+    private Provider<RootDnsLogger> rootDnsLoggerProvider;
+
+    private Provider<BlockNotificationService> blockNotificationServiceProvider;
+
+    private SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
+      this.applicationContextModule = applicationContextModuleParam;
+      initialize(applicationContextModuleParam);
+      initialize2(applicationContextModuleParam);
+
+    }
+
+    private HostSourceDao hostSourceDao() {
+      return DatabaseModule_ProvideHostSourceDaoFactory.provideHostSourceDao(provideDatabaseProvider.get());
+    }
+
+    private UserRuleDao userRuleDao() {
+      return DatabaseModule_ProvideUserRuleDaoFactory.provideUserRuleDao(provideDatabaseProvider.get());
+    }
+
+    private ProfileDao profileDao() {
+      return DatabaseModule_ProvideProfileDaoFactory.provideProfileDao(provideDatabaseProvider.get());
+    }
+
+    private FirewallRuleDao firewallRuleDao() {
+      return DatabaseModule_ProvideFirewallRuleDaoFactory.provideFirewallRuleDao(provideDatabaseProvider.get());
+    }
+
+    private DnsLogDao dnsLogDao() {
+      return DatabaseModule_ProvideDnsLogDaoFactory.provideDnsLogDao(provideDatabaseProvider.get());
+    }
+
+    private BlockStatsDao blockStatsDao() {
+      return DatabaseModule_ProvideBlockStatsDaoFactory.provideBlockStatsDao(provideDatabaseProvider.get());
+    }
+
+    private ConnectionLogDao connectionLogDao() {
+      return DatabaseModule_ProvideConnectionLogDaoFactory.provideConnectionLogDao(provideDatabaseProvider.get());
+    }
+
+    private Map<String, javax.inject.Provider<WorkerAssistedFactory<? extends ListenableWorker>>> mapOfStringAndProviderOfWorkerAssistedFactoryOf(
+        ) {
+      return MapBuilder.<String, javax.inject.Provider<WorkerAssistedFactory<? extends ListenableWorker>>>newMapBuilder(6).put("com.hostshield.service.AutoBackupWorker", ((Provider) autoBackupWorker_AssistedFactoryProvider)).put("com.hostshield.service.BlockingScheduleWorker", ((Provider) blockingScheduleWorker_AssistedFactoryProvider)).put("com.hostshield.service.HostsUpdateWorker", ((Provider) hostsUpdateWorker_AssistedFactoryProvider)).put("com.hostshield.service.LogCleanupWorker", ((Provider) logCleanupWorker_AssistedFactoryProvider)).put("com.hostshield.service.ProfileScheduleWorker", ((Provider) profileScheduleWorker_AssistedFactoryProvider)).put("com.hostshield.service.SourceHealthWorker", ((Provider) sourceHealthWorker_AssistedFactoryProvider)).build();
+    }
+
+    private HiltWorkerFactory hiltWorkerFactory() {
+      return WorkerFactoryModule_ProvideFactoryFactory.provideFactory(mapOfStringAndProviderOfWorkerAssistedFactoryOf());
+    }
+
+    @SuppressWarnings("unchecked")
+    private void initialize(final ApplicationContextModule applicationContextModuleParam) {
+      this.appPreferencesProvider = DoubleCheck.provider(new SwitchingProvider<AppPreferences>(singletonCImpl, 1));
+      this.provideDatabaseProvider = DoubleCheck.provider(new SwitchingProvider<HostShieldDatabase>(singletonCImpl, 3));
+      this.backupRestoreUtilProvider = DoubleCheck.provider(new SwitchingProvider<BackupRestoreUtil>(singletonCImpl, 2));
+      this.autoBackupWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<AutoBackupWorker_AssistedFactory>(singletonCImpl, 0));
+      this.blockingScheduleWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<BlockingScheduleWorker_AssistedFactory>(singletonCImpl, 4));
+      this.sourceDownloaderProvider = DoubleCheck.provider(new SwitchingProvider<SourceDownloader>(singletonCImpl, 7));
+      this.rootUtilProvider = DoubleCheck.provider(new SwitchingProvider<RootUtil>(singletonCImpl, 8));
+      this.hostShieldRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<HostShieldRepository>(singletonCImpl, 6));
+      this.blocklistHolderProvider = DoubleCheck.provider(new SwitchingProvider<BlocklistHolder>(singletonCImpl, 9));
+      this.dohBypassUpdaterProvider = DoubleCheck.provider(new SwitchingProvider<DohBypassUpdater>(singletonCImpl, 10));
+      this.hostsUpdateWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<HostsUpdateWorker_AssistedFactory>(singletonCImpl, 5));
+      this.logCleanupWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<LogCleanupWorker_AssistedFactory>(singletonCImpl, 11));
+      this.iptablesBinaryManagerProvider = DoubleCheck.provider(new SwitchingProvider<IptablesBinaryManager>(singletonCImpl, 14));
+      this.iptablesManagerProvider = DoubleCheck.provider(new SwitchingProvider<IptablesManager>(singletonCImpl, 13));
+      this.profileScheduleWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<ProfileScheduleWorker_AssistedFactory>(singletonCImpl, 12));
+      this.sourceHealthWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<SourceHealthWorker_AssistedFactory>(singletonCImpl, 15));
+      this.nflogReaderProvider = DoubleCheck.provider(new SwitchingProvider<NflogReader>(singletonCImpl, 16));
+      this.privateDnsDetectorProvider = DoubleCheck.provider(new SwitchingProvider<PrivateDnsDetector>(singletonCImpl, 17));
+      this.batteryOptimizationUtilProvider = DoubleCheck.provider(new SwitchingProvider<BatteryOptimizationUtil>(singletonCImpl, 18));
+      this.privacyScorerProvider = DoubleCheck.provider(new SwitchingProvider<PrivacyScorer>(singletonCImpl, 19));
+      this.networkStatsTrackerProvider = DoubleCheck.provider(new SwitchingProvider<NetworkStatsTracker>(singletonCImpl, 20));
+      this.importExportUtilProvider = DoubleCheck.provider(new SwitchingProvider<ImportExportUtil>(singletonCImpl, 21));
+      this.pcapExporterProvider = DoubleCheck.provider(new SwitchingProvider<PcapExporter>(singletonCImpl, 22));
+      this.updateCheckerProvider = DoubleCheck.provider(new SwitchingProvider<UpdateChecker>(singletonCImpl, 23));
+      this.diagnosticExporterProvider = DoubleCheck.provider(new SwitchingProvider<DiagnosticExporter>(singletonCImpl, 24));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void initialize2(final ApplicationContextModule applicationContextModuleParam) {
+      this.dohResolverProvider = DoubleCheck.provider(new SwitchingProvider<DohResolver>(singletonCImpl, 25));
+      this.rootDnsLoggerProvider = DoubleCheck.provider(new SwitchingProvider<RootDnsLogger>(singletonCImpl, 26));
+      this.blockNotificationServiceProvider = DoubleCheck.provider(new SwitchingProvider<BlockNotificationService>(singletonCImpl, 27));
+    }
+
+    @Override
+    public void injectHostShieldApp(HostShieldApp hostShieldApp) {
+      injectHostShieldApp2(hostShieldApp);
+    }
+
+    @Override
+    public void injectAutomationReceiver(AutomationReceiver automationReceiver) {
+      injectAutomationReceiver2(automationReceiver);
+    }
+
+    @Override
+    public void injectBootReceiver(BootReceiver bootReceiver) {
+      injectBootReceiver2(bootReceiver);
+    }
+
+    @Override
+    public void injectNetworkChangeReceiver(NetworkChangeReceiver networkChangeReceiver) {
+      injectNetworkChangeReceiver2(networkChangeReceiver);
+    }
+
+    @Override
+    public Set<Boolean> getDisableFragmentGetContextFix() {
+      return Collections.<Boolean>emptySet();
+    }
+
+    @Override
+    public ActivityRetainedComponentBuilder retainedComponentBuilder() {
+      return new ActivityRetainedCBuilder(singletonCImpl);
+    }
+
+    @Override
+    public ServiceComponentBuilder serviceComponentBuilder() {
+      return new ServiceCBuilder(singletonCImpl);
+    }
+
+    private HostShieldApp injectHostShieldApp2(HostShieldApp instance) {
+      HostShieldApp_MembersInjector.injectWorkerFactory(instance, hiltWorkerFactory());
+      return instance;
+    }
+
+    private AutomationReceiver injectAutomationReceiver2(AutomationReceiver instance2) {
+      AutomationReceiver_MembersInjector.injectPrefs(instance2, appPreferencesProvider.get());
+      AutomationReceiver_MembersInjector.injectIptablesManager(instance2, iptablesManagerProvider.get());
+      return instance2;
+    }
+
+    private BootReceiver injectBootReceiver2(BootReceiver instance3) {
+      BootReceiver_MembersInjector.injectPrefs(instance3, appPreferencesProvider.get());
+      BootReceiver_MembersInjector.injectIptablesManager(instance3, iptablesManagerProvider.get());
+      BootReceiver_MembersInjector.injectNflogReader(instance3, nflogReaderProvider.get());
+      return instance3;
+    }
+
+    private NetworkChangeReceiver injectNetworkChangeReceiver2(NetworkChangeReceiver instance4) {
+      NetworkChangeReceiver_MembersInjector.injectPrefs(instance4, appPreferencesProvider.get());
+      NetworkChangeReceiver_MembersInjector.injectIptablesManager(instance4, iptablesManagerProvider.get());
+      return instance4;
+    }
+
+    private static final class SwitchingProvider<T> implements Provider<T> {
+      private final SingletonCImpl singletonCImpl;
+
+      private final int id;
+
+      SwitchingProvider(SingletonCImpl singletonCImpl, int id) {
+        this.singletonCImpl = singletonCImpl;
+        this.id = id;
+      }
+
+      @SuppressWarnings("unchecked")
+      @Override
+      public T get() {
+        switch (id) {
+          case 0: // com.hostshield.service.AutoBackupWorker_AssistedFactory 
+          return (T) new AutoBackupWorker_AssistedFactory() {
+            @Override
+            public AutoBackupWorker create(Context context, WorkerParameters params) {
+              return new AutoBackupWorker(context, params, singletonCImpl.appPreferencesProvider.get(), singletonCImpl.backupRestoreUtilProvider.get());
+            }
+          };
+
+          case 1: // com.hostshield.data.preferences.AppPreferences 
+          return (T) new AppPreferences(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 2: // com.hostshield.util.BackupRestoreUtil 
+          return (T) new BackupRestoreUtil(singletonCImpl.hostSourceDao(), singletonCImpl.userRuleDao(), singletonCImpl.profileDao(), singletonCImpl.firewallRuleDao(), singletonCImpl.appPreferencesProvider.get());
+
+          case 3: // com.hostshield.data.database.HostShieldDatabase 
+          return (T) DatabaseModule_ProvideDatabaseFactory.provideDatabase(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 4: // com.hostshield.service.BlockingScheduleWorker_AssistedFactory 
+          return (T) new BlockingScheduleWorker_AssistedFactory() {
+            @Override
+            public BlockingScheduleWorker create(Context context2, WorkerParameters params2) {
+              return new BlockingScheduleWorker(context2, params2, singletonCImpl.appPreferencesProvider.get());
+            }
+          };
+
+          case 5: // com.hostshield.service.HostsUpdateWorker_AssistedFactory 
+          return (T) new HostsUpdateWorker_AssistedFactory() {
+            @Override
+            public HostsUpdateWorker create(Context context3, WorkerParameters workerParams) {
+              return new HostsUpdateWorker(context3, workerParams, singletonCImpl.hostShieldRepositoryProvider.get(), singletonCImpl.appPreferencesProvider.get(), singletonCImpl.sourceDownloaderProvider.get(), singletonCImpl.blocklistHolderProvider.get(), singletonCImpl.dohBypassUpdaterProvider.get());
+            }
+          };
+
+          case 6: // com.hostshield.data.repository.HostShieldRepository 
+          return (T) new HostShieldRepository(singletonCImpl.hostSourceDao(), singletonCImpl.userRuleDao(), singletonCImpl.dnsLogDao(), singletonCImpl.blockStatsDao(), singletonCImpl.profileDao(), singletonCImpl.sourceDownloaderProvider.get(), singletonCImpl.rootUtilProvider.get());
+
+          case 7: // com.hostshield.data.source.SourceDownloader 
+          return (T) new SourceDownloader();
+
+          case 8: // com.hostshield.util.RootUtil 
+          return (T) new RootUtil(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 9: // com.hostshield.domain.BlocklistHolder 
+          return (T) new BlocklistHolder();
+
+          case 10: // com.hostshield.service.DohBypassUpdater 
+          return (T) new DohBypassUpdater(singletonCImpl.appPreferencesProvider.get());
+
+          case 11: // com.hostshield.service.LogCleanupWorker_AssistedFactory 
+          return (T) new LogCleanupWorker_AssistedFactory() {
+            @Override
+            public LogCleanupWorker create(Context context4, WorkerParameters params3) {
+              return new LogCleanupWorker(context4, params3, singletonCImpl.dnsLogDao(), singletonCImpl.connectionLogDao(), singletonCImpl.appPreferencesProvider.get());
+            }
+          };
+
+          case 12: // com.hostshield.service.ProfileScheduleWorker_AssistedFactory 
+          return (T) new ProfileScheduleWorker_AssistedFactory() {
+            @Override
+            public ProfileScheduleWorker create(Context context5, WorkerParameters params4) {
+              return new ProfileScheduleWorker(context5, params4, singletonCImpl.profileDao(), singletonCImpl.hostShieldRepositoryProvider.get(), singletonCImpl.appPreferencesProvider.get(), singletonCImpl.iptablesManagerProvider.get(), singletonCImpl.sourceDownloaderProvider.get(), singletonCImpl.blocklistHolderProvider.get());
+            }
+          };
+
+          case 13: // com.hostshield.service.IptablesManager 
+          return (T) new IptablesManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.firewallRuleDao(), singletonCImpl.iptablesBinaryManagerProvider.get());
+
+          case 14: // com.hostshield.util.IptablesBinaryManager 
+          return (T) new IptablesBinaryManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 15: // com.hostshield.service.SourceHealthWorker_AssistedFactory 
+          return (T) new SourceHealthWorker_AssistedFactory() {
+            @Override
+            public SourceHealthWorker create(Context context6, WorkerParameters params5) {
+              return new SourceHealthWorker(context6, params5, singletonCImpl.hostSourceDao(), singletonCImpl.sourceDownloaderProvider.get());
+            }
+          };
+
+          case 16: // com.hostshield.service.NflogReader 
+          return (T) new NflogReader(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.connectionLogDao());
+
+          case 17: // com.hostshield.util.PrivateDnsDetector 
+          return (T) new PrivateDnsDetector(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 18: // com.hostshield.util.BatteryOptimizationUtil 
+          return (T) new BatteryOptimizationUtil(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 19: // com.hostshield.util.PrivacyScorer 
+          return (T) new PrivacyScorer(singletonCImpl.appPreferencesProvider.get(), singletonCImpl.batteryOptimizationUtilProvider.get());
+
+          case 20: // com.hostshield.service.NetworkStatsTracker 
+          return (T) new NetworkStatsTracker(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 21: // com.hostshield.util.ImportExportUtil 
+          return (T) new ImportExportUtil();
+
+          case 22: // com.hostshield.util.PcapExporter 
+          return (T) new PcapExporter(singletonCImpl.dnsLogDao(), singletonCImpl.connectionLogDao());
+
+          case 23: // com.hostshield.util.UpdateChecker 
+          return (T) new UpdateChecker();
+
+          case 24: // com.hostshield.util.DiagnosticExporter 
+          return (T) new DiagnosticExporter(singletonCImpl.appPreferencesProvider.get(), singletonCImpl.blocklistHolderProvider.get(), singletonCImpl.iptablesManagerProvider.get(), singletonCImpl.dnsLogDao(), singletonCImpl.connectionLogDao(), singletonCImpl.privateDnsDetectorProvider.get());
+
+          case 25: // com.hostshield.service.DohResolver 
+          return (T) new DohResolver();
+
+          case 26: // com.hostshield.service.RootDnsLogger 
+          return (T) new RootDnsLogger(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.dnsLogDao(), singletonCImpl.blockStatsDao(), singletonCImpl.blocklistHolderProvider.get(), singletonCImpl.appPreferencesProvider.get());
+
+          case 27: // com.hostshield.service.BlockNotificationService 
+          return (T) new BlockNotificationService(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.dnsLogDao());
+
+          default: throw new AssertionError(id);
+        }
+      }
+    }
+  }
+}

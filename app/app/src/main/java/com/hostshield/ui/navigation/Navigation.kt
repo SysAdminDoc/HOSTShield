@@ -42,4 +42,5 @@ object SubScreen {
     const val DNS_LEAK_TEST = "dns_leak_test"
     const val RULE_TEST = "rule_test"
     const val HOSTS_EDITOR = "hosts_editor"
+    const val APP_PRIVACY = "app_privacy"
 }

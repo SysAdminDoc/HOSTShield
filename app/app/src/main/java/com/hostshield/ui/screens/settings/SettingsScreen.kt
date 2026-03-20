@@ -45,7 +45,8 @@ fun SettingsScreen(
     onNavigateToOverlapAnalysis: () -> Unit = {},
     onNavigateToDnsLeakTest: () -> Unit = {},
     onNavigateToRuleTest: () -> Unit = {},
-    onNavigateToHostsEditor: () -> Unit = {}
+    onNavigateToHostsEditor: () -> Unit = {},
+    onNavigateToAppPrivacy: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -311,6 +312,8 @@ fun SettingsScreen(
             SettingsRow("Overlap analysis", "Find redundant domains across sources", Icons.Filled.CompareArrows, onClick = onNavigateToOverlapAnalysis)
             Spacer(Modifier.height(4.dp))
             SettingsRow("Rule tester", "Test if domains match your rules", Icons.Filled.Science, onClick = onNavigateToRuleTest)
+            Spacer(Modifier.height(4.dp))
+            SettingsRow("App privacy report", "Grade each app's tracking behavior", Icons.Filled.PrivacyTip, onClick = onNavigateToAppPrivacy)
             Spacer(Modifier.height(4.dp))
             SettingsRow("Import rules", "From JSON or hosts file", Icons.Filled.FileUpload) {
                 importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))

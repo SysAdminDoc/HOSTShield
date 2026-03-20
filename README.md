@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-3.6.0-blue)
+![Version](https://img.shields.io/badge/version-3.7.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%207+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)
@@ -73,6 +73,9 @@
 | **Pi-hole Import** | Import Pi-hole teleporter backup (domainlist CSV, gravity) |
 | **Deep Links** | Open screens via hostshield://logs, hostshield://stats, etc. |
 | **Notification Actions** | Firewall App + View Logs buttons in block alert notifications |
+| **App Privacy Report** | A-F grade for each app based on DNS tracking behavior |
+| **Rule Sync via URL** | Subscribe to remote rule lists that auto-sync during updates |
+| **Blocked Domain Trends** | Compare recent vs previous blocked domains for trending analysis |
 | **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
 
 ## How It Works

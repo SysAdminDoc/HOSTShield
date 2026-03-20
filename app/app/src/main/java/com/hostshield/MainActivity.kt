@@ -317,7 +317,8 @@ private fun HostShieldMainApp(activity: MainActivity) {
                     onNavigateToOverlapAnalysis = { navController.navigate(SubScreen.OVERLAP_ANALYSIS) },
                     onNavigateToDnsLeakTest = { navController.navigate(SubScreen.DNS_LEAK_TEST) },
                     onNavigateToRuleTest = { navController.navigate(SubScreen.RULE_TEST) },
-                    onNavigateToHostsEditor = { navController.navigate(SubScreen.HOSTS_EDITOR) }
+                    onNavigateToHostsEditor = { navController.navigate(SubScreen.HOSTS_EDITOR) },
+                    onNavigateToAppPrivacy = { navController.navigate(SubScreen.APP_PRIVACY) }
                 )
             }
             composable(SubScreen.APP_EXCLUSIONS) {
@@ -369,6 +370,11 @@ private fun HostShieldMainApp(activity: MainActivity) {
             }
             composable(SubScreen.HOSTS_EDITOR) {
                 com.hostshield.ui.screens.settings.HostsEditorScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.APP_PRIVACY) {
+                com.hostshield.ui.screens.apps.AppPrivacyScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
