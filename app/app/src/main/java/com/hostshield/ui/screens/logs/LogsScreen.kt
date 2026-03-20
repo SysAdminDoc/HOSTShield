@@ -34,7 +34,6 @@ import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
-import kotlinx.coroutines.flow.first as flowFirst
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -192,7 +191,7 @@ class LogsViewModel @Inject constructor(
 
     fun togglePin(domain: String) {
         viewModelScope.launch {
-            val current = prefs.pinnedDomains.flowFirst()
+            val current = prefs.pinnedDomains.first()
             if (domain.lowercase() in current) prefs.unpinDomain(domain)
             else prefs.pinDomain(domain)
         }
@@ -229,6 +228,9 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     // Multi-select state
     var multiSelectMode by remember { mutableStateOf(false) }
     var selectedHostnames by remember { mutableStateOf(setOf<String>()) }
+
+    // Query type filter
+    var queryTypeFilter by remember { mutableStateOf<String?>(null) }
 
     val deduped = remember(logs, query, blockedFilter, blockedSet, queryTypeFilter) {
         logs
@@ -371,8 +373,6 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             LogFilter("Allowed", blockedFilter == false) { viewModel.setFilter(false) }
         }
 
-        // Query type filter
-        var queryTypeFilter by remember { mutableStateOf<String?>(null) }
         Spacer(Modifier.height(4.dp))
         Row(
             modifier = Modifier.padding(horizontal = 20.dp),

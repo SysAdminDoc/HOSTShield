@@ -14,8 +14,6 @@ import com.hostshield.domain.parser.HostsParser
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
-import android.content.Context
-import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import java.time.LocalDateTime
 import java.time.LocalTime
