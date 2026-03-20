@@ -129,10 +129,10 @@ fun SettingsScreen(
                 value = customDns,
                 onValueChange = { customDns = it },
                 placeholder = { Text("e.g. 1.1.1.1, 9.9.9.9", color = TextDim, fontSize = 12.sp) },
-                modifier = Modifier.fillMaxWidth().height(44.dp),
+                modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 52.dp),
                 singleLine = true,
-                textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
-                shape = RoundedCornerShape(8.dp),
+                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+                shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Blue, unfocusedBorderColor = Surface3,
                     cursorColor = Blue, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
@@ -140,7 +140,7 @@ fun SettingsScreen(
                 trailingIcon = {
                     if (customDns != state.customUpstreamDns) {
                         IconButton(onClick = { viewModel.setCustomUpstreamDns(customDns) }) {
-                            Icon(Icons.Filled.Check, null, tint = Green, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Filled.Check, null, tint = Green, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -745,6 +745,7 @@ private fun SettingsRow(
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun DohProviderSelector(current: String, onSelect: (String) -> Unit) {
     val providers = listOf(
@@ -754,11 +755,12 @@ private fun DohProviderSelector(current: String, onSelect: (String) -> Unit) {
         "nextdns" to "NextDNS",
         "adguard" to "AdGuard"
     )
-    Row(
+    androidx.compose.foundation.layout.FlowRow(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        providers.take(3).forEach { (key, label) ->
+        providers.forEach { (key, label) ->
             val selected = current == key
             Surface(
                 onClick = { onSelect(key) },
@@ -767,31 +769,9 @@ private fun DohProviderSelector(current: String, onSelect: (String) -> Unit) {
             ) {
                 Text(
                     label,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                     color = if (selected) Blue else TextDim,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-    }
-    Spacer(Modifier.height(4.dp))
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        providers.drop(3).forEach { (key, label) ->
-            val selected = current == key
-            Surface(
-                onClick = { onSelect(key) },
-                shape = RoundedCornerShape(8.dp),
-                color = if (selected) Blue.copy(alpha = 0.12f) else Surface2
-            ) {
-                Text(
-                    label,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    color = if (selected) Blue else TextDim,
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
