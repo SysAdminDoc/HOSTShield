@@ -39,4 +39,5 @@ object SubScreen {
     const val DNS_TOOLS = "dns_tools"
     const val NETWORK_STATS = "network_stats"
     const val OVERLAP_ANALYSIS = "overlap_analysis"
+    const val DNS_LEAK_TEST = "dns_leak_test"
 }

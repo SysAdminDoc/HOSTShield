@@ -42,7 +42,8 @@ fun SettingsScreen(
     onNavigateToConnectionLog: () -> Unit = {},
     onNavigateToDnsTools: () -> Unit = {},
     onNavigateToNetworkStats: () -> Unit = {},
-    onNavigateToOverlapAnalysis: () -> Unit = {}
+    onNavigateToOverlapAnalysis: () -> Unit = {},
+    onNavigateToDnsLeakTest: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -113,6 +114,8 @@ fun SettingsScreen(
                 Icons.Filled.FilterAlt,
                 state.dnsTrapEnabled
             ) { viewModel.setDnsTrapEnabled(it) }
+            Spacer(Modifier.height(8.dp))
+            SettingsRow("DNS leak test", "Verify queries go through HostShield", Icons.Filled.VerifiedUser, onClick = onNavigateToDnsLeakTest)
             Spacer(Modifier.height(8.dp))
             // Block response type selector
             Text("Block Response", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -364,6 +367,41 @@ fun SettingsScreen(
                 ) {
                     Text("Root", color = TextSecondary, fontSize = 13.sp)
                     Text("Available", color = Green, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            // Accent color picker
+            Spacer(Modifier.height(8.dp))
+            Text("Accent Color", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val colors = listOf(
+                    "teal" to Teal,
+                    "blue" to Blue,
+                    "purple" to Mauve,
+                    "green" to Green,
+                    "pink" to Red,
+                    "peach" to Peach
+                )
+                colors.forEach { (key, color) ->
+                    val isSelected = state.accentColor == key
+                    Surface(
+                        onClick = { viewModel.setAccentColor(key) },
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isSelected) color.copy(alpha = 0.2f) else Surface2,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().padding(6.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(color),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(Icons.Filled.Check, null, tint = Color.Black, modifier = Modifier.size(14.dp))
+                            }
+                        }
+                    }
                 }
             }
 

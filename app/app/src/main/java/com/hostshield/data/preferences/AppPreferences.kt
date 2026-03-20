@@ -55,6 +55,10 @@ class AppPreferences @Inject constructor(
         val REMOTE_DOH_DOMAINS = stringPreferencesKey("remote_doh_domains")
         val REMOTE_DOH_WILDCARDS = stringPreferencesKey("remote_doh_wildcards")
         val REMOTE_DOH_VERSION = intPreferencesKey("remote_doh_version")
+        val ACCENT_COLOR = stringPreferencesKey("accent_color")
+        val AUTO_BACKUP_ENABLED = booleanPreferencesKey("auto_backup_enabled")
+        val AUTO_BACKUP_INTERVAL_DAYS = intPreferencesKey("auto_backup_interval_days")
+        val PINNED_DOMAINS = stringPreferencesKey("pinned_domains")
     }
 
     // ── Blocking ─────────────────────────────────────────────
@@ -177,4 +181,32 @@ class AppPreferences @Inject constructor(
     suspend fun getRemoteDohDomains(): String = ds.data.map { it[Keys.REMOTE_DOH_DOMAINS] ?: "" }.first()
     suspend fun getRemoteDohWildcards(): String = ds.data.map { it[Keys.REMOTE_DOH_WILDCARDS] ?: "" }.first()
     suspend fun getRemoteDohVersion(): Int = ds.data.map { it[Keys.REMOTE_DOH_VERSION] ?: 0 }.first()
+
+    // ── Accent Color ─────────────────────────────────────────
+    // Values: "teal", "blue", "purple", "green", "pink", "peach"
+    val accentColor: Flow<String> = ds.data.map { it[Keys.ACCENT_COLOR] ?: "teal" }
+    suspend fun setAccentColor(color: String) = ds.edit { it[Keys.ACCENT_COLOR] = color }
+
+    // ── Auto Backup ──────────────────────────────────────────
+    val autoBackupEnabled: Flow<Boolean> = ds.data.map { it[Keys.AUTO_BACKUP_ENABLED] ?: false }
+    suspend fun setAutoBackupEnabled(enabled: Boolean) = ds.edit { it[Keys.AUTO_BACKUP_ENABLED] = enabled }
+
+    val autoBackupIntervalDays: Flow<Int> = ds.data.map { it[Keys.AUTO_BACKUP_INTERVAL_DAYS] ?: 7 }
+    suspend fun setAutoBackupIntervalDays(days: Int) = ds.edit { it[Keys.AUTO_BACKUP_INTERVAL_DAYS] = days }
+
+    // ── Pinned Domains ───────────────────────────────────────
+    val pinnedDomains: Flow<Set<String>> = ds.data.map {
+        (it[Keys.PINNED_DOMAINS] ?: "").split(",").filter { s -> s.isNotBlank() }.toSet()
+    }
+    suspend fun setPinnedDomains(domains: Set<String>) = ds.edit {
+        it[Keys.PINNED_DOMAINS] = domains.joinToString(",")
+    }
+    suspend fun pinDomain(domain: String) {
+        val current = pinnedDomains.first()
+        setPinnedDomains(current + domain.lowercase())
+    }
+    suspend fun unpinDomain(domain: String) {
+        val current = pinnedDomains.first()
+        setPinnedDomains(current - domain.lowercase())
+    }
 }

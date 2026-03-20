@@ -59,7 +59,8 @@ data class SettingsUiState(
     val updateReleaseNotes: String = "",
     val updatePublishedAt: String = "",
     val updateHtmlUrl: String = "",
-    val updateMessage: String? = null
+    val updateMessage: String? = null,
+    val accentColor: String = "teal"
 )
 
 @HiltViewModel
@@ -103,6 +104,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { prefs.dnsTrapEnabled.collect { v -> _uiState.update { it.copy(dnsTrapEnabled = v) } } }
         viewModelScope.launch { prefs.blockResponseType.collect { v -> _uiState.update { it.copy(blockResponseType = v) } } }
         viewModelScope.launch { prefs.blockedApps.collect { apps -> _uiState.update { it.copy(firewalledApps = apps.size) } } }
+        viewModelScope.launch { prefs.accentColor.collect { c -> _uiState.update { it.copy(accentColor = c) } } }
         viewModelScope.launch(Dispatchers.IO) {
             val available = rootUtil.isRootAvailable()
             _uiState.update { it.copy(isRootAvailable = available) }
@@ -182,6 +184,7 @@ class SettingsViewModel @Inject constructor(
     fun setIpv6Redirect(ip: String) { viewModelScope.launch { prefs.setIpv6Redirect(ip) } }
     fun setLogRetention(days: Int) { viewModelScope.launch { prefs.setLogRetentionDays(days) } }
     fun setBlockResponseType(type: String) { viewModelScope.launch { prefs.setBlockResponseType(type) } }
+    fun setAccentColor(color: String) { viewModelScope.launch { prefs.setAccentColor(color) } }
 
     /** Export rules JSON directly to a SAF URI. */
     fun exportRulesToUri(uri: Uri) {

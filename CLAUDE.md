@@ -1,7 +1,7 @@
 # HostShield
 
 ## Overview
-Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. v3.2.0.
+Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. v3.3.0.
 
 ## Tech Stack
 - Kotlin, Jetpack Compose, Material 3
@@ -36,6 +36,7 @@ Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. 
 ```
 
 ## Version History
+- v3.3.0: DNS leak test, clipboard import, accent color picker, auto backup, IP blocking, domain pinning
 - v3.2.0: App shortcuts, enhanced widget, bulk log actions, DNS latency chart, network-aware profiles, regex rules, domain reputation lookup, source changelog tracking
 - v3.1.0: DoH bypass scheduling, multi-upstream DNS, auto update check, allowlist sources, overlap analysis, CSV stats export
 - v3.0.0: DNS cache, CNAME cloaking, 7-day trend charts, diagnostic export, CI/CD

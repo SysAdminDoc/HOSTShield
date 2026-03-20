@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-3.2.0-blue)
+![Version](https://img.shields.io/badge/version-3.3.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%207+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)
@@ -50,6 +50,12 @@
 | **Regex Rules** | Block/allow domains by regex pattern with live validation |
 | **Domain Reputation** | One-tap VirusTotal, URLhaus, and Whois lookup from log detail |
 | **Source Changelog** | Track new/removed domains between blocklist updates |
+| **DNS Leak Test** | Built-in test to verify DNS queries route through HostShield |
+| **Import from Clipboard** | Quick-paste domains to bulk-add as block rules |
+| **Accent Color Picker** | Choose from 6 accent colors (Teal, Blue, Purple, Green, Pink, Peach) |
+| **Auto Backup** | Scheduled backup to app storage with 5-backup rotation |
+| **IP Blocking** | Block connections to specific IP addresses |
+| **Domain Pinning** | Pin/star domains in logs for monitoring |
 | **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
 
 ## How It Works
