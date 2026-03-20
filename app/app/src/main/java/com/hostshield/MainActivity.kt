@@ -300,7 +300,8 @@ private fun HostShieldMainApp(activity: MainActivity) {
                     onNavigateToApps = { navController.navigate(SubScreen.APPS) },
                     onNavigateToFirewall = { navController.navigate(SubScreen.FIREWALL) },
                     onNavigateToConnectionLog = { navController.navigate(SubScreen.CONNECTION_LOG) },
-                    onRequestVpnPermission = { onResult -> activity.requestVpnPermission(onResult) }
+                    onRequestVpnPermission = { onResult -> activity.requestVpnPermission(onResult) },
+                    onNavigateToAppLogs = { pkg -> navController.navigate("${SubScreen.APP_LOGS}?pkg=$pkg") }
                 )
             }
             composable(Screen.Sources.route) {
@@ -392,6 +393,16 @@ private fun HostShieldMainApp(activity: MainActivity) {
             }
             composable(SubScreen.AUTOMATION_AUDIT) {
                 com.hostshield.ui.screens.settings.AutomationAuditScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                "${SubScreen.APP_LOGS}?pkg={pkg}",
+                arguments = listOf(androidx.navigation.navArgument("pkg") { defaultValue = "" })
+            ) { entry ->
+                val pkg = entry.arguments?.getString("pkg") ?: ""
+                com.hostshield.ui.screens.logs.AppLogsScreen(
+                    packageName = pkg,
                     onBack = { navController.popBackStack() }
                 )
             }

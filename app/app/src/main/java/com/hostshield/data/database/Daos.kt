@@ -231,6 +231,14 @@ interface DnsLogDao {
     """)
     suspend fun getOlderBlockedDomains(olderStart: Long, olderEnd: Long, limit: Int = 30): List<TopHostname>
 
+    /** Query type distribution (A, AAAA, CNAME, MX, etc). */
+    @Query("""
+        SELECT query_type as queryType, COUNT(*) as cnt
+        FROM dns_logs WHERE timestamp > :since
+        GROUP BY query_type ORDER BY cnt DESC LIMIT :limit
+    """)
+    fun getQueryTypeDistribution(since: Long, limit: Int = 10): Flow<List<QueryTypeStat>>
+
     /** Average DNS response time per hour (for latency chart). */
     @Query("""
         SELECT CAST((timestamp / 3600000) % 24 AS INTEGER) as hour,
@@ -421,6 +429,11 @@ data class FirewallTopApp(
     val uid: Int,
     @ColumnInfo(name = "package_name") val packageName: String,
     @ColumnInfo(name = "app_label") val appLabel: String,
+    val cnt: Int
+)
+
+data class QueryTypeStat(
+    val queryType: String,
     val cnt: Int
 )
 

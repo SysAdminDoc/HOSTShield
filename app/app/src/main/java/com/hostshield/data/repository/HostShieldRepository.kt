@@ -69,6 +69,7 @@ class HostShieldRepository @Inject constructor(
 
     fun getDailyBreakdown(since: Long): Flow<List<com.hostshield.data.database.DailyBreakdown>> = logDao.getDailyBreakdown(since)
     fun getHourlyLatency(since: Long): Flow<List<com.hostshield.data.database.HourlyLatency>> = logDao.getHourlyLatency(since)
+    fun getQueryTypeDistribution(since: Long): Flow<List<com.hostshield.data.database.QueryTypeStat>> = logDao.getQueryTypeDistribution(since)
     suspend fun logDnsQuery(entry: DnsLogEntry) = logDao.insert(entry)
     suspend fun clearOldLogs(olderThanMs: Long) = logDao.deleteOlderThan(System.currentTimeMillis() - olderThanMs)
     suspend fun clearAllLogs() = logDao.deleteAll()

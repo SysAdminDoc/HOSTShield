@@ -58,6 +58,7 @@ data class StatsUiState(
     val mostQueried: List<TopHostname> = emptyList(),
     val dailyTrend: List<com.hostshield.data.database.DailyBreakdown> = emptyList(),
     val hourlyLatency: List<com.hostshield.data.database.HourlyLatency> = emptyList(),
+    val queryTypeDistribution: List<com.hostshield.data.database.QueryTypeStat> = emptyList(),
     // DNS Cache stats
     val cacheSize: Int = 0,
     val cacheHitRate: Float = 0f,
@@ -104,6 +105,7 @@ class StatsViewModel @Inject constructor(
         viewModelScope.launch { repository.getMostQueriedDomains(weekStart, 15).collect { m -> _uiState.update { it.copy(mostQueried = m) } } }
         viewModelScope.launch { repository.getDailyBreakdown(weekStart).collect { d -> _uiState.update { it.copy(dailyTrend = d) } } }
         viewModelScope.launch { repository.getHourlyLatency(todayStart).collect { l -> _uiState.update { it.copy(hourlyLatency = l) } } }
+        viewModelScope.launch { repository.getQueryTypeDistribution(weekStart).collect { d -> _uiState.update { it.copy(queryTypeDistribution = d) } } }
         pollCacheStats()
         loadVpnStability()
     }
@@ -260,6 +262,63 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                         Text("Hits: ${nf.format(state.cacheHits)}", color = Green, fontSize = 11.sp)
                         Text("Misses: ${nf.format(state.cacheMisses)}", color = TextDim, fontSize = 11.sp)
                         Text("Evictions: ${nf.format(state.cacheEvictions)}", color = Peach, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+
+        // Query Type Distribution
+        if (state.queryTypeDistribution.isNotEmpty()) {
+            item {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(Mauve.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Filled.Category, null, tint = Mauve, modifier = Modifier.size(14.dp))
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Text("Query Types (7d)", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        val total = state.queryTypeDistribution.sumOf { it.cnt }.coerceAtLeast(1)
+                        val typeColors = mapOf(
+                            "A" to Teal, "AAAA" to Blue, "CNAME" to Peach,
+                            "MX" to Flamingo, "TXT" to Yellow, "SRV" to Green,
+                            "SOA" to Red, "NS" to Mauve, "PTR" to Sky
+                        )
+                        state.queryTypeDistribution.forEach { stat ->
+                            val pct = stat.cnt.toFloat() / total
+                            val color = typeColors[stat.queryType] ?: TextDim
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(stat.queryType, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.width(48.dp))
+                                Box(
+                                    modifier = Modifier.weight(1f).height(14.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Surface3)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxHeight()
+                                            .fillMaxWidth(pct.coerceIn(0.01f, 1f))
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(color.copy(alpha = 0.6f))
+                                    )
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "${(pct * 100).toInt()}%",
+                                    color = TextDim, fontSize = 10.sp,
+                                    modifier = Modifier.width(32.dp)
+                                )
+                                Text(
+                                    nf.format(stat.cnt),
+                                    color = TextDim, fontSize = 10.sp
+                                )
+                            }
+                        }
                     }
                 }
             }
