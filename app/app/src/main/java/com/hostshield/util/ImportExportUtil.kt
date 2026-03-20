@@ -2,6 +2,7 @@ package com.hostshield.util
 
 import android.content.Context
 import android.net.Uri
+import com.hostshield.data.model.FirewallRule
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.model.HostSource
@@ -15,7 +16,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v1.6.0 — Import / Export
+// HostShield v4.1.0 — Import / Export
 // ══════════════════════════════════════════════════════════════
 
 data class ImportResult(
@@ -396,6 +397,72 @@ class ImportExportUtil @Inject constructor() {
         }
 
         return sb.toString()
+    }
+
+    /**
+     * Export firewall rules as JSON.
+     */
+    fun exportFirewallJson(rules: List<FirewallRule>): String {
+        val root = JSONObject()
+        root.put("app", "HostShield")
+        root.put("type", "firewall_rules")
+        root.put("version", "1.0.0")
+        root.put("exported_at", System.currentTimeMillis())
+
+        val arr = JSONArray()
+        rules.forEach { rule ->
+            arr.put(JSONObject().apply {
+                put("package_name", rule.packageName)
+                put("app_label", rule.appLabel)
+                put("uid", rule.uid)
+                put("wifi_allowed", rule.wifiAllowed)
+                put("mobile_allowed", rule.mobileAllowed)
+                put("vpn_allowed", rule.vpnAllowed)
+                put("is_system", rule.isSystem)
+                put("enabled", rule.enabled)
+                put("block_screen_off", rule.blockScreenOff)
+                put("block_background", rule.blockBackground)
+                put("block_metered", rule.blockMetered)
+            })
+        }
+        root.put("firewall_rules", arr)
+        return root.toString(2)
+    }
+
+    data class FirewallImportResult(
+        val rules: List<FirewallRule>,
+        val count: Int
+    )
+
+    /**
+     * Import firewall rules from JSON.
+     * UIDs are NOT imported (they differ across devices); the caller
+     * must resolve UIDs from package names on the target device.
+     */
+    suspend fun importFirewallJson(content: String): FirewallImportResult = withContext(Dispatchers.Default) {
+        val root = JSONObject(content)
+        val rules = mutableListOf<FirewallRule>()
+
+        root.optJSONArray("firewall_rules")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                rules.add(FirewallRule(
+                    packageName = obj.getString("package_name"),
+                    appLabel = obj.optString("app_label", ""),
+                    uid = obj.optInt("uid", -1),
+                    wifiAllowed = obj.optBoolean("wifi_allowed", true),
+                    mobileAllowed = obj.optBoolean("mobile_allowed", true),
+                    vpnAllowed = obj.optBoolean("vpn_allowed", true),
+                    isSystem = obj.optBoolean("is_system", false),
+                    enabled = obj.optBoolean("enabled", true),
+                    blockScreenOff = obj.optBoolean("block_screen_off", false),
+                    blockBackground = obj.optBoolean("block_background", false),
+                    blockMetered = obj.optBoolean("block_metered", false)
+                ))
+            }
+        }
+
+        FirewallImportResult(rules = rules, count = rules.size)
     }
 
     private fun isBlockingIp(s: String): Boolean =

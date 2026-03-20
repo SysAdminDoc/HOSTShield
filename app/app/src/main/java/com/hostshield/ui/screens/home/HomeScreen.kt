@@ -346,6 +346,41 @@ fun HomeScreen(
             }
         }
 
+        // Query rate anomaly warning
+        state.queryAnomalyWarning?.let { warning ->
+            Spacer(Modifier.height(8.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Peach.copy(alpha = 0.08f),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+            ) {
+                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.TrendingUp, null, tint = Peach, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("High Query Rate", color = Peach, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                        Text(warning, color = Peach.copy(alpha = 0.8f), fontSize = 11.sp, lineHeight = 15.sp)
+                    }
+                }
+            }
+        }
+
+        // Buffer overflow warning
+        if (state.droppedQueries > 0) {
+            Spacer(Modifier.height(8.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Red.copy(alpha = 0.08f),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+            ) {
+                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Warning, null, tint = Red, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text("${state.droppedQueries} queries dropped (log buffer full)", color = Red, fontSize = 11.sp)
+                }
+            }
+        }
+
         // Feature status pills (VPN mode only)
         if (state.isEnabled && state.blockMethod == com.hostshield.data.model.BlockMethod.VPN) {
             Spacer(Modifier.height(8.dp))

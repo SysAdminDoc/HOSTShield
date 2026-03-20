@@ -77,7 +77,13 @@ data class HomeUiState(
     val queriesPerMinute: Int = 0,
     val blocksPerMinute: Int = 0,
     /** Source category counts: category -> (enabled, total). */
-    val categoryCounts: Map<String, Pair<Int, Int>> = emptyMap()
+    val categoryCounts: Map<String, Pair<Int, Int>> = emptyMap(),
+    /** Query rate anomaly warning (null = normal). */
+    val queryAnomalyWarning: String? = null,
+    /** DNS cache hit rate (from VPN). */
+    val cacheHitRate: Float = 0f,
+    /** Dropped queries from buffer overflow. */
+    val droppedQueries: Int = 0
 )
 
 @HiltViewModel
@@ -150,17 +156,45 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /** Track live query rate from the VPN live stream. */
+    // Baseline query rate (rolling average over first 10 minutes)
+    private val baselineRates = mutableListOf<Int>()
+    private var baselineQpm = 0
+
+    /** Track live query rate + anomaly detection from the VPN live stream. */
     private fun trackQueryRate() {
         viewModelScope.launch {
             while (true) {
-                kotlinx.coroutines.delay(5_000) // Update every 5 seconds
+                kotlinx.coroutines.delay(5_000)
                 val recent = liveQueryStream.value
                 val now = System.currentTimeMillis()
                 val oneMinAgo = now - 60_000
                 val recentQueries = recent.count { it.timestamp > oneMinAgo }
                 val recentBlocks = recent.count { it.timestamp > oneMinAgo && it.blocked }
-                _uiState.update { it.copy(queriesPerMinute = recentQueries, blocksPerMinute = recentBlocks) }
+
+                // Build baseline from first 10 samples (~50 seconds)
+                if (baselineRates.size < 10) {
+                    baselineRates.add(recentQueries)
+                    if (baselineRates.size == 10) {
+                        baselineQpm = baselineRates.average().toInt().coerceAtLeast(20)
+                    }
+                }
+
+                // Anomaly: current rate > 3x baseline (and baseline established)
+                val anomalyWarning = if (baselineQpm > 0 && recentQueries > baselineQpm * 3) {
+                    "Unusually high query rate: ${recentQueries}/min (baseline: ${baselineQpm}/min)"
+                } else null
+
+                // Cache stats + dropped queries from VPN
+                val cacheStats = DnsVpnService.currentCacheStats
+                val dropped = DnsVpnService.currentDroppedQueries
+
+                _uiState.update { it.copy(
+                    queriesPerMinute = recentQueries,
+                    blocksPerMinute = recentBlocks,
+                    queryAnomalyWarning = anomalyWarning,
+                    cacheHitRate = cacheStats?.hitRate ?: 0f,
+                    droppedQueries = dropped
+                ) }
             }
         }
     }
