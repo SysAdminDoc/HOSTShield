@@ -60,7 +60,11 @@ data class SettingsUiState(
     val updatePublishedAt: String = "",
     val updateHtmlUrl: String = "",
     val updateMessage: String? = null,
-    val accentColor: String = "teal"
+    val accentColor: String = "teal",
+    val scheduleEnabled: Boolean = false,
+    val scheduleStart: String = "22:00",
+    val scheduleEnd: String = "07:00",
+    val scheduleMode: String = "block"
 )
 
 @HiltViewModel
@@ -105,6 +109,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { prefs.blockResponseType.collect { v -> _uiState.update { it.copy(blockResponseType = v) } } }
         viewModelScope.launch { prefs.blockedApps.collect { apps -> _uiState.update { it.copy(firewalledApps = apps.size) } } }
         viewModelScope.launch { prefs.accentColor.collect { c -> _uiState.update { it.copy(accentColor = c) } } }
+        viewModelScope.launch { prefs.scheduleEnabled.collect { v -> _uiState.update { it.copy(scheduleEnabled = v) } } }
+        viewModelScope.launch { prefs.scheduleStart.collect { v -> _uiState.update { it.copy(scheduleStart = v) } } }
+        viewModelScope.launch { prefs.scheduleEnd.collect { v -> _uiState.update { it.copy(scheduleEnd = v) } } }
+        viewModelScope.launch { prefs.scheduleMode.collect { v -> _uiState.update { it.copy(scheduleMode = v) } } }
         viewModelScope.launch(Dispatchers.IO) {
             val available = rootUtil.isRootAvailable()
             _uiState.update { it.copy(isRootAvailable = available) }
@@ -185,6 +193,15 @@ class SettingsViewModel @Inject constructor(
     fun setLogRetention(days: Int) { viewModelScope.launch { prefs.setLogRetentionDays(days) } }
     fun setBlockResponseType(type: String) { viewModelScope.launch { prefs.setBlockResponseType(type) } }
     fun setAccentColor(color: String) { viewModelScope.launch { prefs.setAccentColor(color) } }
+
+    fun setScheduleEnabled(v: Boolean) {
+        viewModelScope.launch {
+            prefs.setScheduleEnabled(v)
+            if (v) com.hostshield.service.BlockingScheduleWorker.schedule(getApplication())
+            else com.hostshield.service.BlockingScheduleWorker.cancel(getApplication())
+        }
+    }
+    fun setScheduleMode(mode: String) { viewModelScope.launch { prefs.setScheduleMode(mode) } }
 
     /** Export rules JSON directly to a SAF URI. */
     fun exportRulesToUri(uri: Uri) {

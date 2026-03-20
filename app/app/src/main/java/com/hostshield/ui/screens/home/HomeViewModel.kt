@@ -21,6 +21,7 @@ import com.hostshield.service.HostsUpdateWorker
 import com.hostshield.service.IptablesManager
 import com.hostshield.service.NflogReader
 import com.hostshield.service.RootDnsService
+import com.hostshield.util.PrivacyScorer
 import com.hostshield.util.PrivateDnsDetector
 import com.hostshield.util.PrivateSpaceDetector
 import com.hostshield.util.BatteryOptimizationUtil
@@ -68,7 +69,10 @@ data class HomeUiState(
     /** Firewall blocked connection count. */
     val firewallBlockedConnections: Int = 0,
     /** DNS logging enabled. */
-    val dnsLoggingEnabled: Boolean = true
+    val dnsLoggingEnabled: Boolean = true,
+    /** Privacy score (0-100). */
+    val privacyScore: Int = 0,
+    val privacyItems: List<com.hostshield.util.PrivacyScorer.ScoreItem> = emptyList()
 )
 
 @HiltViewModel
@@ -84,7 +88,8 @@ class HomeViewModel @Inject constructor(
     private val iptablesManager: IptablesManager,
     private val nflogReader: NflogReader,
     private val dnsLogDao: DnsLogDao,
-    private val connectionLogDao: ConnectionLogDao
+    private val connectionLogDao: ConnectionLogDao,
+    private val privacyScorer: PrivacyScorer
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -116,6 +121,14 @@ class HomeViewModel @Inject constructor(
         checkBattery()
         checkPrivateSpace()
         resumeBlockingIfNeeded()
+        calculatePrivacyScore()
+    }
+
+    fun calculatePrivacyScore() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val score = privacyScorer.calculate()
+            _uiState.update { it.copy(privacyScore = score.total, privacyItems = score.items) }
+        }
     }
 
     private fun checkRoot() {

@@ -27,6 +27,7 @@ import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.data.source.SourceDownloader
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,10 +41,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SourcesViewModel @Inject constructor(
-    private val repository: HostShieldRepository
+    private val repository: HostShieldRepository,
+    private val downloader: SourceDownloader
 ) : ViewModel() {
     val sources: StateFlow<List<HostSource>> = repository.getAllSources()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _healthCheckMessage = MutableStateFlow<String?>(null)
+    val healthCheckMessage: StateFlow<String?> = _healthCheckMessage.asStateFlow()
+    private val _isCheckingHealth = MutableStateFlow(false)
+    val isCheckingHealth: StateFlow<Boolean> = _isCheckingHealth.asStateFlow()
 
     fun toggleSource(id: Long, enabled: Boolean) {
         viewModelScope.launch { repository.toggleSource(id, enabled) }
@@ -56,11 +63,29 @@ class SourcesViewModel @Inject constructor(
             repository.addSource(HostSource(url = url, label = label, category = category))
         }
     }
+
+    fun checkAllSourceHealth() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            _isCheckingHealth.value = true
+            _healthCheckMessage.value = "Checking sources..."
+            val allSources = sources.value
+            var ok = 0; var fail = 0
+            for (source in allSources) {
+                if (!source.enabled) continue
+                val result = downloader.validate(source.url)
+                result.onSuccess { ok++ }.onFailure { fail++ }
+            }
+            _healthCheckMessage.value = "$ok reachable, $fail unreachable"
+            _isCheckingHealth.value = false
+        }
+    }
 }
 
 @Composable
 fun SourcesScreen(viewModel: SourcesViewModel = hiltViewModel()) {
     val sources by viewModel.sources.collectAsStateWithLifecycle()
+    val healthMsg by viewModel.healthCheckMessage.collectAsStateWithLifecycle()
+    val isChecking by viewModel.isCheckingHealth.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
 
     Box(
@@ -79,19 +104,33 @@ fun SourcesScreen(viewModel: SourcesViewModel = hiltViewModel()) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Sources", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Teal.copy(alpha = 0.1f))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            "${sources.count { it.enabled }} active",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Teal,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Teal.copy(alpha = 0.1f))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                "${sources.count { it.enabled }} active",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Teal,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        IconButton(
+                            onClick = { viewModel.checkAllSourceHealth() },
+                            enabled = !isChecking,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            if (isChecking) CircularProgressIndicator(Modifier.size(14.dp), color = Teal, strokeWidth = 2.dp)
+                            else Icon(Icons.Filled.HealthAndSafety, "Health check", tint = TextDim, modifier = Modifier.size(18.dp))
+                        }
                     }
+                }
+                healthMsg?.let { msg ->
+                    Spacer(Modifier.height(4.dp))
+                    Text(msg, color = TextDim, fontSize = 11.sp)
                 }
                 Spacer(Modifier.height(12.dp))
             }
