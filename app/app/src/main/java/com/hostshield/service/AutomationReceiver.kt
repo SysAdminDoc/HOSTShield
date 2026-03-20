@@ -144,13 +144,17 @@ class AutomationReceiver : BroadcastReceiver() {
         val method = prefs.blockMethod.first()
         val fwActive = iptablesManager.isActive.value
         val fwRules = iptablesManager.lastApplyCount.value
-        context.sendBroadcast(Intent(STATUS_RESULT).apply {
-            putExtra("enabled", enabled)
-            putExtra("method", method.name)
-            putExtra("firewall_active", fwActive)
-            putExtra("firewall_rules", fwRules)
-            putExtra("version", com.hostshield.BuildConfig.VERSION_NAME)
-        })
+        // Protect status broadcast with signature permission so only trusted apps receive it
+        context.sendBroadcast(
+            Intent(STATUS_RESULT).apply {
+                putExtra("enabled", enabled)
+                putExtra("method", method.name)
+                putExtra("firewall_active", fwActive)
+                putExtra("firewall_rules", fwRules)
+                putExtra("version", com.hostshield.BuildConfig.VERSION_NAME)
+            },
+            PERMISSION_AUTOMATION
+        )
     }
 
     private suspend fun enable(context: Context) {

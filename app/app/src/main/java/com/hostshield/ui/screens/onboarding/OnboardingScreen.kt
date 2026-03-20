@@ -28,12 +28,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.ui.theme.*
+import com.hostshield.util.PrivateDnsDetector
 
-// HostShield v1.6.0 - Premium Onboarding
+// HostShield v3.8.0 - Premium Onboarding
 
 @Composable
 fun OnboardingScreen(
     isRootAvailable: Boolean,
+    privateDnsStatus: PrivateDnsDetector.PrivateDnsStatus? = null,
     onComplete: (BlockMethod, Boolean) -> Unit,
     onRequestVpnPermission: ((Boolean) -> Unit) -> Unit = {}
 ) {
@@ -41,6 +43,7 @@ fun OnboardingScreen(
     var selectedMethod by remember {
         mutableStateOf(if (isRootAvailable) BlockMethod.ROOT_HOSTS else BlockMethod.VPN)
     }
+    val totalPages = if (privateDnsStatus?.bypassesVpn == true && selectedMethod == BlockMethod.VPN) 4 else 3
 
     Box(
         modifier = Modifier
@@ -61,9 +64,29 @@ fun OnboardingScreen(
                     isRootAvailable = isRootAvailable,
                     selectedMethod = selectedMethod,
                     onSelectMethod = { selectedMethod = it },
-                    onNext = { page = 2 }
+                    onNext = {
+                        // Show Private DNS warning if VPN mode and Private DNS is active
+                        if (selectedMethod == BlockMethod.VPN && privateDnsStatus?.bypassesVpn == true) {
+                            page = 2
+                        } else {
+                            page = if (totalPages == 4) 3 else 2
+                        }
+                    }
                 )
-                2 -> ReadyPage(
+                2 -> if (privateDnsStatus?.bypassesVpn == true && selectedMethod == BlockMethod.VPN) {
+                    PrivateDnsWarningPage(
+                        status = privateDnsStatus,
+                        onNext = { page = 3 }
+                    )
+                } else {
+                    ReadyPage(
+                        method = selectedMethod,
+                        onActivate = { onComplete(selectedMethod, true) },
+                        onSkip = { onComplete(selectedMethod, false) },
+                        onRequestVpnPermission = onRequestVpnPermission
+                    )
+                }
+                3 -> ReadyPage(
                     method = selectedMethod,
                     onActivate = { onComplete(selectedMethod, true) },
                     onSkip = { onComplete(selectedMethod, false) },
@@ -79,7 +102,7 @@ fun OnboardingScreen(
                 .padding(bottom = 48.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            repeat(3) { idx ->
+            repeat(totalPages) { idx ->
                 Box(
                     modifier = Modifier
                         .size(if (idx == page) 24.dp else 8.dp, 8.dp)
@@ -292,6 +315,95 @@ private fun MethodOption(
                 Spacer(Modifier.width(8.dp))
                 Icon(Icons.Filled.CheckCircle, null, tint = Teal, modifier = Modifier.size(24.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun PrivateDnsWarningPage(
+    status: PrivateDnsDetector.PrivateDnsStatus,
+    onNext: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(100.dp)) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        listOf(Yellow.copy(alpha = 0.3f), Yellow.copy(alpha = 0.05f), Color.Transparent),
+                        center = center, radius = size.minDimension / 2f
+                    ), radius = size.minDimension / 2f, center = center
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(Yellow.copy(alpha = 0.08f))
+                    .border(1.dp, Yellow.copy(alpha = 0.3f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Filled.Warning, null, tint = Yellow, modifier = Modifier.size(44.dp))
+            }
+        }
+
+        Spacer(Modifier.height(28.dp))
+        Text("Private DNS Detected", style = MaterialTheme.typography.headlineMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(12.dp))
+
+        val modeText = when (status.mode) {
+            PrivateDnsDetector.PrivateDnsMode.STRICT -> "Strict mode (${status.hostname})"
+            PrivateDnsDetector.PrivateDnsMode.AUTOMATIC -> "Automatic (opportunistic)"
+            else -> "Active"
+        }
+
+        Text(
+            "Your device has Private DNS set to $modeText. " +
+            "This bypasses HostShield's VPN filtering — DNS queries go directly to the Private DNS provider instead of through HostShield.",
+            color = TextSecondary, textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium, lineHeight = 22.sp
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        // Instructions
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            color = Surface1
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("To fix this:", color = Teal, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Spacer(Modifier.height(8.dp))
+                listOf(
+                    "1. Open Settings > Network & internet",
+                    "2. Tap Private DNS",
+                    "3. Select \"Off\""
+                ).forEach { step ->
+                    Text(step, color = TextSecondary, fontSize = 13.sp, modifier = Modifier.padding(vertical = 2.dp))
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "HostShield's DoH feature provides encrypted DNS without needing Private DNS.",
+                    color = TextDim, fontSize = 11.sp, lineHeight = 16.sp
+                )
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        Button(
+            onClick = onNext,
+            colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = Color.Black),
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth().height(54.dp)
+        ) {
+            Text("I understand, continue", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         }
     }
 }

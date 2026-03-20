@@ -37,6 +37,7 @@ import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
+import com.hostshield.util.GeoIpLookup
 import com.hostshield.util.RootUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +69,8 @@ class LogsViewModel @Inject constructor(
     private val repository: HostShieldRepository,
     private val blocklist: BlocklistHolder,
     private val rootUtil: RootUtil,
-    private val prefs: AppPreferences
+    private val prefs: AppPreferences,
+    val geoIpLookup: GeoIpLookup
 ) : ViewModel() {
     val logs: StateFlow<List<DnsLogEntry>> = repository.getRecentLogs(2000)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -463,7 +465,8 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                 onDismiss = { selectedEntry = null },
                 isPinned = selectedEntry!!.hostname in pinnedSet,
                 onTogglePin = { viewModel.togglePin(selectedEntry!!.hostname) },
-                onTemporaryAllow = { mins -> viewModel.temporaryAllow(selectedEntry!!.hostname, mins) }
+                onTemporaryAllow = { mins -> viewModel.temporaryAllow(selectedEntry!!.hostname, mins) },
+                geoIpLookup = viewModel.geoIpLookup
             )
         }
     }
@@ -681,7 +684,7 @@ private fun formatTime(ms: Long): String = try {
 } catch (_: Exception) { "" }
 
 @Composable
-private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}, onTemporaryAllow: (Int) -> Unit = {}) {
+private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}, onTemporaryAllow: (Int) -> Unit = {}, geoIpLookup: GeoIpLookup? = null) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
@@ -745,12 +748,48 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
         if (entry.resolvedIps.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
             Text("Resolved IPs", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-            entry.resolvedIps.split(",").filter { it.isNotBlank() }.forEach { ip ->
-                Text(
-                    ip.trim(),
-                    color = TextSecondary, fontSize = 12.sp, fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.padding(start = 8.dp, top = 1.dp)
-                )
+
+            val ips = entry.resolvedIps.split(",").filter { it.isNotBlank() }
+            // GeoIP lookup for resolved IPs
+            var geoResults by remember { mutableStateOf<List<GeoIpLookup.GeoInfo>>(emptyList()) }
+            if (geoIpLookup != null) {
+                LaunchedEffect(entry.resolvedIps) {
+                    geoResults = geoIpLookup.lookupAll(ips)
+                }
+            }
+
+            ips.forEach { ip ->
+                val trimmedIp = ip.trim()
+                val geo = geoResults.find { it.ip == trimmedIp }
+                Row(modifier = Modifier.padding(start = 8.dp, top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        trimmedIp,
+                        color = TextSecondary, fontSize = 12.sp, fontFamily = FontFamily.Monospace
+                    )
+                    if (geo != null) {
+                        Spacer(Modifier.width(8.dp))
+                        if (geo.flag.isNotEmpty()) {
+                            Text(geo.flag, fontSize = 12.sp)
+                            Spacer(Modifier.width(4.dp))
+                        }
+                        Text(
+                            buildString {
+                                if (geo.country.isNotEmpty()) append(geo.country)
+                                if (geo.org.isNotEmpty()) { append(" - "); append(geo.org) }
+                            },
+                            color = Sky, fontSize = 10.sp, maxLines = 1
+                        )
+                    }
+                }
+            }
+
+            // ASN detail for first IP
+            geoResults.firstOrNull()?.let { geo ->
+                if (geo.asn.isNotEmpty()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(geo.asn, color = TextDim, fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(start = 8.dp))
+                }
             }
         }
 

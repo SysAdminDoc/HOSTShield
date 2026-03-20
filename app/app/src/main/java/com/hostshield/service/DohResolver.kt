@@ -105,6 +105,10 @@ class DohResolver @Inject constructor() {
     private val failoverOrder = Provider.entries.toMutableList()
     private val consecutiveFailures = AtomicInteger(0)
 
+    // Latency tracking — exponential moving average per provider
+    private val latencyEma = java.util.concurrent.ConcurrentHashMap<Provider, Long>()
+    private val EMA_ALPHA = 0.3 // Weight for new samples (higher = more responsive)
+
     /**
      * Resolve a DNS query via DoH with automatic failover.
      *
@@ -116,17 +120,21 @@ class DohResolver @Inject constructor() {
         dnsQuery: ByteArray,
         provider: Provider = Provider.CLOUDFLARE
     ): ByteArray? = withContext(Dispatchers.IO) {
+        // Smart DNS: if we have latency data, prefer the fastest provider
+        val preferredProvider = getFastestProvider() ?: provider
+
         // Try preferred provider first
-        val result = doResolve(dnsQuery, provider, client)
+        val result = doResolve(dnsQuery, preferredProvider, client)
         if (result != null) {
             consecutiveFailures.set(0)
             return@withContext result
         }
 
-        // Failover: try other providers
-        Log.w(TAG, "${provider.name} failed, trying failover...")
-        for (fallback in failoverOrder) {
-            if (fallback == provider) continue
+        // Failover: try other providers ordered by latency (fastest first)
+        Log.w(TAG, "${preferredProvider.name} failed, trying failover...")
+        val orderedFallbacks = failoverOrder.sortedBy { latencyEma[it] ?: Long.MAX_VALUE }
+        for (fallback in orderedFallbacks) {
+            if (fallback == preferredProvider) continue
             val fbResult = doResolve(dnsQuery, fallback, client)
             if (fbResult != null) {
                 Log.i(TAG, "Failover to ${fallback.name} succeeded")
@@ -177,6 +185,7 @@ class DohResolver @Inject constructor() {
 
     private fun doResolve(dnsQuery: ByteArray, provider: Provider, httpClient: OkHttpClient): ByteArray? {
         return try {
+            val start = System.nanoTime()
             val request = Request.Builder()
                 .url(provider.url)
                 .post(dnsQuery.toRequestBody(DNS_MESSAGE_TYPE))
@@ -185,7 +194,12 @@ class DohResolver @Inject constructor() {
 
             val response = httpClient.newCall(request).execute()
             if (response.isSuccessful) {
-                response.body?.bytes()
+                val bytes = response.body?.bytes()
+                if (bytes != null) {
+                    val elapsedMs = (System.nanoTime() - start) / 1_000_000
+                    updateLatency(provider, elapsedMs)
+                }
+                bytes
             } else {
                 response.close()
                 null
@@ -194,5 +208,25 @@ class DohResolver @Inject constructor() {
             Log.d(TAG, "${provider.name} error: ${e.javaClass.simpleName}: ${e.message}")
             null
         }
+    }
+
+    private fun updateLatency(provider: Provider, ms: Long) {
+        val prev = latencyEma[provider]
+        val ema = if (prev == null) ms
+        else ((1 - EMA_ALPHA) * prev + EMA_ALPHA * ms).toLong()
+        latencyEma[provider] = ema
+    }
+
+    /**
+     * Get the fastest provider based on measured latency.
+     * Returns null if no latency data has been collected yet.
+     */
+    fun getFastestProvider(): Provider? {
+        return latencyEma.minByOrNull { it.value }?.key
+    }
+
+    /** Get latency stats for all providers (for display in DNS Tools). */
+    fun getLatencyStats(): Map<String, Long> {
+        return latencyEma.map { (provider, ema) -> provider.name to ema }.toMap()
     }
 }

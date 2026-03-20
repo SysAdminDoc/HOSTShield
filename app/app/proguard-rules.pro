@@ -70,6 +70,8 @@
 -keep class com.hostshield.service.IptablesBinaryManager { *; }
 -keep class com.hostshield.util.DiagnosticExporter { *; }
 -keep class com.hostshield.util.TrackerSignatureDb { *; }
+-keep class com.hostshield.util.GeoIpLookup { *; }
+-keep class com.hostshield.util.GeoIpLookup$** { *; }
 -keep class com.hostshield.util.TrackerSignatureDb$** { *; }
 -keep class com.hostshield.service.ContextState { *; }
 
