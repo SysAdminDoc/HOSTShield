@@ -9,9 +9,7 @@ import android.content.Intent
 import android.widget.RemoteViews
 import com.hostshield.R
 
-// ══════════════════════════════════════════════════════════════
-// HostShield v1.6.0 — Homescreen Widget
-// ══════════════════════════════════════════════════════════════
+// HostShield v3.2.0 -- Enhanced Homescreen Widget
 
 class HostShieldWidgetProvider : AppWidgetProvider() {
 
@@ -20,15 +18,26 @@ class HostShieldWidgetProvider : AppWidgetProvider() {
         private const val PREFS_NAME = "hostshield_widget"
         private const val KEY_ENABLED = "widget_enabled"
         private const val KEY_COUNT = "widget_count"
+        private const val KEY_MODE = "widget_mode"
+        private const val KEY_BLOCKED_TODAY = "widget_blocked_today"
+        private const val KEY_LAST_UPDATE = "widget_last_update"
 
-        fun updateWidget(context: Context, isEnabled: Boolean, blockedCount: Int) {
-            // Persist state
+        fun updateWidget(
+            context: Context,
+            isEnabled: Boolean,
+            blockedCount: Int,
+            mode: String = "",
+            blockedToday: Int = 0,
+            lastUpdateTime: Long = 0L
+        ) {
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
                 .putBoolean(KEY_ENABLED, isEnabled)
                 .putInt(KEY_COUNT, blockedCount)
+                .putString(KEY_MODE, mode)
+                .putInt(KEY_BLOCKED_TODAY, blockedToday)
+                .putLong(KEY_LAST_UPDATE, lastUpdateTime)
                 .apply()
 
-            // Update all widget instances
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(
                 ComponentName(context, HostShieldWidgetProvider::class.java)
@@ -40,18 +49,43 @@ class HostShieldWidgetProvider : AppWidgetProvider() {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val isEnabled = prefs.getBoolean(KEY_ENABLED, false)
             val count = prefs.getInt(KEY_COUNT, 0)
+            val mode = prefs.getString(KEY_MODE, "") ?: ""
+            val blockedToday = prefs.getInt(KEY_BLOCKED_TODAY, 0)
+            val lastUpdate = prefs.getLong(KEY_LAST_UPDATE, 0L)
 
             val views = RemoteViews(context.packageName, R.layout.widget_hostshield)
+            val nf = java.text.NumberFormat.getNumberInstance()
 
-            // Update text
+            // Status
             views.setTextViewText(R.id.widget_status, if (isEnabled) "Protected" else "Disabled")
-            views.setTextViewText(
-                R.id.widget_count,
-                if (count > 0) "${java.text.NumberFormat.getNumberInstance().format(count)} blocked" else ""
-            )
             views.setTextViewText(R.id.widget_toggle_text, if (isEnabled) "Disable" else "Enable")
 
-            // Color tinting via text color
+            // Mode badge
+            views.setTextViewText(R.id.widget_mode, when {
+                !isEnabled -> ""
+                mode.isNotEmpty() -> mode.uppercase()
+                else -> ""
+            })
+
+            // Blocklist count
+            views.setTextViewText(
+                R.id.widget_count,
+                if (count > 0) "${nf.format(count)} domains" else ""
+            )
+
+            // Blocked today
+            views.setTextViewText(
+                R.id.widget_today,
+                if (blockedToday > 0 && isEnabled) "${nf.format(blockedToday)} blocked today" else ""
+            )
+
+            // Last update
+            views.setTextViewText(
+                R.id.widget_updated,
+                if (lastUpdate > 0) "Updated ${formatRelativeTime(lastUpdate)}" else ""
+            )
+
+            // Color tinting
             val tealColor = android.graphics.Color.parseColor("#94E2D5")
             val dimColor = android.graphics.Color.parseColor("#585B70")
             val activeColor = if (isEnabled) tealColor else dimColor
@@ -80,6 +114,16 @@ class HostShieldWidgetProvider : AppWidgetProvider() {
 
             manager.updateAppWidget(widgetId, views)
         }
+
+        private fun formatRelativeTime(timestampMs: Long): String {
+            val diff = System.currentTimeMillis() - timestampMs
+            return when {
+                diff < 60_000 -> "just now"
+                diff < 3_600_000 -> "${diff / 60_000}m ago"
+                diff < 86_400_000 -> "${diff / 3_600_000}h ago"
+                else -> "${diff / 86_400_000}d ago"
+            }
+        }
     }
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, widgetIds: IntArray) {
@@ -89,7 +133,6 @@ class HostShieldWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == ACTION_TOGGLE) {
-            // Launch activity to handle toggle (needs root/VPN permission context)
             val launchIntent = Intent(context, com.hostshield.MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 putExtra("toggle_blocking", true)

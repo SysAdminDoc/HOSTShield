@@ -56,7 +56,8 @@ data class StatsUiState(
     val topDomains: List<TopHostname> = emptyList(),
     val topApps: List<TopApp> = emptyList(),
     val mostQueried: List<TopHostname> = emptyList(), // Network insights: aggressive domains
-    val dailyTrend: List<com.hostshield.data.database.DailyBreakdown> = emptyList() // 7-day trend
+    val dailyTrend: List<com.hostshield.data.database.DailyBreakdown> = emptyList(), // 7-day trend
+    val hourlyLatency: List<com.hostshield.data.database.HourlyLatency> = emptyList() // DNS latency
 )
 
 @HiltViewModel
@@ -90,6 +91,7 @@ class StatsViewModel @Inject constructor(
         viewModelScope.launch { repository.getHourlyBlocked(todayStart).collect { h -> _uiState.update { it.copy(hourlyBlocked = h) } } }
         viewModelScope.launch { repository.getMostQueriedDomains(weekStart, 15).collect { m -> _uiState.update { it.copy(mostQueried = m) } } }
         viewModelScope.launch { repository.getDailyBreakdown(weekStart).collect { d -> _uiState.update { it.copy(dailyTrend = d) } } }
+        viewModelScope.launch { repository.getHourlyLatency(todayStart).collect { l -> _uiState.update { it.copy(hourlyLatency = l) } } }
     }
 }
 
@@ -140,6 +142,36 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     } else {
                         Box(modifier = Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
                             Text("Charts populate with VPN mode logging.", color = TextDim, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // DNS Latency Chart
+        item {
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(Peach.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Filled.Speed, null, tint = Peach, modifier = Modifier.size(14.dp))
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text("DNS Latency", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    if (state.hourlyLatency.isNotEmpty()) {
+                        LatencyBarChart(data = state.hourlyLatency, modifier = Modifier.fillMaxWidth().height(120.dp))
+                        Spacer(Modifier.height(8.dp))
+                        val avgAll = state.hourlyLatency.map { it.avgMs }.average()
+                        val maxAll = state.hourlyLatency.maxOfOrNull { it.maxMs } ?: 0
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text("Avg: ${"%.0f".format(avgAll)}ms", color = Peach, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                            Text("Peak: ${maxAll}ms", color = Red, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                        }
+                    } else {
+                        Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
+                            Text("Latency data populates with VPN mode.", color = TextDim, fontSize = 12.sp)
                         }
                     }
                 }
@@ -412,6 +444,58 @@ private fun DomainBar(rank: Int, hostname: String, count: Int, maxCount: Int) {
         }
         Spacer(Modifier.width(8.dp))
         Text(NumberFormat.getNumberInstance().format(count), color = Red, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(44.dp))
+    }
+}
+
+@Composable
+private fun LatencyBarChart(data: List<com.hostshield.data.database.HourlyLatency>, modifier: Modifier) {
+    val hourData = FloatArray(24) { 0f }
+    val maxData = FloatArray(24) { 0f }
+    data.forEach {
+        if (it.hour in 0..23) {
+            hourData[it.hour] = it.avgMs
+            maxData[it.hour] = it.maxMs.toFloat()
+        }
+    }
+    val maxVal = maxData.maxOrNull()?.coerceAtLeast(1f) ?: 1f
+    val textMeasurer = rememberTextMeasurer()
+
+    Canvas(modifier = modifier) {
+        val barWidth = size.width / 28f
+        val chartHeight = size.height - 22f
+        val gap = barWidth / 5f
+
+        for (i in 0..23) {
+            val avgFrac = hourData[i] / maxVal
+            val maxFrac = maxData[i] / maxVal
+            val x = (i + 1f) * (barWidth + gap)
+
+            // Max bar (faded)
+            val maxH = maxFrac * chartHeight * 0.9f
+            drawRoundRect(
+                color = Red.copy(alpha = 0.15f),
+                topLeft = Offset(x, chartHeight - maxH),
+                size = Size(barWidth, maxH.coerceAtLeast(1f)),
+                cornerRadius = CornerRadius(3f, 3f)
+            )
+
+            // Avg bar
+            val avgH = avgFrac * chartHeight * 0.9f
+            drawRoundRect(
+                brush = Brush.verticalGradient(
+                    colors = if (hourData[i] > 0) listOf(Peach, Peach.copy(alpha = 0.4f)) else listOf(Surface3, Surface3)
+                ),
+                topLeft = Offset(x, chartHeight - avgH),
+                size = Size(barWidth, avgH.coerceAtLeast(1f)),
+                cornerRadius = CornerRadius(3f, 3f)
+            )
+
+            if (i % 6 == 0) {
+                drawText(textMeasurer = textMeasurer, text = "${i}h",
+                    topLeft = Offset(x - 2f, chartHeight + 4f),
+                    style = TextStyle(color = TextDim, fontSize = 9.sp))
+            }
+        }
     }
 }
 

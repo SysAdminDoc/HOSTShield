@@ -214,6 +214,24 @@ private fun SourceItem(source: HostSource, onToggle: (Boolean) -> Unit, onDelete
                             style = MaterialTheme.typography.labelSmall, color = TextDim
                         )
                     }
+                    if (source.domainsAdded > 0 || source.domainsRemoved > 0) {
+                        Spacer(Modifier.width(8.dp))
+                        if (source.domainsAdded > 0) {
+                            Text(
+                                "+${source.domainsAdded}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Green.copy(alpha = 0.8f)
+                            )
+                        }
+                        if (source.domainsRemoved > 0) {
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "-${source.domainsRemoved}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Red.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
                 }
             }
 

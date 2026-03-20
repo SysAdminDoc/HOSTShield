@@ -31,6 +31,8 @@ class BlocklistHolder @Inject constructor() {
     @Volatile private var root = TrieNode()
     @Volatile var domainCount: Int = 0; private set
     @Volatile var wildcardRules: List<UserRule> = emptyList(); private set
+    @Volatile private var regexBlockRules: List<Regex> = emptyList()
+    @Volatile private var regexAllowRules: List<Regex> = emptyList()
 
     // DoH canary and bypass domains — always blocked to prevent DNS filter bypass.
     // use-application-dns.net: Firefox checks this; NXDOMAIN disables Firefox DoH.
@@ -138,7 +140,7 @@ class BlocklistHolder @Inject constructor() {
         "canadianshield.cira.ca",   // CIRA variants
     )
 
-    fun update(newDomains: Set<String>, wildcards: List<UserRule>) {
+    fun update(newDomains: Set<String>, wildcards: List<UserRule>, regexRules: List<UserRule> = emptyList()) {
         val newRoot = TrieNode()
         for (domain in newDomains) {
             insertDomain(newRoot, domain.lowercase(), terminal = true)
@@ -162,9 +164,25 @@ class BlocklistHolder @Inject constructor() {
                 }
             }
         }
+        // Compile regex rules (validated, invalid patterns silently skipped)
+        val newRegexBlock = mutableListOf<Regex>()
+        val newRegexAllow = mutableListOf<Regex>()
+        for (rule in regexRules) {
+            try {
+                val regex = Regex(rule.hostname, RegexOption.IGNORE_CASE)
+                when (rule.type) {
+                    RuleType.BLOCK -> newRegexBlock.add(regex)
+                    RuleType.ALLOW -> newRegexAllow.add(regex)
+                    else -> { }
+                }
+            } catch (_: Exception) { /* skip invalid regex */ }
+        }
+
         // Atomic swap — volatile write ensures visibility to reader threads
         domainCount = newDomains.size + dohBypassDomains.size
         wildcardRules = wildcards
+        regexBlockRules = newRegexBlock
+        regexAllowRules = newRegexAllow
         root = newRoot
     }
 
@@ -215,6 +233,11 @@ class BlocklistHolder @Inject constructor() {
 
         // Wildcard block matched at some ancestor
         if (wildcardBlocked) return true
+
+        // Regex allow rules take priority
+        if (regexAllowRules.any { it.containsMatchIn(lower) }) return false
+        // Regex block rules
+        if (regexBlockRules.any { it.containsMatchIn(lower) }) return true
 
         // www. prefix fallback
         if (lower.startsWith("www.")) {

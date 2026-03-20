@@ -50,6 +50,9 @@ interface HostSourceDao {
     @Query("UPDATE host_sources SET health = :health, last_error = :error, consecutive_failures = :failures WHERE id = :id")
     suspend fun updateHealth(id: Long, health: SourceHealth, error: String, failures: Int)
 
+    @Query("UPDATE host_sources SET prev_entry_count = :prevCount, domains_added = :added, domains_removed = :removed WHERE id = :id")
+    suspend fun updateChangelog(id: Long, prevCount: Int, added: Int, removed: Int)
+
     @Query("SELECT * FROM host_sources WHERE health = 'ERROR' OR health = 'DEAD'")
     fun getUnhealthySources(): Flow<List<HostSource>>
 
@@ -76,6 +79,9 @@ interface UserRuleDao {
 
     @Query("SELECT * FROM user_rules WHERE is_wildcard = 1 AND enabled = 1")
     suspend fun getEnabledWildcards(): List<UserRule>
+
+    @Query("SELECT * FROM user_rules WHERE is_regex = 1 AND enabled = 1")
+    suspend fun getEnabledRegexRules(): List<UserRule>
 
     @Query("SELECT * FROM user_rules WHERE hostname LIKE '%' || :query || '%'")
     fun search(query: String): Flow<List<UserRule>>
@@ -206,6 +212,17 @@ interface DnsLogDao {
         GROUP BY app_package ORDER BY total_queries DESC
     """)
     fun getAllAppsWithCounts(): Flow<List<AppQueryStat>>
+
+    /** Average DNS response time per hour (for latency chart). */
+    @Query("""
+        SELECT CAST((timestamp / 3600000) % 24 AS INTEGER) as hour,
+            AVG(response_time_ms) as avgMs,
+            MAX(response_time_ms) as maxMs,
+            COUNT(*) as cnt
+        FROM dns_logs WHERE timestamp > :since AND response_time_ms > 0 AND blocked = 0
+        GROUP BY hour ORDER BY hour
+    """)
+    fun getHourlyLatency(since: Long): Flow<List<HourlyLatency>>
 
     /** Top most-queried domains overall (trackers detection). */
     @Query("""
@@ -374,6 +391,13 @@ data class FirewallTopApp(
     val uid: Int,
     @ColumnInfo(name = "package_name") val packageName: String,
     @ColumnInfo(name = "app_label") val appLabel: String,
+    val cnt: Int
+)
+
+data class HourlyLatency(
+    val hour: Int,
+    val avgMs: Float,
+    val maxMs: Int,
     val cnt: Int
 )
 

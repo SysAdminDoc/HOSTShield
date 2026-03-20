@@ -39,13 +39,13 @@ class RulesViewModel @Inject constructor(
     val rules: StateFlow<List<UserRule>> = repository.getAllRules()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun addRule(hostname: String, type: RuleType, redirectIp: String = "", comment: String = "") {
-        val isWild = hostname.startsWith("*.")
+    fun addRule(hostname: String, type: RuleType, redirectIp: String = "", comment: String = "", isRegex: Boolean = false) {
+        val isWild = !isRegex && hostname.startsWith("*.")
         viewModelScope.launch {
             repository.addRule(UserRule(
-                hostname = hostname.lowercase().trim(),
+                hostname = hostname.trim().let { if (isRegex) it else it.lowercase() },
                 type = type, redirectIp = redirectIp,
-                comment = comment, isWildcard = isWild
+                comment = comment, isWildcard = isWild, isRegex = isRegex
             ))
         }
     }
@@ -121,7 +121,9 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
         AddRuleDialog(
             onDismiss = { showAddDialog = false },
             onAdd = { host, type, redir, comment ->
-                viewModel.addRule(host, type, redir, comment)
+                val isRegex = comment.startsWith("REGEX:")
+                val cleanComment = if (isRegex) comment.removePrefix("REGEX:") else comment
+                viewModel.addRule(host, type, redir, cleanComment, isRegex)
                 showAddDialog = false
             }
         )
@@ -161,6 +163,12 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
                             Text("WILDCARD", Modifier.padding(horizontal = 4.dp, vertical = 1.dp), color = Mauve, fontSize = 8.sp, fontWeight = FontWeight.Bold)
                         }
                     }
+                    if (rule.isRegex) {
+                        Spacer(Modifier.width(6.dp))
+                        Surface(shape = RoundedCornerShape(3.dp), color = Blue.copy(alpha = 0.1f)) {
+                            Text("REGEX", Modifier.padding(horizontal = 4.dp, vertical = 1.dp), color = Blue, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
                 if (rule.type == RuleType.REDIRECT && rule.redirectIp.isNotEmpty()) {
                     Text("-> ${rule.redirectIp}", color = Peach, fontSize = 11.sp)
@@ -187,6 +195,8 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
     var type by remember { mutableStateOf(RuleType.BLOCK) }
     var redirectIp by remember { mutableStateOf("") }
     var comment by remember { mutableStateOf("") }
+    var isRegex by remember { mutableStateOf(false) }
+    var regexError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss, containerColor = Surface1, shape = RoundedCornerShape(20.dp),
@@ -198,14 +208,56 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
                         TypeChip(rt, rt.name.lowercase().replaceFirstChar { it.uppercase() }, type == rt) { type = rt }
                     }
                 }
-                OutlinedTextField(value = hostname, onValueChange = { hostname = it }, label = { Text("Hostname") }, placeholder = { Text("*.example.com", color = TextDim) }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                OutlinedTextField(
+                    value = hostname, onValueChange = {
+                        hostname = it
+                        if (isRegex) {
+                            regexError = try { Regex(it); null } catch (e: Exception) { e.message?.take(50) }
+                        }
+                    },
+                    label = { Text(if (isRegex) "Regex Pattern" else "Hostname") },
+                    placeholder = { Text(if (isRegex) ".*\\.ad[sv]?\\." else "*.example.com", color = TextDim) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors(),
+                    isError = regexError != null
+                )
+                if (regexError != null) {
+                    Text(regexError!!, color = Red, fontSize = 10.sp)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = isRegex, onCheckedChange = {
+                            isRegex = it
+                            regexError = if (it && hostname.isNotBlank()) {
+                                try { Regex(hostname); null } catch (e: Exception) { e.message?.take(50) }
+                            } else null
+                        },
+                        colors = CheckboxDefaults.colors(checkedColor = Mauve, uncheckedColor = TextDim, checkmarkColor = Color.Black),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Regex pattern", color = if (isRegex) Mauve else TextDim, fontSize = 12.sp)
+                }
                 if (type == RuleType.REDIRECT) {
                     OutlinedTextField(value = redirectIp, onValueChange = { redirectIp = it }, label = { Text("Redirect IP") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
                 }
                 OutlinedTextField(value = comment, onValueChange = { comment = it }, label = { Text("Comment (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
             }
         },
-        confirmButton = { TextButton(onClick = { if (hostname.isNotBlank()) onAdd(hostname, type, redirectIp, comment) }, enabled = hostname.isNotBlank()) { Text("Add", color = Teal) } },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (hostname.isNotBlank() && regexError == null) {
+                        // Pass regex flag through comment prefix hack — ViewModel reads it
+                        if (isRegex) {
+                            (onAdd as? Function4<String, RuleType, String, String, Unit>)
+                            // Use the ViewModel method directly
+                        }
+                        onAdd(hostname, type, redirectIp, if (isRegex) "REGEX:$comment" else comment)
+                    }
+                },
+                enabled = hostname.isNotBlank() && regexError == null
+            ) { Text("Add", color = Teal) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) } }
     )
 }

@@ -33,6 +33,19 @@ object Migrations {
         }
     }
 
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Add wifi_ssids column for network-aware profile switching
+            db.execSQL("ALTER TABLE profiles ADD COLUMN wifi_ssids TEXT NOT NULL DEFAULT ''")
+            // Add is_regex column for regex pattern rules
+            db.execSQL("ALTER TABLE user_rules ADD COLUMN is_regex INTEGER NOT NULL DEFAULT 0")
+            // Add source changelog tracking columns
+            db.execSQL("ALTER TABLE host_sources ADD COLUMN prev_entry_count INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE host_sources ADD COLUMN domains_added INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE host_sources ADD COLUMN domains_removed INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
-    val ALL = arrayOf(MIGRATION_5_6)
+    val ALL = arrayOf(MIGRATION_5_6, MIGRATION_6_7)
 }

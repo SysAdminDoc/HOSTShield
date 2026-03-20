@@ -14,6 +14,9 @@ import com.hostshield.domain.parser.HostsParser
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.wifi.WifiManager
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -43,9 +46,21 @@ class ProfileScheduleWorker @AssistedInject constructor(
             val currentDay = now.dayOfWeek.value % 7 // 0=Sunday convention
             val currentTime = now.toLocalTime()
 
+            // Get current WiFi SSID for network-aware matching
+            val currentSsid = getCurrentSsid(applicationContext)
+
             var targetProfile: BlockingProfile? = null
 
             for (profile in profiles) {
+                // WiFi SSID matching: if profile has SSIDs configured, check them first
+                if (profile.wifiSsids.isNotBlank()) {
+                    val ssids = profile.wifiSsids.split(",").map { it.trim().lowercase() }.filter { it.isNotBlank() }
+                    if (ssids.isNotEmpty() && currentSsid != null && currentSsid.lowercase() in ssids) {
+                        targetProfile = profile
+                        break // WiFi match takes priority over time-based scheduling
+                    }
+                }
+
                 if (profile.scheduleStart.isBlank() || profile.scheduleEnd.isBlank()) continue
 
                 val days = profile.daysOfWeek.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
@@ -109,6 +124,16 @@ class ProfileScheduleWorker @AssistedInject constructor(
         } catch (_: Exception) { }
 
         return Result.success()
+    }
+
+    @Suppress("DEPRECATION")
+    private fun getCurrentSsid(context: android.content.Context): String? {
+        return try {
+            val wifiManager = context.applicationContext.getSystemService(android.content.Context.WIFI_SERVICE) as? WifiManager
+            val info = wifiManager?.connectionInfo
+            val ssid = info?.ssid?.removeSurrounding("\"")
+            if (ssid.isNullOrBlank() || ssid == "<unknown ssid>") null else ssid
+        } catch (_: Exception) { null }
     }
 
     private fun parseTime(time: String): LocalTime? = try {
