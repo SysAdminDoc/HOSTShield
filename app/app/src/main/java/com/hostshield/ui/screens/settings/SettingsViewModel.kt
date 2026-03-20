@@ -64,7 +64,8 @@ data class SettingsUiState(
     val scheduleEnabled: Boolean = false,
     val scheduleStart: String = "22:00",
     val scheduleEnd: String = "07:00",
-    val scheduleMode: String = "block"
+    val scheduleMode: String = "block",
+    val customUpstreamDns: String = ""
 )
 
 @HiltViewModel
@@ -78,7 +79,8 @@ class SettingsViewModel @Inject constructor(
     private val batteryUtil: BatteryOptimizationUtil,
     private val pcapExporter: PcapExporter,
     private val updateChecker: UpdateChecker,
-    private val diagnosticExporter: com.hostshield.util.DiagnosticExporter
+    private val diagnosticExporter: com.hostshield.util.DiagnosticExporter,
+    private val firewallRuleDao: com.hostshield.data.database.FirewallRuleDao
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -113,6 +115,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { prefs.scheduleStart.collect { v -> _uiState.update { it.copy(scheduleStart = v) } } }
         viewModelScope.launch { prefs.scheduleEnd.collect { v -> _uiState.update { it.copy(scheduleEnd = v) } } }
         viewModelScope.launch { prefs.scheduleMode.collect { v -> _uiState.update { it.copy(scheduleMode = v) } } }
+        viewModelScope.launch { prefs.customUpstreamDns.collect { v -> _uiState.update { it.copy(customUpstreamDns = v) } } }
         viewModelScope.launch(Dispatchers.IO) {
             val available = rootUtil.isRootAvailable()
             _uiState.update { it.copy(isRootAvailable = available) }
@@ -202,6 +205,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
     fun setScheduleMode(mode: String) { viewModelScope.launch { prefs.setScheduleMode(mode) } }
+    fun setCustomUpstreamDns(dns: String) { viewModelScope.launch { prefs.setCustomUpstreamDns(dns.trim()) } }
 
     /** Export rules JSON directly to a SAF URI. */
     fun exportRulesToUri(uri: Uri) {
@@ -266,6 +270,19 @@ class SettingsViewModel @Inject constructor(
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             val content = importExport.exportShareableHostsFile(blockRules, allowRules)
             _uiState.update { it.copy(exportResult = content) }
+        }
+    }
+
+    /** Export firewall rules as JSON to share/transfer. */
+    fun exportFirewallRules() {
+        viewModelScope.launch {
+            try {
+                val rules = firewallRuleDao.getAllRulesList()
+                val json = importExport.exportFirewallJson(rules)
+                _uiState.update { it.copy(exportResult = json) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(importMessage = "Firewall export failed: ${e.message}") }
+            }
         }
     }
 

@@ -46,7 +46,8 @@ fun SettingsScreen(
     onNavigateToDnsLeakTest: () -> Unit = {},
     onNavigateToRuleTest: () -> Unit = {},
     onNavigateToHostsEditor: () -> Unit = {},
-    onNavigateToAppPrivacy: () -> Unit = {}
+    onNavigateToAppPrivacy: () -> Unit = {},
+    onNavigateToAutomationAudit: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -117,6 +118,33 @@ fun SettingsScreen(
                 Icons.Filled.FilterAlt,
                 state.dnsTrapEnabled
             ) { viewModel.setDnsTrapEnabled(it) }
+            Spacer(Modifier.height(8.dp))
+            // Custom upstream DNS
+            var customDns by remember { mutableStateOf(state.customUpstreamDns) }
+            LaunchedEffect(state.customUpstreamDns) { customDns = state.customUpstreamDns }
+            Text("Custom Upstream DNS", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text("Comma-separated IPs (leave empty for system default)", color = TextDim, fontSize = 10.sp)
+            Spacer(Modifier.height(4.dp))
+            OutlinedTextField(
+                value = customDns,
+                onValueChange = { customDns = it },
+                placeholder = { Text("e.g. 1.1.1.1, 9.9.9.9", color = TextDim, fontSize = 12.sp) },
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+                singleLine = true,
+                textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Blue, unfocusedBorderColor = Surface3,
+                    cursorColor = Blue, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
+                ),
+                trailingIcon = {
+                    if (customDns != state.customUpstreamDns) {
+                        IconButton(onClick = { viewModel.setCustomUpstreamDns(customDns) }) {
+                            Icon(Icons.Filled.Check, null, tint = Green, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            )
             Spacer(Modifier.height(8.dp))
             SettingsRow("DNS leak test", "Verify queries go through HostShield", Icons.Filled.VerifiedUser, onClick = onNavigateToDnsLeakTest)
             Spacer(Modifier.height(8.dp))
@@ -314,6 +342,12 @@ fun SettingsScreen(
             SettingsRow("Rule tester", "Test if domains match your rules", Icons.Filled.Science, onClick = onNavigateToRuleTest)
             Spacer(Modifier.height(4.dp))
             SettingsRow("App privacy report", "Grade each app's tracking behavior", Icons.Filled.PrivacyTip, onClick = onNavigateToAppPrivacy)
+            Spacer(Modifier.height(4.dp))
+            SettingsRow("Automation audit log", "View commands from Tasker, ADB, etc", Icons.Filled.ReceiptLong, onClick = onNavigateToAutomationAudit)
+            Spacer(Modifier.height(4.dp))
+            SettingsRow("Export firewall rules", "Save per-app network rules as JSON", Icons.Filled.Shield) {
+                viewModel.exportFirewallRules()
+            }
             Spacer(Modifier.height(4.dp))
             SettingsRow("Import rules", "From JSON or hosts file", Icons.Filled.FileUpload) {
                 importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))

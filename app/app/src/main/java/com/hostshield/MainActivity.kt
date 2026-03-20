@@ -324,7 +324,8 @@ private fun HostShieldMainApp(activity: MainActivity) {
                     onNavigateToDnsLeakTest = { navController.navigate(SubScreen.DNS_LEAK_TEST) },
                     onNavigateToRuleTest = { navController.navigate(SubScreen.RULE_TEST) },
                     onNavigateToHostsEditor = { navController.navigate(SubScreen.HOSTS_EDITOR) },
-                    onNavigateToAppPrivacy = { navController.navigate(SubScreen.APP_PRIVACY) }
+                    onNavigateToAppPrivacy = { navController.navigate(SubScreen.APP_PRIVACY) },
+                    onNavigateToAutomationAudit = { navController.navigate(SubScreen.AUTOMATION_AUDIT) }
                 )
             }
             composable(SubScreen.APP_EXCLUSIONS) {
@@ -386,6 +387,11 @@ private fun HostShieldMainApp(activity: MainActivity) {
             }
             composable(SubScreen.BLOCKLIST_GALLERY) {
                 com.hostshield.ui.screens.sources.BlocklistGalleryScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.AUTOMATION_AUDIT) {
+                com.hostshield.ui.screens.settings.AutomationAuditScreen(
                     onBack = { navController.popBackStack() }
                 )
             }

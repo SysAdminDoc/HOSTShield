@@ -44,4 +44,5 @@ object SubScreen {
     const val HOSTS_EDITOR = "hosts_editor"
     const val APP_PRIVACY = "app_privacy"
     const val BLOCKLIST_GALLERY = "blocklist_gallery"
+    const val AUTOMATION_AUDIT = "automation_audit"
 }
