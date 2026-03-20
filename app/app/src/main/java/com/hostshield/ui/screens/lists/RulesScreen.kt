@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -64,6 +65,8 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
     var filterType by remember { mutableStateOf<RuleType?>(null) }
+    var clipboardMessage by remember { mutableStateOf<String?>(null) }
+    val clipboardManager = LocalClipboardManager.current
 
     val filtered = remember(rules, filterType) {
         if (filterType == null) rules else rules.filter { it.type == filterType }
@@ -109,12 +112,51 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
             item { Spacer(Modifier.height(80.dp)) }
         }
 
-        FloatingActionButton(
-            onClick = { showAddDialog = true },
+        Column(
             modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
-            containerColor = Teal, contentColor = Color.Black,
-            shape = RoundedCornerShape(16.dp)
-        ) { Icon(Icons.Filled.Add, "Add rule") }
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            // Paste from clipboard
+            SmallFloatingActionButton(
+                onClick = {
+                    val text = clipboardManager.getText()?.text ?: ""
+                    val domains = text.lines()
+                        .map { it.trim().lowercase() }
+                        .filter { it.isNotBlank() && it.contains('.') && !it.startsWith("#") }
+                        .distinct()
+                    if (domains.isNotEmpty()) {
+                        domains.forEach { viewModel.addRule(it, RuleType.BLOCK) }
+                        clipboardMessage = "Added ${domains.size} domains from clipboard"
+                    } else {
+                        clipboardMessage = "No valid domains in clipboard"
+                    }
+                },
+                containerColor = Surface3, contentColor = Teal,
+                shape = RoundedCornerShape(12.dp)
+            ) { Icon(Icons.Filled.ContentPaste, "Paste domains") }
+
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = Teal, contentColor = Color.Black,
+                shape = RoundedCornerShape(16.dp)
+            ) { Icon(Icons.Filled.Add, "Add rule") }
+        }
+
+        // Clipboard message snackbar
+        clipboardMessage?.let { msg ->
+            LaunchedEffect(msg) {
+                kotlinx.coroutines.delay(2500)
+                clipboardMessage = null
+            }
+            Surface(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 90.dp, start = 20.dp, end = 20.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = Surface2
+            ) {
+                Text(msg, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp), color = Teal, fontSize = 12.sp)
+            }
+        }
     }
 
     if (showAddDialog) {

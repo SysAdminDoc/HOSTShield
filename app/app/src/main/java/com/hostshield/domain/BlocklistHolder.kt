@@ -33,6 +33,7 @@ class BlocklistHolder @Inject constructor() {
     @Volatile var wildcardRules: List<UserRule> = emptyList(); private set
     @Volatile private var regexBlockRules: List<Regex> = emptyList()
     @Volatile private var regexAllowRules: List<Regex> = emptyList()
+    @Volatile var blockedIps: Set<String> = emptySet(); private set
 
     // DoH canary and bypass domains — always blocked to prevent DNS filter bypass.
     // use-application-dns.net: Firefox checks this; NXDOMAIN disables Firefox DoH.
@@ -140,7 +141,12 @@ class BlocklistHolder @Inject constructor() {
         "canadianshield.cira.ca",   // CIRA variants
     )
 
-    fun update(newDomains: Set<String>, wildcards: List<UserRule>, regexRules: List<UserRule> = emptyList()) {
+    fun update(
+        newDomains: Set<String>,
+        wildcards: List<UserRule>,
+        regexRules: List<UserRule> = emptyList(),
+        ipBlocks: Set<String> = emptySet()
+    ) {
         val newRoot = TrieNode()
         for (domain in newDomains) {
             insertDomain(newRoot, domain.lowercase(), terminal = true)
@@ -183,6 +189,7 @@ class BlocklistHolder @Inject constructor() {
         wildcardRules = wildcards
         regexBlockRules = newRegexBlock
         regexAllowRules = newRegexAllow
+        blockedIps = ipBlocks
         root = newRoot
     }
 
@@ -213,6 +220,9 @@ class BlocklistHolder @Inject constructor() {
     fun isBlocked(hostname: String): Boolean {
         return isBlockedInternal(hostname.lowercase())
     }
+
+    /** Check if a resolved IP address is in the IP blocklist. */
+    fun isIpBlocked(ip: String): Boolean = ip in blockedIps
 
     private fun isBlockedInternal(lower: String): Boolean {
         val labels = lower.split('.').reversed()

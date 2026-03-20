@@ -34,6 +34,7 @@ import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
+import kotlinx.coroutines.flow.first as flowFirst
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -159,6 +160,17 @@ class LogsViewModel @Inject constructor(
         }
     }
 
+    val pinnedDomains: StateFlow<Set<String>> = prefs.pinnedDomains
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    fun togglePin(domain: String) {
+        viewModelScope.launch {
+            val current = prefs.pinnedDomains.flowFirst()
+            if (domain.lowercase() in current) prefs.unpinDomain(domain)
+            else prefs.pinDomain(domain)
+        }
+    }
+
     fun allowDomains(hostnames: Set<String>) {
         val hosts = hostnames.map { it.lowercase() }
         _blockedHostnames.update { it - hosts.toSet() }
@@ -182,6 +194,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val blockedFilter by viewModel.showBlocked.collectAsStateWithLifecycle()
     val blockedSet by viewModel.blockedHostnames.collectAsStateWithLifecycle()
+    val pinnedSet by viewModel.pinnedDomains.collectAsStateWithLifecycle()
 
     var selectedEntry by remember { mutableStateOf<DedupedLogEntry?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -394,7 +407,12 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             containerColor = Surface1,
             scrimColor = Color.Black.copy(alpha = 0.6f)
         ) {
-            QueryDetailSheet(entry = selectedEntry!!, onDismiss = { selectedEntry = null })
+            QueryDetailSheet(
+                entry = selectedEntry!!,
+                onDismiss = { selectedEntry = null },
+                isPinned = selectedEntry!!.hostname in pinnedSet,
+                onTogglePin = { viewModel.togglePin(selectedEntry!!.hostname) }
+            )
         }
     }
 }
@@ -611,7 +629,7 @@ private fun formatTime(ms: Long): String = try {
 } catch (_: Exception) { "" }
 
 @Composable
-private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit) {
+private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
@@ -629,7 +647,15 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit) {
                 modifier = Modifier.size(22.dp)
             )
             Spacer(Modifier.width(10.dp))
-            Text("Query Details", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("Query Details", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
+            IconButton(onClick = onTogglePin, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    if (isPinned) Icons.Filled.PushPin else Icons.Filled.PushPin,
+                    "Pin",
+                    tint = if (isPinned) Yellow else TextDim,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))
