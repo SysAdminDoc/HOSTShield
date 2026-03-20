@@ -62,6 +62,7 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var prefs: AppPreferences
     @Inject lateinit var rootUtil: RootUtil
+    @Inject lateinit var privateDnsDetector: com.hostshield.util.PrivateDnsDetector
 
     // VPN permission result callback — stored so HomeViewModel can be notified
     private var vpnPermissionCallback: ((Boolean) -> Unit)? = null
@@ -175,6 +176,7 @@ class MainActivity : ComponentActivity() {
                     if (rootAvail != null) {
                         OnboardingScreen(
                             isRootAvailable = rootAvail,
+                            privateDnsStatus = privateDnsDetector.detect(),
                             onComplete = { method, autoEnable ->
                                 CoroutineScope(Dispatchers.Main).launch {
                                     prefs.setBlockMethod(method)

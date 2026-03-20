@@ -673,9 +673,7 @@ class DnsVpnService : VpnService() {
                         }
                         6 -> {
                             if (isIpv6UdpDns(packet, length)) processIpv6Dns(packet, length)
-                            // TCP DNS on IPv6 is rare; silently dropped for now.
-                            // IPv6 TCP DNS would require constructing IPv6+TCP headers
-                            // with proper flow labels. Apps fall back to UDP on timeout.
+                            else if (isIpv6TcpDns(packet, length)) processIpv6TcpDns(packet, length)
                         }
                     }
 
@@ -959,6 +957,14 @@ class DnsVpnService : VpnService() {
         return ((p[42].toInt() and 0xFF) shl 8 or (p[43].toInt() and 0xFF)) == DNS_PORT
     }
 
+    /** Detect IPv6 TCP packets destined for port 53. Next header = 6 (TCP). */
+    private fun isIpv6TcpDns(p: ByteArray, len: Int): Boolean {
+        if (len < 60) return false // min IPv6(40) + TCP(20)
+        if (p[6].toInt() and 0xFF != 6) return false // next header = TCP
+        // Dest port at byte 40 (start of TCP) + 2
+        return ((p[42].toInt() and 0xFF) shl 8 or (p[43].toInt() and 0xFF)) == DNS_PORT
+    }
+
     // ── TCP DNS (RFC 7766) ───────────────────────────────────
 
     /**
@@ -1039,6 +1045,121 @@ class DnsVpnService : VpnService() {
                 Log.d(TAG, "TCP-DNS allowed (drop→UDP fallback) $hostname")
             }
         }
+    }
+
+    /** Handle IPv6 TCP DNS packets — mirrors processIpv4TcpDns logic. */
+    private suspend fun processIpv6TcpDns(packet: ByteArray, length: Int) {
+        val hdr = 40 // IPv6 fixed header
+        val tcpOff = hdr
+        if (length < tcpOff + 20) return
+
+        val dataOff = ((packet[tcpOff + 12].toInt() and 0xF0) shr 4) * 4
+        val tcpFlags = packet[tcpOff + 13].toInt() and 0xFF
+        val isRst = (tcpFlags and 0x04) != 0
+        if (isRst) return
+
+        val payloadStart = tcpOff + dataOff
+        val payloadLen = length - payloadStart
+
+        var hostname: String? = null
+        if (payloadLen > 14) {
+            val dnsLen = (packet[payloadStart].toInt() and 0xFF shl 8) or
+                (packet[payloadStart + 1].toInt() and 0xFF)
+            if (dnsLen in 12..4096 && payloadStart + 2 + dnsLen <= length) {
+                val dns = packet.copyOfRange(payloadStart + 2, payloadStart + 2 + dnsLen)
+                hostname = parseDnsQueryDomain(dns)
+            }
+        }
+
+        val blocked = if (hostname != null) isDomainBlocked(hostname) else true
+
+        if (blocked) {
+            val rst = buildTcpRstV6(packet) ?: return
+            writeChannel.send(rst)
+            blockedCount++
+            if (hostname != null) {
+                Log.d(TAG, "TCP6-DNS BLOCKED (RST) $hostname")
+                logAsync(hostname, true, "" to "", "TCP")
+            }
+        } else {
+            if (hostname != null) Log.d(TAG, "TCP6-DNS allowed (drop) $hostname")
+        }
+    }
+
+    /** Build IPv6 TCP RST by swapping src/dst and computing checksum. */
+    private fun buildTcpRstV6(orig: ByteArray): ByteArray? {
+        if (orig.size < 60) return null // min IPv6(40) + TCP(20)
+        val rstLen = 40 + 20 // IPv6 header + minimal TCP
+        val rst = ByteArray(rstLen)
+
+        // IPv6 header
+        rst[0] = 0x60.toByte() // version 6
+        rst[1] = 0; rst[2] = 0; rst[3] = 0 // traffic class + flow label
+        val tcpLen = 20
+        rst[4] = (tcpLen shr 8 and 0xFF).toByte()
+        rst[5] = (tcpLen and 0xFF).toByte()
+        rst[6] = 6 // next header = TCP
+        rst[7] = 64 // hop limit
+        // Swap src/dst IPv6 addresses (each 16 bytes at offsets 8 and 24)
+        System.arraycopy(orig, 24, rst, 8, 16)  // orig dst -> rst src
+        System.arraycopy(orig, 8, rst, 24, 16)   // orig src -> rst dst
+
+        // TCP header
+        val t = 40
+        val origT = 40
+        // Swap ports
+        rst[t] = orig[origT + 2]; rst[t + 1] = orig[origT + 3]
+        rst[t + 2] = orig[origT]; rst[t + 3] = orig[origT + 1]
+        // Seq = 0
+        rst[t + 4] = 0; rst[t + 5] = 0; rst[t + 6] = 0; rst[t + 7] = 0
+        // ACK = orig SEQ + payload + SYN/FIN
+        val origSeq = (orig[origT + 4].toLong() and 0xFF shl 24) or
+            (orig[origT + 5].toLong() and 0xFF shl 16) or
+            (orig[origT + 6].toLong() and 0xFF shl 8) or
+            (orig[origT + 7].toLong() and 0xFF)
+        val origDataOff = ((orig[origT + 12].toInt() and 0xF0) shr 4) * 4
+        val origPayload = orig.size - 40 - origDataOff
+        val origFlags = orig[origT + 13].toInt() and 0xFF
+        val synBit = if ((origFlags and 0x02) != 0) 1 else 0
+        val finBit = if ((origFlags and 0x01) != 0) 1 else 0
+        val ackNum = origSeq + origPayload + synBit + finBit
+        rst[t + 8] = (ackNum shr 24 and 0xFF).toByte()
+        rst[t + 9] = (ackNum shr 16 and 0xFF).toByte()
+        rst[t + 10] = (ackNum shr 8 and 0xFF).toByte()
+        rst[t + 11] = (ackNum and 0xFF).toByte()
+        rst[t + 12] = 0x50.toByte() // data offset 5
+        rst[t + 13] = 0x14.toByte() // RST + ACK
+        rst[t + 14] = 0; rst[t + 15] = 0 // window
+        rst[t + 16] = 0; rst[t + 17] = 0 // checksum (below)
+        rst[t + 18] = 0; rst[t + 19] = 0 // urgent
+
+        // TCP checksum with IPv6 pseudo-header
+        computeTcpChecksumV6(rst, 40, tcpLen)
+
+        return rst
+    }
+
+    /** TCP checksum for IPv6 (pseudo-header uses src/dst IPv6 addresses). */
+    private fun computeTcpChecksumV6(pkt: ByteArray, tcpStart: Int, tcpLen: Int) {
+        var sum = 0L
+        // Pseudo-header: src IPv6 (16 bytes at offset 8) + dst IPv6 (16 bytes at offset 24)
+        for (i in 8 until 40 step 2) {
+            sum += ((pkt[i].toInt() and 0xFF) shl 8) or (pkt[i + 1].toInt() and 0xFF)
+        }
+        sum += 6 // next header (TCP)
+        sum += tcpLen // TCP length
+        // Zero checksum field
+        pkt[tcpStart + 16] = 0; pkt[tcpStart + 17] = 0
+        // TCP segment
+        for (i in tcpStart until tcpStart + tcpLen step 2) {
+            val hi = pkt[i].toInt() and 0xFF
+            val lo = if (i + 1 < pkt.size) pkt[i + 1].toInt() and 0xFF else 0
+            sum += (hi shl 8) or lo
+        }
+        while (sum shr 16 != 0L) sum = (sum and 0xFFFF) + (sum shr 16)
+        val cksum = sum.toInt().inv() and 0xFFFF
+        pkt[tcpStart + 16] = (cksum shr 8 and 0xFF).toByte()
+        pkt[tcpStart + 17] = (cksum and 0xFF).toByte()
     }
 
     /**
