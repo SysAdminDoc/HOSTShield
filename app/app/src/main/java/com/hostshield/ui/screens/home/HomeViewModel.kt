@@ -72,7 +72,12 @@ data class HomeUiState(
     val dnsLoggingEnabled: Boolean = true,
     /** Privacy score (0-100). */
     val privacyScore: Int = 0,
-    val privacyItems: List<com.hostshield.util.PrivacyScorer.ScoreItem> = emptyList()
+    val privacyItems: List<com.hostshield.util.PrivacyScorer.ScoreItem> = emptyList(),
+    /** Live query rate (queries per minute). */
+    val queriesPerMinute: Int = 0,
+    val blocksPerMinute: Int = 0,
+    /** Source category counts: category -> (enabled, total). */
+    val categoryCounts: Map<String, Pair<Int, Int>> = emptyMap()
 )
 
 @HiltViewModel
@@ -122,6 +127,42 @@ class HomeViewModel @Inject constructor(
         checkPrivateSpace()
         resumeBlockingIfNeeded()
         calculatePrivacyScore()
+        trackQueryRate()
+        observeCategoryCounts()
+    }
+
+    private fun observeCategoryCounts() {
+        viewModelScope.launch {
+            repository.getAllSources().collect { sources ->
+                val counts = sources.groupBy { it.category.name }
+                    .mapValues { (_, list) -> Pair(list.count { it.enabled }, list.size) }
+                _uiState.update { it.copy(categoryCounts = counts) }
+            }
+        }
+    }
+
+    fun toggleCategory(category: String, enable: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val allSources = repository.getAllSources().first()
+            allSources.filter { it.category.name == category }.forEach { source ->
+                repository.toggleSource(source.id, enable)
+            }
+        }
+    }
+
+    /** Track live query rate from the VPN live stream. */
+    private fun trackQueryRate() {
+        viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(5_000) // Update every 5 seconds
+                val recent = liveQueryStream.value
+                val now = System.currentTimeMillis()
+                val oneMinAgo = now - 60_000
+                val recentQueries = recent.count { it.timestamp > oneMinAgo }
+                val recentBlocks = recent.count { it.timestamp > oneMinAgo && it.blocked }
+                _uiState.update { it.copy(queriesPerMinute = recentQueries, blocksPerMinute = recentBlocks) }
+            }
+        }
     }
 
     fun calculatePrivacyScore() {

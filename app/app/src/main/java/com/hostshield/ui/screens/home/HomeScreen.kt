@@ -368,6 +368,22 @@ fun HomeScreen(
             }
         }
 
+        // Live query rate
+        if (state.isEnabled && (state.queriesPerMinute > 0 || state.blocksPerMinute > 0)) {
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("${state.queriesPerMinute}", color = Blue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text(" q/min", color = TextDim, fontSize = 10.sp)
+                Spacer(Modifier.width(16.dp))
+                Text("${state.blocksPerMinute}", color = Red, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text(" blk/min", color = TextDim, fontSize = 10.sp)
+            }
+        }
+
         Spacer(Modifier.height(24.dp))
 
         // Stats grid
@@ -465,6 +481,52 @@ fun HomeScreen(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 color = Yellow, fontSize = 10.sp, fontWeight = FontWeight.SemiBold
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Category quick toggles
+        if (state.categoryCounts.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text("Source Categories", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Spacer(Modifier.height(8.dp))
+                    val catColors = mapOf(
+                        "ADS" to Teal, "TRACKERS" to Blue, "MALWARE" to Red,
+                        "ADULT" to Flamingo, "SOCIAL" to Mauve, "CRYPTO" to Peach,
+                        "ALLOWLIST" to Green, "CUSTOM" to Yellow
+                    )
+                    // Use FlowRow-like wrapping with multiple Rows
+                    val cats = state.categoryCounts.entries.sortedBy { it.key }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        cats.forEach { (cat, counts) ->
+                            val (enabled, total) = counts
+                            val color = catColors[cat] ?: TextDim
+                            val allEnabled = enabled == total
+                            Surface(
+                                onClick = { viewModel.toggleCategory(cat, !allEnabled) },
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (allEnabled) color.copy(alpha = 0.12f) else Surface2
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        cat.lowercase().replaceFirstChar { it.uppercase() },
+                                        color = if (allEnabled) color else TextDim,
+                                        fontSize = 10.sp, fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("$enabled/$total", color = TextDim, fontSize = 8.sp)
+                                }
+                            }
                         }
                     }
                 }

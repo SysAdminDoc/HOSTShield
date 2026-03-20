@@ -219,6 +219,8 @@ class ImportExportUtil @Inject constructor() {
             trimmed.startsWith("{") && (trimmed.contains("\"blocklist\"") || trimmed.contains("\"whitelist\"")) -> importBlokadaBackup(content)
             trimmed.startsWith("{") && trimmed.contains("\"denylist\"") -> importNextDnsConfig(content)
             trimmed.startsWith("{") -> importJson(content)
+            // Pi-hole domainlist CSV (starts with "id,type,domain")
+            trimmed.startsWith("id,") || (trimmed.lines().firstOrNull()?.matches(Regex("^\\d+,\\d+,.+")) == true) -> importPiholeFormat(content)
             else -> importHostsFormat(content)
         }
     }
@@ -401,6 +403,60 @@ class ImportExportUtil @Inject constructor() {
 
     private fun isIpLike(s: String): Boolean =
         s.matches(Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"""))
+
+    /**
+     * Import from Pi-hole teleporter backup (SQLite gravity.db export or domainlist CSV).
+     * Pi-hole teleporter includes:
+     *   - "domainlist" CSV: id,type,domain,enabled,comment
+     *     type 0 = exact whitelist, 1 = exact blacklist, 2 = regex whitelist, 3 = regex blacklist
+     *   - "adlist" CSV: address (URL),enabled
+     */
+    suspend fun importPiholeFormat(content: String): ImportResult = withContext(Dispatchers.Default) {
+        val block = mutableListOf<UserRule>()
+        val allow = mutableListOf<UserRule>()
+        val sources = mutableListOf<HostSource>()
+
+        content.lineSequence().forEach { rawLine ->
+            val line = rawLine.trim()
+            if (line.isEmpty() || line.startsWith("id,") || line.startsWith("#")) return@forEach
+
+            val parts = line.split(",", limit = 5)
+            if (parts.size >= 3 && parts[0].toIntOrNull() != null) {
+                // domainlist CSV format: id,type,domain,enabled,comment
+                val type = parts[1].toIntOrNull() ?: return@forEach
+                val domain = parts[2].trim().removeSurrounding("\"")
+                val enabled = parts.getOrNull(3)?.trim() != "0"
+                val isRegex = type == 2 || type == 3
+
+                when (type) {
+                    0 -> allow.add(UserRule(hostname = domain, type = RuleType.ALLOW, enabled = enabled, isRegex = isRegex))
+                    1 -> block.add(UserRule(hostname = domain, type = RuleType.BLOCK, enabled = enabled, isRegex = isRegex))
+                    2 -> allow.add(UserRule(hostname = domain, type = RuleType.ALLOW, enabled = enabled, isRegex = true))
+                    3 -> block.add(UserRule(hostname = domain, type = RuleType.BLOCK, enabled = enabled, isRegex = true))
+                }
+            } else if (parts.size >= 2 && parts[0].startsWith("http")) {
+                // adlist CSV format: address,enabled,...
+                val url = parts[0].trim().removeSurrounding("\"")
+                val enabled = parts.getOrNull(1)?.trim() != "0"
+                if (url.startsWith("http")) {
+                    sources.add(HostSource(
+                        url = url,
+                        label = url.substringAfterLast("/").take(40),
+                        enabled = enabled,
+                        category = com.hostshield.data.model.SourceCategory.CUSTOM
+                    ))
+                }
+            } else if (isValidHost(line.lowercase())) {
+                // Plain domain list (gravity list export)
+                block.add(UserRule(hostname = line.lowercase(), type = RuleType.BLOCK))
+            }
+        }
+
+        ImportResult(
+            blocklist = block, allowlist = allow, sources = sources,
+            format = "pihole"
+        )
+    }
 
     private fun isValidHost(s: String): Boolean =
         s.length in 3..253 && s.contains('.') &&
