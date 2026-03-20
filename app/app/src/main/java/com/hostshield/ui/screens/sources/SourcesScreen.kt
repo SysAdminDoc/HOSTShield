@@ -82,7 +82,10 @@ class SourcesViewModel @Inject constructor(
 }
 
 @Composable
-fun SourcesScreen(viewModel: SourcesViewModel = hiltViewModel()) {
+fun SourcesScreen(
+    viewModel: SourcesViewModel = hiltViewModel(),
+    onNavigateToGallery: () -> Unit = {}
+) {
     val sources by viewModel.sources.collectAsStateWithLifecycle()
     val healthMsg by viewModel.healthCheckMessage.collectAsStateWithLifecycle()
     val isChecking by viewModel.isCheckingHealth.collectAsStateWithLifecycle()
@@ -158,16 +161,27 @@ fun SourcesScreen(viewModel: SourcesViewModel = hiltViewModel()) {
             item { Spacer(Modifier.height(80.dp)) }
         }
 
-        FloatingActionButton(
-            onClick = { showAddDialog = true },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp),
-            containerColor = Teal,
-            contentColor = Color.Black,
-            shape = RoundedCornerShape(16.dp)
+        Column(
+            modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.End
         ) {
-            Icon(Icons.Filled.Add, "Add source")
+            SmallFloatingActionButton(
+                onClick = onNavigateToGallery,
+                containerColor = Mauve,
+                contentColor = Color.Black,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Filled.Explore, "Browse gallery", modifier = Modifier.size(20.dp))
+            }
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = Teal,
+                contentColor = Color.Black,
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(Icons.Filled.Add, "Add source")
+            }
         }
     }
 

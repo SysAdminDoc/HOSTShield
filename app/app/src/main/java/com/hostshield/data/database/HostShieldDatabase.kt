@@ -15,7 +15,7 @@ import com.hostshield.data.model.*
         FirewallRule::class,
         ConnectionLogEntry::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

@@ -301,7 +301,11 @@ private fun HostShieldMainApp(activity: MainActivity) {
                     onRequestVpnPermission = { onResult -> activity.requestVpnPermission(onResult) }
                 )
             }
-            composable(Screen.Sources.route) { SourcesScreen() }
+            composable(Screen.Sources.route) {
+                SourcesScreen(
+                    onNavigateToGallery = { navController.navigate(SubScreen.BLOCKLIST_GALLERY) }
+                )
+            }
             composable(Screen.Rules.route) { RulesScreen() }
             composable(Screen.Stats.route) {
                 StatsScreen(onNavigateToLogs = { navController.navigate(SubScreen.LOGS) })
@@ -375,6 +379,11 @@ private fun HostShieldMainApp(activity: MainActivity) {
             }
             composable(SubScreen.APP_PRIVACY) {
                 com.hostshield.ui.screens.apps.AppPrivacyScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.BLOCKLIST_GALLERY) {
+                com.hostshield.ui.screens.sources.BlocklistGalleryScreen(
                     onBack = { navController.popBackStack() }
                 )
             }

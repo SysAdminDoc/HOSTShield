@@ -369,6 +369,18 @@ interface FirewallRuleDao {
 
     @Query("DELETE FROM firewall_rules WHERE uid = :uid")
     suspend fun deleteByUid(uid: Int)
+
+    @Query("UPDATE firewall_rules SET block_screen_off = :block, updated_at = :ts WHERE uid = :uid")
+    suspend fun setBlockScreenOff(uid: Int, block: Boolean, ts: Long = System.currentTimeMillis())
+
+    @Query("UPDATE firewall_rules SET block_background = :block, updated_at = :ts WHERE uid = :uid")
+    suspend fun setBlockBackground(uid: Int, block: Boolean, ts: Long = System.currentTimeMillis())
+
+    @Query("UPDATE firewall_rules SET block_metered = :block, updated_at = :ts WHERE uid = :uid")
+    suspend fun setBlockMetered(uid: Int, block: Boolean, ts: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM firewall_rules WHERE block_screen_off = 1 OR block_background = 1 OR block_metered = 1")
+    fun getContextAwareRules(): Flow<List<FirewallRule>>
 }
 
 @Dao

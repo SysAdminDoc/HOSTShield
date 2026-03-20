@@ -1,4 +1,4 @@
-# HostShield v1.6.0 - ProGuard / R8 Rules
+# HostShield v3.8.0 - ProGuard / R8 Rules
 
 # ── Room ──────────────────────────────────────────────────────
 -keep class * extends androidx.room.RoomDatabase
@@ -69,6 +69,12 @@
 -keep class com.hostshield.service.IptablesManager { *; }
 -keep class com.hostshield.service.IptablesBinaryManager { *; }
 -keep class com.hostshield.util.DiagnosticExporter { *; }
+-keep class com.hostshield.util.TrackerSignatureDb { *; }
+-keep class com.hostshield.util.TrackerSignatureDb$** { *; }
+-keep class com.hostshield.service.ContextState { *; }
+
+# ── StatsWidget (v3.8.0) ────────────────────────────────────
+-keep class com.hostshield.service.StatsWidgetProvider { *; }
 
 # ── Room TypeConverters ──────────────────────────────────────
 -keep class com.hostshield.data.database.Converters { *; }

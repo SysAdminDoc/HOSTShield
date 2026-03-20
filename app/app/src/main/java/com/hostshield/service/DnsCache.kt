@@ -226,12 +226,33 @@ class DnsCache(
         return copy
     }
 
-    /** Evict least-recently-used entries. */
+    /** Evict least-recently-used entries. O(n) scan instead of O(n log n) sort. */
     private fun evictLru(map: ConcurrentHashMap<CacheKey, CacheEntry>, count: Int) {
-        val entries = map.entries.sortedBy { it.value.lastAccess }
-        val toEvict = entries.take(count)
-        for (e in toEvict) {
-            map.remove(e.key)
+        // Collect entries sorted by lastAccess using a partial selection (min-heap style).
+        // For small eviction counts this is much faster than sorting the whole map.
+        val now = System.currentTimeMillis()
+        // First pass: remove expired entries (free eviction)
+        val iter = map.entries.iterator()
+        var removed = 0
+        while (iter.hasNext() && removed < count) {
+            val e = iter.next()
+            if (now >= e.value.expiresAt) {
+                iter.remove()
+                evictions.incrementAndGet()
+                removed++
+            }
+        }
+        if (removed >= count) return
+        // Second pass: evict oldest by lastAccess
+        val remaining = count - removed
+        val oldest = map.entries
+            .asSequence()
+            .sortedBy { it.value.lastAccess }
+            .take(remaining)
+            .map { it.key }
+            .toList()
+        for (key in oldest) {
+            map.remove(key)
             evictions.incrementAndGet()
         }
     }

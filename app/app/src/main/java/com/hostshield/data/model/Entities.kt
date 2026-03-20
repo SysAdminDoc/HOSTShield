@@ -116,7 +116,11 @@ data class FirewallRule(
     @ColumnInfo(name = "vpn_allowed") val vpnAllowed: Boolean = true,
     @ColumnInfo(name = "is_system") val isSystem: Boolean = false,
     @ColumnInfo(name = "enabled") val enabled: Boolean = true,
-    @ColumnInfo(name = "updated_at") val updatedAt: Long = System.currentTimeMillis()
+    @ColumnInfo(name = "updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    // Context-aware firewall: block when screen is off or app is in background
+    @ColumnInfo(name = "block_screen_off") val blockScreenOff: Boolean = false,
+    @ColumnInfo(name = "block_background") val blockBackground: Boolean = false,
+    @ColumnInfo(name = "block_metered") val blockMetered: Boolean = false
 )
 
 @Entity(

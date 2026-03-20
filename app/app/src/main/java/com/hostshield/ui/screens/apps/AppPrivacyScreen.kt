@@ -35,7 +35,8 @@ data class AppPrivacyState(
     val isLoading: Boolean = false,
     val reports: List<AppPrivacyScorer.AppReport> = emptyList(),
     val averageScore: Int = 0,
-    val worstApps: Int = 0
+    val worstApps: Int = 0,
+    val totalTrackerSdks: Int = 0
 )
 
 @HiltViewModel
@@ -53,7 +54,8 @@ class AppPrivacyViewModel @Inject constructor(
             val reports = scorer.generateAllReports()
             val avg = if (reports.isNotEmpty()) reports.map { it.score }.average().toInt() else 0
             val worst = reports.count { it.privacyGrade == "F" || it.privacyGrade == "D" }
-            _state.update { it.copy(isLoading = false, reports = reports, averageScore = avg, worstApps = worst) }
+            val totalSdks = reports.sumOf { it.embeddedTrackers.size }
+            _state.update { it.copy(isLoading = false, reports = reports, averageScore = avg, worstApps = worst, totalTrackerSdks = totalSdks) }
         }
     }
 }
@@ -111,7 +113,7 @@ fun AppPrivacyScreen(
                             Spacer(Modifier.width(16.dp))
                             Column {
                                 Text("Average Privacy Score", color = TextPrimary, fontWeight = FontWeight.SemiBold)
-                                Text("${state.reports.size} apps analyzed, ${state.worstApps} need attention",
+                                Text("${state.reports.size} apps analyzed, ${state.worstApps} need attention, ${state.totalTrackerSdks} tracker SDKs",
                                     color = TextDim, fontSize = 11.sp)
                             }
                         }
@@ -190,6 +192,26 @@ private fun AppReportCard(report: AppPrivacyScorer.AppReport) {
                         Text(insight, color = TextSecondary, fontSize = 11.sp)
                     }
                 }
+                // Embedded tracker SDKs
+                if (report.embeddedTrackers.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Embedded SDKs:", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    report.embeddedTrackers.forEach { sdk ->
+                        Row(modifier = Modifier.padding(start = 8.dp, top = 1.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(5.dp)
+                                    .clip(CircleShape)
+                                    .background(sdkCategoryColor(sdk.category).copy(alpha = 0.6f))
+                            )
+                            Spacer(Modifier.width(5.dp))
+                            Text(sdk.name, color = sdkCategoryColor(sdk.category).copy(alpha = 0.8f),
+                                fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                            Spacer(Modifier.width(6.dp))
+                            Text(sdk.category, color = TextDim, fontSize = 9.sp)
+                        }
+                    }
+                }
                 // Top blocked domains
                 if (report.trackerDomains.isNotEmpty()) {
                     Spacer(Modifier.height(6.dp))
@@ -213,4 +235,14 @@ private fun gradeColor(grade: String): Color = when (grade) {
     "D" -> Peach
     "F" -> Red
     else -> TextDim
+}
+
+private fun sdkCategoryColor(category: String): Color = when (category) {
+    "Advertising" -> Red
+    "Analytics" -> Peach
+    "Crash" -> Yellow
+    "Social" -> Mauve
+    "Location" -> Blue
+    "Profiling" -> Flamingo
+    else -> TextSecondary
 }

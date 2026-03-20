@@ -170,10 +170,14 @@ class BlocklistHolder @Inject constructor() {
                 }
             }
         }
-        // Compile regex rules (validated, invalid patterns silently skipped)
+        // Compile regex rules (validated, invalid patterns silently skipped).
+        // Safety: reject patterns >500 chars or with nested quantifiers to prevent ReDoS.
         val newRegexBlock = mutableListOf<Regex>()
         val newRegexAllow = mutableListOf<Regex>()
+        val nestedQuantifier = Regex("""\([^)]*[+*][^)]*\)[+*?]""")
         for (rule in regexRules) {
+            if (rule.hostname.length > 500) continue
+            if (nestedQuantifier.containsMatchIn(rule.hostname)) continue
             try {
                 val regex = Regex(rule.hostname, RegexOption.IGNORE_CASE)
                 when (rule.type) {
