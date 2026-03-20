@@ -83,7 +83,9 @@ data class HomeUiState(
     /** DNS cache hit rate (from VPN). */
     val cacheHitRate: Float = 0f,
     /** Dropped queries from buffer overflow. */
-    val droppedQueries: Int = 0
+    val droppedQueries: Int = 0,
+    /** Top querying apps (up to 3). */
+    val topApps: List<Triple<String, String, Int>> = emptyList() // (package, label, count)
 )
 
 @HiltViewModel
@@ -135,6 +137,17 @@ class HomeViewModel @Inject constructor(
         calculatePrivacyScore()
         trackQueryRate()
         observeCategoryCounts()
+        observeTopApps()
+    }
+
+    private fun observeTopApps() {
+        viewModelScope.launch {
+            dnsLogDao.getTopQueryApps(3).collect { apps ->
+                _uiState.update { it.copy(
+                    topApps = apps.map { a -> Triple(a.appPackage, a.appLabel, a.cnt) }
+                ) }
+            }
+        }
     }
 
     private fun observeCategoryCounts() {

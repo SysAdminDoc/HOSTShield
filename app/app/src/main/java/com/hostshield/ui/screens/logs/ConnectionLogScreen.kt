@@ -252,7 +252,8 @@ private fun ConnectionLogRow(entry: ConnectionLogEntry, timeFmt: SimpleDateForma
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
                 if (entry.interfaceName.isNotBlank()) {
-                    Text(" via ${entry.interfaceName}", color = TextDim.copy(alpha = 0.5f), fontSize = 10.sp)
+                    val ifLabel = interfaceLabel(entry.interfaceName)
+                    Text(" via $ifLabel", color = TextDim.copy(alpha = 0.5f), fontSize = 10.sp)
                 }
             }
         }
@@ -289,4 +290,18 @@ private fun TabPill(label: String, selected: Boolean, accent: Color, onClick: ()
             fontSize = 12.sp, fontWeight = FontWeight.SemiBold
         )
     }
+}
+
+/** Map raw interface names to human-readable labels. */
+private fun interfaceLabel(iface: String): String = when {
+    iface.startsWith("wlan") -> "WiFi"
+    iface.startsWith("rmnet") || iface.startsWith("ccmni") -> "Mobile"
+    iface.startsWith("tun") || iface.startsWith("vpn") -> "VPN"
+    iface.startsWith("bt-") || iface.startsWith("bnep") -> "Bluetooth"
+    iface.startsWith("eth") || iface.startsWith("usb") -> "Ethernet"
+    iface.startsWith("lo") -> "Loopback"
+    iface.startsWith("dummy") -> "Dummy"
+    iface.startsWith("p2p") -> "WiFi Direct"
+    iface.startsWith("swlan") -> "WiFi Hotspot"
+    else -> iface
 }

@@ -641,6 +641,31 @@ fun HomeScreen(
             }
         }
 
+        // ── Top Querying Apps ────────────────────────────────
+        if (state.topApps.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text("Top Querying Apps", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Spacer(Modifier.height(8.dp))
+                    state.topApps.forEachIndexed { idx, (_, label, count) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val medalColor = when (idx) { 0 -> Teal; 1 -> Blue; else -> TextDim }
+                            Text("${idx + 1}", color = medalColor, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                modifier = Modifier.width(18.dp))
+                            Text(label.ifBlank { "Unknown" }, color = TextPrimary, fontSize = 12.sp,
+                                maxLines = 1, modifier = Modifier.weight(1f),
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Text("$count", color = TextDim, fontSize = 11.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                        }
+                    }
+                }
+            }
+        }
+
         Spacer(Modifier.height(16.dp))
 
         // ── Live DNS Activity Feed ──────────────────────────

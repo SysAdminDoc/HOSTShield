@@ -110,6 +110,10 @@ class DnsVpnService : VpnService() {
         @Volatile var currentDroppedQueries: Int = 0
             private set
 
+        /** Clear DNS cache from UI. Safe to call when VPN is not running (no-op). */
+        @Volatile var clearCacheCallback: (() -> Unit)? = null
+            private set
+
         // VPN interface
         private const val VPN_ADDRESS = "10.120.0.1"
         private const val VPN_ADDRESS6 = "fd00::1"
@@ -495,6 +499,7 @@ class DnsVpnService : VpnService() {
             dnsAnswerCache.clear()
             droppedQueries.set(0)
             totalQueriesCount.set(0)
+            clearCacheCallback = { dnsCache.clear() }
             serviceScope.launch { writeLoop() }
             serviceScope.launch { packetLoop() }
             startLogFlusher()
@@ -541,6 +546,7 @@ class DnsVpnService : VpnService() {
         ContextState.unregister(this)
         dnsAnswerCache.clear()
         dnsCache.clear()
+        clearCacheCallback = null
         try { writeChannel.close() } catch (_: Exception) { }
         try { vpnInterface?.close() } catch (_: Exception) { }
         vpnInterface = null
@@ -1967,17 +1973,19 @@ class DnsVpnService : VpnService() {
         }.let { nm.createNotificationChannel(it) }
     }
 
+    private fun makePausePendingIntent(minutes: Int, requestCode: Int): PendingIntent =
+        PendingIntent.getService(this, requestCode,
+            Intent(this, DnsVpnService::class.java).apply {
+                action = ACTION_PAUSE; putExtra("pause_minutes", minutes)
+            },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+
     private fun buildNotification(blocked: Int): Notification {
         val ci = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val si = PendingIntent.getService(this, 1,
             Intent(this, DnsVpnService::class.java).apply { action = ACTION_STOP },
             PendingIntent.FLAG_IMMUTABLE)
-        val pauseIntent = PendingIntent.getService(this, 2,
-            Intent(this, DnsVpnService::class.java).apply {
-                action = ACTION_PAUSE; putExtra("pause_minutes", 5)
-            },
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
         val title = if (isPaused) "HostShield Paused" else "HostShield Active"
         val sub = buildString {
@@ -1996,15 +2004,11 @@ class DnsVpnService : VpnService() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
 
         if (isPaused) {
-            // Show resume action when paused
-            val resumeIntent = PendingIntent.getService(this, 3,
-                Intent(this, DnsVpnService::class.java).apply {
-                    action = ACTION_PAUSE; putExtra("pause_minutes", 0)
-                },
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-            builder.addAction(android.R.drawable.ic_media_play, "Resume", resumeIntent)
+            builder.addAction(android.R.drawable.ic_media_play, "Resume", makePausePendingIntent(0, 5))
         } else {
-            builder.addAction(android.R.drawable.ic_media_pause, "Pause 5m", pauseIntent)
+            // Max 3 actions: Pause 5m, Pause 30m, Stop
+            builder.addAction(android.R.drawable.ic_media_pause, "Pause 5m", makePausePendingIntent(5, 2))
+            builder.addAction(android.R.drawable.ic_media_pause, "Pause 30m", makePausePendingIntent(30, 3))
         }
         builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", si)
 

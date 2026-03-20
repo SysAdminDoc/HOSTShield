@@ -207,6 +207,10 @@ class SettingsViewModel @Inject constructor(
     fun setScheduleMode(mode: String) { viewModelScope.launch { prefs.setScheduleMode(mode) } }
     fun setCustomUpstreamDns(dns: String) { viewModelScope.launch { prefs.setCustomUpstreamDns(dns.trim()) } }
 
+    fun clearDnsCache() {
+        com.hostshield.service.DnsVpnService.clearCacheCallback?.invoke()
+    }
+
     /** Export rules JSON directly to a SAF URI. */
     fun exportRulesToUri(uri: Uri) {
         viewModelScope.launch {
