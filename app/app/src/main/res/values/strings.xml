@@ -2,4 +2,10 @@
 <resources>
     <string name="app_name">HostShield</string>
     <string name="widget_description">Quick toggle and block count</string>
+    <string name="shortcut_toggle">Toggle</string>
+    <string name="shortcut_toggle_long">Toggle Protection</string>
+    <string name="shortcut_refresh">Refresh</string>
+    <string name="shortcut_refresh_long">Refresh Blocklists</string>
+    <string name="shortcut_logs">Logs</string>
+    <string name="shortcut_logs_long">View DNS Logs</string>
 </resources>

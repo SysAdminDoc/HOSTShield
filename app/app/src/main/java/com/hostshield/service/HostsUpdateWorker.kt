@@ -126,7 +126,8 @@ class HostsUpdateWorker @AssistedInject constructor(
                     allDomains.removeAll(sourceAllowDomains)
 
                     val wildcards = repository.getEnabledWildcards()
-                    blocklistHolder.update(allDomains, wildcards)
+                    val regexRules = repository.getEnabledRegexRules()
+                    blocklistHolder.update(allDomains, wildcards, regexRules)
 
                     prefs.setLastApplyTime(System.currentTimeMillis())
                     prefs.setLastApplyCount(allDomains.size)

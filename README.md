@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-3.1.0-blue)
+![Version](https://img.shields.io/badge/version-3.2.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%207+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)
@@ -43,6 +43,13 @@
 | **Blocklist Overlap Analysis** | Identify redundant domains across enabled sources to optimize lists |
 | **Stats CSV Export** | Export daily stats, top blocked domains, and top apps as shareable CSV |
 | **Auto Update Check** | Silent check on settings open, with changelog and direct APK download |
+| **App Shortcuts** | Long-press launcher icon: Toggle, Refresh Lists, Open Logs |
+| **Bulk Log Actions** | Multi-select domains from DNS logs to block/allow in batch |
+| **DNS Latency Chart** | Per-hour average and peak response time visualization |
+| **Network-aware Profiles** | Auto-switch blocking profiles by WiFi SSID |
+| **Regex Rules** | Block/allow domains by regex pattern with live validation |
+| **Domain Reputation** | One-tap VirusTotal, URLhaus, and Whois lookup from log detail |
+| **Source Changelog** | Track new/removed domains between blocklist updates |
 | **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
 
 ## How It Works

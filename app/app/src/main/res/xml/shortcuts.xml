@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="toggle"
+        android:enabled="true"
+        android:icon="@drawable/ic_shield"
+        android:shortcutShortLabel="@string/shortcut_toggle"
+        android:shortcutLongLabel="@string/shortcut_toggle_long">
+        <intent
+            android:action="com.hostshield.SHORTCUT_TOGGLE"
+            android:targetPackage="com.hostshield"
+            android:targetClass="com.hostshield.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="refresh"
+        android:enabled="true"
+        android:icon="@drawable/ic_shield"
+        android:shortcutShortLabel="@string/shortcut_refresh"
+        android:shortcutLongLabel="@string/shortcut_refresh_long">
+        <intent
+            android:action="com.hostshield.SHORTCUT_REFRESH"
+            android:targetPackage="com.hostshield"
+            android:targetClass="com.hostshield.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="logs"
+        android:enabled="true"
+        android:icon="@drawable/ic_shield"
+        android:shortcutShortLabel="@string/shortcut_logs"
+        android:shortcutLongLabel="@string/shortcut_logs_long">
+        <intent
+            android:action="com.hostshield.SHORTCUT_LOGS"
+            android:targetPackage="com.hostshield"
+            android:targetClass="com.hostshield.MainActivity" />
+    </shortcut>
+</shortcuts>

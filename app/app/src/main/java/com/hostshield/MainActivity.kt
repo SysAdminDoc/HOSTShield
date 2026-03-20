@@ -29,6 +29,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.service.HostsUpdateWorker
 import com.hostshield.service.LogCleanupWorker
 import com.hostshield.service.ProfileScheduleWorker
 import com.hostshield.service.SourceHealthWorker
@@ -50,6 +51,7 @@ import com.hostshield.util.RootUtil
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -76,6 +78,38 @@ class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
+
+    /** Pending deep link from shortcut — consumed by NavHost on first composition. */
+    var pendingDeepLink: String? = null
+        private set
+
+    fun consumeDeepLink(): String? {
+        val link = pendingDeepLink
+        pendingDeepLink = null
+        return link
+    }
+
+    private fun handleShortcutIntent(intent: Intent?) {
+        when (intent?.action) {
+            "com.hostshield.SHORTCUT_TOGGLE" -> {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val enabled = prefs.isEnabled.first()
+                    prefs.setEnabled(!enabled)
+                }
+            }
+            "com.hostshield.SHORTCUT_REFRESH" -> {
+                HostsUpdateWorker.runNow(this)
+            }
+            "com.hostshield.SHORTCUT_LOGS" -> {
+                pendingDeepLink = SubScreen.LOGS
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleShortcutIntent(intent)
+    }
 
     /** Called by HomeScreen when VPN permission is needed. */
     fun requestVpnPermission(onResult: (Boolean) -> Unit) {
@@ -105,6 +139,9 @@ class MainActivity : ComponentActivity() {
         SourceHealthWorker.schedule(this)
         LogCleanupWorker.schedule(this)
         ProfileScheduleWorker.schedule(this)
+
+        // Handle app shortcuts and widget toggle
+        handleShortcutIntent(intent)
 
         setContent {
             HostShieldTheme {

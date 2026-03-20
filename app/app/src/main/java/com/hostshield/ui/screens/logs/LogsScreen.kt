@@ -3,7 +3,9 @@ package com.hostshield.ui.screens.logs
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -141,6 +143,36 @@ class LogsViewModel @Inject constructor(
     fun clearLogs() {
         viewModelScope.launch { repository.clearAllLogs() }
     }
+
+    fun blockDomains(hostnames: Set<String>) {
+        val hosts = hostnames.map { it.lowercase() }
+        _blockedHostnames.update { it + hosts }
+        viewModelScope.launch(Dispatchers.IO) {
+            hosts.forEach { host ->
+                repository.addRule(UserRule(hostname = host, type = RuleType.BLOCK))
+                blocklist.addDomain(host)
+            }
+            val method = prefs.blockMethod.first()
+            if (method == BlockMethod.ROOT_HOSTS) {
+                hosts.forEach { rootUtil.appendHostEntry(it) }
+            }
+        }
+    }
+
+    fun allowDomains(hostnames: Set<String>) {
+        val hosts = hostnames.map { it.lowercase() }
+        _blockedHostnames.update { it - hosts.toSet() }
+        viewModelScope.launch(Dispatchers.IO) {
+            hosts.forEach { host ->
+                repository.addRule(UserRule(hostname = host, type = RuleType.ALLOW))
+                blocklist.removeDomain(host)
+            }
+            val method = prefs.blockMethod.first()
+            if (method == BlockMethod.ROOT_HOSTS) {
+                hosts.forEach { rootUtil.removeHostEntry(it) }
+            }
+        }
+    }
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -153,6 +185,10 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
 
     var selectedEntry by remember { mutableStateOf<DedupedLogEntry?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // Multi-select state
+    var multiSelectMode by remember { mutableStateOf(false) }
+    var selectedHostnames by remember { mutableStateOf(setOf<String>()) }
 
     val deduped = remember(logs, query, blockedFilter, blockedSet) {
         logs
@@ -205,9 +241,71 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                     )
                 }
             }
+            IconButton(onClick = {
+                multiSelectMode = !multiSelectMode
+                if (!multiSelectMode) selectedHostnames = emptySet()
+            }) {
+                Icon(
+                    if (multiSelectMode) Icons.Filled.Close else Icons.Filled.Checklist,
+                    "Multi-select",
+                    tint = if (multiSelectMode) Teal else TextDim
+                )
+            }
             IconButton(onClick = { viewModel.clearLogs() }) {
                 Icon(Icons.Filled.DeleteSweep, "Clear", tint = TextDim)
             }
+        }
+
+        // Multi-select action bar
+        if (multiSelectMode && selectedHostnames.isNotEmpty()) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = Surface2
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "${selectedHostnames.size} selected",
+                        color = Teal, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Surface(
+                        onClick = {
+                            viewModel.blockDomains(selectedHostnames)
+                            selectedHostnames = emptySet()
+                            multiSelectMode = false
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        color = Red.copy(alpha = 0.12f)
+                    ) {
+                        Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                            Icon(Icons.Filled.Block, null, tint = Red, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Block All", color = Red, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    Surface(
+                        onClick = {
+                            viewModel.allowDomains(selectedHostnames)
+                            selectedHostnames = emptySet()
+                            multiSelectMode = false
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        color = Green.copy(alpha = 0.12f)
+                    ) {
+                        Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                            Icon(Icons.Filled.CheckCircle, null, tint = Green, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Allow All", color = Green, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
         }
 
         // Search
@@ -250,12 +348,38 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 items(deduped, key = { it.hostname }) { entry ->
-                    LogItem(
-                        entry = entry,
-                        onBlock = { viewModel.blockDomain(entry.hostname) },
-                        onAllow = { viewModel.allowDomain(entry.hostname) },
-                        onTap = { selectedEntry = entry }
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (multiSelectMode) {
+                            Checkbox(
+                                checked = entry.hostname in selectedHostnames,
+                                onCheckedChange = { checked ->
+                                    selectedHostnames = if (checked) selectedHostnames + entry.hostname
+                                    else selectedHostnames - entry.hostname
+                                },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = Teal,
+                                    uncheckedColor = TextDim,
+                                    checkmarkColor = Color.Black
+                                ),
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            LogItem(
+                                entry = entry,
+                                onBlock = { viewModel.blockDomain(entry.hostname) },
+                                onAllow = { viewModel.allowDomain(entry.hostname) },
+                                onTap = { selectedEntry = entry },
+                                onLongPress = {
+                                    if (!multiSelectMode) {
+                                        multiSelectMode = true
+                                        selectedHostnames = setOf(entry.hostname)
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
                 item { Spacer(Modifier.height(16.dp)) }
             }
@@ -293,7 +417,7 @@ private fun LogFilter(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> Unit, onTap: () -> Unit = {}) {
+private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> Unit, onTap: () -> Unit = {}, onLongPress: () -> Unit = {}) {
     var expanded by remember { mutableStateOf(false) }
 
     val blocked = entry.blocked
@@ -339,10 +463,14 @@ private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> 
                     .background(stripColor)
             )
 
+            @OptIn(ExperimentalFoundationApi::class)
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { expanded = !expanded }
+                    .combinedClickable(
+                        onClick = { expanded = !expanded },
+                        onLongClick = onLongPress
+                    )
                     .padding(start = 10.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -484,6 +612,8 @@ private fun formatTime(ms: Long): String = try {
 
 @Composable
 private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -544,6 +674,52 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit) {
                     modifier = Modifier.padding(start = 8.dp, top = 1.dp)
                 )
             }
+        }
+
+        // Domain reputation lookup
+        Spacer(Modifier.height(16.dp))
+        Text("REPUTATION CHECK", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ReputationButton("VirusTotal", Blue) {
+                val intent = android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("https://www.virustotal.com/gui/domain/${entry.hostname}")
+                )
+                context.startActivity(intent)
+            }
+            ReputationButton("URLhaus", Red) {
+                val intent = android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("https://urlhaus.abuse.ch/browse.php?search=${entry.hostname}")
+                )
+                context.startActivity(intent)
+            }
+            ReputationButton("Whois", Teal) {
+                val intent = android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("https://who.is/whois/${entry.hostname}")
+                )
+                context.startActivity(intent)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReputationButton(label: String, color: Color, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(8.dp),
+        color = color.copy(alpha = 0.1f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Search, null, tint = color, modifier = Modifier.size(12.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(label, color = color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

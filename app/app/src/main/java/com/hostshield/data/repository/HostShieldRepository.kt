@@ -50,6 +50,7 @@ class HostShieldRepository @Inject constructor(
     suspend fun toggleRule(id: Long, enabled: Boolean) = ruleDao.setEnabled(id, enabled)
     suspend fun ruleExists(hostname: String): Boolean = ruleDao.exists(hostname)
     suspend fun getEnabledWildcards(): List<UserRule> = ruleDao.getEnabledWildcards()
+    suspend fun getEnabledRegexRules(): List<UserRule> = ruleDao.getEnabledRegexRules()
     suspend fun getEnabledRulesByType(type: RuleType): List<UserRule> = ruleDao.getEnabledByType(type)
 
     // ── DNS Logs ─────────────────────────────────────────────
@@ -67,6 +68,7 @@ class HostShieldRepository @Inject constructor(
     fun getMostQueriedDomains(since: Long, limit: Int = 30): Flow<List<TopHostname>> = logDao.getMostQueriedDomains(since, limit)
 
     fun getDailyBreakdown(since: Long): Flow<List<com.hostshield.data.database.DailyBreakdown>> = logDao.getDailyBreakdown(since)
+    fun getHourlyLatency(since: Long): Flow<List<com.hostshield.data.database.HourlyLatency>> = logDao.getHourlyLatency(since)
     suspend fun logDnsQuery(entry: DnsLogEntry) = logDao.insert(entry)
     suspend fun clearOldLogs(olderThanMs: Long) = logDao.deleteOlderThan(System.currentTimeMillis() - olderThanMs)
     suspend fun clearAllLogs() = logDao.deleteAll()

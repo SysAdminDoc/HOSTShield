@@ -36,7 +36,10 @@ data class HostSource(
     @ColumnInfo(name = "size_bytes") val sizeBytes: Long = 0L,
     @ColumnInfo(name = "health") val health: SourceHealth = SourceHealth.UNKNOWN,
     @ColumnInfo(name = "last_error") val lastError: String = "",
-    @ColumnInfo(name = "consecutive_failures") val consecutiveFailures: Int = 0
+    @ColumnInfo(name = "consecutive_failures") val consecutiveFailures: Int = 0,
+    @ColumnInfo(name = "prev_entry_count") val prevEntryCount: Int = 0, // entry count before last update
+    @ColumnInfo(name = "domains_added") val domainsAdded: Int = 0,     // new domains in last update
+    @ColumnInfo(name = "domains_removed") val domainsRemoved: Int = 0  // removed domains in last update
 )
 
 @Entity(
@@ -51,6 +54,7 @@ data class UserRule(
     @ColumnInfo(name = "comment") val comment: String = "",
     @ColumnInfo(name = "enabled") val enabled: Boolean = true,
     @ColumnInfo(name = "is_wildcard") val isWildcard: Boolean = false,
+    @ColumnInfo(name = "is_regex") val isRegex: Boolean = false,
     @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -94,7 +98,8 @@ data class BlockingProfile(
     @ColumnInfo(name = "source_ids") val sourceIds: String = "",
     @ColumnInfo(name = "schedule_start") val scheduleStart: String = "",
     @ColumnInfo(name = "schedule_end") val scheduleEnd: String = "",
-    @ColumnInfo(name = "days_of_week") val daysOfWeek: String = "0,1,2,3,4,5,6"
+    @ColumnInfo(name = "days_of_week") val daysOfWeek: String = "0,1,2,3,4,5,6",
+    @ColumnInfo(name = "wifi_ssids") val wifiSsids: String = "" // Comma-separated SSIDs to auto-activate on
 )
 
 @Entity(

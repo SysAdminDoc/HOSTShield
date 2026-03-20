@@ -6,25 +6,34 @@
     android:background="@drawable/widget_background"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="14dp">
 
     <TextView
         android:id="@+id/widget_shield"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="⛨"
+        android:text="HS"
         android:textColor="#94E2D5"
-        android:textSize="32sp" />
+        android:textSize="28sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/widget_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="2dp"
         android:text="Protected"
         android:textColor="#94E2D5"
         android:textSize="14sp"
         android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_mode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#9399B2"
+        android:textSize="10sp" />
 
     <TextView
         android:id="@+id/widget_count"
@@ -35,15 +44,33 @@
         android:textColor="#9399B2"
         android:textSize="12sp" />
 
+    <TextView
+        android:id="@+id/widget_today"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#F38BA8"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_updated"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:text=""
+        android:textColor="#585B70"
+        android:textSize="9sp" />
+
     <LinearLayout
         android:id="@+id/widget_toggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:background="@drawable/widget_button_bg"
         android:gravity="center"
         android:paddingHorizontal="20dp"
-        android:paddingVertical="6dp">
+        android:paddingVertical="5dp">
 
         <TextView
             android:id="@+id/widget_toggle_text"
@@ -51,7 +78,7 @@
             android:layout_height="wrap_content"
             android:text="Enable"
             android:textColor="#CDD6F4"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textStyle="bold" />
     </LinearLayout>
 
