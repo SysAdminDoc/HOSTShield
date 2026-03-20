@@ -156,6 +156,38 @@ fun SettingsScreen(
             )
             Spacer(Modifier.height(6.dp))
             BlockResponseSelector(state.blockResponseType) { viewModel.setBlockResponseType(it) }
+
+            // DNS Cache management
+            Spacer(Modifier.height(12.dp))
+            Text("DNS Cache", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(4.dp))
+            val cacheStats = com.hostshield.service.DnsVpnService.currentCacheStats
+            if (cacheStats != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("${cacheStats.size + cacheStats.negativeSize} entries", color = TextDim, fontSize = 11.sp)
+                    Text("${(cacheStats.hitRate * 100).toInt()}% hit rate", color = Green, fontSize = 11.sp)
+                    Text("${cacheStats.evictions} evictions", color = TextDim, fontSize = 11.sp)
+                }
+                Spacer(Modifier.height(6.dp))
+            }
+            Surface(
+                onClick = { viewModel.clearDnsCache() },
+                shape = RoundedCornerShape(8.dp),
+                color = Surface2,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Cached, null, tint = Blue, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text("Clear DNS cache", color = TextPrimary, fontSize = 13.sp)
+                }
+            }
         }
 
         // VPN Settings
