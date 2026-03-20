@@ -55,14 +55,27 @@ data class StatsUiState(
     val dailyStats: List<BlockStats> = emptyList(),
     val topDomains: List<TopHostname> = emptyList(),
     val topApps: List<TopApp> = emptyList(),
-    val mostQueried: List<TopHostname> = emptyList(), // Network insights: aggressive domains
-    val dailyTrend: List<com.hostshield.data.database.DailyBreakdown> = emptyList(), // 7-day trend
-    val hourlyLatency: List<com.hostshield.data.database.HourlyLatency> = emptyList() // DNS latency
+    val mostQueried: List<TopHostname> = emptyList(),
+    val dailyTrend: List<com.hostshield.data.database.DailyBreakdown> = emptyList(),
+    val hourlyLatency: List<com.hostshield.data.database.HourlyLatency> = emptyList(),
+    // DNS Cache stats
+    val cacheSize: Int = 0,
+    val cacheHitRate: Float = 0f,
+    val cacheHits: Long = 0,
+    val cacheMisses: Long = 0,
+    val cacheEvictions: Long = 0,
+    // VPN Health
+    val vpnUptimeHours: Float = 0f,
+    val vpnRebuilds: Int = 0,
+    val vpnFdErrors: Int = 0,
+    val vpnDroppedQueries: Int = 0,
+    val vpnTotalQueries: Int = 0
 )
 
 @HiltViewModel
 class StatsViewModel @Inject constructor(
-    private val repository: HostShieldRepository
+    private val repository: HostShieldRepository,
+    private val vpnStabilityDao: com.hostshield.data.database.VpnStabilityDao
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(StatsUiState())
     val uiState: StateFlow<StatsUiState> = _uiState.asStateFlow()
@@ -71,7 +84,6 @@ class StatsViewModel @Inject constructor(
         .atStartOfDay(java.time.ZoneId.systemDefault())
         .toInstant().toEpochMilli()
 
-    // 7 days ago for insights
     private val weekStart = todayStart - (7 * 24 * 60 * 60 * 1000L)
 
     init {
@@ -92,6 +104,49 @@ class StatsViewModel @Inject constructor(
         viewModelScope.launch { repository.getMostQueriedDomains(weekStart, 15).collect { m -> _uiState.update { it.copy(mostQueried = m) } } }
         viewModelScope.launch { repository.getDailyBreakdown(weekStart).collect { d -> _uiState.update { it.copy(dailyTrend = d) } } }
         viewModelScope.launch { repository.getHourlyLatency(todayStart).collect { l -> _uiState.update { it.copy(hourlyLatency = l) } } }
+        pollCacheStats()
+        loadVpnStability()
+    }
+
+    /** Poll DNS cache stats from DnsVpnService every 5 seconds. */
+    private fun pollCacheStats() {
+        viewModelScope.launch {
+            while (true) {
+                val stats = com.hostshield.service.DnsVpnService.currentCacheStats
+                if (stats != null) {
+                    _uiState.update { it.copy(
+                        cacheSize = stats.size + stats.negativeSize,
+                        cacheHitRate = stats.hitRate,
+                        cacheHits = stats.hits,
+                        cacheMisses = stats.misses,
+                        cacheEvictions = stats.evictions
+                    ) }
+                }
+                val dropped = com.hostshield.service.DnsVpnService.currentDroppedQueries
+                if (dropped > 0) {
+                    _uiState.update { it.copy(vpnDroppedQueries = dropped) }
+                }
+                kotlinx.coroutines.delay(5_000)
+            }
+        }
+    }
+
+    /** Load aggregated VPN stability from Room (last 7 days). */
+    private fun loadVpnStability() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val sevenDaysAgo = java.time.LocalDate.now().minusDays(7)
+                    .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                val agg = vpnStabilityDao.getAggregated(sevenDaysAgo)
+                _uiState.update { it.copy(
+                    vpnUptimeHours = agg.totalUptime / 3_600_000f,
+                    vpnRebuilds = agg.totalRebuilds,
+                    vpnFdErrors = agg.totalErrors,
+                    vpnDroppedQueries = agg.totalDropped,
+                    vpnTotalQueries = agg.totalQueries
+                ) }
+            } catch (_: Exception) { }
+        }
     }
 }
 
@@ -173,6 +228,92 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                         Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
                             Text("Latency data populates with VPN mode.", color = TextDim, fontSize = 12.sp)
                         }
+                    }
+                }
+            }
+        }
+
+        // DNS Cache Performance
+        item {
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(Green.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Filled.Cached, null, tint = Green, modifier = Modifier.size(14.dp))
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text("DNS Cache", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text("Hit Rate", color = TextDim, fontSize = 11.sp)
+                            Text("${(state.cacheHitRate * 100).toInt()}%", color = if (state.cacheHitRate > 0.5f) Green else Peach, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Entries", color = TextDim, fontSize = 11.sp)
+                            Text(nf.format(state.cacheSize), color = TextPrimary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Hits: ${nf.format(state.cacheHits)}", color = Green, fontSize = 11.sp)
+                        Text("Misses: ${nf.format(state.cacheMisses)}", color = TextDim, fontSize = 11.sp)
+                        Text("Evictions: ${nf.format(state.cacheEvictions)}", color = Peach, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+
+        // VPN Health
+        item {
+            val healthColor = when {
+                state.vpnFdErrors > 5 || state.vpnDroppedQueries > 100 -> Red
+                state.vpnRebuilds > 10 || state.vpnDroppedQueries > 0 -> Peach
+                else -> Green
+            }
+            val healthLabel = when {
+                state.vpnFdErrors > 5 -> "Degraded"
+                state.vpnRebuilds > 10 -> "Unstable"
+                state.vpnDroppedQueries > 0 -> "Minor drops"
+                state.vpnUptimeHours > 0 -> "Healthy"
+                else -> "No data"
+            }
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(healthColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Filled.HealthAndSafety, null, tint = healthColor, modifier = Modifier.size(14.dp))
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text("VPN Health (7d)", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Spacer(Modifier.weight(1f))
+                        Text(healthLabel, color = healthColor, fontWeight = FontWeight.Medium, fontSize = 12.sp)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text("Uptime", color = TextDim, fontSize = 11.sp)
+                            Text("${"%.1f".format(state.vpnUptimeHours)}h", color = TextPrimary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Rebuilds", color = TextDim, fontSize = 11.sp)
+                            Text("${state.vpnRebuilds}", color = if (state.vpnRebuilds > 5) Peach else TextPrimary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Errors", color = TextDim, fontSize = 11.sp)
+                            Text("${state.vpnFdErrors}", color = if (state.vpnFdErrors > 0) Red else TextPrimary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Dropped", color = TextDim, fontSize = 11.sp)
+                            Text("${state.vpnDroppedQueries}", color = if (state.vpnDroppedQueries > 0) Red else TextPrimary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        }
+                    }
+                    if (state.vpnTotalQueries > 0) {
+                        Spacer(Modifier.height(6.dp))
+                        val dropRate = state.vpnDroppedQueries.toFloat() / state.vpnTotalQueries * 100
+                        Text("${nf.format(state.vpnTotalQueries)} total queries, ${String.format("%.2f", dropRate)}% drop rate",
+                            color = TextDim, fontSize = 11.sp)
                     }
                 }
             }

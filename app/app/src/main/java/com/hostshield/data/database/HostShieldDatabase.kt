@@ -13,9 +13,12 @@ import com.hostshield.data.model.*
         BlockStats::class,
         BlockingProfile::class,
         FirewallRule::class,
-        ConnectionLogEntry::class
+        ConnectionLogEntry::class,
+        TrackerScanCacheEntry::class,
+        AutomationAuditEntry::class,
+        VpnStabilityEntry::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -27,4 +30,7 @@ abstract class HostShieldDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun firewallRuleDao(): FirewallRuleDao
     abstract fun connectionLogDao(): ConnectionLogDao
+    abstract fun trackerScanCacheDao(): TrackerScanCacheDao
+    abstract fun automationAuditDao(): AutomationAuditDao
+    abstract fun vpnStabilityDao(): VpnStabilityDao
 }

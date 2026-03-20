@@ -139,3 +139,41 @@ data class ConnectionLogEntry(
     @ColumnInfo(name = "interface_name") val interfaceName: String = "", // wlan0, rmnet0
     @ColumnInfo(name = "timestamp") val timestamp: Long = System.currentTimeMillis()
 )
+
+@Entity(
+    tableName = "tracker_scan_cache",
+    indices = [Index(value = ["package_name"], unique = true)]
+)
+data class TrackerScanCacheEntry(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "package_name") val packageName: String,
+    @ColumnInfo(name = "app_label") val appLabel: String = "",
+    @ColumnInfo(name = "tracker_count") val trackerCount: Int = 0,
+    @ColumnInfo(name = "tracker_names") val trackerNames: String = "",      // comma-separated
+    @ColumnInfo(name = "categories") val categories: String = "",           // comma-separated
+    @ColumnInfo(name = "scanned_at") val scannedAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "app_version_code") val appVersionCode: Long = 0     // invalidate on app update
+)
+
+@Entity(
+    tableName = "automation_audit_log",
+    indices = [Index(value = ["timestamp"])]
+)
+data class AutomationAuditEntry(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "action") val action: String,
+    @ColumnInfo(name = "caller_uid") val callerUid: Int,
+    @ColumnInfo(name = "caller_package") val callerPackage: String = "",
+    @ColumnInfo(name = "result") val result: String = "OK", // OK, DENIED, ERROR
+    @ColumnInfo(name = "timestamp") val timestamp: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "vpn_stability")
+data class VpnStabilityEntry(
+    @PrimaryKey val date: String, // yyyy-MM-dd
+    @ColumnInfo(name = "uptime_ms") val uptimeMs: Long = 0,
+    @ColumnInfo(name = "rebuild_count") val rebuildCount: Int = 0,
+    @ColumnInfo(name = "fd_errors") val fdErrors: Int = 0,
+    @ColumnInfo(name = "dropped_queries") val droppedQueries: Int = 0,
+    @ColumnInfo(name = "total_queries") val totalQueries: Int = 0
+)

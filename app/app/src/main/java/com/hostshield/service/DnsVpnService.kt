@@ -48,7 +48,7 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentLinkedQueue
 import javax.inject.Inject
 
-// HostShield v1.8.0 - VPN DNS Blocking Service
+// HostShield v4.0.0 - VPN DNS Blocking Service
 //
 // Architecture: DNS-only interception (DNS66-style TEST-NET routing)
 //
@@ -99,6 +99,14 @@ class DnsVpnService : VpnService() {
         )
         /** Collect this from UI to get real-time DNS query events. */
         val liveQueries: kotlinx.coroutines.flow.SharedFlow<DnsLogEntry> = liveQueriesFlow
+
+        /** DNS cache stats accessor for UI. Returns null if VPN not running. */
+        @Volatile var currentCacheStats: DnsCache.CacheStats? = null
+            private set
+
+        /** Dropped query count since last flush. */
+        @Volatile var currentDroppedQueries: Int = 0
+            private set
 
         // VPN interface
         private const val VPN_ADDRESS = "10.120.0.1"
@@ -182,6 +190,7 @@ class DnsVpnService : VpnService() {
     @Inject lateinit var downloader: SourceDownloader
     @Inject lateinit var dohResolver: DohResolver
     @Inject lateinit var firewallRuleDao: com.hostshield.data.database.FirewallRuleDao
+    @Inject lateinit var vpnStabilityDao: com.hostshield.data.database.VpnStabilityDao
 
     private var vpnInterface: ParcelFileDescriptor? = null
     @Volatile private var isRunning = false
@@ -241,6 +250,14 @@ class DnsVpnService : VpnService() {
     // Stats accumulator — AtomicInteger for thread-safe increment from packet thread
     private val pendingBlockedStats = java.util.concurrent.atomic.AtomicInteger(0)
     private val pendingAllowedStats = java.util.concurrent.atomic.AtomicInteger(0)
+
+    // VPN Stability tracking
+    private val droppedQueries = java.util.concurrent.atomic.AtomicInteger(0)
+    private val totalQueriesCount = java.util.concurrent.atomic.AtomicInteger(0)
+    private val fdErrorCount = java.util.concurrent.atomic.AtomicInteger(0)
+    private val rebuildCount = java.util.concurrent.atomic.AtomicInteger(0)
+    private var vpnStartTime = 0L
+    @Volatile private var stabilityFlushJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -453,12 +470,16 @@ class DnsVpnService : VpnService() {
             }
 
             vpnEstablishedAt = SystemClock.elapsedRealtime()
+            vpnStartTime = System.currentTimeMillis()
             networkLost = false
             isRunning = true
             dnsAnswerCache.clear()
+            droppedQueries.set(0)
+            totalQueriesCount.set(0)
             serviceScope.launch { writeLoop() }
             serviceScope.launch { packetLoop() }
             startLogFlusher()
+            startStabilityFlusher()
             registerNetworkCallback()
             scheduleWatchdog()
 
@@ -484,6 +505,7 @@ class DnsVpnService : VpnService() {
         cancelWatchdog()
         unregisterNetworkCallback()
         logFlushJob?.cancel(); logFlushJob = null
+        stabilityFlushJob?.cancel(); stabilityFlushJob = null
         // Flush remaining logs SYNCHRONOUSLY — serviceScope dies with the service,
         // so a launched coroutine would be cancelled before completing.
         try {
@@ -492,6 +514,7 @@ class DnsVpnService : VpnService() {
                 if (pending > 0) Log.i(TAG, "Flushing $pending remaining log entries on stop")
                 flushLogBuffer()
                 flushStats()
+                flushStability()
             }
         } catch (e: Exception) {
             Log.e(TAG, "Final log flush failed: ${e.message}")
@@ -507,6 +530,7 @@ class DnsVpnService : VpnService() {
 
     private fun restartVpn() {
         if (!isRunning) return
+        rebuildCount.incrementAndGet()
         serviceScope.launch {
             Log.i(TAG, "Restarting VPN (network change)")
             isRunning = false
@@ -848,9 +872,13 @@ class DnsVpnService : VpnService() {
 
         // Emit to live query stream (non-blocking, drops oldest if full)
         liveQueriesFlow.tryEmit(entry)
+        totalQueriesCount.incrementAndGet()
 
         if (!loggingEnabled) return
-        logBuffer.add(entry)
+        if (!logBuffer.offer(entry)) {
+            // Buffer full — drop entry and track it
+            droppedQueries.incrementAndGet()
+        }
     }
 
     /** Batch-flush DNS log buffer to Room. 10-50x faster than individual inserts. */
@@ -912,12 +940,57 @@ class DnsVpnService : VpnService() {
                         Log.d(TAG, "Flushed $bufSize log entries to DB")
                     }
                     flushStats()
+                    // Publish cache stats + dropped count for UI
+                    currentCacheStats = dnsCache.getStats()
+                    currentDroppedQueries = droppedQueries.get()
                 } catch (e: Exception) {
                     // Catch per-cycle so the flusher never dies permanently
                     Log.e(TAG, "Log flush cycle error: ${e.message}", e)
                 }
             }
             Log.w(TAG, "Log flusher stopped (isActive=false)")
+        }
+    }
+
+    /** Flush VPN stability metrics to Room. */
+    private suspend fun flushStability() {
+        try {
+            val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+            val uptimeMs = if (vpnStartTime > 0) System.currentTimeMillis() - vpnStartTime else 0L
+            val dropped = droppedQueries.getAndSet(0)
+            val queries = totalQueriesCount.getAndSet(0)
+            val rebuilds = rebuildCount.getAndSet(0)
+            val errors = fdErrorCount.getAndSet(0)
+
+            val existing = vpnStabilityDao.getByDate(today)
+                ?: com.hostshield.data.model.VpnStabilityEntry(date = today)
+            vpnStabilityDao.upsert(existing.copy(
+                uptimeMs = existing.uptimeMs + uptimeMs,
+                rebuildCount = existing.rebuildCount + rebuilds,
+                fdErrors = existing.fdErrors + errors,
+                droppedQueries = existing.droppedQueries + dropped,
+                totalQueries = existing.totalQueries + queries
+            ))
+
+            if (dropped > 0) {
+                Log.w(TAG, "VPN stability: $dropped queries dropped (buffer overflow)")
+            }
+
+            // Reset start time for next interval
+            vpnStartTime = System.currentTimeMillis()
+        } catch (e: Exception) {
+            Log.e(TAG, "Stability flush failed: ${e.message}")
+        }
+    }
+
+    /** Periodic stability flusher — every 60 seconds. */
+    private fun startStabilityFlusher() {
+        stabilityFlushJob?.cancel()
+        stabilityFlushJob = serviceScope.launch {
+            while (isActive) {
+                delay(60_000)
+                try { flushStability() } catch (_: Exception) { }
+            }
         }
     }
 

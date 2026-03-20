@@ -13,9 +13,10 @@ import com.hostshield.domain.parser.HostsParser
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
+import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-// HostShield v1.6.0 -- Auto-Update Worker
+// HostShield v4.0.0 -- Auto-Update Worker
 
 @HiltWorker
 class HostsUpdateWorker @AssistedInject constructor(
@@ -25,7 +26,8 @@ class HostsUpdateWorker @AssistedInject constructor(
     private val prefs: AppPreferences,
     private val downloader: SourceDownloader,
     private val blocklistHolder: BlocklistHolder,
-    private val dohBypassUpdater: DohBypassUpdater
+    private val dohBypassUpdater: DohBypassUpdater,
+    private val httpClient: OkHttpClient
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -123,12 +125,12 @@ class HostsUpdateWorker @AssistedInject constructor(
                     for (url in syncUrls) {
                         try {
                             val request = okhttp3.Request.Builder().url(url).build()
-                            val response = okhttp3.OkHttpClient().newCall(request).execute()
-                            if (response.isSuccessful) {
-                                val content = response.body?.string() ?: ""
-                                HostsParser.parse(content).forEach { allDomains.add(it.hostname) }
+                            httpClient.newCall(request).execute().use { response ->
+                                if (response.isSuccessful) {
+                                    val content = response.body?.string() ?: ""
+                                    HostsParser.parse(content).forEach { allDomains.add(it.hostname) }
+                                }
                             }
-                            response.close()
                         } catch (_: Exception) { }
                     }
 
