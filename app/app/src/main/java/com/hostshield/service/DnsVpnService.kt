@@ -263,7 +263,7 @@ class DnsVpnService : VpnService() {
 
     // Pause state: when paused, all queries are allowed (no blocking)
     @Volatile private var isPaused = false
-    private var pauseResumeJob: Job? = null
+    @Volatile private var pauseResumeJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()

@@ -1,7 +1,7 @@
 # HostShield
 
 ## Overview
-Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. v4.3.0.
+Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. v4.3.1.
 
 ## Tech Stack
 - Kotlin, Jetpack Compose, Material 3
@@ -70,6 +70,7 @@ cd app
 - Secrets configured: `KEYSTORE_BASE64`, `KEY_ALIAS`, `KEY_PASSWORD`, `STORE_PASSWORD`
 
 ## Version History
+- v4.3.1: Bug audit — fix AutomationReceiver rate limiting (static companion state), GeoIpLookup atomic CAS window reset, SourceHealthWorker ensures alert channel exists, pauseResumeJob @Volatile, baselineRates synchronized list
 - v4.3.0: Notification pause/resume action (5-min pause from notification), CNAME CLOAK badge in log detail sheet, pretty upstream server labels (DoH:Cloudflare), source health DEAD notifications (push alert), alerts notification channel, pause state bypasses blocking
 - v4.2.0: Fix DNS log data starvation (CNAME chains, resolved IPs, latency, upstream server now written to DB), CNAME-blocked domains now logged, fd error tracking + auto-restart on TUN error, IPv6 DoH support (honours useDoH flag), IPv6 DNS cache lookup, DohBypassUpdater uses shared OkHttpClient, app context threaded through all forward methods
 - v4.1.0: Custom upstream DNS UI in Settings, firewall rule export/import (JSON), automation audit log viewer screen, query rate anomaly detection (3x baseline warning on Home), dropped queries banner, cache hit rate on Home

@@ -43,10 +43,10 @@ class AutomationReceiver : BroadcastReceiver() {
 
         private val TRUSTED_UIDS = setOf(0, 2000) // root, shell
         private const val RATE_LIMIT_MS = 5_000L
-    }
 
-    // Per-action rate limit tracking: "action:uid" -> last execution timestamp
-    private val lastExecTime = java.util.concurrent.ConcurrentHashMap<String, Long>()
+        // Static rate limit state — survives receiver re-creation per broadcast delivery
+        private val lastExecTime = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    }
 
     @Inject lateinit var prefs: AppPreferences
     @Inject lateinit var iptablesManager: IptablesManager

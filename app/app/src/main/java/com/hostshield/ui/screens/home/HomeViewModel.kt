@@ -157,8 +157,8 @@ class HomeViewModel @Inject constructor(
     }
 
     // Baseline query rate (rolling average over first 10 minutes)
-    private val baselineRates = mutableListOf<Int>()
-    private var baselineQpm = 0
+    private val baselineRates = java.util.Collections.synchronizedList(mutableListOf<Int>())
+    @Volatile private var baselineQpm = 0
 
     /** Track live query rate + anomaly detection from the VPN live stream. */
     private fun trackQueryRate() {
