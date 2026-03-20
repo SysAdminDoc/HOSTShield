@@ -733,11 +733,38 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
             DetailRow("Response Time", "${entry.responseTimeMs} ms")
         }
         if (entry.upstreamServer.isNotEmpty()) {
-            DetailRow("Upstream Server", entry.upstreamServer)
+            // Pretty-print upstream server label
+            val serverLabel = when {
+                entry.upstreamServer.startsWith("DoH:") -> {
+                    val provider = entry.upstreamServer.removePrefix("DoH:")
+                    "DoH: ${provider.lowercase().replaceFirstChar { it.uppercase() }}"
+                }
+                entry.upstreamServer.contains("(fallback)") -> entry.upstreamServer
+                else -> entry.upstreamServer
+            }
+            DetailRow("Upstream Server", serverLabel)
         }
         if (entry.cnameChain.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
-            Text("CNAME Chain", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("CNAME Chain", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                if (entry.blocked && entry.cnameChain.isNotBlank()) {
+                    Spacer(Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Red.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            "CNAME CLOAK",
+                            color = Red,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
+            }
             entry.cnameChain.split(",").filter { it.isNotBlank() }.forEach { cname ->
                 Row(modifier = Modifier.padding(start = 8.dp, top = 2.dp)) {
                     Text("\u2192 ", color = TextDim, fontSize = 12.sp)
