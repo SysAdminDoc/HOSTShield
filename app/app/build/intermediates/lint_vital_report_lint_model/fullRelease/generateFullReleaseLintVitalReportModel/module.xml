@@ -1,0 +1,18 @@
+<lint-module
+    format="1"
+    dir="C:\Users\--\repos\HostShield\app\app"
+    name=":app"
+    type="APP"
+    maven="HostShield:app:unspecified"
+    agpVersion="8.7.3"
+    buildFolder="build"
+    bootClassPath="C:\Users\--\AppData\Local\Android\Sdk\platforms\android-35\android.jar;C:\Users\--\AppData\Local\Android\Sdk\build-tools\34.0.0\core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-35">
+  <lintOptions
+      abortOnError="true"
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="fullRelease"/>
+</lint-module>

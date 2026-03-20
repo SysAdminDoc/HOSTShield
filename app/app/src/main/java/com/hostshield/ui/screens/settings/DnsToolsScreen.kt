@@ -57,7 +57,8 @@ data class DnsToolsState(
     val batchResults: List<LookupResult> = emptyList(),
     val isBatchRunning: Boolean = false,
     val batchProgress: Int = 0,
-    val batchTotal: Int = 0
+    val batchTotal: Int = 0,
+    val ruleSyncUrls: String = ""
 )
 
 data class LookupResult(
@@ -95,6 +96,13 @@ class DnsToolsViewModel @Inject constructor(
         viewModelScope.launch {
             prefs.customUpstreamDns.collect { d -> _state.update { it.copy(customUpstreamDns = d) } }
         }
+        viewModelScope.launch {
+            prefs.ruleSyncUrls.collect { u -> _state.update { it.copy(ruleSyncUrls = u) } }
+        }
+    }
+
+    fun setRuleSyncUrls(urls: String) {
+        viewModelScope.launch { prefs.setRuleSyncUrls(urls) }
     }
 
     fun setTab(tab: DnsToolsTab) { _state.update { it.copy(tab = tab) } }
@@ -550,6 +558,30 @@ private fun ConfigTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
                 if (state.customUpstreamDns.isNotBlank()) {
                     Spacer(Modifier.height(4.dp))
                     Text("$count server(s) configured. First available is used; others are fallbacks.", color = TextDim, fontSize = 10.sp)
+                }
+            }
+        }
+
+        // Remote rule sync
+        item {
+            GlassInfoCard("Remote Rule Sync") {
+                Text("Subscribe to remote block/allow lists (one URL per line):", color = TextDim, fontSize = 11.sp)
+                Spacer(Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = state.ruleSyncUrls.replace(",", "\n"),
+                    onValueChange = { viewModel.setRuleSyncUrls(it.lines().joinToString(",") { l -> l.trim() }) },
+                    placeholder = { Text("https://example.com/blocklist.txt", color = TextDim) },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp, max = 100.dp),
+                    maxLines = 5, shape = RoundedCornerShape(8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Teal, unfocusedBorderColor = Surface3,
+                        cursorColor = Teal, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
+                    )
+                )
+                val count = state.ruleSyncUrls.split(",").filter { it.trim().startsWith("http") }.size
+                if (count > 0) {
+                    Spacer(Modifier.height(4.dp))
+                    Text("$count URL(s) subscribed. Synced during periodic blocklist updates.", color = TextDim, fontSize = 10.sp)
                 }
             }
         }

@@ -118,6 +118,20 @@ class HostsUpdateWorker @AssistedInject constructor(
                         }
                     }
 
+                    // Fetch remote rule sync URLs and merge domains
+                    val syncUrls = prefs.getRuleSyncUrlList()
+                    for (url in syncUrls) {
+                        try {
+                            val request = okhttp3.Request.Builder().url(url).build()
+                            val response = okhttp3.OkHttpClient().newCall(request).execute()
+                            if (response.isSuccessful) {
+                                val content = response.body?.string() ?: ""
+                                HostsParser.parse(content).forEach { allDomains.add(it.hostname) }
+                            }
+                            response.close()
+                        } catch (_: Exception) { }
+                    }
+
                     val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
                     blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
                     val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)

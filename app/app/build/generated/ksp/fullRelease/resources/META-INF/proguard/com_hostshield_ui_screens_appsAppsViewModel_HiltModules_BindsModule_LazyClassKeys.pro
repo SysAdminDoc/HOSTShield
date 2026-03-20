@@ -1,0 +1,3 @@
+-keep,allowobfuscation,allowshrinking class com.hostshield.ui.screens.apps.AppPrivacyViewModel
+-keep,allowobfuscation,allowshrinking class com.hostshield.ui.screens.apps.AppPrivacyViewModel
+-keep,allowobfuscation,allowshrinking class com.hostshield.ui.screens.apps.AppsViewModel

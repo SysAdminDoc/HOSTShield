@@ -63,6 +63,7 @@ class AppPreferences @Inject constructor(
         val SCHEDULE_START = stringPreferencesKey("schedule_start")   // HH:mm
         val SCHEDULE_END = stringPreferencesKey("schedule_end")       // HH:mm
         val SCHEDULE_MODE = stringPreferencesKey("schedule_mode")     // "block" or "unblock"
+        val RULE_SYNC_URLS = stringPreferencesKey("rule_sync_urls")   // Comma-separated remote rule list URLs
     }
 
     // ── Blocking ─────────────────────────────────────────────
@@ -228,4 +229,16 @@ class AppPreferences @Inject constructor(
 
     val scheduleMode: Flow<String> = ds.data.map { it[Keys.SCHEDULE_MODE] ?: "block" }
     suspend fun setScheduleMode(mode: String) = ds.edit { it[Keys.SCHEDULE_MODE] = mode }
+
+    // ── Remote Rule Sync ─────────────────────────────────────
+    // Comma-separated URLs pointing to hosts-format rule lists.
+    // Fetched during HostsUpdateWorker runs and merged as user block rules.
+    val ruleSyncUrls: Flow<String> = ds.data.map { it[Keys.RULE_SYNC_URLS] ?: "" }
+    suspend fun setRuleSyncUrls(urls: String) = ds.edit { it[Keys.RULE_SYNC_URLS] = urls }
+
+    suspend fun getRuleSyncUrlList(): List<String> {
+        val raw = ruleSyncUrls.first()
+        return if (raw.isBlank()) emptyList()
+        else raw.split(",").map { it.trim() }.filter { it.startsWith("http") }
+    }
 }

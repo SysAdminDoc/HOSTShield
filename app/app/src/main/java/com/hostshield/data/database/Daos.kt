@@ -213,6 +213,21 @@ interface DnsLogDao {
     """)
     fun getAllAppsWithCounts(): Flow<List<AppQueryStat>>
 
+    /** Trending blocked domains: compare last 24h vs previous 24h. */
+    @Query("""
+        SELECT hostname, COUNT(*) as cnt FROM dns_logs
+        WHERE blocked = 1 AND timestamp > :recentStart
+        GROUP BY hostname ORDER BY cnt DESC LIMIT :limit
+    """)
+    suspend fun getRecentBlockedDomains(recentStart: Long, limit: Int = 30): List<TopHostname>
+
+    @Query("""
+        SELECT hostname, COUNT(*) as cnt FROM dns_logs
+        WHERE blocked = 1 AND timestamp BETWEEN :olderStart AND :olderEnd
+        GROUP BY hostname ORDER BY cnt DESC LIMIT :limit
+    """)
+    suspend fun getOlderBlockedDomains(olderStart: Long, olderEnd: Long, limit: Int = 30): List<TopHostname>
+
     /** Average DNS response time per hour (for latency chart). */
     @Query("""
         SELECT CAST((timestamp / 3600000) % 24 AS INTEGER) as hour,
