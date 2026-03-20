@@ -181,6 +181,7 @@ class DnsVpnService : VpnService() {
     @Inject lateinit var repository: HostShieldRepository
     @Inject lateinit var downloader: SourceDownloader
     @Inject lateinit var dohResolver: DohResolver
+    @Inject lateinit var firewallRuleDao: com.hostshield.data.database.FirewallRuleDao
 
     private var vpnInterface: ParcelFileDescriptor? = null
     @Volatile private var isRunning = false
@@ -197,6 +198,8 @@ class DnsVpnService : VpnService() {
 
     private var excludedApps = setOf<String>()
     private var blockedApps = setOf<String>()
+    // Context-aware firewall: maps package_name -> FirewallRule for apps with context rules
+    @Volatile private var contextRules = mapOf<String, com.hostshield.data.model.FirewallRule>()
     private var useDoH = false
     private var dohProvider = DohResolver.Provider.CLOUDFLARE
     private var dnsTrapEnabled = true
@@ -226,8 +229,9 @@ class DnsVpnService : VpnService() {
     @Volatile private var networkLost = false             // true after onLost() fires
     private val NETWORK_RESTART_COOLDOWN_MS = 5000L      // ignore events within 5s of start
 
-    // Batch DNS log buffer — flushes every 2s or at 500 entries
-    private val logBuffer = java.util.concurrent.ConcurrentLinkedQueue<DnsLogEntry>()
+    // Batch DNS log buffer — flushes every 2s or at 500 entries.
+    // Bounded to 5000 entries to prevent OOM under extreme query volume.
+    private val logBuffer = java.util.concurrent.LinkedBlockingQueue<DnsLogEntry>(5000)
     @Volatile private var logFlushJob: Job? = null
     private var loggingEnabled = true  // read from prefs at startVpn()
 
@@ -360,6 +364,10 @@ class DnsVpnService : VpnService() {
 
             excludedApps = prefs.excludedApps.first()
             blockedApps = prefs.blockedApps.first()
+            // Load context-aware firewall rules
+            val ctxRules = firewallRuleDao.getContextAwareRules().first()
+            contextRules = ctxRules.associateBy { it.packageName }
+            ContextState.register(this)
             useDoH = prefs.dohEnabled.first()
             dohProvider = DohResolver.Provider.fromId(prefs.dohProvider.first())
             dnsTrapEnabled = prefs.dnsTrapEnabled.first()
@@ -488,6 +496,9 @@ class DnsVpnService : VpnService() {
         } catch (e: Exception) {
             Log.e(TAG, "Final log flush failed: ${e.message}")
         }
+        ContextState.unregister(this)
+        dnsAnswerCache.clear()
+        dnsCache.clear()
         try { writeChannel.close() } catch (_: Exception) { }
         try { vpnInterface?.close() } catch (_: Exception) { }
         vpnInterface = null
@@ -713,6 +724,16 @@ class DnsVpnService : VpnService() {
             return
         }
 
+        // Context-aware firewall: block based on screen state, foreground, metered
+        if (app.first.isNotEmpty()) {
+            val ctxRule = contextRules[app.first]
+            if (ctxRule != null && shouldBlockByContext(ctxRule, app.first)) {
+                logAsync(domain, true, app, qtype)
+                sendBlockResponse(dns, packet, ihl, false, qtype)
+                return
+            }
+        }
+
         val blocked = isDomainBlocked(domain)
         logAsync(domain, blocked, app, qtype)
 
@@ -760,6 +781,19 @@ class DnsVpnService : VpnService() {
             writeChannel.send(wrapped); blockedCount++
             if (blockedCount % 100 == 0) updateNotification(blockedCount)
             return
+        }
+
+        // Context-aware firewall
+        if (app.first.isNotEmpty()) {
+            val ctxRule = contextRules[app.first]
+            if (ctxRule != null && shouldBlockByContext(ctxRule, app.first)) {
+                logAsync(domain, true, app, qtype)
+                val resp = buildBlockResponse(dns, qtype) ?: return
+                val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
+                writeChannel.send(wrapped); blockedCount++
+                if (blockedCount % 100 == 0) updateNotification(blockedCount)
+                return
+            }
         }
 
         val blocked = isDomainBlocked(domain)
@@ -981,7 +1015,7 @@ class DnsVpnService : VpnService() {
             // TCP DNS: 2-byte big-endian length prefix, then standard DNS message
             val dnsLen = (packet[payloadStart].toInt() and 0xFF shl 8) or
                 (packet[payloadStart + 1].toInt() and 0xFF)
-            if (dnsLen > 0 && payloadStart + 2 + dnsLen <= length) {
+            if (dnsLen in 12..4096 && payloadStart + 2 + dnsLen <= length) {
                 val dns = packet.copyOfRange(payloadStart + 2, payloadStart + 2 + dnsLen)
                 hostname = parseDnsQueryDomain(dns)
             }
@@ -1103,6 +1137,14 @@ class DnsVpnService : VpnService() {
         val cksum = sum.toInt().inv() and 0xFFFF
         pkt[10] = (cksum shr 8 and 0xFF).toByte()
         pkt[11] = (cksum and 0xFF).toByte()
+    }
+
+    /** Check if a context-aware firewall rule should block this app right now. */
+    private fun shouldBlockByContext(rule: com.hostshield.data.model.FirewallRule, pkg: String): Boolean {
+        if (rule.blockScreenOff && !ContextState.isScreenOn) return true
+        if (rule.blockBackground && ContextState.foregroundPackage != pkg) return true
+        if (rule.blockMetered && ContextState.isMetered) return true
+        return false
     }
 
     private fun extractDnsPayload(p: ByteArray, len: Int, ihl: Int): ByteArray? {

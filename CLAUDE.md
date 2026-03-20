@@ -1,7 +1,7 @@
 # HostShield
 
 ## Overview
-Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. v3.7.0.
+Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. v3.8.0.
 
 ## Tech Stack
 - Kotlin, Jetpack Compose, Material 3
@@ -36,6 +36,7 @@ Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. 
 ```
 
 ## Version History
+- v3.8.0: Curated blocklist gallery (70+ lists), Exodus tracker SDK detection in App Privacy Report, context-aware firewall (screen off/background/metered), regex DoS protection, bounded log buffer, LRU cache fix, DNS answer cache cleanup
 - v3.7.0: App privacy report, rule sync URLs, blocked domain trends, per-app scoring, category toggles on Home
 - v3.6.0: Live query rate, category toggles, hosts editor, Pi-hole import, deep links, notification actions
 - v3.5.0: Rule tester, temporary allow, domain age check, stats widget, privacy score card, search history
@@ -57,3 +58,9 @@ Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. 
 - Room stores enums as strings - adding new enum values (like ALLOWLIST) doesn't need migration
 - HostsUpdateWorker has DohBypassUpdater injected - runs on every periodic cycle regardless of blocking state
 - OverlapAnalysisScreen downloads sources with `forceDownload=true` to bypass ETag caching
+- Regex rules limited to 500 chars with nested quantifier rejection (ReDoS prevention)
+- Log buffer is LinkedBlockingQueue(5000) not unbounded — will drop entries under extreme load
+- DB version is 8 (v7→v8 adds context-aware firewall columns)
+- TrackerSignatureDb reads raw dex bytes from APK - scans can be slow on devices with 100+ apps
+- ContextState.register() must be called in startVpn(), unregister() in stopVpn()
+- Context-aware firewall requires Usage Stats permission for foreground app detection

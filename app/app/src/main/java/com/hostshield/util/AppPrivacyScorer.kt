@@ -13,8 +13,11 @@ import javax.inject.Singleton
 @Singleton
 class AppPrivacyScorer @Inject constructor(
     private val dnsLogDao: DnsLogDao,
-    private val suspiciousTldDetector: SuspiciousTldDetector
+    private val suspiciousTldDetector: SuspiciousTldDetector,
+    private val trackerSignatureDb: TrackerSignatureDb
 ) {
+    data class TrackerSdk(val name: String, val category: String)
+
     data class AppReport(
         val packageName: String,
         val appLabel: String,
@@ -26,7 +29,9 @@ class AppPrivacyScorer @Inject constructor(
         val uniqueDomains: Int,
         val suspiciousTldCount: Int,
         val trackerDomains: List<String>, // top blocked domains for this app
-        val insights: List<String>
+        val insights: List<String>,
+        val embeddedTrackers: List<TrackerSdk> = emptyList(), // tracker SDKs found in APK
+        val trackerCategories: Set<String> = emptySet()
     )
 
     // Known tracker domain patterns
@@ -38,7 +43,11 @@ class AppPrivacyScorer @Inject constructor(
         "mixpanel", "segment.io", "sentry.io"
     )
 
-    suspend fun generateReport(packageName: String, appLabel: String): AppReport {
+    suspend fun generateReport(
+        packageName: String,
+        appLabel: String,
+        scanResult: TrackerSignatureDb.ScanResult? = null
+    ): AppReport {
         val weekAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000L)
         val domains = dnsLogDao.getDomainsForApp(packageName, 500).first()
 
@@ -50,6 +59,12 @@ class AppPrivacyScorer @Inject constructor(
         val suspiciousTldCount = domains.count { suspiciousTldDetector.isSuspicious(it.hostname) }
         val trackerCount = domains.count { d -> trackerPatterns.any { d.hostname.contains(it, ignoreCase = true) } }
         val topBlockedDomains = domains.filter { it.blocked }.sortedByDescending { it.cnt }.take(5).map { it.hostname }
+
+        // Embedded tracker SDKs from APK scan
+        val embeddedTrackers = scanResult?.foundTrackers?.map {
+            TrackerSdk(it.name, it.category)
+        } ?: emptyList()
+        val trackerCategories = scanResult?.categories ?: emptySet()
 
         // Scoring
         var score = 100
@@ -63,6 +78,11 @@ class AppPrivacyScorer @Inject constructor(
         score -= minOf(20, trackerCount * 4)
         // Very high query volume (-10 max)
         if (totalQueries > 500) score -= minOf(10, (totalQueries - 500) / 100)
+        // Embedded tracker SDKs (-15 max) — penalize apps with many tracker libraries
+        score -= minOf(15, embeddedTrackers.size * 2)
+        // Ad SDKs are worse than crash reporters
+        val adSdkCount = embeddedTrackers.count { it.category == "Advertising" }
+        score -= minOf(10, adSdkCount * 3)
 
         score = score.coerceIn(0, 100)
 
@@ -75,6 +95,10 @@ class AppPrivacyScorer @Inject constructor(
         }
 
         val insights = mutableListOf<String>()
+        if (embeddedTrackers.isNotEmpty()) {
+            insights.add("${embeddedTrackers.size} tracker SDK${if (embeddedTrackers.size > 1) "s" else ""} embedded in APK")
+        }
+        if (adSdkCount > 0) insights.add("$adSdkCount advertising SDK${if (adSdkCount > 1) "s" else ""} found")
         if (blockRate > 0.5f) insights.add("Over ${(blockRate * 100).toInt()}% of queries are blocked trackers")
         if (uniqueDomains > 50) insights.add("Contacts $uniqueDomains unique domains (very chatty)")
         if (suspiciousTldCount > 0) insights.add("$suspiciousTldCount queries to suspicious TLDs")
@@ -93,14 +117,20 @@ class AppPrivacyScorer @Inject constructor(
             uniqueDomains = uniqueDomains,
             suspiciousTldCount = suspiciousTldCount,
             trackerDomains = topBlockedDomains,
-            insights = insights
+            insights = insights,
+            embeddedTrackers = embeddedTrackers,
+            trackerCategories = trackerCategories
         )
     }
 
     suspend fun generateAllReports(): List<AppReport> {
         val apps = dnsLogDao.getAllAppsWithCounts().first()
+        // Run APK scan for all apps in parallel with DNS analysis
+        val scanResults = trackerSignatureDb.scanAllApps()
+        val scanMap = scanResults.associateBy { it.packageName }
+
         return apps.filter { it.totalQueries >= 5 }
-            .map { generateReport(it.appPackage, it.appLabel) }
+            .map { generateReport(it.appPackage, it.appLabel, scanMap[it.appPackage]) }
             .sortedBy { it.score }
     }
 }

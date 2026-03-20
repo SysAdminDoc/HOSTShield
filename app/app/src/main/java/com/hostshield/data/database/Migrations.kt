@@ -46,6 +46,15 @@ object Migrations {
         }
     }
 
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Context-aware firewall columns
+            db.execSQL("ALTER TABLE firewall_rules ADD COLUMN block_screen_off INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE firewall_rules ADD COLUMN block_background INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE firewall_rules ADD COLUMN block_metered INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
-    val ALL = arrayOf(MIGRATION_5_6, MIGRATION_6_7)
+    val ALL = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
 }

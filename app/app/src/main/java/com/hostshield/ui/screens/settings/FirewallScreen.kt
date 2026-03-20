@@ -194,11 +194,25 @@ class FirewallViewModel @Inject constructor(
         }
     }
 
+    // ---- Context-Aware Firewall ------------------------------------
+
+    fun toggleBlockScreenOff(uid: Int, block: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { firewallRuleDao.setBlockScreenOff(uid, block) }
+    }
+
+    fun toggleBlockBackground(uid: Int, block: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { firewallRuleDao.setBlockBackground(uid, block) }
+    }
+
+    fun toggleBlockMetered(uid: Int, block: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { firewallRuleDao.setBlockMetered(uid, block) }
+    }
+
     init { syncApps() }
 }
 
 enum class FirewallFilter { ALL, BLOCKED, UNBLOCKED }
-enum class FirewallTab { DNS, NETWORK }
+enum class FirewallTab { DNS, NETWORK, CONTEXT }
 
 @Composable
 fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () -> Unit) {
@@ -247,9 +261,10 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
                     when (tab) {
                         FirewallTab.DNS -> "${blocked.size} DNS-blocked"
                         FirewallTab.NETWORK -> if (iptablesActive) "$blockedRuleCount rules active" else "iptables inactive"
+                        FirewallTab.CONTEXT -> "${firewallRules.count { it.blockScreenOff || it.blockBackground || it.blockMetered }} context rules"
                     },
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (tab == FirewallTab.DNS) Red else if (iptablesActive) Teal else TextDim
+                    color = when (tab) { FirewallTab.DNS -> Red; FirewallTab.NETWORK -> if (iptablesActive) Teal else TextDim; FirewallTab.CONTEXT -> Mauve }
                 )
             }
             IconButton(onClick = { viewModel.toggleShowSystem() }) {
@@ -264,6 +279,7 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TabPill("DNS Block", tab == FirewallTab.DNS, Red) { viewModel.setTab(FirewallTab.DNS) }
             TabPill("Network", tab == FirewallTab.NETWORK, Teal) { viewModel.setTab(FirewallTab.NETWORK) }
+            TabPill("Context", tab == FirewallTab.CONTEXT, Mauve) { viewModel.setTab(FirewallTab.CONTEXT) }
         }
 
         Spacer(Modifier.height(8.dp))
@@ -271,6 +287,7 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
         when (tab) {
             FirewallTab.DNS -> DnsFirewallTab(viewModel, allApps, blocked, excluded, searchQuery, showSystem, filter)
             FirewallTab.NETWORK -> NetworkFirewallTab(viewModel, firewallRules, searchQuery, showSystem, iptablesActive, iptablesError, isSyncing, diagOutput, isDiagnosing)
+            FirewallTab.CONTEXT -> ContextFirewallTab(viewModel, firewallRules, searchQuery, showSystem)
         }
     }
 }
@@ -590,6 +607,115 @@ private fun NetworkFirewallTab(
                         "Mobile",
                         tint = if (rule.mobileAllowed) Green else Red,
                         modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            HorizontalDivider(color = Surface2.copy(alpha = 0.3f))
+        }
+    }
+}
+
+// ---- Context-Aware Firewall Tab ----------------------------------
+
+@Composable
+private fun ContextFirewallTab(
+    viewModel: FirewallViewModel,
+    rules: List<FirewallRule>,
+    searchQuery: String,
+    showSystem: Boolean
+) {
+    // Info banner
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(10.dp), color = Mauve.copy(alpha = 0.08f)
+    ) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Tune, null, tint = Mauve, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "Block apps based on context: screen off, background, or metered network. " +
+                "DNS queries are blocked with NXDOMAIN when conditions match.",
+                color = TextSecondary, fontSize = 11.sp, lineHeight = 15.sp
+            )
+        }
+    }
+
+    Spacer(Modifier.height(8.dp))
+
+    // Column headers
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        Text("App", modifier = Modifier.weight(1f), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Text("Scrn Off", modifier = Modifier.width(46.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text("Bkgnd", modifier = Modifier.width(46.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text("Metered", modifier = Modifier.width(46.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+    }
+
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Surface3)
+
+    val filtered = remember(rules, searchQuery, showSystem) {
+        rules.filter { rule ->
+            (showSystem || !rule.isSystem) &&
+            (searchQuery.isBlank() || rule.appLabel.contains(searchQuery, true) || rule.packageName.contains(searchQuery, true))
+        }
+    }
+
+    LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp)) {
+        items(filtered, key = { "ctx_${it.uid}" }) { rule ->
+            val hasContext = rule.blockScreenOff || rule.blockBackground || rule.blockMetered
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.size(6.dp).clip(CircleShape)
+                    .background(if (hasContext) Mauve else Surface3))
+                Spacer(Modifier.width(8.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(rule.appLabel, color = if (hasContext) Mauve.copy(alpha = 0.8f) else TextPrimary,
+                        fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+
+                // Screen Off toggle
+                IconButton(
+                    onClick = { viewModel.toggleBlockScreenOff(rule.uid, !rule.blockScreenOff) },
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        if (rule.blockScreenOff) Icons.Filled.DarkMode else Icons.Filled.LightMode,
+                        "Screen off",
+                        tint = if (rule.blockScreenOff) Mauve else Surface4,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                // Background toggle
+                IconButton(
+                    onClick = { viewModel.toggleBlockBackground(rule.uid, !rule.blockBackground) },
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        if (rule.blockBackground) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                        "Background",
+                        tint = if (rule.blockBackground) Mauve else Surface4,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                // Metered toggle
+                IconButton(
+                    onClick = { viewModel.toggleBlockMetered(rule.uid, !rule.blockMetered) },
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        if (rule.blockMetered) Icons.Filled.MoneyOff else Icons.Filled.AttachMoney,
+                        "Metered",
+                        tint = if (rule.blockMetered) Mauve else Surface4,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }

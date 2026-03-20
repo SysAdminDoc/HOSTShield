@@ -43,4 +43,5 @@ object SubScreen {
     const val RULE_TEST = "rule_test"
     const val HOSTS_EDITOR = "hosts_editor"
     const val APP_PRIVACY = "app_privacy"
+    const val BLOCKLIST_GALLERY = "blocklist_gallery"
 }
