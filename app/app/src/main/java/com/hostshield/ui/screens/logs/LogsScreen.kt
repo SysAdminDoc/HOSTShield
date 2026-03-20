@@ -466,6 +466,8 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                 isPinned = selectedEntry!!.hostname in pinnedSet,
                 onTogglePin = { viewModel.togglePin(selectedEntry!!.hostname) },
                 onTemporaryAllow = { mins -> viewModel.temporaryAllow(selectedEntry!!.hostname, mins) },
+                onBlock = { viewModel.blockDomain(selectedEntry!!.hostname) },
+                onAllow = { viewModel.allowDomain(selectedEntry!!.hostname) },
                 geoIpLookup = viewModel.geoIpLookup
             )
         }
@@ -684,7 +686,7 @@ private fun formatTime(ms: Long): String = try {
 } catch (_: Exception) { "" }
 
 @Composable
-private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}, onTemporaryAllow: (Int) -> Unit = {}, geoIpLookup: GeoIpLookup? = null) {
+private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}, onTemporaryAllow: (Int) -> Unit = {}, onBlock: () -> Unit = {}, onAllow: () -> Unit = {}, geoIpLookup: GeoIpLookup? = null) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
@@ -816,6 +818,38 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
                     Spacer(Modifier.height(4.dp))
                     Text(geo.asn, color = TextDim, fontSize = 10.sp, fontFamily = FontFamily.Monospace,
                         modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+        }
+
+        // Quick rule actions
+        Spacer(Modifier.height(12.dp))
+        Text("QUICK ACTIONS", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Spacer(Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!entry.blocked) {
+                Surface(
+                    onClick = { onBlock(); onDismiss() },
+                    shape = RoundedCornerShape(8.dp),
+                    color = Red.copy(alpha = 0.1f)
+                ) {
+                    Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Block, null, tint = Red, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Block Domain", color = Red, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            } else {
+                Surface(
+                    onClick = { onAllow(); onDismiss() },
+                    shape = RoundedCornerShape(8.dp),
+                    color = Green.copy(alpha = 0.1f)
+                ) {
+                    Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.CheckCircle, null, tint = Green, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Allow Domain", color = Green, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
         }

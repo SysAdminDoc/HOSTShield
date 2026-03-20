@@ -45,4 +45,5 @@ object SubScreen {
     const val APP_PRIVACY = "app_privacy"
     const val BLOCKLIST_GALLERY = "blocklist_gallery"
     const val AUTOMATION_AUDIT = "automation_audit"
+    const val APP_LOGS = "app_logs" // arg: ?pkg=com.example.app
 }

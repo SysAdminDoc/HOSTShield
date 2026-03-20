@@ -49,7 +49,8 @@ fun HomeScreen(
     onNavigateToApps: () -> Unit = {},
     onNavigateToFirewall: () -> Unit = {},
     onNavigateToConnectionLog: () -> Unit = {},
-    onRequestVpnPermission: ((Boolean) -> Unit) -> Unit = {}
+    onRequestVpnPermission: ((Boolean) -> Unit) -> Unit = {},
+    onNavigateToAppLogs: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val liveLogs by viewModel.liveLogs.collectAsStateWithLifecycle()
@@ -648,9 +649,10 @@ fun HomeScreen(
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text("Top Querying Apps", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     Spacer(Modifier.height(8.dp))
-                    state.topApps.forEachIndexed { idx, (_, label, count) ->
+                    state.topApps.forEachIndexed { idx, (pkg, label, count) ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                .clickable { if (pkg.isNotBlank()) onNavigateToAppLogs(pkg) },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             val medalColor = when (idx) { 0 -> Teal; 1 -> Blue; else -> TextDim }
@@ -659,6 +661,7 @@ fun HomeScreen(
                             Text(label.ifBlank { "Unknown" }, color = TextPrimary, fontSize = 12.sp,
                                 maxLines = 1, modifier = Modifier.weight(1f),
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Icon(Icons.Filled.ChevronRight, null, tint = TextDim.copy(alpha = 0.4f), modifier = Modifier.size(14.dp))
                             Text("$count", color = TextDim, fontSize = 11.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
                         }
                     }

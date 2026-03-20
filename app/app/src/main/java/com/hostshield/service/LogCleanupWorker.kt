@@ -32,8 +32,10 @@ class LogCleanupWorker @AssistedInject constructor(
 
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<LogCleanupWorker>(
-                12, TimeUnit.HOURS
-            ).build()
+                6, TimeUnit.HOURS
+            )
+                .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build())
+                .build()
 
             WorkManager.getInstance(context)
                 .enqueueUniquePeriodicWork(
