@@ -5,12 +5,20 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to attach APK to (e.g. v3.7.0)'
+        required: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
+    defaults:
+      run:
+        working-directory: app
 
     steps:
       - name: Checkout
@@ -31,21 +39,37 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: ${{ runner.os }}-gradle-
 
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/hostshield.keystore
+
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+      - name: Build Full Release APK
+        env:
+          KEYSTORE_FILE: /tmp/hostshield.keystore
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleFullRelease
 
-      - name: Find APK
-        id: apk
+      - name: Rename APK
         run: |
-          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
-          echo "path=$APK_PATH" >> $GITHUB_OUTPUT
+          VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          APK_SRC=$(find app/build/outputs/apk/full/release -name "*.apk" | head -1)
+          cp "$APK_SRC" "HostShield-v${VERSION}-full-release.apk"
+          echo "APK_PATH=app/HostShield-v${VERSION}-full-release.apk" >> $GITHUB_ENV
 
       - name: Upload APK to Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.apk.outputs.path }}
+          files: ${{ env.APK_PATH }}
           fail_on_unmatched_files: true
+
+      - name: Upload APK (workflow_dispatch)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && github.event.inputs.tag }}
+        run: |
+          gh release upload "${{ github.event.inputs.tag }}" "HostShield-v*.apk" --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
