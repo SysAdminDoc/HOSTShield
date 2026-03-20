@@ -41,6 +41,7 @@ import kotlin.math.sin
 
 // HostShield v1.6.0 — Premium Home Dashboard
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
@@ -105,9 +106,9 @@ fun HomeScreen(
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).height(48.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).defaultMinSize(minHeight = 52.dp),
             singleLine = true, shape = RoundedCornerShape(12.dp),
-            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Teal, unfocusedBorderColor = Surface3,
                 cursorColor = Teal, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
@@ -384,9 +385,10 @@ fun HomeScreen(
         // Feature status pills (VPN mode only)
         if (state.isEnabled && state.blockMethod == com.hostshield.data.model.BlockMethod.VPN) {
             Spacer(Modifier.height(8.dp))
-            Row(
+            androidx.compose.foundation.layout.FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 if (state.dohEnabled) {
                     FeaturePill("DoH", Blue)
@@ -534,11 +536,12 @@ fun HomeScreen(
                         "ADULT" to Flamingo, "SOCIAL" to Mauve, "CRYPTO" to Peach,
                         "ALLOWLIST" to Green, "CUSTOM" to Yellow
                     )
-                    // Use FlowRow-like wrapping with multiple Rows
                     val cats = state.categoryCounts.entries.sortedBy { it.key }
-                    Row(
+                    // Wrap chips across multiple rows using FlowRow
+                    androidx.compose.foundation.layout.FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         cats.forEach { (cat, counts) ->
                             val (enabled, total) = counts
@@ -550,16 +553,16 @@ fun HomeScreen(
                                 color = if (allEnabled) color.copy(alpha = 0.12f) else Surface2
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
                                         cat.lowercase().replaceFirstChar { it.uppercase() },
                                         color = if (allEnabled) color else TextDim,
-                                        fontSize = 10.sp, fontWeight = FontWeight.SemiBold
+                                        fontSize = 11.sp, fontWeight = FontWeight.SemiBold
                                     )
                                     Spacer(Modifier.width(4.dp))
-                                    Text("$enabled/$total", color = TextDim, fontSize = 8.sp)
+                                    Text("$enabled/$total", color = TextDim, fontSize = 9.sp)
                                 }
                             }
                         }
