@@ -708,11 +708,13 @@ class DnsVpnService : VpnService() {
                 // Check for error conditions on TUN fd
                 if (pollFds[0].revents.toInt() and (OsConstants.POLLERR or OsConstants.POLLHUP) != 0) {
                     Log.w(TAG, "packetLoop: TUN fd error/hangup")
+                    fdErrorCount.incrementAndGet()
                     break
                 }
             } catch (e: ErrnoException) {
                 if (e.errno == OsConstants.EINTR) continue  // interrupted by signal, retry
                 if (!isRunning) break
+                fdErrorCount.incrementAndGet()
                 Log.e(TAG, "Poll error: ${e.message}")
                 delay(10)
             } catch (e: Exception) {
@@ -722,6 +724,11 @@ class DnsVpnService : VpnService() {
             }
         }
         Log.i(TAG, "packetLoop exited after $count packets")
+        // Auto-restart on fd error (not clean shutdown)
+        if (isRunning) {
+            Log.w(TAG, "packetLoop exited unexpectedly while running — restarting VPN")
+            restartVpn()
+        }
     }
 
     private suspend fun processIpv4Dns(packet: ByteArray, length: Int) {
@@ -757,9 +764,9 @@ class DnsVpnService : VpnService() {
         }
 
         val blocked = isDomainBlocked(domain)
-        logAsync(domain, blocked, app, qtype)
 
         if (blocked) {
+            logAsync(domain, true, app, qtype)
             Log.d(TAG, "BLOCKED $domain ($qtype) [${app.second.ifEmpty { "system" }}]")
             sendBlockResponse(dns, packet, ihl, false, qtype)
         } else {
@@ -769,15 +776,17 @@ class DnsVpnService : VpnService() {
             val cached = dnsCache.get(domain, qtypeNum, txId)
             if (cached != null) {
                 Log.d(TAG, "CACHE HIT $domain ($qtype)")
+                logAsync(domain, false, app, qtype) // basic log for cache hits
                 wrapResponseV4(packet, ihl, cached)?.let { writeChannel.send(it) }
                 allowedCount++
                 return
             }
 
+            // Rich log with CNAME/IPs/latency happens inside forward methods
             Log.d(TAG, "ALLOWED $domain ($qtype)")
             val pCopy = packet.copyOf(length)
-            if (useDoH) serviceScope.launch { forwardDoH(dns, domain, pCopy, ihl) }
-            else serviceScope.launch { forwardUdp(dns, domain, pCopy, ihl) }
+            if (useDoH) serviceScope.launch { forwardDoH(dns, domain, pCopy, ihl, app) }
+            else serviceScope.launch { forwardUdp(dns, domain, pCopy, ihl, app) }
             allowedCount++
         }
     }
@@ -819,16 +828,28 @@ class DnsVpnService : VpnService() {
         }
 
         val blocked = isDomainBlocked(domain)
-        logAsync(domain, blocked, app, qtype)
 
         if (blocked) {
+            logAsync(domain, true, app, qtype)
             val resp = buildBlockResponse(dns, qtype) ?: return
             val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
             writeChannel.send(wrapped); blockedCount++
             if (blockedCount % 100 == 0) updateNotification(blockedCount)
         } else {
+            // Cache lookup
+            val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
+            val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
+            val cached = dnsCache.get(domain, qtypeNum, txId)
+            if (cached != null) {
+                Log.d(TAG, "CACHE HIT (v6) $domain ($qtype)")
+                wrapResponseV6(packet, hdr, cached)?.let { writeChannel.send(it) }
+                allowedCount++
+                return
+            }
+
             val pCopy = packet.copyOf(length)
-            serviceScope.launch { forwardUdpV6(dns, domain, pCopy, hdr) }
+            if (useDoH) serviceScope.launch { forwardDoH(dns, domain, pCopy, 0, app, wrapV6 = true, v6Hdr = hdr) }
+            else serviceScope.launch { forwardUdpV6(dns, domain, pCopy, hdr, app) }
             allowedCount++
         }
     }
@@ -862,12 +883,23 @@ class DnsVpnService : VpnService() {
     }
 
     private fun logAsync(domain: String, blocked: Boolean, app: Pair<String, String>, qtype: String) {
+        logAsyncRich(domain, blocked, app, qtype)
+    }
+
+    /** Rich log entry with CNAME chain, resolved IPs, latency, and upstream server. */
+    private fun logAsyncRich(
+        domain: String, blocked: Boolean, app: Pair<String, String>, qtype: String,
+        cnameChain: String = "", resolvedIps: String = "",
+        responseTimeMs: Int = 0, upstreamServer: String = ""
+    ) {
         // Always count stats even if logging disabled
         if (blocked) pendingBlockedStats.incrementAndGet() else pendingAllowedStats.incrementAndGet()
 
         val entry = DnsLogEntry(
             hostname = domain, blocked = blocked,
-            appPackage = app.first, appLabel = app.second, queryType = qtype
+            appPackage = app.first, appLabel = app.second, queryType = qtype,
+            cnameChain = cnameChain, resolvedIps = resolvedIps,
+            responseTimeMs = responseTimeMs, upstreamServer = upstreamServer
         )
 
         // Emit to live query stream (non-blocking, drops oldest if full)
@@ -1433,7 +1465,8 @@ class DnsVpnService : VpnService() {
 
     // ── DNS Forwarding ───────────────────────────────────────
 
-    private suspend fun forwardUdp(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int) {
+    private suspend fun forwardUdp(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
+                                    app: Pair<String, String> = Pair("", "")) {
         try {
             val startMs = System.currentTimeMillis()
             val sock = DatagramSocket(); protect(sock)
@@ -1445,11 +1478,15 @@ class DnsVpnService : VpnService() {
                 sock.receive(rp); sock.close()
                 val respBytes = buf.copyOf(rp.length)
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
+                val qtype = parseDnsQueryType(dns)
 
                 // CNAME cloaking detection — block if any CNAME target is in blocklist
                 val cnameResult = CnameCloakDetector.inspect(respBytes, blocklist)
                 if (cnameResult.blocked) {
                     Log.i(TAG, "CNAME CLOAK blocked: $domain -> ${cnameResult.blockedCname}")
+                    logAsyncRich(domain, true, app, qtype,
+                        cnameChain = cnameResult.cnameChain.joinToString(","),
+                        responseTimeMs = latencyMs, upstreamServer = primary)
                     val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
                         when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
                     })
@@ -1458,29 +1495,42 @@ class DnsVpnService : VpnService() {
                     return
                 }
 
+                // Log rich data for allowed queries
+                val resolvedIps = CnameCloakDetector.extractAnswerIps(respBytes)
+                logAsyncRich(domain, false, app, qtype,
+                    cnameChain = cnameResult.cnameChain.joinToString(","),
+                    resolvedIps = resolvedIps.joinToString(","),
+                    responseTimeMs = latencyMs, upstreamServer = primary)
+
                 cacheDnsAnswerIps(domain, respBytes)
-                // Cache the response
                 val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
                 dnsCache.put(domain, qtypeNum, respBytes)
 
                 wrapResponseV4(orig, ihl, respBytes)?.let { writeChannel.send(it) }
             } catch (_: java.net.SocketTimeoutException) {
-                sock.close(); forwardUdpFallback(dns, domain, orig, ihl)
+                sock.close(); forwardUdpFallback(dns, domain, orig, ihl, app)
             }
         } catch (_: Exception) { }
     }
 
-    private suspend fun forwardUdpFallback(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int) {
+    private suspend fun forwardUdpFallback(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
+                                           app: Pair<String, String> = Pair("", "")) {
         try {
+            val startMs = System.currentTimeMillis()
             val fallback = upstreamDnsServers.getOrElse(1) { UPSTREAM_DNS[1] }
             val sock = DatagramSocket(); protect(sock); sock.soTimeout = 5000
             sock.send(DatagramPacket(dns, dns.size, InetAddress.getByName(fallback), DNS_PORT))
             val buf = ByteArray(1500); val rp = DatagramPacket(buf, buf.size)
             sock.receive(rp); sock.close()
             val respBytes = buf.copyOf(rp.length)
+            val latencyMs = (System.currentTimeMillis() - startMs).toInt()
+            val qtype = parseDnsQueryType(dns)
 
             val cnameResult = CnameCloakDetector.inspect(respBytes, blocklist)
             if (cnameResult.blocked) {
+                logAsyncRich(domain, true, app, qtype,
+                    cnameChain = cnameResult.cnameChain.joinToString(","),
+                    responseTimeMs = latencyMs, upstreamServer = "$fallback (fallback)")
                 val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
                     when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
                 })
@@ -1489,49 +1539,88 @@ class DnsVpnService : VpnService() {
                 return
             }
 
+            val resolvedIps = CnameCloakDetector.extractAnswerIps(respBytes)
+            logAsyncRich(domain, false, app, qtype,
+                cnameChain = cnameResult.cnameChain.joinToString(","),
+                resolvedIps = resolvedIps.joinToString(","),
+                responseTimeMs = latencyMs, upstreamServer = "$fallback (fallback)")
+
             cacheDnsAnswerIps(domain, respBytes)
             dnsCache.put(domain, DnsPacketBuilder.parseQueryType(dns), respBytes)
             wrapResponseV4(orig, ihl, respBytes)?.let { writeChannel.send(it) }
         } catch (_: Exception) { }
     }
 
-    private suspend fun forwardDoH(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int) {
+    private suspend fun forwardDoH(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
+                                    app: Pair<String, String> = Pair("", ""),
+                                    wrapV6: Boolean = false, v6Hdr: Int = 0) {
         try {
+            val startMs = System.currentTimeMillis()
             val resp = dohResolver.resolve(dns, dohProvider)
             if (resp != null) {
+                val latencyMs = (System.currentTimeMillis() - startMs).toInt()
+                val qtype = parseDnsQueryType(dns)
+                val upstreamLabel = "DoH:${dohProvider.name}"
+
                 // CNAME cloaking detection
                 val cnameResult = CnameCloakDetector.inspect(resp, blocklist)
                 if (cnameResult.blocked) {
                     Log.i(TAG, "CNAME CLOAK (DoH) blocked: $domain -> ${cnameResult.blockedCname}")
+                    logAsyncRich(domain, true, app, qtype,
+                        cnameChain = cnameResult.cnameChain.joinToString(","),
+                        responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
                     val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
                         when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
                     })
-                    if (blockResp != null) wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
+                    if (blockResp != null) {
+                        if (wrapV6) wrapResponseV6(orig, v6Hdr, blockResp)?.let { writeChannel.send(it) }
+                        else wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
+                    }
                     blockedCount++
                     return
                 }
+
+                val resolvedIps = CnameCloakDetector.extractAnswerIps(resp)
+                logAsyncRich(domain, false, app, qtype,
+                    cnameChain = cnameResult.cnameChain.joinToString(","),
+                    resolvedIps = resolvedIps.joinToString(","),
+                    responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
 
                 cacheDnsAnswerIps(domain, resp)
                 val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
                 dnsCache.put(domain, qtypeNum, resp)
 
-                wrapResponseV4(orig, ihl, resp)?.let { writeChannel.send(it) }
+                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { writeChannel.send(it) }
+                else wrapResponseV4(orig, ihl, resp)?.let { writeChannel.send(it) }
             }
-            else forwardUdp(dns, domain, orig, ihl) // DoH failed, fallback to plaintext
-        } catch (_: Exception) { forwardUdp(dns, domain, orig, ihl) }
+            else {
+                if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
+                else forwardUdp(dns, domain, orig, ihl, app)
+            }
+        } catch (_: Exception) {
+            if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
+            else forwardUdp(dns, domain, orig, ihl, app)
+        }
     }
 
-    private suspend fun forwardUdpV6(dns: ByteArray, domain: String, orig: ByteArray, hdr: Int) {
+    private suspend fun forwardUdpV6(dns: ByteArray, domain: String, orig: ByteArray, hdr: Int,
+                                     app: Pair<String, String> = Pair("", "")) {
         try {
+            val startMs = System.currentTimeMillis()
             val primary = upstreamDnsServers.firstOrNull() ?: UPSTREAM_DNS[0]
             val sock = DatagramSocket(); protect(sock); sock.soTimeout = 5000
             sock.send(DatagramPacket(dns, dns.size, InetAddress.getByName(primary), DNS_PORT))
             val buf = ByteArray(1500); val rp = DatagramPacket(buf, buf.size)
             sock.receive(rp); sock.close()
             val respBytes = buf.copyOf(rp.length)
+            val latencyMs = (System.currentTimeMillis() - startMs).toInt()
+            val qtype = parseDnsQueryType(dns)
 
             val cnameResult = CnameCloakDetector.inspect(respBytes, blocklist)
             if (cnameResult.blocked) {
+                logAsyncRich(domain, true, app, qtype,
+                    cnameChain = cnameResult.cnameChain.joinToString(","),
+                    responseTimeMs = latencyMs, upstreamServer = primary)
                 val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
                     when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
                 })
@@ -1539,6 +1628,12 @@ class DnsVpnService : VpnService() {
                 blockedCount++
                 return
             }
+
+            val resolvedIps = CnameCloakDetector.extractAnswerIps(respBytes)
+            logAsyncRich(domain, false, app, qtype,
+                cnameChain = cnameResult.cnameChain.joinToString(","),
+                resolvedIps = resolvedIps.joinToString(","),
+                responseTimeMs = latencyMs, upstreamServer = primary)
 
             cacheDnsAnswerIps(domain, respBytes)
             dnsCache.put(domain, DnsPacketBuilder.parseQueryType(dns), respBytes)
