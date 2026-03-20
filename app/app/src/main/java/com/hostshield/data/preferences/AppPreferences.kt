@@ -241,4 +241,25 @@ class AppPreferences @Inject constructor(
         return if (raw.isBlank()) emptyList()
         else raw.split(",").map { it.trim() }.filter { it.startsWith("http") }
     }
+
+    // ── Search History ────────────────────────────────────────
+    private object SearchKeys {
+        val SEARCH_HISTORY = stringPreferencesKey("search_history")
+    }
+
+    val searchHistory: Flow<List<String>> = ds.data.map {
+        (it[SearchKeys.SEARCH_HISTORY] ?: "").split("\n").filter { s -> s.isNotBlank() }
+    }
+
+    suspend fun addSearchQuery(query: String) {
+        val trimmed = query.trim().lowercase()
+        if (trimmed.length < 2) return
+        ds.edit {
+            val current = (it[SearchKeys.SEARCH_HISTORY] ?: "").split("\n").filter { s -> s.isNotBlank() }
+            val updated = (listOf(trimmed) + current.filter { s -> s != trimmed }).take(10)
+            it[SearchKeys.SEARCH_HISTORY] = updated.joinToString("\n")
+        }
+    }
+
+    suspend fun clearSearchHistory() = ds.edit { it[SearchKeys.SEARCH_HISTORY] = "" }
 }

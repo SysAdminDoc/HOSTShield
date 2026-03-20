@@ -115,6 +115,26 @@ fun HomeScreen(
                 cursorColor = Teal, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
             )
         )
+        // Search history chips when field is focused but empty
+        val searchHistory by viewModel.searchHistory.collectAsStateWithLifecycle()
+        if (searchQuery.isBlank() && searchHistory.isNotEmpty()) {
+            androidx.compose.foundation.layout.FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                searchHistory.take(6).forEach { term ->
+                    Surface(
+                        onClick = { searchQuery = term; searchExpanded = true; viewModel.saveSearch(term) },
+                        shape = RoundedCornerShape(16.dp),
+                        color = Surface2
+                    ) {
+                        Text(term, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            color = TextDim, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
         AnimatedVisibility(visible = searchExpanded && searchQuery.length >= 2) {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
                 Surface(
@@ -406,7 +426,7 @@ fun HomeScreen(
             }
         }
 
-        // Live query rate
+        // Live query rate + latency sparkline
         if (state.isEnabled && (state.queriesPerMinute > 0 || state.blocksPerMinute > 0)) {
             Spacer(Modifier.height(8.dp))
             Row(
@@ -419,6 +439,36 @@ fun HomeScreen(
                 Spacer(Modifier.width(16.dp))
                 Text("${state.blocksPerMinute}", color = Red, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 Text(" blk/min", color = TextDim, fontSize = 10.sp)
+                if (state.avgLatencyMs > 0) {
+                    Spacer(Modifier.width(16.dp))
+                    Text("${state.avgLatencyMs}", color = Peach, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(" ms", color = TextDim, fontSize = 10.sp)
+                }
+            }
+            // Latency sparkline
+            if (state.latencySparkline.size >= 3) {
+                Spacer(Modifier.height(6.dp))
+                Canvas(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp).height(24.dp)
+                ) {
+                    val points = state.latencySparkline
+                    val maxVal = points.max().toFloat().coerceAtLeast(1f)
+                    val stepX = size.width / (points.size - 1).coerceAtLeast(1)
+                    val path = androidx.compose.ui.graphics.Path()
+                    points.forEachIndexed { i, v ->
+                        val x = i * stepX
+                        val y = size.height - (v / maxVal * size.height * 0.9f)
+                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                    drawPath(
+                        path = path,
+                        color = Peach.copy(alpha = 0.6f),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = 2f,
+                            cap = androidx.compose.ui.graphics.StrokeCap.Round
+                        )
+                    )
+                }
             }
         }
 

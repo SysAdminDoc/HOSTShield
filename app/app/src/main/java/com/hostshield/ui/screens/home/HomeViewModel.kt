@@ -85,7 +85,11 @@ data class HomeUiState(
     /** Dropped queries from buffer overflow. */
     val droppedQueries: Int = 0,
     /** Top querying apps (up to 3). */
-    val topApps: List<Triple<String, String, Int>> = emptyList() // (package, label, count)
+    val topApps: List<Triple<String, String, Int>> = emptyList(), // (package, label, count)
+    /** Recent DNS latencies for sparkline (last 20 values). */
+    val latencySparkline: List<Int> = emptyList(),
+    /** Average latency from sparkline. */
+    val avgLatencyMs: Int = 0
 )
 
 @HiltViewModel
@@ -201,12 +205,19 @@ class HomeViewModel @Inject constructor(
                 val cacheStats = DnsVpnService.currentCacheStats
                 val dropped = DnsVpnService.currentDroppedQueries
 
+                // Build latency sparkline from recent entries with response times
+                val latencies = recent.filter { it.responseTimeMs > 0 && !it.blocked }
+                    .take(20).map { it.responseTimeMs }
+                val avgLatency = if (latencies.isNotEmpty()) latencies.average().toInt() else 0
+
                 _uiState.update { it.copy(
                     queriesPerMinute = recentQueries,
                     blocksPerMinute = recentBlocks,
                     queryAnomalyWarning = anomalyWarning,
                     cacheHitRate = cacheStats?.hitRate ?: 0f,
-                    droppedQueries = dropped
+                    droppedQueries = dropped,
+                    latencySparkline = latencies.reversed(), // oldest first for left-to-right
+                    avgLatencyMs = avgLatency
                 ) }
             }
         }
@@ -734,6 +745,10 @@ class HomeViewModel @Inject constructor(
     }
 
     // -- Helpers -------------------------------------------------------
+
+    // Search history
+    val searchHistory = prefs.searchHistory.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    fun saveSearch(query: String) { viewModelScope.launch { prefs.addSearchQuery(query) } }
 
     fun dismissError() { _uiState.update { it.copy(errorMessage = null) } }
     fun dismissSnackbar() { _uiState.update { it.copy(snackbarMessage = null) } }

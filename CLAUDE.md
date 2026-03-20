@@ -1,7 +1,7 @@
 # HostShield
 
 ## Overview
-Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. v4.5.0.
+Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. v4.6.0.
 
 ## Tech Stack
 - Kotlin, Jetpack Compose, Material 3
@@ -70,6 +70,7 @@ cd app
 - Secrets configured: `KEYSTORE_BASE64`, `KEY_ALIAS`, `KEY_PASSWORD`, `STORE_PASSWORD`
 
 ## Version History
+- v4.6.0: DNS latency sparkline on Home (live response time mini-graph), source summary stats on Sources screen (total domains, size, unhealthy count), search history persistence (DataStore, 10 recent, chip display), search history chips on Home
 - v4.5.0: Query type distribution chart in Stats (A/AAAA/CNAME/MX bar chart), per-app DNS log drill-down (AppLogsScreen with domains + timeline tabs), permanent block/allow buttons in log detail sheet, log cleanup worker improved (6h interval, battery-not-low constraint)
 - v4.4.0: Connection log interface labels (rmnet0=Mobile, wlan0=WiFi, etc), DNS cache management in Settings (clear cache button + live stats), expanded notification (Pause 5m / Pause 30m / Stop), top querying apps mini-card on Home dashboard
 - v4.3.2: UI fixes — FlowRow wrapping for category chips (was smushed in single Row), larger text fields (search bar, custom DNS), FlowRow for DoH provider selector and feature pills, removed fixed heights that clipped text
