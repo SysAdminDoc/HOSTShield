@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,7 +34,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class DohBypassUpdater @Inject constructor(
-    private val prefs: AppPreferences
+    private val prefs: AppPreferences,
+    private val client: OkHttpClient
 ) {
     companion object {
         private const val TAG = "DohBypassUpdater"
@@ -44,11 +44,6 @@ class DohBypassUpdater @Inject constructor(
         private const val MAX_DOMAINS = 500 // safety cap
         private const val MAX_JSON_SIZE = 50_000L // 50KB max
     }
-
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(10, TimeUnit.SECONDS)
-        .build()
 
     data class RemoteList(
         val version: Int = 0,
