@@ -110,7 +110,7 @@ class OfflineGeoIp @Inject constructor(
                 country = country?.country?.name ?: "",
                 countryCode = countryCode,
                 continent = country?.continent?.name ?: "",
-                asn = asn?.autonomousSystemNumber ?: 0,
+                asn = (asn?.autonomousSystemNumber ?: 0L).toInt(),
                 asnOrg = asn?.autonomousSystemOrganization ?: "",
                 flag = countryCodeToFlag(countryCode)
             )
