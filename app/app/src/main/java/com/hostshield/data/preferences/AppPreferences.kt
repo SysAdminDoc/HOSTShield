@@ -64,6 +64,7 @@ class AppPreferences @Inject constructor(
         val SCHEDULE_END = stringPreferencesKey("schedule_end")       // HH:mm
         val SCHEDULE_MODE = stringPreferencesKey("schedule_mode")     // "block" or "unblock"
         val RULE_SYNC_URLS = stringPreferencesKey("rule_sync_urls")   // Comma-separated remote rule list URLs
+        val CNAME_CLOAK_DOMAINS = stringPreferencesKey("cname_cloak_domains") // v5.0: AdGuard + NextDNS CNAME cloak DB
     }
 
     // ── Blocking ─────────────────────────────────────────────
@@ -186,6 +187,11 @@ class AppPreferences @Inject constructor(
     suspend fun getRemoteDohDomains(): String = ds.data.map { it[Keys.REMOTE_DOH_DOMAINS] ?: "" }.first()
     suspend fun getRemoteDohWildcards(): String = ds.data.map { it[Keys.REMOTE_DOH_WILDCARDS] ?: "" }.first()
     suspend fun getRemoteDohVersion(): Int = ds.data.map { it[Keys.REMOTE_DOH_VERSION] ?: 0 }.first()
+
+    // ── CNAME Cloak Database (v5.0) ──────────────────────────
+    // Domains from AdGuard cname-trackers + NextDNS cname-cloaking-blocklist
+    suspend fun setCnameCloakDomains(domains: String) = ds.edit { it[Keys.CNAME_CLOAK_DOMAINS] = domains }
+    suspend fun getCnameCloakDomains(): String = ds.data.map { it[Keys.CNAME_CLOAK_DOMAINS] ?: "" }.first()
 
     // ── Accent Color ─────────────────────────────────────────
     // Values: "teal", "blue", "purple", "green", "pink", "peach"

@@ -27,6 +27,7 @@ class HostsUpdateWorker @AssistedInject constructor(
     private val downloader: SourceDownloader,
     private val blocklistHolder: BlocklistHolder,
     private val dohBypassUpdater: DohBypassUpdater,
+    private val cnameCloakUpdater: CnameCloakUpdater,
     private val httpClient: OkHttpClient
 ) : CoroutineWorker(context, workerParams) {
 
@@ -87,6 +88,8 @@ class HostsUpdateWorker @AssistedInject constructor(
         return try {
             // Refresh remote DoH bypass list on every periodic run
             try { dohBypassUpdater.fetchAndStore() } catch (_: Exception) { }
+            // v5.0: Refresh CNAME cloak databases (AdGuard + NextDNS)
+            try { cnameCloakUpdater.fetchAndUpdate() } catch (_: Exception) { }
 
             val isEnabled = prefs.isEnabled.first()
             if (!isEnabled) return Result.success()

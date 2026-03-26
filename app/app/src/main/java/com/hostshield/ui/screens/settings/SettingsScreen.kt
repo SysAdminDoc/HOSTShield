@@ -167,9 +167,9 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("${cacheStats.size + cacheStats.negativeSize} entries", color = TextDim, fontSize = 11.sp)
+                    Text("${cacheStats.size + cacheStats.negativeSize + cacheStats.failureSize} entries", color = TextDim, fontSize = 11.sp)
                     Text("${(cacheStats.hitRate * 100).toInt()}% hit rate", color = Green, fontSize = 11.sp)
-                    Text("${cacheStats.evictions} evictions", color = TextDim, fontSize = 11.sp)
+                    Text("${cacheStats.staleHits} stale", color = TextDim, fontSize = 11.sp)
                 }
                 Spacer(Modifier.height(6.dp))
             }

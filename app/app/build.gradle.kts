@@ -1,4 +1,4 @@
-// HostShield v4.6.0
+// HostShield v5.0.0
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,8 +15,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 35
-        versionCode = 48
-        versionName = "4.6.0"
+        versionCode = 49
+        versionName = "5.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -147,6 +147,10 @@ dependencies {
 
     // Splash screen
     implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // v5.0: MaxMind GeoIP2 for offline GeoIP lookups (replaces ip-api.com rate-limited API)
+    // Bundled GeoLite2-Country.mmdb (~6MB) + GeoLite2-ASN.mmdb (~8MB)
+    implementation("com.maxmind.geoip2:geoip2:4.2.1")
 
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")

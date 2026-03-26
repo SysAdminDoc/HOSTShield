@@ -22,8 +22,40 @@ object DnsPacketBuilder {
 
     // Record types
     private const val TYPE_A: Short = 1
+    const val TYPE_NS: Int = 2
+    const val TYPE_CNAME: Int = 5
+    const val TYPE_SOA: Int = 6
+    const val TYPE_MX: Int = 15
+    const val TYPE_TXT: Int = 16
     private const val TYPE_AAAA: Short = 28
+    const val TYPE_SRV: Int = 33
+    const val TYPE_OPT: Int = 41       // EDNS(0) pseudo-record
+    const val TYPE_SVCB: Int = 64      // v5.0: RFC 9460 — Service Binding
+    const val TYPE_HTTPS: Int = 65     // v5.0: RFC 9460 — HTTPS Service Binding
     private const val CLASS_IN: Short = 1
+
+    /**
+     * Human-readable label for a DNS query type number.
+     * v5.0: Added SVCB, HTTPS, and additional common types.
+     */
+    fun queryTypeLabel(qtype: Int): String = when (qtype) {
+        1 -> "A"
+        2 -> "NS"
+        5 -> "CNAME"
+        6 -> "SOA"
+        12 -> "PTR"
+        15 -> "MX"
+        16 -> "TXT"
+        28 -> "AAAA"
+        33 -> "SRV"
+        41 -> "OPT"
+        43 -> "DS"
+        48 -> "DNSKEY"
+        64 -> "SVCB"
+        65 -> "HTTPS"
+        255 -> "ANY"
+        else -> "TYPE$qtype"
+    }
 
     // SOA RDATA for NXDOMAIN negative caching
     // Synthesized authority: ns.hostshield.local / admin.hostshield.local

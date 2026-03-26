@@ -1,12 +1,13 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-4.0.0-blue)
+![Version](https://img.shields.io/badge/version-5.0.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
-![Platform](https://img.shields.io/badge/platform-Android%207+-3DDC84?logo=android&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
+![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, DNS response caching, DoH with certificate pinning, and a professional dark-themed UI.
+> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, DoH with certificate pinning, offline GeoIP, and a professional AMOLED dark UI.
 
 ## Quick Start
 
