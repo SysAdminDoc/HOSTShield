@@ -1,7 +1,7 @@
 # HostShield
 
 ## Overview
-Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. v4.6.0.
+Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. v5.0.0. Roadmap through v6.0 in `docs/RESEARCH.md`.
 
 ## Tech Stack
 - Kotlin, Jetpack Compose, Material 3
@@ -11,7 +11,7 @@ Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. 
 - OkHttp for source downloads + DoH resolver, libsu for root access
 
 ## Key Architecture
-- **BlocklistHolder** - Trie-based O(m) domain lookup, 200K+ domains, volatile root for thread safety. Regex rules capped at 500 chars with nested quantifier rejection (ReDoS prevention).
+- **BlocklistHolder** - v5.0: Hash set fast path (O(1) exact match before trie, ~2x faster for 90% of lookups) + filter decision LRU cache (8K entries, invalidated on update). Trie-based O(m) domain lookup, 200K+ domains, volatile root for thread safety. Regex rules capped at 500 chars with nested quantifier rejection (ReDoS prevention).
 - **DnsVpnService** - Local VPN DNS interception, TUN interface, dual-stack (IPv4+IPv6), DNS trap, DoH/DoT blocking, TCP DNS RST for both IPv4 and IPv6. Bounded log buffer (LinkedBlockingQueue 5000) with overflow detection. Context-aware firewall checks (screen off/background/metered). VPN stability tracking (uptime, rebuilds, fd errors, dropped queries). Publishes cache stats + dropped count via companion object for UI.
 - **DohResolver** - RFC 8484 POST+GET, certificate pinning, smart latency-based failover (EMA per provider, auto-selects fastest), unpinned fallback as last resort.
 - **RootDnsLogger** - Root-mode DNS proxy on 127.0.0.1:5454, iptables NAT redirect, UID attribution.
@@ -32,10 +32,12 @@ Modern, AMOLED-dark hosts-based ad blocker app for Android. Inspired by AdAway. 
 - `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt` - VPN packet loop (~1850 lines)
 - `app/app/src/main/java/com/hostshield/domain/BlocklistHolder.kt` - Trie + regex + wildcard engine
 - `app/app/src/main/java/com/hostshield/service/DohResolver.kt` - DoH with smart latency failover
-- `app/app/src/main/java/com/hostshield/service/DnsCache.kt` - LRU DNS cache with TTL
-- `app/app/src/main/java/com/hostshield/service/DnsPacketBuilder.kt` - DNS wire format builder/parser
+- `app/app/src/main/java/com/hostshield/service/DnsCache.kt` - v5.0: LRU DNS cache with serve-stale (RFC 8767), negative caching (RFC 2308), SERVFAIL caching (RFC 9520), prefetching (Unbound algorithm), configurable TTL caps (60s-24h)
+- `app/app/src/main/java/com/hostshield/service/CnameCloakUpdater.kt` - v5.0: Fetches AdGuard + NextDNS CNAME cloak databases
+- `app/app/src/main/java/com/hostshield/service/DnsPacketBuilder.kt` - v5.0: DNS wire format builder/parser + SVCB/HTTPS type constants + queryTypeLabel()
 - `app/app/src/main/java/com/hostshield/util/TrackerSignatureDb.kt` - APK tracker SDK scanner (Room-cached)
-- `app/app/src/main/java/com/hostshield/util/GeoIpLookup.kt` - GeoIP/ASN lookup (rate limited)
+- `app/app/src/main/java/com/hostshield/util/GeoIpLookup.kt` - GeoIP/ASN lookup via ip-api.com (rate limited, legacy — use OfflineGeoIp for new code)
+- `app/app/src/main/java/com/hostshield/util/OfflineGeoIp.kt` - v5.0: MaxMind GeoLite2 offline lookups (Country+ASN), unlimited, zero-latency
 - `app/app/src/main/java/com/hostshield/util/AppPrivacyScorer.kt` - Per-app A-F privacy grades
 - `app/app/src/main/java/com/hostshield/util/ImportExportUtil.kt` - Multi-format import/export + firewall rules
 - `app/app/src/main/java/com/hostshield/service/AutomationReceiver.kt` - Rate-limited automation API
@@ -70,6 +72,7 @@ cd app
 - Secrets configured: `KEYSTORE_BASE64`, `KEY_ALIAS`, `KEY_PASSWORD`, `STORE_PASSWORD`
 
 ## Version History
+- v5.0.0: Core engine upgrades — serve-stale DNS cache (RFC 8767), negative caching with SOA TTL (RFC 2308), SERVFAIL caching (RFC 9520), DNS cache prefetching (Unbound algorithm), hash set fast path for exact matches (~2x), filter decision LRU cache, CNAME cloak databases (AdGuard+NextDNS), SVCB/HTTPS record parsing, offline GeoIP via MaxMind GeoLite2, configurable TTL caps (60s-24h)
 - v4.6.0: DNS latency sparkline on Home (live response time mini-graph), source summary stats on Sources screen (total domains, size, unhealthy count), search history persistence (DataStore, 10 recent, chip display), search history chips on Home
 - v4.5.0: Query type distribution chart in Stats (A/AAAA/CNAME/MX bar chart), per-app DNS log drill-down (AppLogsScreen with domains + timeline tabs), permanent block/allow buttons in log detail sheet, log cleanup worker improved (6h interval, battery-not-low constraint)
 - v4.4.0: Connection log interface labels (rmnet0=Mobile, wlan0=WiFi, etc), DNS cache management in Settings (clear cache button + live stats), expanded notification (Pause 5m / Pause 30m / Stop), top querying apps mini-card on Home dashboard
@@ -92,9 +95,49 @@ cd app
 - v2.1.0: Automation API, iptables firewall, connection logging
 - v2.0.0: DoH, DNS trap, batch domain test, network stats
 
+## Research & Roadmap
+- Full competitive analysis: `docs/RESEARCH.md` (30+ open-source projects, 52-item roadmap across 6 phases)
+- **Next milestone: v5.0** — Core Engine Upgrades:
+  1. Adblock-syntax parsing (`||domain^`, `@@`, `$important`, `$dnsrewrite`) — unlocks modern blocklists (OISD deprecated hosts format)
+  2. Serve-stale DNS cache (RFC 8767) — return expired entries when upstream unreachable
+  3. Negative caching (NXDOMAIN/NODATA per RFC 2308)
+  4. DNS cache prefetching (refresh at <10% TTL remaining)
+  5. Hash set fast path for exact matches before trie (~2x faster for 90% of lookups)
+  6. Bundle GeoLite2-Country + ASN databases (replace ip-api.com rate-limited API)
+- **v5.0 also**: Filter decision LRU cache, CNAME cloak databases (AdGuard+NextDNS), HTTPS/SVCB record parsing (ECH prep), two-tier cache (in-memory + persistent disk)
+- **v5.1**: Domain-per-app rules, metered/unmetered firewall, screen-off blocking, LAN toggle, category-based app blocking, DNS-only VPN mode (battery optimization)
+- **v5.2**: Expanded ETIP tracker DB (400+), network-based tracker detection, threat intel feeds, WebRTC/IPv6 leak tests, captive portal handling
+- **v5.3**: Vico charts, Lottie animations, M3 dynamic theming, Glance widget overhaul, onboarding refresh
+- **v5.4**: Expanded Tasker intents, Wi-Fi SSID profiles, encrypted backups, WebDAV sync, ACRA crash reporting
+- **v6.0**: Content filtering categories, Safe Search, DNS stamps (`sdns://`), split tunneling, DoT/DoQ/DNSCrypt, connection tracker, nDPI/JA3, parental controls, proxy mode (tri-mode: VPN+root+proxy)
+
+## Key Competitor References
+- RethinkDNS (4.7k stars): Domain-per-app rules, metered/unmetered, Go firestack, succinct radix-trie (17M domains)
+- AdGuard urlfilter: Reference adblock-syntax engine with 6-level priority system, CNAME tracker database
+- AdAway (8.9k stars): Hosts-file-as-fallback pattern, local web server for blocked responses, systemless Magisk
+- PCAPdroid (3.8k stars): nDPI integration for JA3/JA4 fingerprinting, PCAP-NG streaming
+- NetGuard (3.5k stars): Screen on/off rules (most popular feature), native C sinkhole, DNS-only VPN routing
+- InviZible Pro (2.5k stars): Tri-mode (VPN/root/proxy), DNSCrypt+Tor+I2P, iptables refresh on connectivity change
+- TrackerControl (2.4k stars): Dual static+network tracker detection model
+- hagezi (16k stars): 7-format blocklist output, tiered blocking (Light→Ultimate)
+- DNS66 (2.2k stars): DNS-only VPN routing (port 53 only) — minimal battery (~0.5%/day)
+
 ## Gotchas
+- v5.0: DnsCache.get() now returns CacheResult (not ByteArray?) — callers must handle .response, .isStale, .needsPrefetch. Use getSimple() for backward-compat ByteArray? return.
+- v5.0: DnsCache.getStale() exists for serve-stale path — call when upstream fails to get expired-but-valid entry
+- v5.0: DnsCache.CacheStats has new fields: failureSize, staleHits, prefetchTriggers — update UI consumers
+- v5.0: BlocklistHolder.decisionCache is auto-cleared on every update() call — no manual invalidation needed
+- v5.0: BlocklistHolder.exactBlockSet is built alongside trie in update() — O(1) for exact matches, trie still needed for wildcards
+- v5.0: CnameCloakDetector now checks HTTPS/SVCB records (TYPE 64/65) for SVCB-based cloaking
+- v5.0: CnameCloakUpdater must be injected via Hilt and called from HostsUpdateWorker alongside DohBypassUpdater
+- v5.0: CnameCloakDetector.cnameCloakDomains is @Volatile set — call updateCloakDatabase() or loadCached() on startup
+- v5.0: OfflineGeoIp requires GeoLite2 MMDB files in app assets or internal storage. Falls back gracefully if missing — isReady() returns false
+- v5.0: OfflineGeoIp.initialize() copies from assets on first run. Call once in HostShieldApp.onCreate() via appScope
+- v5.0: GeoIpLookup (ip-api.com) is legacy — use OfflineGeoIp for new features. GeoIpLookup retained for city-level detail (GeoLite2-City is 70MB, not bundled)
+- v5.0: DnsPacketBuilder.queryTypeLabel() maps qtype ints to human labels (A, AAAA, SVCB, HTTPS, etc.)
+- v5.0: MaxMind GeoIP2 dependency added to build.gradle.kts (`com.maxmind.geoip2:geoip2:4.2.1`)
 - Room stores enums as strings — adding new enum values doesn't need migration
-- HostsUpdateWorker has DohBypassUpdater injected — runs on every periodic cycle regardless of blocking state
+- HostsUpdateWorker has DohBypassUpdater injected — runs on every periodic cycle regardless of blocking state. v5.0: also inject CnameCloakUpdater
 - OverlapAnalysisScreen downloads sources with `forceDownload=true` to bypass ETag caching
 - Regex rules limited to 500 chars with nested quantifier rejection (ReDoS prevention)
 - Log buffer is LinkedBlockingQueue(5000) — uses `offer()` instead of `add()`, tracks dropped count

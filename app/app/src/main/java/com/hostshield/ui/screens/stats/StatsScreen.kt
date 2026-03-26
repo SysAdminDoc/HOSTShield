@@ -65,6 +65,9 @@ data class StatsUiState(
     val cacheHits: Long = 0,
     val cacheMisses: Long = 0,
     val cacheEvictions: Long = 0,
+    // v5.0: New cache stats
+    val cacheStaleHits: Long = 0,
+    val cachePrefetchTriggers: Long = 0,
     // VPN Health
     val vpnUptimeHours: Float = 0f,
     val vpnRebuilds: Int = 0,
@@ -117,11 +120,13 @@ class StatsViewModel @Inject constructor(
                 val stats = com.hostshield.service.DnsVpnService.currentCacheStats
                 if (stats != null) {
                     _uiState.update { it.copy(
-                        cacheSize = stats.size + stats.negativeSize,
+                        cacheSize = stats.size + stats.negativeSize + stats.failureSize,
                         cacheHitRate = stats.hitRate,
                         cacheHits = stats.hits,
                         cacheMisses = stats.misses,
-                        cacheEvictions = stats.evictions
+                        cacheEvictions = stats.evictions,
+                        cacheStaleHits = stats.staleHits,
+                        cachePrefetchTriggers = stats.prefetchTriggers
                     ) }
                 }
                 val dropped = com.hostshield.service.DnsVpnService.currentDroppedQueries
@@ -262,6 +267,13 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                         Text("Hits: ${nf.format(state.cacheHits)}", color = Green, fontSize = 11.sp)
                         Text("Misses: ${nf.format(state.cacheMisses)}", color = TextDim, fontSize = 11.sp)
                         Text("Evictions: ${nf.format(state.cacheEvictions)}", color = Peach, fontSize = 11.sp)
+                    }
+                    if (state.cacheStaleHits > 0 || state.cachePrefetchTriggers > 0) {
+                        Spacer(Modifier.height(4.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Stale served: ${nf.format(state.cacheStaleHits)}", color = TextDim, fontSize = 11.sp)
+                            Text("Prefetches: ${nf.format(state.cachePrefetchTriggers)}", color = TextDim, fontSize = 11.sp)
+                        }
                     }
                 }
             }

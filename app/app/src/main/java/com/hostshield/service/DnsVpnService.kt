@@ -795,19 +795,46 @@ class DnsVpnService : VpnService() {
             Log.d(TAG, "BLOCKED $domain ($qtype) [${app.second.ifEmpty { "system" }}]")
             sendBlockResponse(dns, packet, ihl, false, qtype)
         } else {
-            // Cache lookup — serve from cache if available
+            // Cache lookup — serve from cache if available (v5.0: CacheResult with stale/prefetch)
             val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
             val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
-            val cached = dnsCache.get(domain, qtypeNum, txId)
-            if (cached != null) {
-                Log.d(TAG, "CACHE HIT $domain ($qtype)")
-                logAsync(domain, false, app, qtype) // basic log for cache hits
-                wrapResponseV4(packet, ihl, cached)?.let { writeChannel.send(it) }
-                allowedCount++
-                return
+            val cacheResult = dnsCache.get(domain, qtypeNum, txId)
+            if (cacheResult != null) {
+                if (!cacheResult.isStale) {
+                    // Fresh cache hit
+                    Log.d(TAG, "CACHE HIT $domain ($qtype)")
+                    logAsync(domain, false, app, qtype)
+                    wrapResponseV4(packet, ihl, cacheResult.response)?.let { writeChannel.send(it) }
+                    allowedCount++
+                    // v5.0: Trigger background prefetch if entry is nearing expiry
+                    if (cacheResult.needsPrefetch) {
+                        val pCopy = packet.copyOf(length)
+                        serviceScope.launch {
+                            try {
+                                if (useDoH) forwardDoH(dns, domain, pCopy, ihl, app)
+                                else forwardUdp(dns, domain, pCopy, ihl, app)
+                            } catch (_: Exception) { /* prefetch failure is non-fatal */ }
+                        }
+                    }
+                    return
+                } else {
+                    // v5.0: Stale entry — serve immediately per RFC 8767, re-query in background
+                    Log.d(TAG, "SERVE-STALE $domain ($qtype) — refreshing in background")
+                    wrapResponseV4(packet, ihl, cacheResult.response)?.let { writeChannel.send(it) }
+                    allowedCount++
+                    // Background refresh to update the cache
+                    val pCopy = packet.copyOf(length)
+                    serviceScope.launch {
+                        try {
+                            if (useDoH) forwardDoH(dns, domain, pCopy, ihl, app)
+                            else forwardUdp(dns, domain, pCopy, ihl, app)
+                        } catch (_: Exception) { /* refresh failure is non-fatal, stale was already served */ }
+                    }
+                    return
+                }
             }
 
-            // Rich log with CNAME/IPs/latency happens inside forward methods
+            // Cache miss — forward to upstream
             Log.d(TAG, "ALLOWED $domain ($qtype)")
             val pCopy = packet.copyOf(length)
             if (useDoH) serviceScope.launch { forwardDoH(dns, domain, pCopy, ihl, app) }
@@ -861,17 +888,43 @@ class DnsVpnService : VpnService() {
             writeChannel.send(wrapped); blockedCount++
             if (blockedCount % 100 == 0) updateNotification(blockedCount)
         } else {
-            // Cache lookup
+            // Cache lookup (v5.0: CacheResult with stale/prefetch)
             val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
             val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
-            val cached = dnsCache.get(domain, qtypeNum, txId)
-            if (cached != null) {
-                Log.d(TAG, "CACHE HIT (v6) $domain ($qtype)")
-                wrapResponseV6(packet, hdr, cached)?.let { writeChannel.send(it) }
-                allowedCount++
-                return
+            val cacheResult = dnsCache.get(domain, qtypeNum, txId)
+            if (cacheResult != null) {
+                if (!cacheResult.isStale) {
+                    // Fresh cache hit
+                    Log.d(TAG, "CACHE HIT (v6) $domain ($qtype)")
+                    wrapResponseV6(packet, hdr, cacheResult.response)?.let { writeChannel.send(it) }
+                    allowedCount++
+                    if (cacheResult.needsPrefetch) {
+                        val pCopy = packet.copyOf(length)
+                        serviceScope.launch {
+                            try {
+                                if (useDoH) forwardDoH(dns, domain, pCopy, 0, app, wrapV6 = true, v6Hdr = hdr)
+                                else forwardUdpV6(dns, domain, pCopy, hdr, app)
+                            } catch (_: Exception) { }
+                        }
+                    }
+                    return
+                } else {
+                    // v5.0: Serve stale immediately, refresh in background (RFC 8767)
+                    Log.d(TAG, "SERVE-STALE (v6) $domain ($qtype) — refreshing in background")
+                    wrapResponseV6(packet, hdr, cacheResult.response)?.let { writeChannel.send(it) }
+                    allowedCount++
+                    val pCopy = packet.copyOf(length)
+                    serviceScope.launch {
+                        try {
+                            if (useDoH) forwardDoH(dns, domain, pCopy, 0, app, wrapV6 = true, v6Hdr = hdr)
+                            else forwardUdpV6(dns, domain, pCopy, hdr, app)
+                        } catch (_: Exception) { }
+                    }
+                    return
+                }
             }
 
+            // Cache miss
             val pCopy = packet.copyOf(length)
             if (useDoH) serviceScope.launch { forwardDoH(dns, domain, pCopy, 0, app, wrapV6 = true, v6Hdr = hdr) }
             else serviceScope.launch { forwardUdpV6(dns, domain, pCopy, hdr, app) }
@@ -1538,7 +1591,10 @@ class DnsVpnService : VpnService() {
             } catch (_: java.net.SocketTimeoutException) {
                 sock.close(); forwardUdpFallback(dns, domain, orig, ihl, app)
             }
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+            // v5.0: Serve-stale fallback — return expired cache entry if upstream completely fails
+            serveStaleV4(dns, domain, orig, ihl)
+        }
     }
 
     private suspend fun forwardUdpFallback(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
@@ -1576,7 +1632,26 @@ class DnsVpnService : VpnService() {
             cacheDnsAnswerIps(domain, respBytes)
             dnsCache.put(domain, DnsPacketBuilder.parseQueryType(dns), respBytes)
             wrapResponseV4(orig, ihl, respBytes)?.let { writeChannel.send(it) }
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+            // v5.0: Serve-stale fallback — both upstreams failed, try expired cache
+            serveStaleV4(dns, domain, orig, ihl)
+        }
+    }
+
+    /**
+     * v5.0: Serve-stale (RFC 8767) — return an expired-but-still-cached DNS response
+     * when all upstream resolvers fail. Critical for WiFi↔cellular transitions where
+     * DNS resolution briefly fails. Returns the stale response with a short TTL so
+     * the client will re-query soon.
+     */
+    private suspend fun serveStaleV4(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int) {
+        val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
+        val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
+        val stale = dnsCache.getStale(domain, qtypeNum, txId)
+        if (stale != null) {
+            Log.i(TAG, "SERVE-STALE $domain (upstream failed, returning expired cache)")
+            wrapResponseV4(orig, ihl, stale)?.let { writeChannel.send(it) }
+        }
     }
 
     private suspend fun forwardDoH(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
@@ -1666,7 +1741,16 @@ class DnsVpnService : VpnService() {
             cacheDnsAnswerIps(domain, respBytes)
             dnsCache.put(domain, DnsPacketBuilder.parseQueryType(dns), respBytes)
             wrapResponseV6(orig, hdr, respBytes)?.let { writeChannel.send(it) }
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+            // v5.0: Serve-stale fallback for IPv6
+            val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
+            val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
+            val stale = dnsCache.getStale(domain, qtypeNum, txId)
+            if (stale != null) {
+                Log.i(TAG, "SERVE-STALE (v6) $domain (upstream failed)")
+                wrapResponseV6(orig, hdr, stale)?.let { writeChannel.send(it) }
+            }
+        }
     }
 
     // ── DNS Answer Cache (Heuristic UID Attribution) ────────

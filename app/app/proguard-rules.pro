@@ -75,6 +75,18 @@
 -keep class com.hostshield.util.TrackerSignatureDb$** { *; }
 -keep class com.hostshield.service.ContextState { *; }
 
+# ── v5.0: New classes ──────────────────────────────────────
+-keep class com.hostshield.service.CnameCloakUpdater { *; }
+-keep class com.hostshield.service.DnsCache$CacheResult { *; }
+-keep class com.hostshield.util.OfflineGeoIp { *; }
+-keep class com.hostshield.util.OfflineGeoIp$** { *; }
+
+# ── v5.0: MaxMind GeoIP2 ──────────────────────────────────
+-dontwarn com.maxmind.**
+-keep class com.maxmind.** { *; }
+-dontwarn com.fasterxml.jackson.**
+-keep class com.fasterxml.jackson.** { *; }
+
 # ── StatsWidget (v3.8.0) ────────────────────────────────────
 -keep class com.hostshield.service.StatsWidgetProvider { *; }
 
