@@ -140,7 +140,7 @@ class CnameCloakUpdater @Inject constructor(
                 val domain = line
                     .removePrefix("||")
                     .removeSuffix("^")
-                    .removeSuffix("$important")
+                    .removeSuffix("\$important")
                     .trim()
                     .lowercase()
                 if (domain.isNotBlank() && domain.contains('.') && !domain.contains(' ')
