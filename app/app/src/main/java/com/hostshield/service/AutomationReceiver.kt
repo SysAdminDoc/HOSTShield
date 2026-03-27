@@ -225,6 +225,11 @@ class AutomationReceiver : BroadcastReceiver() {
                 )
             }
             BlockMethod.ROOT_HOSTS -> RootDnsService.start(context)
+            BlockMethod.DNS_PROXY -> {
+                context.startForegroundService(
+                    Intent(context, DnsProxyService::class.java)
+                )
+            }
             BlockMethod.DISABLED -> { }
         }
         prefs.setEnabled(true)
@@ -242,6 +247,9 @@ class AutomationReceiver : BroadcastReceiver() {
                 )
             }
             BlockMethod.ROOT_HOSTS -> RootDnsService.stop(context)
+            BlockMethod.DNS_PROXY -> {
+                context.stopService(Intent(context, DnsProxyService::class.java))
+            }
             BlockMethod.DISABLED -> { }
         }
         prefs.setEnabled(false)

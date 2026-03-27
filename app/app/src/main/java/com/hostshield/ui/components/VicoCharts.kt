@@ -30,17 +30,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottomAxis
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.cartesian.rememberVicoTheme
-import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
-import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.compose.common.shader.verticalGradient
 import com.patrykandpatrick.vico.compose.common.shape.rounded
+import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
@@ -48,8 +46,6 @@ import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.component.LineComponent
-import com.patrykandpatrick.vico.core.common.component.TextComponent
-import com.patrykandpatrick.vico.core.common.shader.ShaderProvider
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 
 // HostShield brand colors (Catppuccin Mocha palette)
@@ -64,16 +60,11 @@ private val Peach = Color(0xFFFAB387)
 private val Pink = Color(0xFFF5C2E7)
 private val Lavender = Color(0xFFB4BEFE)
 private val Surface0 = Color(0xFF313244)
-private val Base = Color(0xFF1E1E2E)
 private val TextColor = Color(0xFFCDD6F4)
 private val SubText = Color(0xFFA6ADC8)
 
-// ── 1. HourlyBlockedChart ────────────────────────────────────────────────────
+// -- 1. HourlyBlockedChart --
 
-/**
- * Line chart showing blocked queries over 24 hours.
- * Uses a teal line with gradient fill beneath.
- */
 @Composable
 fun HourlyBlockedChart(
     data: List<Pair<Int, Int>>,
@@ -92,7 +83,7 @@ fun HourlyBlockedChart(
         }
     }
 
-    val hourFormatter = CartesianValueFormatter { value, _, _ ->
+    val hourFormatter = CartesianValueFormatter { _, value, _ ->
         val h = value.toInt().coerceIn(0, 23)
         when (h) {
             0 -> "12a"
@@ -107,25 +98,15 @@ fun HourlyBlockedChart(
     val lineProvider = LineCartesianLayer.LineProvider.series(
         LineCartesianLayer.Line(
             fill = LineCartesianLayer.LineFill.single(fill(lineColor)),
-            areaFill = LineCartesianLayer.AreaFill.single(
-                fill(
-                    ShaderProvider.verticalGradient(
-                        colors = arrayOf(lineColor.copy(alpha = 0.5f), TealTransparent),
-                    )
-                )
-            ),
         )
     )
 
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(lineProvider = lineProvider),
-            startAxis = rememberStartAxis(
-                label = rememberAxisLabel(TextColor),
-            ),
-            bottomAxis = rememberBottomAxis(
+            startAxis = VerticalAxis.rememberStart(),
+            bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = hourFormatter,
-                label = rememberAxisLabel(TextColor),
             ),
         ),
         modelProducer = modelProducer,
@@ -135,12 +116,8 @@ fun HourlyBlockedChart(
     )
 }
 
-// ── 2. DailyTrendChart ───────────────────────────────────────────────────────
+// -- 2. DailyTrendChart --
 
-/**
- * Column chart showing blocked vs allowed queries over 7 days.
- * Stacked columns: Teal for blocked, Mauve for allowed.
- */
 @Composable
 fun DailyTrendChart(
     blocked: List<Pair<String, Int>>,
@@ -159,7 +136,7 @@ fun DailyTrendChart(
         }
     }
 
-    val dayFormatter = CartesianValueFormatter { value, _, _ ->
+    val dayFormatter = CartesianValueFormatter { _, value, _ ->
         dayLabels.getOrElse(value.toInt()) { "" }
     }
 
@@ -182,12 +159,9 @@ fun DailyTrendChart(
                 columnProvider = columnProvider,
                 mergeMode = { ColumnCartesianLayer.MergeMode.Stacked },
             ),
-            startAxis = rememberStartAxis(
-                label = rememberAxisLabel(TextColor),
-            ),
-            bottomAxis = rememberBottomAxis(
+            startAxis = VerticalAxis.rememberStart(),
+            bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = dayFormatter,
-                label = rememberAxisLabel(TextColor),
             ),
         ),
         modelProducer = modelProducer,
@@ -197,15 +171,10 @@ fun DailyTrendChart(
     )
 }
 
-// ── 3. QueryTypeDistribution ─────────────────────────────────────────────────
+// -- 3. QueryTypeDistribution --
 
 private val queryTypeColors = listOf(Teal, Mauve, Blue, Peach, Pink, Green, Yellow, Lavender, Red)
 
-/**
- * Donut chart showing DNS query type distribution.
- * Rendered with Canvas since Vico has no native pie chart.
- * Uses HostShield's Catppuccin color palette.
- */
 @Composable
 fun QueryTypeDistribution(
     distribution: Map<String, Int>,
@@ -276,14 +245,8 @@ fun QueryTypeDistribution(
     }
 }
 
-// ── 4. LatencyHistogram ──────────────────────────────────────────────────────
+// -- 4. LatencyHistogram --
 
-/**
- * Column chart showing DNS response latency distribution.
- * Columns are colored green (fast), yellow (medium), red (slow)
- * using three separate series layered with [ColumnCartesianLayer.MergeMode.Stacked].
- * Each bucket contributes to exactly one of the three color series.
- */
 @Composable
 fun LatencyHistogram(
     buckets: List<Pair<String, Int>>,
@@ -293,7 +256,6 @@ fun LatencyHistogram(
     val bucketLabels = remember(buckets) { buckets.map { it.first } }
 
     LaunchedEffect(buckets) {
-        // Split buckets into three color bands so each column gets its own color.
         val n = buckets.size
         val greenSeries = MutableList(n) { 0 }
         val yellowSeries = MutableList(n) { 0 }
@@ -317,7 +279,7 @@ fun LatencyHistogram(
         }
     }
 
-    val bucketFormatter = CartesianValueFormatter { value, _, _ ->
+    val bucketFormatter = CartesianValueFormatter { _, value, _ ->
         bucketLabels.getOrElse(value.toInt()) { "" }
     }
 
@@ -345,12 +307,9 @@ fun LatencyHistogram(
                 columnProvider = columnProvider,
                 mergeMode = { ColumnCartesianLayer.MergeMode.Stacked },
             ),
-            startAxis = rememberStartAxis(
-                label = rememberAxisLabel(TextColor),
-            ),
-            bottomAxis = rememberBottomAxis(
+            startAxis = VerticalAxis.rememberStart(),
+            bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = bucketFormatter,
-                label = rememberAxisLabel(TextColor),
             ),
         ),
         modelProducer = modelProducer,
@@ -360,12 +319,8 @@ fun LatencyHistogram(
     )
 }
 
-// ── 5. TopDomainsChart ───────────────────────────────────────────────────────
+// -- 5. TopDomainsChart --
 
-/**
- * Horizontal bar chart showing top blocked/queried domains.
- * Rendered via rotated Vico column chart approach using Canvas for true horizontal bars.
- */
 @Composable
 fun TopDomainsChart(
     domains: List<Pair<String, Int>>,
@@ -401,13 +356,11 @@ fun TopDomainsChart(
                             .fillMaxWidth()
                             .height(18.dp),
                     ) {
-                        // Background track
                         drawRoundRect(
                             color = Surface0,
                             size = Size(size.width, size.height),
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f),
                         )
-                        // Filled bar
                         drawRoundRect(
                             brush = Brush.horizontalGradient(
                                 colors = listOf(Teal.copy(alpha = 0.7f), Teal),
@@ -426,93 +379,4 @@ fun TopDomainsChart(
             }
         }
     }
-}
-
-// ── Shared helpers ───────────────────────────────────────────────────────────
-
-@Composable
-private fun rememberAxisLabel(color: Color): TextComponent =
-    rememberTextComponent(
-        color = color,
-        textSize = 11.dp,
-    )
-
-// ── Previews ─────────────────────────────────────────────────────────────────
-
-@Preview(showBackground = true, backgroundColor = 0xFF1E1E2E)
-@Composable
-private fun HourlyBlockedChartPreview() {
-    val sampleData = (0..23).map { hour ->
-        hour to (50..500).random()
-    }
-    HourlyBlockedChart(
-        data = sampleData,
-        modifier = Modifier.padding(16.dp),
-    )
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF1E1E2E)
-@Composable
-private fun DailyTrendChartPreview() {
-    val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-    val blocked = days.map { it to (200..800).random() }
-    val allowed = days.map { it to (500..2000).random() }
-    DailyTrendChart(
-        blocked = blocked,
-        allowed = allowed,
-        modifier = Modifier.padding(16.dp),
-    )
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF1E1E2E)
-@Composable
-private fun QueryTypeDistributionPreview() {
-    val distribution = mapOf(
-        "A" to 500,
-        "AAAA" to 200,
-        "CNAME" to 80,
-        "MX" to 30,
-        "TXT" to 15,
-    )
-    QueryTypeDistribution(
-        distribution = distribution,
-        modifier = Modifier.padding(16.dp),
-    )
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF1E1E2E)
-@Composable
-private fun LatencyHistogramPreview() {
-    val buckets = listOf(
-        "<10ms" to 300,
-        "10-50ms" to 200,
-        "50-100ms" to 80,
-        "100-500ms" to 40,
-        ">500ms" to 10,
-    )
-    LatencyHistogram(
-        buckets = buckets,
-        modifier = Modifier.padding(16.dp),
-    )
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF1E1E2E)
-@Composable
-private fun TopDomainsChartPreview() {
-    val domains = listOf(
-        "ads.google.com" to 1200,
-        "tracker.facebook.com" to 980,
-        "analytics.tiktok.com" to 750,
-        "telemetry.microsoft.com" to 620,
-        "ads.doubleclick.net" to 540,
-        "pixel.facebook.com" to 410,
-        "cdn.ampproject.org" to 380,
-        "graph.instagram.com" to 290,
-        "stats.wp.com" to 210,
-        "beacon.krxd.net" to 150,
-    )
-    TopDomainsChart(
-        domains = domains,
-        modifier = Modifier.padding(16.dp),
-    )
 }

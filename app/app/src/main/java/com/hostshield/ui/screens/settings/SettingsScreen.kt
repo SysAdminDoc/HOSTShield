@@ -905,6 +905,7 @@ private fun DohProviderSelector(current: String, onSelect: (String) -> Unit) {
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun DotProviderSelector(current: String, onSelect: (String) -> Unit) {
     val providers = listOf(
@@ -937,6 +938,7 @@ private fun DotProviderSelector(current: String, onSelect: (String) -> Unit) {
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun DoqProviderSelector(current: String, onSelect: (String) -> Unit) {
     val providers = listOf(

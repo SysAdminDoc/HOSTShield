@@ -265,7 +265,7 @@ class DnsProxyService : Service() {
         }
     }
 
-    private fun forwardAndReply(
+    private suspend fun forwardAndReply(
         socket: DatagramSocket,
         queryData: ByteArray,
         clientAddr: InetAddress,
@@ -286,7 +286,7 @@ class DnsProxyService : Service() {
      * Tries each upstream in order with a timeout; returns the first
      * successful response or null if all fail.
      */
-    private fun forwardToUpstream(queryData: ByteArray): ByteArray? {
+    private suspend fun forwardToUpstream(queryData: ByteArray): ByteArray? {
         // Try encrypted DNS first (DoT > DoH, matching VPN priority)
         if (useDoT) {
             try {

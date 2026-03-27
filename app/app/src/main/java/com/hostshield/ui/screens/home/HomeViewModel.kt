@@ -20,6 +20,7 @@ import com.hostshield.service.HostShieldWidgetProvider
 import com.hostshield.service.HostsUpdateWorker
 import com.hostshield.service.IptablesManager
 import com.hostshield.service.NflogReader
+import com.hostshield.service.DnsProxyService
 import com.hostshield.service.RootDnsService
 import com.hostshield.util.PrivacyScorer
 import com.hostshield.util.PrivateDnsDetector
@@ -27,8 +28,10 @@ import com.hostshield.util.PrivateSpaceDetector
 import com.hostshield.util.BatteryOptimizationUtil
 import com.hostshield.util.RootUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -180,7 +183,7 @@ class HomeViewModel @Inject constructor(
     /** Track live query rate + anomaly detection from the VPN live stream. */
     private fun trackQueryRate() {
         viewModelScope.launch {
-            while (isActive) {
+            while (currentCoroutineContext().isActive) {
                 kotlinx.coroutines.delay(5_000)
                 val recent = liveQueryStream.value
                 val now = System.currentTimeMillis()
@@ -463,6 +466,12 @@ class HomeViewModel @Inject constructor(
                 getApplication<Application>().startService(intent)
                 blocklistHolder.clear()
             }
+            BlockMethod.DNS_PROXY -> {
+                getApplication<Application>().stopService(
+                    Intent(getApplication(), DnsProxyService::class.java)
+                )
+                blocklistHolder.clear()
+            }
             BlockMethod.DISABLED -> { }
         }
         _uiState.update { it.copy(activeMethod = null) }
@@ -733,6 +742,20 @@ class HomeViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             activeMethod = BlockMethod.VPN,
+                            isApplying = false, progressMessage = ""
+                        )
+                    }
+                }
+                BlockMethod.DNS_PROXY -> {
+                    _uiState.update { it.copy(progressMessage = "Rebuilding blocklist...") }
+                    buildBlocklistHolder()
+                    _uiState.update { it.copy(progressMessage = "Starting DNS proxy...") }
+                    getApplication<Application>().startForegroundService(
+                        Intent(getApplication(), DnsProxyService::class.java)
+                    )
+                    _uiState.update {
+                        it.copy(
+                            activeMethod = BlockMethod.DNS_PROXY,
                             isApplying = false, progressMessage = ""
                         )
                     }

@@ -127,9 +127,10 @@ class ConnectionTracker @Inject constructor() {
      * All records for a single app, sorted newest-first.
      */
     fun getConnectionsForApp(packageName: String): List<ConnectionRecord> {
-        synchronized(records) {
-            return records[packageName]?.toList().orEmpty()
-        }.sortedByDescending { it.timestamp }
+        val list = synchronized(records) {
+            records[packageName]?.toList().orEmpty()
+        }
+        return list.sortedByDescending { it.timestamp }
     }
 
     /**

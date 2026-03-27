@@ -114,7 +114,7 @@ object AdblockRuleParser {
      * Parse a blocklist file containing adblock-syntax rules.
      *
      * Handles mixed-format files: adblock-syntax, hosts-style, and domains-only
-     * lines are all parsed. Comments (! and #) and metadata ([Adblock...]) are skipped.
+     * lines are all parsed. Comments (! and #) and metadata (Adblock headers) are skipped.
      *
      * @param content Raw file content
      * @return ParseResult with categorized rules

@@ -97,7 +97,7 @@ class HostsUpdateWorker @AssistedInject constructor(
             val method = prefs.blockMethod.first()
 
             when (method) {
-                BlockMethod.ROOT_HOSTS, BlockMethod.VPN -> {
+                BlockMethod.ROOT_HOSTS, BlockMethod.VPN, BlockMethod.DNS_PROXY -> {
                     // Download block sources and rebuild in-memory blocklist.
                     // Both root (RootDnsLogger) and VPN (DnsVpnService) read from
                     // BlocklistHolder, so updates take effect immediately.

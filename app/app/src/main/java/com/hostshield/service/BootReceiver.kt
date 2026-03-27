@@ -69,6 +69,10 @@ class BootReceiver : BroadcastReceiver() {
                         RootDnsService.start(context)
                         Log.i("BootReceiver", "Root DNS service restarted")
                     }
+                    BlockMethod.DNS_PROXY -> {
+                        context.startForegroundService(Intent(context, DnsProxyService::class.java))
+                        Log.i("BootReceiver", "DNS proxy service restarted")
+                    }
                     BlockMethod.DISABLED -> { }
                 }
 

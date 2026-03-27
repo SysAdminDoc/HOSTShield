@@ -1,119 +1,106 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-5.0.0-blue)
+![Version](https://img.shields.io/badge/version-6.2.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, DoH with certificate pinning, offline GeoIP, and a professional AMOLED dark UI.
+> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, encrypted DNS (DoH/DoT/DoQ/WireGuard), offline GeoIP, content filtering, parental controls, and a professional AMOLED dark UI.
 
-## Quick Start
-
-1. Download the latest APK from [Releases](https://github.com/SysAdminDoc/HostShield/releases)
-2. Install and launch — the onboarding wizard guides you through setup
-3. Choose **VPN mode** (no root) or **Root mode** (better battery life)
-4. Enable blocking — ads and trackers are filtered immediately
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| **DNS Blocking** | Trie-based O(m) domain lookup with 200K+ domains from curated blocklists |
-| **CNAME Cloaking Detection** | Inspects CNAME chains in DNS responses — catches first-party tracking that bypasses other blockers |
-| **DNS Response Cache** | 2000-entry LRU cache with TTL-aware expiration — 60-70% cache hit rate reduces latency |
-| **VPN Mode** | Local DNS filtering via Android VPN API — no root required, per-app stats |
-| **Root Mode** | Direct `/etc/hosts` modification + iptables firewall — zero battery overhead |
-| **Per-App Firewall** | Block Wi-Fi, mobile data, or VPN per-app with iptables (root) |
-| **DoH (DNS-over-HTTPS)** | Cloudflare, Google, Quad9, NextDNS, AdGuard — with SHA-256 certificate pinning |
-| **DoH Bypass Prevention** | Blocks 53+ known DoH provider domains + wildcard patterns to prevent apps bypassing DNS filtering |
-| **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through the VPN tunnel |
-| **TCP DNS Handling** | Full TCP DNS support for responses >512 bytes |
-| **IPv6 Support** | Full IPv6 DNS processing + UID attribution via `/proc/net/tcp6` |
-| **Block Response Types** | NXDOMAIN (with SOA), Null IP (0.0.0.0/::), or REFUSED — configurable |
-| **Blocking Profiles** | Switch between profile sets on schedule |
-| **Live Query Stream** | Real-time DNS log feed with zero-latency SharedFlow |
-| **7-Day Trend Charts** | Blocked vs. total queries line chart, hourly bar chart, daily history |
-| **Per-Query Detail View** | Query type, response time, upstream server, CNAME chain, resolved IPs |
-| **Diagnostic Export** | One-tap shareable report with device info, config, logs, network state |
-| **AdAway Import** | Import hosts files, sources, and rules from AdAway backups |
-| **Remote DoH Updates** | Supplementary DoH bypass domains fetched from GitHub without app updates |
-| **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
-
-## How It Works
-
-```
-┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   App DNS    │────>│  HostShield VPN  │────>│  DNS Response   │
-│   Query      │     │  Packet Engine   │     │  Cache (LRU)    │
-└─────────────┘     └────────┬─────────┘     └────────┬────────┘
-                             │                         │
-                    ┌────────▼─────────┐      Cache    │ Miss
-                    │  BlocklistHolder │      Hit ◄────┘
-                    │  (Trie Lookup)   │               │
-                    └────────┬─────────┘      ┌────────▼────────┐
-                             │                │  Upstream DNS   │
-                    Blocked? │                │  (UDP/DoH)      │
-                 ┌───────────┼───────────┐    └────────┬────────┘
-                 │           │           │             │
-           ┌─────▼────┐  ┌──▼───┐  ┌────▼────┐  ┌────▼─────────┐
-           │ NXDOMAIN  │  │ 0.0.0│  │ REFUSED │  │ CNAME Cloak  │
-           │ + SOA     │  │ .0   │  │         │  │ Detection    │
-           └──────────┘  └──────┘  └─────────┘  └──────────────┘
-```
+See the [root README](../README.md) for full feature documentation, architecture diagrams, and FAQ.
 
 ## Build
 
 ```bash
-# Prerequisites: JDK 17, Android SDK 34
+# Prerequisites: JDK 17, Android SDK 35
 
-./gradlew assembleFullDebug     # Full flavor (root features)
-./gradlew assemblePlayDebug     # Play Store flavor
-./gradlew testFullDebugUnitTest # Run unit tests
+# Full flavor — GitHub/F-Droid release (root features, QUERY_ALL_PACKAGES)
+./gradlew assembleFullRelease    # Signed release
+./gradlew assembleFullDebug      # Debug build
+
+# Play Store flavor (limited app visibility, no QUERY_ALL_PACKAGES)
+./gradlew assemblePlayDebug
+
+# Tests
+./gradlew testFullDebugUnitTest
 ```
 
-## Configuration
+**Signing**: Set env vars `KEYSTORE_FILE`, `STORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` or falls back to debug keystore.
 
-### Blocklist Sources
-Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Add custom URL sources via Settings → Sources in standard hosts file format.
-
-### Automation API
-Broadcast intents for Tasker/MacroDroid (requires signature permission or ADB grant):
-
-```bash
-adb shell am broadcast -a com.hostshield.action.ENABLE -n com.hostshield/.service.AutomationReceiver
-adb shell am broadcast -a com.hostshield.action.DISABLE -n com.hostshield/.service.AutomationReceiver
-adb shell am broadcast -a com.hostshield.action.STATUS -n com.hostshield/.service.AutomationReceiver
-adb shell am broadcast -a com.hostshield.action.REFRESH_BLOCKLIST -n com.hostshield/.service.AutomationReceiver
-```
-
-## FAQ
-
-**VPN mode vs Root mode?** Root mode: zero battery overhead, requires rooted device. VPN mode: works on any device, ~1-3% battery, persistent notification.
-
-**Why does it use a VPN?** Entirely local — no traffic goes to a remote server. Standard technique used by NetGuard, RethinkDNS, Blokada.
-
-**How is this different from AdAway?** CNAME cloaking detection, DNS response caching, DoH with cert pinning, per-app firewall, live query streaming, 7-day trend charts, and modern Material 3 dark UI.
+**CI/CD**: `.github/workflows/release.yml` triggers on tag push (`v*`) — builds, signs, and uploads APK to GitHub Releases.
 
 ## Project Structure
 
 ```
 app/src/main/java/com/hostshield/
-├── data/           # Room DB, DAOs, entities, preferences, repository
-├── di/             # Hilt dependency injection modules
-├── domain/         # BlocklistHolder (trie), HostsParser
-├── service/        # VPN, root logger, iptables, DoH, DNS cache,
-│                   # CNAME detector, packet builder, workers
-├── ui/screens/     # Home, Logs, Stats, Settings, Firewall,
-│                   # Onboarding, DNS Tools, Rules
-└── util/           # Root utils, backup, import/export, diagnostics
+├── data/
+│   ├── database/      # Room DB, DAOs, converters, migrations (v1-v12)
+│   ├── model/         # Entities (11 tables), enums
+│   ├── preferences/   # DataStore preferences (AppPreferences)
+│   ├── repository/    # HostShieldRepository
+│   └── source/        # SourceDownloader
+├── di/                # Hilt modules (DatabaseModule — DB + OkHttpClient singleton)
+├── domain/
+│   ├── BlocklistHolder.kt    # Trie + hash set + regex + wildcard engine
+│   └── parser/
+│       ├── HostsParser.kt    # Hosts file parser with wildcard support
+│       └── AdblockRuleParser.kt # Adblock-syntax parser (||, @@, $important)
+├── service/
+│   ├── DnsVpnService.kt      # VPN packet loop (~2700 lines)
+│   ├── DnsCache.kt           # LRU + serve-stale + prefetch + negative/failure cache
+│   ├── DnsPacketBuilder.kt   # DNS wire format builder/parser
+│   ├── DohResolver.kt        # DoH with smart latency failover
+│   ├── DotResolver.kt        # DoT (RFC 7858, TLSv1.3, 4 providers)
+│   ├── DoqResolver.kt        # DoQ (RFC 9250, QUIC Initial, 3 providers)
+│   ├── WireGuardProxy.kt     # DNS-over-WireGuard (Noise_IKpsk2, AES-256-GCM)
+│   ├── CnameCloakDetector.kt # CNAME + SVCB/HTTPS cloak detection
+│   ├── LocalDnsServer.kt     # LAN DNS server on port 5353
+│   ├── DnsProxyService.kt    # No-VPN proxy mode DNS blocking
+│   ├── ContentFilterManager.kt # 15 content filter categories
+│   ├── ParentalControlManager.kt # Age-profile parental controls + PIN
+│   ├── AppDnsRuleEngine.kt   # Per-app domain DNS rules
+│   ├── ConnectionTracker.kt  # Real-time per-app connection tracking
+│   ├── ThreatIntelManager.kt # Threat intel feeds + radix trie IP lookup
+│   ├── RootDnsService.kt     # Root-mode DNS proxy
+│   ├── IptablesManager.kt    # Per-app firewall rule management
+│   ├── AutomationReceiver.kt # Broadcast intent API
+│   └── *Worker.kt            # HostsUpdate, AutoBackup, LogCleanup, etc.
+├── ui/
+│   ├── navigation/    # Compose navigation graph
+│   ├── screens/       # 31+ screens (Home, Logs, Stats, Settings, Firewall, ...)
+│   ├── components/    # Vico charts, Lottie animations, animated log feed
+│   ├── widget/        # Glance widgets (toggle + stats)
+│   └── theme/         # Material 3 theme + accent colors
+└── util/
+    ├── OfflineGeoIp.kt        # MaxMind GeoLite2 offline lookups
+    ├── TlsFingerprinter.kt    # JA3/JA4 TLS ClientHello fingerprinting
+    ├── TrackerSignatureDb.kt   # Exodus-style APK tracker scanner
+    ├── EncryptedBackup.kt      # AES-256-GCM encrypted backups
+    ├── WebDavSync.kt           # WebDAV cloud sync
+    ├── QrConfigSharing.kt      # QR code config sharing (GZIP+Base64)
+    ├── CrashReporter.kt        # Custom crash reporting
+    ├── DnsBenchmark.kt         # DNS resolver latency benchmark
+    ├── ImportExportUtil.kt     # Multi-format import/export
+    ├── DiagnosticExporter.kt   # One-tap diagnostic report
+    └── RootUtil.kt             # Root detection + binary management
 ```
 
-## Contributing
+## Key Features
 
-Issues and PRs welcome. Run `./gradlew testFullDebugUnitTest` before submitting.
+- **3 Blocking Modes**: VPN (no root), Root (iptables), Proxy (no-VPN no-root)
+- **DNS Blocking**: Trie + hash set + regex + wildcard, 200K+ domains, filter decision cache
+- **Encrypted DNS**: DoH (RFC 8484), DoT (RFC 7858), DoQ (RFC 9250), WireGuard — with smart latency failover
+- **DNS Cache**: 2000-entry LRU, serve-stale (RFC 8767), negative caching (RFC 2308), SERVFAIL caching (RFC 9520), prefetching
+- **CNAME Cloaking Detection**: Full CNAME chain + SVCB/HTTPS inspection with dedicated AdGuard/NextDNS databases
+- **Per-App Firewall**: iptables Wi-Fi/mobile/VPN per-app rules (root)
+- **Content Filtering**: 15 toggleable categories + parental controls with PIN lock
+- **Privacy Analysis**: Tracker SDK scanning (405 signatures), A-F privacy grades, threat intel feeds
+- **Offline GeoIP**: MaxMind GeoLite2 Country + ASN — unlimited, zero-latency
+- **31+ Screens**: Modern Material 3 Compose UI with Vico charts, Lottie animations, Glance widgets
+- **Automation**: Tasker/MacroDroid broadcast API, scheduled blocking, network-aware profiles
 
 ## License
 
-GPL-3.0
+[GPL-3.0](../LICENSE)
