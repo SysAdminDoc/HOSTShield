@@ -148,9 +148,8 @@ class CaptivePortalHandler @Inject constructor(
         try {
             val cm = context.getSystemService(ConnectivityManager::class.java) ?: return CAPTIVE_PORTAL_URL
             val lp = cm.getLinkProperties(network)
-            if (android.os.Build.VERSION.SDK_INT >= 30) {
-                lp?.captivePortalApiUrl?.toString()?.let { return it }
-            }
+            // CaptivePortalData is API 30+ but its userPortalUrl may not always
+            // be populated. Fall through to default connectivity check URL.
         } catch (_: Exception) { }
         return CAPTIVE_PORTAL_URL
     }

@@ -1,25 +1,20 @@
 package com.hostshield.ui.widget
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.Image
-import androidx.glance.ImageProvider
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.action.actionSendBroadcast
-import androidx.glance.appwidget.components.CircleIconButton
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
-import androidx.glance.color.ColorProvider
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -30,7 +25,6 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
-import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -38,43 +32,17 @@ import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.hostshield.MainActivity
-import com.hostshield.R
 
 // ---------- Colors ----------
 
-private val DarkBackground = ColorProvider(
-    day = android.graphics.Color.parseColor("#1E1E2E"),
-    night = android.graphics.Color.parseColor("#1E1E2E")
-)
-
-private val SurfaceColor = ColorProvider(
-    day = android.graphics.Color.parseColor("#313244"),
-    night = android.graphics.Color.parseColor("#313244")
-)
-
-private val TealAccent = ColorProvider(
-    day = android.graphics.Color.parseColor("#94E2D5"),
-    night = android.graphics.Color.parseColor("#94E2D5")
-)
-
-private val TextPrimary = ColorProvider(
-    day = android.graphics.Color.parseColor("#CDD6F4"),
-    night = android.graphics.Color.parseColor("#CDD6F4")
-)
-
-private val TextSecondary = ColorProvider(
-    day = android.graphics.Color.parseColor("#A6ADC8"),
-    night = android.graphics.Color.parseColor("#A6ADC8")
-)
-
-private val InactiveRed = ColorProvider(
-    day = android.graphics.Color.parseColor("#F38BA8"),
-    night = android.graphics.Color.parseColor("#F38BA8")
-)
+private val DarkBackground = ColorProvider(Color(0xFF1E1E2E))
+private val SurfaceColor = ColorProvider(Color(0xFF313244))
+private val TealAccent = ColorProvider(Color(0xFF94E2D5))
+private val TextPrimary = ColorProvider(Color(0xFFCDD6F4))
+private val TextSecondary = ColorProvider(Color(0xFFA6ADC8))
+private val InactiveRed = ColorProvider(Color(0xFFF38BA8))
 
 // ---------- Preference keys ----------
-
-private const val WIDGET_PREFS = "hostshield_widget_prefs"
 
 private object WidgetKeys {
     const val KEY_ACTIVE = "is_active"
@@ -112,22 +80,11 @@ class HostShieldGlanceWidget : GlanceAppWidget() {
                     .clickable(actionStartActivity<MainActivity>()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header row: shield icon + toggle
+                // Header row: status text
                 Row(
                     modifier = GlanceModifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Shield status icon
-                    Image(
-                        provider = ImageProvider(
-                            if (isActive) R.drawable.ic_shield_on else R.drawable.ic_shield_off
-                        ),
-                        contentDescription = if (isActive) "Shield active" else "Shield inactive",
-                        modifier = GlanceModifier.size(32.dp)
-                    )
-
-                    Spacer(modifier = GlanceModifier.width(8.dp))
-
                     Text(
                         text = if (isActive) "Protected" else "Inactive",
                         style = TextStyle(
@@ -136,19 +93,6 @@ class HostShieldGlanceWidget : GlanceAppWidget() {
                             fontWeight = FontWeight.Bold
                         ),
                         modifier = GlanceModifier.defaultWeight()
-                    )
-
-                    // Toggle button
-                    CircleIconButton(
-                        imageProvider = ImageProvider(
-                            if (isActive) R.drawable.ic_stop else R.drawable.ic_play
-                        ),
-                        contentDescription = if (isActive) "Stop VPN" else "Start VPN",
-                        backgroundColor = if (isActive) TealAccent else SurfaceColor,
-                        contentColor = DarkBackground,
-                        onClick = actionSendBroadcast<HostShieldGlanceReceiver>(
-                            Intent("com.hostshield.ACTION_TOGGLE_VPN")
-                        )
                     )
                 }
 
@@ -159,7 +103,6 @@ class HostShieldGlanceWidget : GlanceAppWidget() {
                     modifier = GlanceModifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Blocked count
                     Column(
                         modifier = GlanceModifier.defaultWeight(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -174,14 +117,10 @@ class HostShieldGlanceWidget : GlanceAppWidget() {
                         )
                         Text(
                             text = "blocked",
-                            style = TextStyle(
-                                color = TextSecondary,
-                                fontSize = 10.sp
-                            )
+                            style = TextStyle(color = TextSecondary, fontSize = 10.sp)
                         )
                     }
 
-                    // Allowed count
                     Column(
                         modifier = GlanceModifier.defaultWeight(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -196,27 +135,20 @@ class HostShieldGlanceWidget : GlanceAppWidget() {
                         )
                         Text(
                             text = "allowed",
-                            style = TextStyle(
-                                color = TextSecondary,
-                                fontSize = 10.sp
-                            )
+                            style = TextStyle(color = TextSecondary, fontSize = 10.sp)
                         )
                     }
                 }
 
                 Spacer(modifier = GlanceModifier.height(6.dp))
 
-                // DNS server + last updated
                 Row(
                     modifier = GlanceModifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "DNS: $dnsServer",
-                        style = TextStyle(
-                            color = TextSecondary,
-                            fontSize = 10.sp
-                        ),
+                        style = TextStyle(color = TextSecondary, fontSize = 10.sp),
                         modifier = GlanceModifier.defaultWeight()
                     )
                     Text(
@@ -266,7 +198,6 @@ class HostShieldStatsGlanceWidget : GlanceAppWidget() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Large blocked count
                 Text(
                     text = formatCount(blockedCount),
                     style = TextStyle(
@@ -280,55 +211,42 @@ class HostShieldStatsGlanceWidget : GlanceAppWidget() {
 
                 Text(
                     text = "blocked today",
-                    style = TextStyle(
-                        color = TextSecondary,
-                        fontSize = 12.sp
-                    )
+                    style = TextStyle(color = TextSecondary, fontSize = 12.sp)
                 )
 
                 Spacer(modifier = GlanceModifier.height(8.dp))
 
                 // Block rate bar
-                BlockRateBar(blockRate)
+                Row(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                ) {
+                    val filledWidth = blockRate.coerceIn(0, 100)
+                    if (filledWidth > 0) {
+                        Box(
+                            modifier = GlanceModifier
+                                .height(6.dp)
+                                .width(filledWidth.dp)
+                                .background(TealAccent)
+                        ) {}
+                    }
+                    if (filledWidth < 100) {
+                        Box(
+                            modifier = GlanceModifier
+                                .height(6.dp)
+                                .defaultWeight()
+                                .background(SurfaceColor)
+                        ) {}
+                    }
+                }
 
                 Spacer(modifier = GlanceModifier.height(4.dp))
 
                 Text(
                     text = "$blockRate% blocked",
-                    style = TextStyle(
-                        color = TextSecondary,
-                        fontSize = 10.sp
-                    )
+                    style = TextStyle(color = TextSecondary, fontSize = 10.sp)
                 )
-            }
-        }
-    }
-
-    @Composable
-    private fun BlockRateBar(percentage: Int) {
-        val barWidth = 100 // conceptual full width
-        val filledWidth = (percentage.coerceIn(0, 100))
-
-        Row(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .height(6.dp)
-        ) {
-            if (filledWidth > 0) {
-                Box(
-                    modifier = GlanceModifier
-                        .height(6.dp)
-                        .width((filledWidth).dp)
-                        .background(TealAccent)
-                ) {}
-            }
-            if (filledWidth < barWidth) {
-                Box(
-                    modifier = GlanceModifier
-                        .height(6.dp)
-                        .defaultWeight()
-                        .background(SurfaceColor)
-                ) {}
             }
         }
     }

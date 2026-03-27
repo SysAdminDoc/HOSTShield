@@ -93,7 +93,7 @@ class QrConfigViewModel @Inject constructor(
 
     private suspend fun buildCurrentConfig(): ShareableConfig {
         val customDns = prefs.customUpstreamDns.first()
-        val dohEnabled = prefs.useDoH.first()
+        val dohEnabled = prefs.dohEnabled.first()
         val dohProvider = prefs.dohProvider.first()
         // Get user rules from repository (simplified — uses custom DNS as proxy)
         return ShareableConfig(

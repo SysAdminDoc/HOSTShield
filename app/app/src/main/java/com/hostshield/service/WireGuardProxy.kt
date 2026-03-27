@@ -137,7 +137,7 @@ class WireGuardProxy @Inject constructor() {
             }
 
             val msgType = readUint32LE(recvBuf, 0)
-            if (msgType != HANDSHAKE_RESPONSE) {
+            if (msgType != HANDSHAKE_RESPONSE.toLong()) {
                 Log.w(TAG, "Unexpected message type: $msgType")
                 return@withContext false
             }

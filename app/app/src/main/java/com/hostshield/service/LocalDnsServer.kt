@@ -156,7 +156,7 @@ class LocalDnsServer @Inject constructor(
         }
     }
 
-    private fun forwardToUpstream(query: ByteArray): ByteArray? {
+    private suspend fun forwardToUpstream(query: ByteArray): ByteArray? {
         // Try encrypted DNS first (DoT > DoH, matching VPN priority)
         if (useDoT) {
             try {

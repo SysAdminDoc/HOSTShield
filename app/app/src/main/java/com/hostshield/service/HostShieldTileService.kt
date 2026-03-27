@@ -69,6 +69,9 @@ class HostShieldTileService : TileService() {
                     BlockMethod.ROOT_HOSTS -> {
                         RootDnsService.stop(this@HostShieldTileService)
                     }
+                    BlockMethod.DNS_PROXY -> {
+                        stopService(Intent(this@HostShieldTileService, DnsProxyService::class.java))
+                    }
                     BlockMethod.DISABLED -> { }
                 }
                 prefs.setEnabled(false)
@@ -84,6 +87,9 @@ class HostShieldTileService : TileService() {
                     }
                     BlockMethod.ROOT_HOSTS -> {
                         RootDnsService.start(this@HostShieldTileService)
+                    }
+                    BlockMethod.DNS_PROXY -> {
+                        startForegroundService(Intent(this@HostShieldTileService, DnsProxyService::class.java))
                     }
                     BlockMethod.DISABLED -> { }
                 }

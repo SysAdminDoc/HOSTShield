@@ -458,12 +458,11 @@ class DnsVpnService : VpnService() {
                     val host = parts.getOrElse(0) { "" }
                     val port = parts.getOrElse(1) { "51820" }.toIntOrNull() ?: 51820
                     val config = WireGuardProxy.WgConfig(
-                        endpoint = host,
-                        port = port,
-                        privateKey = wgPrivKey,
-                        publicKey = wgPubKey,
-                        presharedKey = wgPsk.ifBlank { null },
-                        dnsServerIp = wgDnsIp.ifBlank { "1.1.1.1" }
+                        privateKey = android.util.Base64.decode(wgPrivKey, android.util.Base64.NO_WRAP),
+                        peerPublicKey = android.util.Base64.decode(wgPubKey, android.util.Base64.NO_WRAP),
+                        presharedKey = if (wgPsk.isBlank()) null else android.util.Base64.decode(wgPsk, android.util.Base64.NO_WRAP),
+                        endpoint = "$host:$port",
+                        dnsServer = wgDnsIp.ifBlank { "1.1.1.1" }
                     )
                     try {
                         wireGuardProxy.connect(config)
