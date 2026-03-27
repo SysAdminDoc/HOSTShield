@@ -98,6 +98,13 @@
 -keep class com.hostshield.service.ThreatIntelWorker { *; }
 -keep class com.hostshield.service.SafeSearchEnforcer { *; }
 
+# ── v6.3: Google Tink / EncryptedSharedPreferences ────────
+-dontwarn com.google.errorprone.annotations.CanIgnoreReturnValue
+-dontwarn com.google.errorprone.annotations.CheckReturnValue
+-dontwarn com.google.errorprone.annotations.Immutable
+-dontwarn com.google.errorprone.annotations.RestrictedApi
+-keep class com.hostshield.data.preferences.SecureStore { *; }
+
 # ── v5.0: MaxMind GeoIP2 ──────────────────────────────────
 -dontwarn com.maxmind.**
 -keep class com.maxmind.** { *; }
