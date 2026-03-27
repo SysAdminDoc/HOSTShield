@@ -3,3 +3,4 @@ app/.gradle/
 app/local.properties
 *.keystore
 *.apk
+com/
