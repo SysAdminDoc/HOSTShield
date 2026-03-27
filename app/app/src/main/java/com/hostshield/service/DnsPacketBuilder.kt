@@ -127,7 +127,7 @@ object DnsPacketBuilder {
             pos += 1 + len
         }
         if (pos + 2 > dns.size) return -1
-        return (dns[pos].toInt() and 0xFF shl 8) or (dns[pos + 1].toInt() and 0xFF)
+        return ((dns[pos].toInt() and 0xFF) shl 8) or (dns[pos + 1].toInt() and 0xFF)
     }
 
     /**

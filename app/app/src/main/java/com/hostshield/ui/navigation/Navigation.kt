@@ -46,4 +46,11 @@ object SubScreen {
     const val BLOCKLIST_GALLERY = "blocklist_gallery"
     const val AUTOMATION_AUDIT = "automation_audit"
     const val APP_LOGS = "app_logs" // arg: ?pkg=com.example.app
+    const val CONTENT_FILTER = "content_filter"
+    const val PARENTAL_CONTROLS = "parental_controls"
+    const val DNS_BENCHMARK = "dns_benchmark"
+    const val WEBDAV_SYNC = "webdav_sync"
+    const val CRASH_REPORTS = "crash_reports"
+    const val QR_CONFIG = "qr_config"
+    const val TLS_FINGERPRINTS = "tls_fingerprints"
 }

@@ -101,7 +101,10 @@ class HostShieldTileService : TileService() {
         tile.label = "HostShield"
         tile.subtitle = when {
             !isEnabled -> "Off"
-            method == BlockMethod.VPN -> "VPN"
+            method == BlockMethod.VPN -> {
+                val count = DnsVpnService.currentBlockedCount
+                if (count > 0) "$count blocked today" else "VPN"
+            }
             method == BlockMethod.ROOT_HOSTS -> "Root"
             else -> "Off"
         }

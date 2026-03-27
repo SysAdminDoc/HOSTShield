@@ -460,14 +460,15 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             containerColor = Surface1,
             scrimColor = Color.Black.copy(alpha = 0.6f)
         ) {
+            val entry = selectedEntry ?: return@ModalBottomSheet
             QueryDetailSheet(
-                entry = selectedEntry!!,
+                entry = entry,
                 onDismiss = { selectedEntry = null },
-                isPinned = selectedEntry!!.hostname in pinnedSet,
-                onTogglePin = { viewModel.togglePin(selectedEntry!!.hostname) },
-                onTemporaryAllow = { mins -> viewModel.temporaryAllow(selectedEntry!!.hostname, mins) },
-                onBlock = { viewModel.blockDomain(selectedEntry!!.hostname) },
-                onAllow = { viewModel.allowDomain(selectedEntry!!.hostname) },
+                isPinned = entry.hostname in pinnedSet,
+                onTogglePin = { viewModel.togglePin(entry.hostname) },
+                onTemporaryAllow = { mins -> viewModel.temporaryAllow(entry.hostname, mins) },
+                onBlock = { viewModel.blockDomain(entry.hostname) },
+                onAllow = { viewModel.allowDomain(entry.hostname) },
                 geoIpLookup = viewModel.geoIpLookup
             )
         }

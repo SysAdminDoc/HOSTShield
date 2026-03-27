@@ -65,7 +65,14 @@ data class SettingsUiState(
     val scheduleStart: String = "22:00",
     val scheduleEnd: String = "07:00",
     val scheduleMode: String = "block",
-    val customUpstreamDns: String = ""
+    val customUpstreamDns: String = "",
+    val dotEnabled: Boolean = false,
+    val dotProvider: String = "cloudflare",
+    val doqEnabled: Boolean = false,
+    val doqProvider: String = "adguard",
+    val wireGuardEnabled: Boolean = false,
+    val wireGuardEndpoint: String = "",
+    val wireGuardDnsIp: String = "",
 )
 
 @HiltViewModel
@@ -116,6 +123,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { prefs.scheduleEnd.collect { v -> _uiState.update { it.copy(scheduleEnd = v) } } }
         viewModelScope.launch { prefs.scheduleMode.collect { v -> _uiState.update { it.copy(scheduleMode = v) } } }
         viewModelScope.launch { prefs.customUpstreamDns.collect { v -> _uiState.update { it.copy(customUpstreamDns = v) } } }
+        viewModelScope.launch { prefs.dotEnabled.collect { v -> _uiState.update { it.copy(dotEnabled = v) } } }
+        viewModelScope.launch { prefs.dotProvider.collect { v -> _uiState.update { it.copy(dotProvider = v) } } }
+        viewModelScope.launch { prefs.doqEnabled.collect { v -> _uiState.update { it.copy(doqEnabled = v) } } }
+        viewModelScope.launch { prefs.doqProvider.collect { v -> _uiState.update { it.copy(doqProvider = v) } } }
+        viewModelScope.launch { prefs.wireGuardEnabled.collect { v -> _uiState.update { it.copy(wireGuardEnabled = v) } } }
+        viewModelScope.launch { prefs.wireGuardEndpoint.collect { v -> _uiState.update { it.copy(wireGuardEndpoint = v) } } }
+        viewModelScope.launch { prefs.wireGuardDnsIp.collect { v -> _uiState.update { it.copy(wireGuardDnsIp = v) } } }
         viewModelScope.launch(Dispatchers.IO) {
             val available = rootUtil.isRootAvailable()
             _uiState.update { it.copy(isRootAvailable = available) }
@@ -206,6 +220,17 @@ class SettingsViewModel @Inject constructor(
     }
     fun setScheduleMode(mode: String) { viewModelScope.launch { prefs.setScheduleMode(mode) } }
     fun setCustomUpstreamDns(dns: String) { viewModelScope.launch { prefs.setCustomUpstreamDns(dns.trim()) } }
+
+    fun setDotEnabled(v: Boolean) { viewModelScope.launch { prefs.setDotEnabled(v) } }
+    fun setDotProvider(provider: String) { viewModelScope.launch { prefs.setDotProvider(provider) } }
+    fun setDoqEnabled(v: Boolean) { viewModelScope.launch { prefs.setDoqEnabled(v) } }
+    fun setDoqProvider(provider: String) { viewModelScope.launch { prefs.setDoqProvider(provider) } }
+    fun setWireGuardEnabled(v: Boolean) { viewModelScope.launch { prefs.setWireGuardEnabled(v) } }
+    fun setWireGuardEndpoint(endpoint: String) { viewModelScope.launch { prefs.setWireGuardEndpoint(endpoint.trim()) } }
+    fun setWireGuardDnsIp(ip: String) { viewModelScope.launch { prefs.setWireGuardDnsIp(ip.trim()) } }
+    fun setWireGuardPrivateKey(key: String) { viewModelScope.launch { prefs.setWireGuardPrivateKey(key.trim()) } }
+    fun setWireGuardPublicKey(key: String) { viewModelScope.launch { prefs.setWireGuardPublicKey(key.trim()) } }
+    fun setWireGuardPresharedKey(key: String) { viewModelScope.launch { prefs.setWireGuardPresharedKey(key.trim()) } }
 
     fun clearDnsCache() {
         com.hostshield.service.DnsVpnService.clearCacheCallback?.invoke()

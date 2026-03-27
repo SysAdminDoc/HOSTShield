@@ -116,7 +116,7 @@ class StatsViewModel @Inject constructor(
     /** Poll DNS cache stats from DnsVpnService every 5 seconds. */
     private fun pollCacheStats() {
         viewModelScope.launch {
-            while (true) {
+            while (isActive) {
                 val stats = com.hostshield.service.DnsVpnService.currentCacheStats
                 if (stats != null) {
                     _uiState.update { it.copy(

@@ -1,4 +1,4 @@
-// HostShield v5.0.0
+// HostShield v6.2.0
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,8 +15,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 35
-        versionCode = 49
-        versionName = "5.0.0"
+        versionCode = 55
+        versionName = "6.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -145,8 +145,24 @@ dependencies {
     // DataStore for preferences
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
+    // Custom Tabs (captive portal login)
+    implementation("androidx.browser:browser:1.8.0")
+
     // Splash screen
     implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // v6.1: Vico chart library (Roadmap #26)
+    implementation("com.patrykandpatrick.vico:compose-m3:2.0.1")
+
+    // v6.1: Lottie animations (Roadmap #27)
+    implementation("com.airbnb.android:lottie-compose:6.6.2")
+
+    // v6.1: Jetpack Glance widgets (Roadmap #29)
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.glance:glance-material3:1.1.1")
+
+    // v6.2: QR code generation for config sharing (Roadmap #38)
+    implementation("com.google.zxing:core:3.5.3")
 
     // v5.0: MaxMind GeoIP2 for offline GeoIP lookups (replaces ip-api.com rate-limited API)
     // Bundled GeoLite2-Country.mmdb (~6MB) + GeoLite2-ASN.mmdb (~8MB)

@@ -619,7 +619,7 @@ class RootDnsLogger @Inject constructor(
                 pos += 1 + len
             }
             if (pos + 2 > data.size) return "A"
-            val qt = (data[pos].toInt() and 0xFF shl 8) or (data[pos + 1].toInt() and 0xFF)
+            val qt = ((data[pos].toInt() and 0xFF) shl 8) or (data[pos + 1].toInt() and 0xFF)
             return when (qt) { 1 -> "A"; 28 -> "AAAA"; 5 -> "CNAME"; 65 -> "HTTPS"; else -> "TYPE$qt" }
         } catch (_: Exception) { return "A" }
     }

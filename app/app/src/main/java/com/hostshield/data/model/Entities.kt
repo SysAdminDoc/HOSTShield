@@ -13,7 +13,7 @@ enum class RuleType {
 }
 
 enum class BlockMethod {
-    ROOT_HOSTS, VPN, DISABLED
+    ROOT_HOSTS, VPN, DNS_PROXY, DISABLED
 }
 
 enum class SourceHealth {
@@ -79,7 +79,9 @@ data class DnsLogEntry(
     @ColumnInfo(name = "response_time_ms") val responseTimeMs: Int = 0,
     @ColumnInfo(name = "upstream_server") val upstreamServer: String = "",
     @ColumnInfo(name = "cname_chain") val cnameChain: String = "",   // comma-separated CNAME targets
-    @ColumnInfo(name = "resolved_ips") val resolvedIps: String = ""  // comma-separated answer IPs
+    @ColumnInfo(name = "resolved_ips") val resolvedIps: String = "",  // comma-separated answer IPs
+    @ColumnInfo(name = "tracker_category") val trackerCategory: String = "",  // v6.0: network tracker category (Advertising, Analytics, etc.)
+    @ColumnInfo(name = "tracker_owner") val trackerOwner: String = ""  // v6.0: tracker owner (Google, Facebook, etc.)
 )
 
 @Entity(tableName = "block_stats")
@@ -120,7 +122,13 @@ data class FirewallRule(
     // Context-aware firewall: block when screen is off or app is in background
     @ColumnInfo(name = "block_screen_off") val blockScreenOff: Boolean = false,
     @ColumnInfo(name = "block_background") val blockBackground: Boolean = false,
-    @ColumnInfo(name = "block_metered") val blockMetered: Boolean = false
+    @ColumnInfo(name = "block_metered") val blockMetered: Boolean = false,
+    // v5.1: Country-based blocking — comma-separated ISO country codes (e.g., "CN,RU,IR")
+    // When non-empty, connections to IPs in these countries are blocked for this app.
+    @ColumnInfo(name = "blocked_countries", defaultValue = "") val blockedCountries: String = "",
+    // v5.1: LAN access control — allow/deny local network while blocking internet
+    // Inspired by AFWall+'s dedicated LAN toggle per app.
+    @ColumnInfo(name = "lan_allowed", defaultValue = "1") val lanAllowed: Boolean = true
 )
 
 @Entity(
@@ -153,6 +161,19 @@ data class TrackerScanCacheEntry(
     @ColumnInfo(name = "categories") val categories: String = "",           // comma-separated
     @ColumnInfo(name = "scanned_at") val scannedAt: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "app_version_code") val appVersionCode: Long = 0     // invalidate on app update
+)
+
+@Entity(
+    tableName = "app_dns_rules",
+    indices = [Index(value = ["package_name", "domain"], unique = true)]
+)
+data class AppDnsRule(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "package_name") val packageName: String,
+    @ColumnInfo(name = "domain") val domain: String,      // domain pattern (exact or wildcard like *.facebook.com)
+    @ColumnInfo(name = "action") val action: String,       // "block" or "allow"
+    @ColumnInfo(name = "enabled") val enabled: Boolean = true,
+    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis()
 )
 
 @Entity(

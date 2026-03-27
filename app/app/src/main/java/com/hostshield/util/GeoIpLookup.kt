@@ -95,17 +95,20 @@ class GeoIpLookup @Inject constructor() {
                     .url("http://ip-api.com/json/$ip?fields=status,country,countryCode,city,isp,org,as")
                     .build()
                 val response = client.newCall(request).execute()
+                val body: String
+                try {
+                    if (response.code == 429) {
+                        applyBackoff()
+                        return@withContext null
+                    }
 
-                if (response.code == 429) {
+                    // Successful response resets backoff
+                    consecutiveBackoffs.set(0)
+
+                    body = response.body?.string() ?: return@withContext null
+                } finally {
                     response.close()
-                    applyBackoff()
-                    return@withContext null
                 }
-
-                // Successful response resets backoff
-                consecutiveBackoffs.set(0)
-
-                val body = response.body?.string() ?: return@withContext null
                 val json = JSONObject(body)
                 if (json.optString("status") != "success") return@withContext null
 

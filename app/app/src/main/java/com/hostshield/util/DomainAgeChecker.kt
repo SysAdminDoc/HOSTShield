@@ -47,13 +47,15 @@ class DomainAgeChecker @Inject constructor() {
                 .build()
 
             val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
+            val body: String?
+            try {
+                if (!response.isSuccessful) {
+                    return@withContext DomainAge(domain, error = "RDAP lookup failed (${response.code})")
+                }
+                body = response.body?.string()?.take(10_000)
+            } finally {
                 response.close()
-                return@withContext DomainAge(domain, error = "RDAP lookup failed (${response.code})")
             }
-
-            val body = response.body?.string()?.take(10_000)
-            response.close()
 
             if (body.isNullOrBlank()) return@withContext DomainAge(domain, error = "Empty response")
 

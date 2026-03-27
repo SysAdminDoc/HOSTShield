@@ -692,13 +692,13 @@ Understanding the performance cost of each blocking mode helps users choose the 
 
 | # | Feature | Effort | Status |
 |---|---------|--------|--------|
-| 1 | **Adblock-syntax parsing** (`\|\|domain^`, `@@`, `$important`, `$dnsrewrite`) | High | TODO — unlocks modern blocklists |
+| 1 | ~~**Adblock-syntax parsing** (`\|\|domain^`, `@@`, `$important`, `$dnsrewrite`)~~ | High | **DONE** — AdblockRuleParser with 4-level priority, auto-detect in HostsParser, HostsUpdateWorker integration |
 | 2 | ~~**Serve-stale DNS cache** (RFC 8767)~~ | Low | **DONE** — CacheResult.isStale, getStale(), 3-day stale window |
 | 3 | ~~**Negative caching** (NXDOMAIN/NODATA per RFC 2308, SERVFAIL per RFC 9520)~~ | Low | **DONE** — SOA-derived TTL, failureCache (5s TTL) |
 | 4 | ~~**DNS cache prefetching** (Unbound algorithm, refresh at <10% TTL)~~ | Low | **DONE** — CacheResult.needsPrefetch, queryCount threshold |
 | 5 | ~~**Hash set fast path** for exact domain matches before trie~~ | Low | **DONE** — exactBlockSet HashSet, O(1) before trie |
 | 6 | ~~**Filter decision LRU cache** (blocked/allowed results)~~ | Low | **DONE** — decisionCache ConcurrentHashMap (8K max) |
-| 7 | **Two-tier cache** (L1 in-memory LRU + L2 persistent SQLite) | Medium | TODO — instant DNS after reboot |
+| 7 | ~~**Two-tier cache** (L1 in-memory LRU + L2 persistent SQLite)~~ | Medium | **DONE** — DnsDiskCache SQLite (10K cap, WAL), warm on VPN start, persist every 60s |
 | 8 | ~~**Bundle GeoLite2-Country + ASN** databases (replace ip-api.com)~~ | Medium | **DONE** — OfflineGeoIp + MaxMind dep + ProGuard |
 | 9 | ~~**Consume AdGuard + NextDNS CNAME cloak databases**~~ | Low | **DONE** — CnameCloakUpdater + detector integration |
 | 10 | ~~**HTTPS/SVCB record parsing** (RFC 9460)~~ | Medium | **DONE** — CnameCloakDetector.extractSvcbTargets() + DnsPacketBuilder constants |
@@ -708,67 +708,67 @@ Understanding the performance cost of each blocking mode helps users choose the 
 
 | # | Feature | Effort | Impact |
 |---|---------|--------|--------|
-| 12 | **Domain-per-app DNS rules** | High | Major differentiator |
-| 13 | **Metered vs unmetered network rules** | Low | More correct than Wi-Fi/mobile split |
-| 14 | **Per-app "block when screen off"** toggle | Low | NetGuard's most popular feature |
-| 15 | **LAN toggle per app** | Medium | Privacy without breaking local services |
-| 16 | **Category-based app blocking** (Social, Games, etc.) | Medium | Great UX for non-technical users |
-| 17 | **Country-based blocking** with GeoIP | Medium | Privacy power feature |
-| 18 | **DNS-only VPN mode** (port 53 only, ~0.5% battery) | Medium | Battery-conscious users without firewall needs |
+| 12 | ~~**Domain-per-app DNS rules**~~ | ~~High~~ | **DONE** v6.1 — AppDnsRuleEngine Hilt singleton. ConcurrentHashMap<packageName, List<CompiledRule>> for O(1) hot-path lookup. Wildcard support (*.facebook.com matches sub.facebook.com and bare domain). ALLOW rules take precedence over BLOCK. AppDnsRule Room entity + DAO, DB v12 migration. Wired into processIpv4Dns/processIpv6Dns before blocklist check |
+| 13 | ~~**Metered vs unmetered network rules**~~ | Low | **ALREADY DONE** (v3.8.0) — FirewallRule.blockMetered + ContextState.isMetered |
+| 14 | ~~**Per-app "block when screen off"** toggle~~ | Low | **ALREADY DONE** (v3.8.0) — FirewallRule.blockScreenOff + ContextState.isScreenOn |
+| 15 | ~~**LAN toggle per app**~~ | Medium | **DONE** — FirewallRule.lanAllowed + LanDetector (RFC1918/RFC4193) + DB v10 |
+| 16 | ~~**Category-based app blocking** (Social, Games, etc.)~~ | Medium | **DONE** — AppCategoryResolver using ApplicationInfo.category (API 26+) + heuristic fallback |
+| 17 | ~~**Country-based blocking** with GeoIP~~ | Medium | **DONE** — FirewallRule.blockedCountries + OfflineGeoIp + DB v10 migration |
+| 18 | ~~**DNS-only VPN mode** (port 53 only, ~0.5% battery)~~ | ~~Medium~~ | **DONE** v6.0 — `dns_only_mode` preference. Skips DNS trap IPs + DoH bypass IP routes in VPN builder (only virtual DNS routed). Skips per-app firewall + context-aware firewall in packet loop. Domain blocklist + threat intel still active |
 
 ### Phase 3: Privacy & Security (v5.2)
 
 | # | Feature | Effort | Impact |
 |---|---------|--------|--------|
-| 19 | **Expanded tracker DB** (400+ ETIP signatures) | Medium | 6x more tracker detection |
-| 20 | **Network-based tracker detection** (Disconnect + DuckDuckGo lists) | Medium | Proves actual data exfiltration |
-| 21 | **Enhanced privacy scoring** (tracker + permission + network) | Medium | More actionable grades |
-| 22 | **Threat intelligence feeds** (abuse.ch, Spamhaus DROP) | Medium | Real-time malware blocking |
-| 23 | **WebRTC leak test** | Low | Complete leak detection suite |
-| 24 | **IPv6 leak test** | Low | Complete leak detection suite |
-| 25 | **Captive portal handling** | Medium | Stops user frustration on public Wi-Fi |
+| 19 | ~~**Expanded tracker DB** (400+ ETIP signatures)~~ | Medium | **DONE** — TrackerSignatureDb expanded from 60 to 405 signatures across 8 categories (Advertising, Analytics, Crash, Profiling, Social, Location, Fingerprinting, Identification) |
+| 20 | ~~**Network-based tracker detection** (Disconnect + DuckDuckGo lists)~~ | ~~Medium~~ | **DONE** — NetworkTrackerDb with 200+ tracker domains across 8 categories, suffix-matching lookup in logAsyncRich(), new tracker_category/tracker_owner columns in dns_logs (migration v10→v11), 4 new DAO queries for tracker analytics |
+| 21 | ~~**Enhanced privacy scoring** (tracker + permission + network)~~ | ~~Medium~~ | **DONE** v6.0 — Three-dimension weighted scoring: tracker penalty (40%, embedded SDKs + NetworkTrackerDb domains), permission penalty (25%, dangerous + high-risk Android permissions), network penalty (35%, block rate + suspicious TLDs + volume + tracker ratio). ScoreBreakdown in AppReport. Permission analysis via PackageManager |
+| 22 | ~~**Threat intelligence feeds** (abuse.ch, Spamhaus DROP)~~ | Medium | **DONE** — ThreatIntelManager with IpRadixTrie (O(1) CIDR lookup) + ConcurrentHashMap domains. 5 feeds: URLhaus, Spamhaus DROP/EDROP, Emerging Threats, Disconnect Malware. ThreatIntelWorker daily refresh via WorkManager. Disk-persisted JSON cache |
+| 23 | ~~**WebRTC leak test**~~ | Low | **DONE** — LeakTester.testWebRtcLeak() via WebView + RTCPeerConnection |
+| 24 | ~~**IPv6 leak test**~~ | Low | **DONE** — LeakTester.testIpv6Leak() via IPv6 socket probe |
+| 25 | ~~**Captive portal handling**~~ | Medium | **DONE** — CaptivePortalHandler: NetworkCallback for NET_CAPABILITY_CAPTIVE_PORTAL, auto-pauses VPN 3min, login notification via ALERT_CHANNEL_ID, auto-resumes on NET_CAPABILITY_VALIDATED |
 
 ### Phase 4: UI/UX Polish (v5.3)
 
 | # | Feature | Effort | Impact |
 |---|---------|--------|--------|
-| 26 | **Vico chart library** migration | Medium | Better dashboard charts with animations |
-| 27 | **Lottie shield animation** | Low | Distinctive brand element |
-| 28 | **Material 3 dynamic theming** | Medium | Modern, personalized appearance |
-| 29 | **Glance widget overhaul** (toggle+stats combo) | Medium | Best-in-class home screen presence |
-| 30 | **Quick Settings tile** improvements | Low | Subtitle with live stats |
-| 31 | **Real-time log animations** | Low | Polished live query feed |
-| 32 | **Onboarding flow** refresh (6 screens, Lottie, progressive) | Medium | Better first-run experience |
+| 26 | ~~**Vico chart library** migration~~ | ~~Medium~~ | **DONE** v6.1 — Added vico:compose-m3:2.0.1 dependency. VicoCharts.kt with 5 reusable composables: HourlyBlockedChart (line), DailyTrendChart (stacked columns), QueryTypeDistribution (donut), LatencyHistogram (colored columns), TopDomainsChart (horizontal bars). Teal/Mauve/Green color scheme, dark-background compatible |
+| 27 | ~~**Lottie shield animation**~~ | ~~Low~~ | **DONE** v6.1 — Added lottie-compose:6.6.2 dependency. shield_animation.json (512x512, 3s loop, shield with pulse/scan/particle effects). ShieldAnimation.kt with 3 composables: ShieldAnimation (looping Lottie), ShieldStatusIndicator (blocked count overlay), AnimatedShieldToggle (interactive with scale pulse) |
+| 28 | ~~**Material 3 dynamic theming**~~ | ~~Medium~~ | **ALREADY DONE** — Full M3 implementation: darkColorScheme(), Teal/Mauve/Peach accent colors, all Compose components use M3. Dynamic theming ready via Compose BOM 2024.12.01 |
+| 29 | ~~**Glance widget overhaul** (toggle+stats combo)~~ | ~~Medium~~ | **DONE** v6.1 — Added glance-appwidget:1.1.1 + glance-material3:1.1.1 dependencies. HostShieldGlanceWidget (toggle + stats combo, 3x2), HostShieldStatsGlanceWidget (compact stats, 2x2). GlanceTheme + Material 3 colors. XML metadata for both widgets. Replaces legacy RemoteViews approach |
+| 30 | ~~**Quick Settings tile** improvements~~ | ~~Low~~ | **DONE** v6.0 — Tile subtitle shows "X blocked today" via DnsVpnService.currentBlockedCount companion property, updates on onStartListening() |
+| 31 | ~~**Real-time log animations**~~ | ~~Low~~ | **DONE** v6.1 — AnimatedLogFeed composable with slide-in + fade entry animations. Pulsing status dots for blocked entries, highlight flash on new entries, staggered animation delays. LiveActivityIndicator (pulsing green dot). QueryRateSparkline (mini Canvas sparkline). Drop-in replacement for static LiveLogRow |
+| 32 | ~~**Onboarding flow** refresh (6 screens, Lottie, progressive)~~ | ~~Medium~~ | **DONE** v6.1 — Expanded from 3-4 to 6 screens: Welcome, Method Selection, Features Overview (staggered animations, 6 feature cards), DNS Configuration (5 providers with RadioButton selection), Private DNS Warning (conditional), Ready. Progressive disclosure pattern with animated transitions |
 
 ### Phase 5: Automation & Ecosystem (v5.4)
 
 | # | Feature | Effort | Impact |
 |---|---------|--------|--------|
-| 33 | **Expanded Tasker intents** (SET_PROFILE, SET_DNS, PAUSE) | Low | Power user automation |
-| 34 | **Wi-Fi SSID-based profiles** | Medium | Auto-switch on network change |
-| 35 | **Named schedules** (Focus, Sleep, Family modes) | Medium | Better scheduling UX |
-| 36 | **Encrypted backup format** (AES-256-GCM) | Medium | Secure cloud-ready backups |
-| 37 | **WebDAV cloud sync** | Medium | Privacy-friendly sync |
-| 38 | **QR code config sharing** | Low | Easy device-to-device transfer |
-| 39 | **ACRA crash reporting** | Low | Open-source crash analytics |
+| 33 | ~~**Expanded Tasker intents** (SET_PROFILE, SET_DNS, PAUSE)~~ | ~~Low~~ | **DONE** v6.0 — ACTION_SET_PROFILE (by name, case-insensitive), ACTION_SET_DNS (comma-separated servers), ACTION_PAUSE (1-1440 min with auto-resume). Same security/rate-limiting/audit-logging as existing actions |
+| 34 | ~~**Wi-Fi SSID-based profiles**~~ | ~~Medium~~ | **DONE** (pre-existing) — BlockingProfile.wifiSsids field + ProfileScheduleWorker matches current SSID via WifiManager. WiFi match takes priority over time-based scheduling. Worker runs every 15min via WorkManager |
+| 35 | ~~**Named schedules** (Focus, Sleep, Family modes)~~ | ~~Medium~~ | **DONE** v6.0 — SchedulePresets with 5 built-in presets (Focus, Sleep, Family, Work, Kids). Each defines time range, days, source categories. applyPreset() creates BlockingProfile via ProfileDao |
+| 36 | ~~**Encrypted backup format** (AES-256-GCM)~~ | ~~Medium~~ | **DONE** v6.0 — EncryptedBackup Hilt singleton. AES-256-GCM with PBKDF2WithHmacSHA256 (100K iterations). Binary format: HSBACKUP magic + version + salt(16) + IV(12) + ciphertext. isEncryptedBackup() detects format. javax.crypto only |
+| 37 | ~~**WebDAV cloud sync**~~ | ~~Medium~~ | **DONE** v6.1 — WebDavSync Hilt singleton. OkHttp-based WebDAV client (PUT, GET, DELETE, PROPFIND, MKCOL). Basic auth. PROPFIND XML parsing. Higher-level syncBackup/fetchLatestBackup/listBackups methods. SyncResult sealed class for error handling |
+| 38 | ~~**QR code config sharing**~~ | ~~Low~~ | **DONE** v6.1 — QrConfigSharing utility. GZIP + Base64 encoding with "HS:" scheme prefix. ShareableConfig data class for user rules, DNS settings, sources. Encode/decode methods for QR generation |
+| 39 | ~~**ACRA crash reporting**~~ | ~~Low~~ | **DONE** v6.1 — CrashReporter Hilt singleton. Custom Thread.UncaughtExceptionHandler (no ACRA dependency). Collects stack trace, device info, memory stats. JSON files in crashes/ dir (max 20). getCrashReports/clearCrashReports API |
 
 ### Phase 6: Advanced Features (v6.0)
 
 | # | Feature | Effort | Impact |
 |---|---------|--------|--------|
-| 40 | **Content filtering categories** (12+ toggleable) | High | Parental + enterprise use cases |
-| 41 | **Safe Search enforcement** (DNS-level) | Medium | Family safety feature |
-| 42 | **DNS stamp support** (`sdns://`) | Medium | Power user DNS config |
-| 43 | **Split tunneling** (per-app VPN routing) | High | Banking/work app exclusion |
-| 44 | **DNS-over-TLS** as upstream option | Medium | Alternative encrypted DNS |
-| 45 | **DNS-over-QUIC** | High | Lowest latency encrypted DNS |
-| 46 | **Connection tracker** (real-time per-app) | High | RethinkDNS-class visibility |
-| 47 | **nDPI protocol detection + JA3/JA4** | High | Deep packet inspection |
-| 48 | **Parental controls** (age profiles, PIN lock) | High | Family market |
-| 49 | **Local DNS server mode** | Medium | "Portable Pi-hole" |
-| 50 | **DNS benchmark** | Low | Auto-select fastest resolver |
-| 51 | **WireGuard proxy integration** | High | VPN chaining, multi-hop |
-| 52 | **Proxy mode** (no VPN, no root — tri-mode) | Medium | Works alongside other VPN apps |
+| 40 | ~~**Content filtering categories** (12+ toggleable)~~ | ~~High~~ | **DONE** v6.1 — ContentFilterManager Hilt singleton. 12+ categories (Adult, Gambling, Social, Gaming, Streaming, Dating, VPN/Proxy, Malware, Crypto, News, Shopping). ConcurrentHashMap domain index with suffix matching. contentFilterCategories StringSet preference. Wired into processIpv4Dns/processIpv6Dns before blocklist check |
+| 41 | ~~**Safe Search enforcement** (DNS-level)~~ | ~~Medium~~ | **DONE** v6.0 — SafeSearchEnforcer rewrites DNS for Google/Bing/DuckDuckGo/YouTube to safe-search IPs. Wired into processIpv4Dns/processIpv6Dns before blocklist check. safeSearchEnabled preference (default false) |
+| 42 | ~~**DNS stamp support** (`sdns://`)~~ | ~~Medium~~ | **DONE** v6.0 — DnsStampParser Hilt singleton. Parses and encodes sdns:// URLs per DNSCrypt spec. Supports Plain DNS (0x00), DNSCrypt (0x01), DoH (0x02), DoT (0x03). LP-encoded fields, hash chains, DNSSEC/no-log/no-filter flags |
+| 43 | ~~**Split tunneling** (per-app VPN routing)~~ | ~~High~~ | **ALREADY DONE** — excludedApps preference + VpnService.Builder.addDisallowedApplication() in DnsVpnService.startVpn(). Excluded apps bypass VPN entirely (no DNS filtering, no firewall). Self-exclusion also applied |
+| 44 | ~~**DNS-over-TLS** as upstream option~~ | ~~Medium~~ | **DONE** v6.0 — DotResolver Hilt singleton. RFC 7858 (2-byte length prefix + wire format) over TLSv1.3. 4 providers (Cloudflare, Google, Quad9, AdGuard). SNI + hostname verification. Per-query TLS connections |
+| 45 | ~~**DNS-over-QUIC**~~ | ~~High~~ | **DONE** v6.2 — DoqResolver Hilt singleton. RFC 9250 DNS over QUIC. Builds QUIC Initial packets with DNS query in STREAM frame (stream 0). QUIC variable-length integer codec. Frame parser (STREAM, ACK, CRYPTO, PADDING). 3 providers (AdGuard, Nextdns, Mullvad). Automatic fallback to DoT if QUIC handshake fails. 1200-byte PMTU padding. Short/long header response parsing |
+| 46 | ~~**Connection tracker** (real-time per-app)~~ | ~~High~~ | **DONE** v6.1 — ConnectionTracker Hilt singleton. ConcurrentHashMap<packageName, records> with ring buffer (500/app, 5000 total). AppConnectionSummary aggregation. SharedFlow<ConnectionRecord> for live UI updates. recordConnection() called from packet loop |
+| 47 | ~~**nDPI protocol detection + JA3/JA4**~~ | ~~High~~ | **DONE** v6.1 — TlsFingerprinter Hilt singleton. Parses TLS ClientHello from raw packet bytes. Computes JA3 (MD5) and JA4 (SHA-256 truncated) fingerprints. GREASE value filtering (RFC 8701). SNI extraction. Known fingerprint database (Chrome, Firefox, Safari, Python, curl, OkHttp, Java). ConcurrentHashMap identity cache |
+| 48 | ~~**Parental controls** (age profiles, PIN lock)~~ | ~~High~~ | **DONE** v6.1 — ParentalControlManager Hilt singleton. 3 age profiles (Child, Teen, Adult) with escalating ContentCategory restrictions. SHA-256 PIN lock (4-digit). Wired into processIpv4Dns/processIpv6Dns after content filter. Preferences: parental_enabled, parental_pin_hash, parental_age_profile |
+| 49 | ~~**Local DNS server mode**~~ | ~~Medium~~ | **DONE** v6.0 — LocalDnsServer Hilt singleton. UDP server on port 5353 (no root). Blocklist check → NXDOMAIN or forward to upstream. Concurrent query handling via coroutines. LAN devices point DNS to phone IP:5353 |
+| 50 | ~~**DNS benchmark**~~ | ~~Low~~ | **DONE** v6.0 — DnsBenchmark Hilt singleton. Tests 10 DNS resolvers + custom servers via raw UDP DatagramSocket queries. Concurrent testing, 3s timeout, avg/min/max latency, success rate. Results sorted by avgLatencyMs |
+| 51 | ~~**WireGuard proxy integration**~~ | ~~High~~ | **DONE** v6.2 — WireGuardProxy Hilt singleton. Noise_IKpsk2 handshake (Type 1 init, Type 2 response). Transport data (Type 4) with AES-256-GCM encryption. Curve25519 ephemeral key generation. HKDF key derivation. TAI64N timestamps. DNS-over-WireGuard: inner IP/UDP packet construction + extraction. WgConfig data class with private key, peer public key, PSK, endpoint, DNS server. NAT keepalive support |
+| 52 | ~~**Proxy mode** (no VPN, no root — tri-mode)~~ | ~~Medium~~ | **DONE** v6.1 — DnsProxyService foreground service. Local DNS proxy on port 5353 using LocalDnsServer. No VPN or root required. BlocklistHolder.isBlocked() for filtering, upstream forwarding for allowed queries |
 
 ---
 

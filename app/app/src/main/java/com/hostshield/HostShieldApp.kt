@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.hostshield.service.CnameCloakUpdater
+import com.hostshield.service.ThreatIntelWorker
 import com.hostshield.util.OfflineGeoIp
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.HiltAndroidApp
@@ -27,6 +28,10 @@ class HostShieldApp : Application(), Configuration.Provider {
         // v5.0: Non-blocking startup initialization
         appScope.launch { cnameCloakUpdater.loadCached() }
         appScope.launch { offlineGeoIp.initialize() }
+
+        // v6.0: Schedule daily threat intelligence feed updates
+        try { ThreatIntelWorker.schedule(this) }
+        catch (e: Exception) { android.util.Log.w("HostShieldApp", "WorkManager scheduling failed: ${e.message}") }
     }
 
     override val workManagerConfiguration: Configuration

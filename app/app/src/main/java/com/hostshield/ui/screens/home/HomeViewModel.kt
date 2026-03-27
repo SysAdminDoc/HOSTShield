@@ -180,7 +180,7 @@ class HomeViewModel @Inject constructor(
     /** Track live query rate + anomaly detection from the VPN live stream. */
     private fun trackQueryRate() {
         viewModelScope.launch {
-            while (true) {
+            while (isActive) {
                 kotlinx.coroutines.delay(5_000)
                 val recent = liveQueryStream.value
                 val now = System.currentTimeMillis()

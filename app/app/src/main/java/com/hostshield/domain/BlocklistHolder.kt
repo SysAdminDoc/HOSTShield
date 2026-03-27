@@ -278,15 +278,16 @@ class BlocklistHolder @Inject constructor() {
         val result = isBlockedInternal(lower)
 
         // Cache the decision (bounded size, evict randomly on overflow)
-        if (decisionCache.size < decisionCacheMaxSize) {
-            decisionCache[lower] = result
-        } else if (decisionCache.size >= decisionCacheMaxSize) {
-            // Simple eviction: clear half the cache when full.
-            // This is rare (8K unique domains) and avoids complex LRU tracking.
-            val keys = decisionCache.keys().toList().take(decisionCacheMaxSize / 2)
-            keys.forEach { decisionCache.remove(it) }
-            decisionCache[lower] = result
+        if (decisionCache.size >= decisionCacheMaxSize) {
+            synchronized(decisionCache) {
+                // Double-check under lock to avoid redundant eviction
+                if (decisionCache.size >= decisionCacheMaxSize) {
+                    val keys = decisionCache.keys().toList().take(decisionCacheMaxSize / 2)
+                    keys.forEach { decisionCache.remove(it) }
+                }
+            }
         }
+        decisionCache[lower] = result
 
         return result
     }

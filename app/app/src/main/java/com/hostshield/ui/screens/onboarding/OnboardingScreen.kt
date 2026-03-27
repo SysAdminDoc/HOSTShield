@@ -30,7 +30,7 @@ import com.hostshield.data.model.BlockMethod
 import com.hostshield.ui.theme.*
 import com.hostshield.util.PrivateDnsDetector
 
-// HostShield v3.8.0 - Premium Onboarding
+// HostShield v6.1 - Premium Onboarding (6-screen progressive flow, Roadmap #32)
 
 @Composable
 fun OnboardingScreen(
@@ -43,7 +43,9 @@ fun OnboardingScreen(
     var selectedMethod by remember {
         mutableStateOf(if (isRootAvailable) BlockMethod.ROOT_HOSTS else BlockMethod.VPN)
     }
-    val totalPages = if (privateDnsStatus?.bypassesVpn == true && selectedMethod == BlockMethod.VPN) 4 else 3
+    val hasPrivateDnsIssue = privateDnsStatus?.bypassesVpn == true && selectedMethod == BlockMethod.VPN
+    // Pages: Welcome(0), Method(1), Features(2), DnsConfig(3), [PrivateDns(4)], Ready(last)
+    val totalPages = if (hasPrivateDnsIssue) 6 else 5
 
     Box(
         modifier = Modifier
@@ -64,19 +66,16 @@ fun OnboardingScreen(
                     isRootAvailable = isRootAvailable,
                     selectedMethod = selectedMethod,
                     onSelectMethod = { selectedMethod = it },
-                    onNext = {
-                        // Show Private DNS warning if VPN mode and Private DNS is active
-                        if (selectedMethod == BlockMethod.VPN && privateDnsStatus?.bypassesVpn == true) {
-                            page = 2
-                        } else {
-                            page = if (totalPages == 4) 3 else 2
-                        }
-                    }
+                    onNext = { page = 2 }
                 )
-                2 -> if (privateDnsStatus?.bypassesVpn == true && selectedMethod == BlockMethod.VPN) {
+                2 -> FeaturesOverviewPage(onNext = { page = 3 })
+                3 -> DnsConfigPage(onNext = {
+                    page = if (hasPrivateDnsIssue) 4 else totalPages - 1
+                })
+                4 -> if (hasPrivateDnsIssue) {
                     PrivateDnsWarningPage(
-                        status = privateDnsStatus,
-                        onNext = { page = 3 }
+                        status = privateDnsStatus!!,
+                        onNext = { page = totalPages - 1 }
                     )
                 } else {
                     ReadyPage(
@@ -86,7 +85,7 @@ fun OnboardingScreen(
                         onRequestVpnPermission = onRequestVpnPermission
                     )
                 }
-                3 -> ReadyPage(
+                else -> ReadyPage(
                     method = selectedMethod,
                     onActivate = { onComplete(selectedMethod, true) },
                     onSkip = { onComplete(selectedMethod, false) },
@@ -407,6 +406,208 @@ private fun PrivateDnsWarningPage(
         }
     }
 }
+
+// ── Page 3: Features Overview (new in v6.1) ─────────────────
+
+@Composable
+private fun FeaturesOverviewPage(onNext: () -> Unit) {
+    val features = remember {
+        listOf(
+            Triple(Icons.Default.Shield, "Ad & Tracker Blocking", "Block ads, trackers, and malware across all apps with curated blocklists"),
+            Triple(Icons.Default.Dns, "Encrypted DNS", "DNS-over-HTTPS and DNS-over-TLS keep your queries private"),
+            Triple(Icons.Default.Security, "Threat Intelligence", "Real-time malicious domain and IP detection from community feeds"),
+            Triple(Icons.Default.FamilyRestroom, "Parental Controls", "Age-based content filtering with PIN lock for family safety"),
+            Triple(Icons.Default.Fingerprint, "Privacy Scoring", "Per-app privacy analysis based on tracker activity and permissions"),
+            Triple(Icons.Default.Speed, "Performance", "DNS caching, benchmarking, and latency-optimized resolution")
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp, vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(24.dp))
+
+        Text(
+            "What HostShield Does",
+            color = Color.White,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            "System-wide protection without compromises",
+            color = Teal.copy(alpha = 0.7f),
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            features.forEachIndexed { idx, (icon, title, desc) ->
+                var visible by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    kotlinx.coroutines.delay(idx * 100L)
+                    visible = true
+                }
+
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(300)) + slideInHorizontally(tween(300)) { -40 }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Surface3.copy(alpha = 0.3f))
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = Teal,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text(desc, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, lineHeight = 14.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        Button(
+            onClick = onNext,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Teal),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Text("Continue", color = Color.Black, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+// ── Page 4: DNS Configuration (new in v6.1) ─────────────────
+
+@Composable
+private fun DnsConfigPage(onNext: () -> Unit) {
+    val dnsOptions = remember {
+        listOf(
+            Triple("Default (ISP)", "Use your network's default DNS resolver", false),
+            Triple("Cloudflare", "1.1.1.1 — Fast, privacy-focused (recommended)", true),
+            Triple("Google", "8.8.8.8 — Reliable, global coverage", false),
+            Triple("Quad9", "9.9.9.9 — Security-focused, blocks malware", false),
+            Triple("AdGuard", "94.140.14.14 — Additional ad blocking at DNS level", false)
+        )
+    }
+    var selectedDns by remember { mutableIntStateOf(1) } // Default to Cloudflare
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp, vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(24.dp))
+
+        Icon(
+            imageVector = Icons.Default.Dns,
+            contentDescription = null,
+            tint = Teal,
+            modifier = Modifier.size(48.dp)
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            "Choose Your DNS",
+            color = Color.White,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            "DNS resolves domain names to IP addresses.\nYou can change this anytime in settings.",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 18.sp
+        )
+
+        Spacer(Modifier.height(28.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            dnsOptions.forEachIndexed { idx, (name, desc, _) ->
+                val isSelected = idx == selectedDns
+                val borderColor by animateColorAsState(
+                    targetValue = if (isSelected) Teal else Surface3,
+                    label = "dnsBorder"
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+                        .background(if (isSelected) Teal.copy(alpha = 0.08f) else Color.Transparent)
+                        .clickable { selectedDns = idx }
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = { selectedDns = idx },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = Teal,
+                            unselectedColor = Surface3
+                        )
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            name,
+                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f),
+                            fontSize = 14.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                        Text(
+                            desc,
+                            color = Color.White.copy(alpha = 0.4f),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        Button(
+            onClick = onNext,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Teal),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Text("Continue", color = Color.Black, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+// ── Page 5/6: Ready Page ────────────────────────────────────
 
 @Composable
 private fun ReadyPage(

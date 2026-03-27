@@ -143,4 +143,5 @@ object DatabaseModule {
     @Provides fun provideTrackerScanCacheDao(db: HostShieldDatabase): TrackerScanCacheDao = db.trackerScanCacheDao()
     @Provides fun provideAutomationAuditDao(db: HostShieldDatabase): AutomationAuditDao = db.automationAuditDao()
     @Provides fun provideVpnStabilityDao(db: HostShieldDatabase): VpnStabilityDao = db.vpnStabilityDao()
+    @Provides fun provideAppDnsRuleDao(db: HostShieldDatabase): AppDnsRuleDao = db.appDnsRuleDao()
 }
