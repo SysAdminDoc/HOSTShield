@@ -24,7 +24,11 @@ class CaptivePortalHandler @Inject constructor(
         private const val TAG = "CaptivePortal"
         private const val NOTIFICATION_ID = 42
         private const val COOLDOWN_MS = 5000L
-        // Standard Android captive portal login URL
+        // Intentionally HTTP, not HTTPS. Android's captive portal detection works by
+        // issuing a plain HTTP request and checking for an HTTP 204 response. If the
+        // network's captive portal intercepts the request (302 redirect to a login page),
+        // the OS knows the user must authenticate. HTTPS would break this mechanism
+        // because the TLS handshake would fail before reaching the portal's redirect.
         private const val CAPTIVE_PORTAL_URL = "http://connectivitycheck.gstatic.com/generate_204"
     }
 

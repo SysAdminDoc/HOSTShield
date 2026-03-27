@@ -33,7 +33,8 @@ class BootReceiver : BroadcastReceiver() {
         ) return
 
         val pendingResult = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        scope.launch {
             try {
                 val isEnabled = prefs.isEnabled.first()
                 val autoUpdate = prefs.autoUpdate.first()
@@ -91,6 +92,7 @@ class BootReceiver : BroadcastReceiver() {
                 Log.e("BootReceiver", "Boot restore failed: ${e.message}", e)
             } finally {
                 pendingResult.finish()
+                scope.cancel()
             }
         }
     }

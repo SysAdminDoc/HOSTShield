@@ -2,6 +2,7 @@ package com.hostshield.service
 
 import android.util.Log
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.data.preferences.SecureStore
 import kotlinx.coroutines.flow.first
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
@@ -119,24 +120,38 @@ class ParentalControlManager @Inject constructor(
     // ── PIN Management ───────────────────────────────────────────
 
     /**
-     * Set a new 4-digit PIN. Stores SHA-256 hash in preferences.
+     * Set a new 4-digit PIN. Stores PBKDF2 hash in EncryptedSharedPreferences.
      * @return true if PIN was valid and stored.
      */
     suspend fun setPin(pin: String): Boolean {
         if (!isValidPin(pin)) return false
-        prefs.setParentalPinHash(hashPin(pin))
-        Log.d(TAG, "PIN updated")
+        prefs.setParentalPinHash(SecureStore.hashPin(pin))
+        Log.d(TAG, "PIN updated (PBKDF2)")
         return true
     }
 
     /**
      * Verify a PIN against the stored hash.
+     * Supports both legacy SHA-256 (hex string without ':') and
+     * new PBKDF2 ("salt:hash") formats for seamless migration.
      * @return true if PIN matches, or if no PIN is set.
      */
     suspend fun verifyPin(pin: String): Boolean {
         val storedHash = prefs.parentalPinHash.first()
         if (storedHash.isEmpty()) return true // no PIN set
-        return hashPin(pin) == storedHash
+        return if (storedHash.contains(':')) {
+            // New PBKDF2 format
+            SecureStore.verifyPin(pin, storedHash)
+        } else {
+            // Legacy SHA-256 format — verify then upgrade to PBKDF2
+            val legacyMatch = hashPin(pin) == storedHash
+            if (legacyMatch) {
+                // Re-hash with PBKDF2 and store the upgraded hash
+                prefs.setParentalPinHash(SecureStore.hashPin(pin))
+                Log.d(TAG, "PIN hash upgraded from SHA-256 to PBKDF2")
+            }
+            legacyMatch
+        }
     }
 
     /**

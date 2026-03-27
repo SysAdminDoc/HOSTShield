@@ -12,6 +12,8 @@ import javax.inject.Singleton
 // ══════════════════════════════════════════════════════════════
 // HostShield v6.2 — DNS-over-QUIC (DoQ) Resolver (Roadmap #45)
 //
+// ⚠️ EXPERIMENTAL — Simplified implementation, not a full QUIC stack.
+//
 // RFC 9250: DNS over Dedicated QUIC Connections.
 //
 // DNS-over-QUIC sends DNS queries over QUIC transport (UDP port 853),
@@ -28,10 +30,12 @@ import javax.inject.Singleton
 // Supported providers: AdGuard (dns.adguard-dns.com:853)
 // and Nextdns (dns.nextdns.io:853) support DoQ natively.
 //
-// Limitations:
+// Limitations (EXPERIMENTAL):
+//   - No TLS 1.3 handshake — constructs QUIC Initial frames directly
 //   - No 0-RTT session resumption (each query opens fresh connection)
 //   - No QUIC flow control / congestion — single query per connection
 //   - Falls back to DoT if QUIC handshake times out
+//   - May not work with all DoQ servers; tested with AdGuard and NextDNS
 // ══════════════════════════════════════════════════════════════
 
 @Singleton
@@ -91,6 +95,7 @@ class DoqResolver @Inject constructor(
      * @return The raw DNS response bytes, or null on failure.
      */
     fun resolve(dns: ByteArray, provider: Provider = Provider.ADGUARD): ByteArray? {
+        Log.w(TAG, "⚠️ DoQ resolver is EXPERIMENTAL — not a full QUIC/TLS 1.3 stack. See class header for limitations.")
         return try {
             resolveQuic(dns, provider)
         } catch (e: Exception) {

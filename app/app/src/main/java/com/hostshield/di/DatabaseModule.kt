@@ -114,7 +114,6 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): HostShieldDatabase {
-        @Suppress("DEPRECATION")
         return Room.databaseBuilder(
             context,
             HostShieldDatabase::class.java,
@@ -122,17 +121,19 @@ object DatabaseModule {
         )
             .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
                 *com.hostshield.data.database.Migrations.ALL)
-            .fallbackToDestructiveMigration() // safety net for unhandled versions
+            // No fallbackToDestructiveMigration — every version must have an explicit migration.
+            // Missing migrations will crash on startup, surfacing the bug during development
+            // rather than silently deleting user data in production.
             .build()
     }
 
-    @Provides fun provideHostSourceDao(db: HostShieldDatabase): HostSourceDao = db.hostSourceDao()
-    @Provides fun provideUserRuleDao(db: HostShieldDatabase): UserRuleDao = db.userRuleDao()
-    @Provides fun provideDnsLogDao(db: HostShieldDatabase): DnsLogDao = db.dnsLogDao()
-    @Provides fun provideBlockStatsDao(db: HostShieldDatabase): BlockStatsDao = db.blockStatsDao()
-    @Provides fun provideProfileDao(db: HostShieldDatabase): ProfileDao = db.profileDao()
-    @Provides fun provideFirewallRuleDao(db: HostShieldDatabase): FirewallRuleDao = db.firewallRuleDao()
-    @Provides fun provideConnectionLogDao(db: HostShieldDatabase): ConnectionLogDao = db.connectionLogDao()
+    @Provides @Singleton fun provideHostSourceDao(db: HostShieldDatabase): HostSourceDao = db.hostSourceDao()
+    @Provides @Singleton fun provideUserRuleDao(db: HostShieldDatabase): UserRuleDao = db.userRuleDao()
+    @Provides @Singleton fun provideDnsLogDao(db: HostShieldDatabase): DnsLogDao = db.dnsLogDao()
+    @Provides @Singleton fun provideBlockStatsDao(db: HostShieldDatabase): BlockStatsDao = db.blockStatsDao()
+    @Provides @Singleton fun provideProfileDao(db: HostShieldDatabase): ProfileDao = db.profileDao()
+    @Provides @Singleton fun provideFirewallRuleDao(db: HostShieldDatabase): FirewallRuleDao = db.firewallRuleDao()
+    @Provides @Singleton fun provideConnectionLogDao(db: HostShieldDatabase): ConnectionLogDao = db.connectionLogDao()
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
@@ -140,8 +141,8 @@ object DatabaseModule {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    @Provides fun provideTrackerScanCacheDao(db: HostShieldDatabase): TrackerScanCacheDao = db.trackerScanCacheDao()
-    @Provides fun provideAutomationAuditDao(db: HostShieldDatabase): AutomationAuditDao = db.automationAuditDao()
-    @Provides fun provideVpnStabilityDao(db: HostShieldDatabase): VpnStabilityDao = db.vpnStabilityDao()
-    @Provides fun provideAppDnsRuleDao(db: HostShieldDatabase): AppDnsRuleDao = db.appDnsRuleDao()
+    @Provides @Singleton fun provideTrackerScanCacheDao(db: HostShieldDatabase): TrackerScanCacheDao = db.trackerScanCacheDao()
+    @Provides @Singleton fun provideAutomationAuditDao(db: HostShieldDatabase): AutomationAuditDao = db.automationAuditDao()
+    @Provides @Singleton fun provideVpnStabilityDao(db: HostShieldDatabase): VpnStabilityDao = db.vpnStabilityDao()
+    @Provides @Singleton fun provideAppDnsRuleDao(db: HostShieldDatabase): AppDnsRuleDao = db.appDnsRuleDao()
 }

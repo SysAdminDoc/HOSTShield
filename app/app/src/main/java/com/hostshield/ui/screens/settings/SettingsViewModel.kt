@@ -102,39 +102,176 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun observePrefs() {
-        viewModelScope.launch { prefs.ipv4Redirect.collect { v -> _uiState.update { it.copy(ipv4Redirect = v) } } }
-        viewModelScope.launch { prefs.ipv6Redirect.collect { v -> _uiState.update { it.copy(ipv6Redirect = v) } } }
-        viewModelScope.launch { prefs.includeIpv6.collect { v -> _uiState.update { it.copy(includeIpv6 = v) } } }
-        viewModelScope.launch { prefs.localWebserver.collect { v -> _uiState.update { it.copy(localWebserver = v) } } }
-        viewModelScope.launch { prefs.autoUpdate.collect { v -> _uiState.update { it.copy(autoUpdate = v) } } }
-        viewModelScope.launch { prefs.updateIntervalHours.collect { v -> _uiState.update { it.copy(updateIntervalHours = v) } } }
-        viewModelScope.launch { prefs.wifiOnly.collect { v -> _uiState.update { it.copy(wifiOnly = v) } } }
-        viewModelScope.launch { prefs.dnsLogging.collect { v -> _uiState.update { it.copy(dnsLogging = v) } } }
-        viewModelScope.launch { prefs.logRetentionDays.collect { v -> _uiState.update { it.copy(logRetentionDays = v) } } }
-        viewModelScope.launch { prefs.showNotification.collect { v -> _uiState.update { it.copy(showNotification = v) } } }
-        viewModelScope.launch { prefs.dohEnabled.collect { v -> _uiState.update { it.copy(dohEnabled = v) } } }
-        viewModelScope.launch { prefs.dohProvider.collect { v -> _uiState.update { it.copy(dohProvider = v) } } }
-        viewModelScope.launch { prefs.dnsTrapEnabled.collect { v -> _uiState.update { it.copy(dnsTrapEnabled = v) } } }
-        viewModelScope.launch { prefs.blockResponseType.collect { v -> _uiState.update { it.copy(blockResponseType = v) } } }
-        viewModelScope.launch { prefs.blockedApps.collect { apps -> _uiState.update { it.copy(firewalledApps = apps.size) } } }
-        viewModelScope.launch { prefs.accentColor.collect { c -> _uiState.update { it.copy(accentColor = c) } } }
-        viewModelScope.launch { prefs.scheduleEnabled.collect { v -> _uiState.update { it.copy(scheduleEnabled = v) } } }
-        viewModelScope.launch { prefs.scheduleStart.collect { v -> _uiState.update { it.copy(scheduleStart = v) } } }
-        viewModelScope.launch { prefs.scheduleEnd.collect { v -> _uiState.update { it.copy(scheduleEnd = v) } } }
-        viewModelScope.launch { prefs.scheduleMode.collect { v -> _uiState.update { it.copy(scheduleMode = v) } } }
-        viewModelScope.launch { prefs.customUpstreamDns.collect { v -> _uiState.update { it.copy(customUpstreamDns = v) } } }
-        viewModelScope.launch { prefs.dotEnabled.collect { v -> _uiState.update { it.copy(dotEnabled = v) } } }
-        viewModelScope.launch { prefs.dotProvider.collect { v -> _uiState.update { it.copy(dotProvider = v) } } }
-        viewModelScope.launch { prefs.doqEnabled.collect { v -> _uiState.update { it.copy(doqEnabled = v) } } }
-        viewModelScope.launch { prefs.doqProvider.collect { v -> _uiState.update { it.copy(doqProvider = v) } } }
-        viewModelScope.launch { prefs.wireGuardEnabled.collect { v -> _uiState.update { it.copy(wireGuardEnabled = v) } } }
-        viewModelScope.launch { prefs.wireGuardEndpoint.collect { v -> _uiState.update { it.copy(wireGuardEndpoint = v) } } }
-        viewModelScope.launch { prefs.wireGuardDnsIp.collect { v -> _uiState.update { it.copy(wireGuardDnsIp = v) } } }
+        // ── IP / Redirect preferences ─────────────────────────
+        viewModelScope.launch {
+            combine(
+                prefs.ipv4Redirect,
+                prefs.ipv6Redirect,
+                prefs.includeIpv6,
+                prefs.localWebserver
+            ) { ipv4, ipv6, inclV6, webserver ->
+                IpRedirectPrefs(ipv4, ipv6, inclV6, webserver)
+            }.collect { p ->
+                _uiState.update {
+                    it.copy(
+                        ipv4Redirect = p.ipv4,
+                        ipv6Redirect = p.ipv6,
+                        includeIpv6 = p.includeIpv6,
+                        localWebserver = p.localWebserver
+                    )
+                }
+            }
+        }
+
+        // ── Auto-update preferences ───────────────────────────
+        viewModelScope.launch {
+            combine(
+                prefs.autoUpdate,
+                prefs.updateIntervalHours,
+                prefs.wifiOnly
+            ) { auto, interval, wifi ->
+                UpdatePrefs(auto, interval, wifi)
+            }.collect { p ->
+                _uiState.update {
+                    it.copy(
+                        autoUpdate = p.autoUpdate,
+                        updateIntervalHours = p.intervalHours,
+                        wifiOnly = p.wifiOnly
+                    )
+                }
+            }
+        }
+
+        // ── DNS / Logging preferences ─────────────────────────
+        viewModelScope.launch {
+            combine(
+                prefs.dnsLogging,
+                prefs.logRetentionDays,
+                prefs.dohEnabled,
+                prefs.dohProvider,
+                prefs.dnsTrapEnabled,
+                prefs.blockResponseType,
+                prefs.customUpstreamDns
+            ) { values ->
+                DnsPrefs(
+                    logging = values[0] as Boolean,
+                    retentionDays = values[1] as Int,
+                    dohEnabled = values[2] as Boolean,
+                    dohProvider = values[3] as String,
+                    dnsTrap = values[4] as Boolean,
+                    blockResponse = values[5] as String,
+                    customUpstream = values[6] as String
+                )
+            }.collect { p ->
+                _uiState.update {
+                    it.copy(
+                        dnsLogging = p.logging,
+                        logRetentionDays = p.retentionDays,
+                        dohEnabled = p.dohEnabled,
+                        dohProvider = p.dohProvider,
+                        dnsTrapEnabled = p.dnsTrap,
+                        blockResponseType = p.blockResponse,
+                        customUpstreamDns = p.customUpstream
+                    )
+                }
+            }
+        }
+
+        // ── Notification / UI / Firewall count ────────────────
+        viewModelScope.launch {
+            combine(
+                prefs.showNotification,
+                prefs.accentColor,
+                prefs.blockedApps
+            ) { notification, accent, apps ->
+                UiPrefs(notification, accent, apps.size)
+            }.collect { p ->
+                _uiState.update {
+                    it.copy(
+                        showNotification = p.showNotification,
+                        accentColor = p.accentColor,
+                        firewalledApps = p.firewalledApps
+                    )
+                }
+            }
+        }
+
+        // ── Schedule preferences ──────────────────────────────
+        viewModelScope.launch {
+            combine(
+                prefs.scheduleEnabled,
+                prefs.scheduleStart,
+                prefs.scheduleEnd,
+                prefs.scheduleMode
+            ) { enabled, start, end, mode ->
+                SchedulePrefs(enabled, start, end, mode)
+            }.collect { p ->
+                _uiState.update {
+                    it.copy(
+                        scheduleEnabled = p.enabled,
+                        scheduleStart = p.start,
+                        scheduleEnd = p.end,
+                        scheduleMode = p.mode
+                    )
+                }
+            }
+        }
+
+        // ── DoT / DoQ preferences ─────────────────────────────
+        viewModelScope.launch {
+            combine(
+                prefs.dotEnabled,
+                prefs.dotProvider,
+                prefs.doqEnabled,
+                prefs.doqProvider
+            ) { dotOn, dotProv, doqOn, doqProv ->
+                DotDoqPrefs(dotOn, dotProv, doqOn, doqProv)
+            }.collect { p ->
+                _uiState.update {
+                    it.copy(
+                        dotEnabled = p.dotEnabled,
+                        dotProvider = p.dotProvider,
+                        doqEnabled = p.doqEnabled,
+                        doqProvider = p.doqProvider
+                    )
+                }
+            }
+        }
+
+        // ── WireGuard preferences ─────────────────────────────
+        viewModelScope.launch {
+            combine(
+                prefs.wireGuardEnabled,
+                prefs.wireGuardEndpoint,
+                prefs.wireGuardDnsIp
+            ) { enabled, endpoint, dnsIp ->
+                WireGuardPrefs(enabled, endpoint, dnsIp)
+            }.collect { p ->
+                _uiState.update {
+                    it.copy(
+                        wireGuardEnabled = p.enabled,
+                        wireGuardEndpoint = p.endpoint,
+                        wireGuardDnsIp = p.dnsIp
+                    )
+                }
+            }
+        }
+
+        // ── Root availability (one-shot) ──────────────────────
         viewModelScope.launch(Dispatchers.IO) {
             val available = rootUtil.isRootAvailable()
             _uiState.update { it.copy(isRootAvailable = available) }
         }
     }
+
+    // ── Combined preference data holders ──────────────────────
+    private data class IpRedirectPrefs(val ipv4: String, val ipv6: String, val includeIpv6: Boolean, val localWebserver: Boolean)
+    private data class UpdatePrefs(val autoUpdate: Boolean, val intervalHours: Int, val wifiOnly: Boolean)
+    private data class DnsPrefs(val logging: Boolean, val retentionDays: Int, val dohEnabled: Boolean, val dohProvider: String, val dnsTrap: Boolean, val blockResponse: String, val customUpstream: String)
+    private data class UiPrefs(val showNotification: Boolean, val accentColor: String, val firewalledApps: Int)
+    private data class SchedulePrefs(val enabled: Boolean, val start: String, val end: String, val mode: String)
+    private data class DotDoqPrefs(val dotEnabled: Boolean, val dotProvider: String, val doqEnabled: Boolean, val doqProvider: String)
+    private data class WireGuardPrefs(val enabled: Boolean, val endpoint: String, val dnsIp: String)
 
     private fun loadSystemInfo() {
         viewModelScope.launch {
@@ -315,27 +452,44 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun backupToUri(uri: Uri) {
+    /**
+     * Create a backup and write it to the given URI.
+     * If [passphrase] is non-null and non-empty, the backup is AES-256-GCM encrypted.
+     * Otherwise, plaintext JSON is written (backward-compatible).
+     */
+    fun backupToUri(uri: Uri, passphrase: String? = null) {
         viewModelScope.launch {
             try {
                 val json = backupRestore.createBackup()
-                backupRestore.writeBackupToUri(getApplication(), uri, json)
-                _uiState.update { it.copy(backupMessage = "Backup saved successfully") }
+                backupRestore.writeBackupToUri(getApplication(), uri, json, passphrase)
+                val suffix = if (!passphrase.isNullOrEmpty()) " (encrypted)" else ""
+                _uiState.update { it.copy(backupMessage = "Backup saved successfully$suffix") }
             } catch (e: Exception) {
                 _uiState.update { it.copy(backupMessage = "Backup failed: ${e.message}") }
             }
         }
     }
 
-    fun restoreFromUri(uri: Uri) {
+    /**
+     * Restore from a backup file at the given URI.
+     * If the file is encrypted and [passphrase] is null/empty, an
+     * [EncryptedBackupException] is raised via backupMessage prefixed with "ENCRYPTED:"
+     * so the UI can prompt the user for a passphrase.
+     * Plaintext backups are restored directly regardless of passphrase.
+     */
+    fun restoreFromUri(uri: Uri, passphrase: String? = null) {
         viewModelScope.launch {
             try {
-                val json = backupRestore.readBackupFromUri(getApplication(), uri)
+                val json = backupRestore.readBackupFromUri(getApplication(), uri, passphrase)
                 val result = backupRestore.restoreBackup(json)
                 _uiState.update {
                     it.copy(backupMessage = "Restored ${result.sourcesCount} sources, ${result.rulesCount} rules, " +
                         "${result.profilesCount} profiles, ${result.firewallRulesCount} firewall rules")
                 }
+            } catch (e: com.hostshield.util.EncryptedBackupException) {
+                _uiState.update { it.copy(backupMessage = "ENCRYPTED:${e.message}") }
+            } catch (e: javax.crypto.AEADBadTagException) {
+                _uiState.update { it.copy(backupMessage = "Restore failed: incorrect passphrase or corrupted backup") }
             } catch (e: Exception) {
                 _uiState.update { it.copy(backupMessage = "Restore failed: ${e.message}") }
             }

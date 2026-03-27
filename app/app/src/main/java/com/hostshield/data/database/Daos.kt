@@ -172,6 +172,7 @@ interface DnsLogDao {
     suspend fun deleteOlderThan(before: Long)
 
     /** Batch delete for ANR-safe cleanup. Returns number of rows deleted. */
+    @Transaction
     @Query("DELETE FROM dns_logs WHERE id IN (SELECT id FROM dns_logs WHERE timestamp < :before LIMIT :batchSize)")
     suspend fun deleteOldestBatch(before: Long, batchSize: Int = 1000): Int
 
@@ -334,6 +335,12 @@ interface ProfileDao {
 
     @Query("UPDATE profiles SET is_active = 1 WHERE id = :id")
     suspend fun activate(id: Long)
+
+    @Transaction
+    suspend fun activateExclusive(id: Long) {
+        deactivateAll()
+        activate(id)
+    }
 }
 
 // Projection classes

@@ -39,7 +39,7 @@ class BlockNotificationService @Inject constructor(
         private const val POLL_INTERVAL_MS = 30_000L // check every 30s
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var monitorJob: Job? = null
 
     // packageName -> last notification timestamp
@@ -49,6 +49,7 @@ class BlockNotificationService @Inject constructor(
     fun start() {
         if (monitorJob?.isActive == true) return
         createChannel()
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         monitorJob = scope.launch {
             while (isActive) {
                 try { checkForBursts() } catch (e: Exception) {
@@ -60,7 +61,9 @@ class BlockNotificationService @Inject constructor(
     }
 
     fun stop() {
-        monitorJob?.cancel(); monitorJob = null
+        monitorJob?.cancel()
+        monitorJob = null
+        scope.cancel()
     }
 
     private suspend fun checkForBursts() {

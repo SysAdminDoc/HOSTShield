@@ -89,8 +89,8 @@ class DotResolver @Inject constructor() {
 
             // Read response: 2-byte length prefix + DNS message
             val respLen = input.readUnsignedShort()
-            if (respLen < 12) {
-                Log.w(TAG, "Invalid DoT response length: $respLen")
+            if (respLen < 12 || respLen > 4096) {
+                Log.w(TAG, "DoT response length out of range (12..4096): $respLen")
                 return null
             }
 

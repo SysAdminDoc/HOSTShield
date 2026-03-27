@@ -152,7 +152,7 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
             OutlinedTextField(
                 value = query, onValueChange = { viewModel.setSearch(it) },
                 placeholder = { Text("Search apps...", color = TextDim) },
-                leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextDim) },
+                leadingIcon = { Icon(Icons.Filled.Search, "Search", tint = TextDim) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 singleLine = true, shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -167,7 +167,7 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
             if (filtered.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Filled.Apps, null, tint = TextDim, modifier = Modifier.size(48.dp))
+                        Icon(Icons.Filled.Apps, "No app data", tint = TextDim, modifier = Modifier.size(48.dp))
                         Spacer(Modifier.height(12.dp))
                         Text("No app data yet", color = TextSecondary, fontSize = 14.sp)
                         Text("DNS queries will appear here as apps make requests", color = TextDim, fontSize = 12.sp)
@@ -244,7 +244,7 @@ private fun AppListItem(app: AppQueryStat, onClick: () -> Unit) {
                     .background(barColor.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.Apps, null, tint = barColor, modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.Apps, null, tint = barColor, modifier = Modifier.size(20.dp))  // decorative, app name follows
             }
 
             Spacer(Modifier.width(12.dp))
@@ -274,7 +274,7 @@ private fun AppListItem(app: AppQueryStat, onClick: () -> Unit) {
             }
 
             Spacer(Modifier.width(6.dp))
-            Icon(Icons.Filled.ChevronRight, null, tint = TextDim, modifier = Modifier.size(18.dp))
+            Icon(Icons.Filled.ChevronRight, "View app details", tint = TextDim, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -307,7 +307,7 @@ private fun DomainItem(domain: AppDomainStat, onBlock: () -> Unit) {
             Column(modifier = Modifier.weight(1f).clickable { expanded = !expanded }.padding(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (domain.blocked) {
-                        Icon(Icons.Filled.Block, null, tint = Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.Block, "Blocked", tint = Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(6.dp))
                     }
                     Text(
@@ -322,7 +322,7 @@ private fun DomainItem(domain: AppDomainStat, onBlock: () -> Unit) {
                     Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
                         Surface(onClick = onBlock, shape = RoundedCornerShape(8.dp), color = Red.copy(alpha = 0.1f)) {
                             Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.Block, null, tint = Red, modifier = Modifier.size(14.dp))
+                                Icon(Icons.Filled.Block, null, tint = Red, modifier = Modifier.size(14.dp))  // decorative, "Block" label follows
                                 Spacer(Modifier.width(6.dp))
                                 Text("Block", color = Red, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }

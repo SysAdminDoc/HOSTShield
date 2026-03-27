@@ -1,5 +1,6 @@
 package com.hostshield.ui.screens.logs
 
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -87,6 +88,13 @@ class LogsViewModel @Inject constructor(
     private val _blockedHostnames = MutableStateFlow<Set<String>>(emptySet())
     val blockedHostnames = _blockedHostnames.asStateFlow()
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+    fun clearError() { _error.value = null }
+
     init {
         loadBlockedState()
     }
@@ -99,17 +107,25 @@ class LogsViewModel @Inject constructor(
      */
     private fun loadBlockedState() {
         viewModelScope.launch(Dispatchers.IO) {
-            val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-            val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-            val allowed = allowRules.map { it.hostname.lowercase() }.toSet()
+            _isLoading.value = true
+            try {
+                val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
+                val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
+                val allowed = allowRules.map { it.hostname.lowercase() }.toSet()
 
-            val all = mutableSetOf<String>()
-            // From user block rules (these are always known)
-            all.addAll(blockRules.map { it.hostname.lowercase() })
-            // Remove explicit allows
-            all.removeAll(allowed)
+                val all = mutableSetOf<String>()
+                // From user block rules (these are always known)
+                all.addAll(blockRules.map { it.hostname.lowercase() })
+                // Remove explicit allows
+                all.removeAll(allowed)
 
-            _blockedHostnames.value = all
+                _blockedHostnames.value = all
+            } catch (e: Exception) {
+                Log.e("LogsViewModel", "Failed to load blocked state", e)
+                _error.value = "Failed to load blocked domains: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
@@ -127,11 +143,16 @@ class LogsViewModel @Inject constructor(
         _blockedHostnames.update { it + host }
 
         viewModelScope.launch(Dispatchers.IO) {
-            repository.addRule(UserRule(hostname = host, type = RuleType.BLOCK))
-            blocklist.addDomain(host)
-            val method = prefs.blockMethod.first()
-            if (method == BlockMethod.ROOT_HOSTS) {
-                rootUtil.appendHostEntry(host)
+            try {
+                repository.addRule(UserRule(hostname = host, type = RuleType.BLOCK))
+                blocklist.addDomain(host)
+                val method = prefs.blockMethod.first()
+                if (method == BlockMethod.ROOT_HOSTS) {
+                    rootUtil.appendHostEntry(host)
+                }
+            } catch (e: Exception) {
+                Log.e("LogsViewModel", "Failed to block domain: $host", e)
+                _error.value = "Failed to block $host: ${e.message}"
             }
         }
     }
@@ -141,30 +162,47 @@ class LogsViewModel @Inject constructor(
         _blockedHostnames.update { it - host }
 
         viewModelScope.launch(Dispatchers.IO) {
-            repository.addRule(UserRule(hostname = host, type = RuleType.ALLOW))
-            blocklist.removeDomain(host)
-            val method = prefs.blockMethod.first()
-            if (method == BlockMethod.ROOT_HOSTS) {
-                rootUtil.removeHostEntry(host)
+            try {
+                repository.addRule(UserRule(hostname = host, type = RuleType.ALLOW))
+                blocklist.removeDomain(host)
+                val method = prefs.blockMethod.first()
+                if (method == BlockMethod.ROOT_HOSTS) {
+                    rootUtil.removeHostEntry(host)
+                }
+            } catch (e: Exception) {
+                Log.e("LogsViewModel", "Failed to allow domain: $host", e)
+                _error.value = "Failed to allow $host: ${e.message}"
             }
         }
     }
 
     fun clearLogs() {
-        viewModelScope.launch { repository.clearAllLogs() }
+        viewModelScope.launch {
+            try {
+                repository.clearAllLogs()
+            } catch (e: Exception) {
+                Log.e("LogsViewModel", "Failed to clear logs", e)
+                _error.value = "Failed to clear logs: ${e.message}"
+            }
+        }
     }
 
     fun blockDomains(hostnames: Set<String>) {
         val hosts = hostnames.map { it.lowercase() }
         _blockedHostnames.update { it + hosts }
         viewModelScope.launch(Dispatchers.IO) {
-            hosts.forEach { host ->
-                repository.addRule(UserRule(hostname = host, type = RuleType.BLOCK))
-                blocklist.addDomain(host)
-            }
-            val method = prefs.blockMethod.first()
-            if (method == BlockMethod.ROOT_HOSTS) {
-                hosts.forEach { rootUtil.appendHostEntry(it) }
+            try {
+                hosts.forEach { host ->
+                    repository.addRule(UserRule(hostname = host, type = RuleType.BLOCK))
+                    blocklist.addDomain(host)
+                }
+                val method = prefs.blockMethod.first()
+                if (method == BlockMethod.ROOT_HOSTS) {
+                    hosts.forEach { rootUtil.appendHostEntry(it) }
+                }
+            } catch (e: Exception) {
+                Log.e("LogsViewModel", "Failed to block domains", e)
+                _error.value = "Failed to block domains: ${e.message}"
             }
         }
     }
@@ -179,23 +217,33 @@ class LogsViewModel @Inject constructor(
         blocklist.removeDomain(host)
 
         viewModelScope.launch(Dispatchers.IO) {
-            val method = prefs.blockMethod.first()
-            if (method == BlockMethod.ROOT_HOSTS) rootUtil.removeHostEntry(host)
+            try {
+                val method = prefs.blockMethod.first()
+                if (method == BlockMethod.ROOT_HOSTS) rootUtil.removeHostEntry(host)
 
-            // Wait then re-block
-            kotlinx.coroutines.delay(minutes * 60_000L)
+                // Wait then re-block
+                kotlinx.coroutines.delay(minutes * 60_000L)
 
-            _blockedHostnames.update { it + host }
-            blocklist.addDomain(host)
-            if (method == BlockMethod.ROOT_HOSTS) rootUtil.appendHostEntry(host)
+                _blockedHostnames.update { it + host }
+                blocklist.addDomain(host)
+                if (method == BlockMethod.ROOT_HOSTS) rootUtil.appendHostEntry(host)
+            } catch (e: Exception) {
+                Log.e("LogsViewModel", "Failed to temporarily allow domain: $host", e)
+                _error.value = "Failed to temporarily allow $host: ${e.message}"
+            }
         }
     }
 
     fun togglePin(domain: String) {
         viewModelScope.launch {
-            val current = prefs.pinnedDomains.first()
-            if (domain.lowercase() in current) prefs.unpinDomain(domain)
-            else prefs.pinDomain(domain)
+            try {
+                val current = prefs.pinnedDomains.first()
+                if (domain.lowercase() in current) prefs.unpinDomain(domain)
+                else prefs.pinDomain(domain)
+            } catch (e: Exception) {
+                Log.e("LogsViewModel", "Failed to toggle pin for: $domain", e)
+                _error.value = "Failed to toggle pin: ${e.message}"
+            }
         }
     }
 
@@ -203,13 +251,18 @@ class LogsViewModel @Inject constructor(
         val hosts = hostnames.map { it.lowercase() }
         _blockedHostnames.update { it - hosts.toSet() }
         viewModelScope.launch(Dispatchers.IO) {
-            hosts.forEach { host ->
-                repository.addRule(UserRule(hostname = host, type = RuleType.ALLOW))
-                blocklist.removeDomain(host)
-            }
-            val method = prefs.blockMethod.first()
-            if (method == BlockMethod.ROOT_HOSTS) {
-                hosts.forEach { rootUtil.removeHostEntry(it) }
+            try {
+                hosts.forEach { host ->
+                    repository.addRule(UserRule(hostname = host, type = RuleType.ALLOW))
+                    blocklist.removeDomain(host)
+                }
+                val method = prefs.blockMethod.first()
+                if (method == BlockMethod.ROOT_HOSTS) {
+                    hosts.forEach { rootUtil.removeHostEntry(it) }
+                }
+            } catch (e: Exception) {
+                Log.e("LogsViewModel", "Failed to allow domains", e)
+                _error.value = "Failed to allow domains: ${e.message}"
             }
         }
     }
@@ -223,6 +276,8 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val blockedFilter by viewModel.showBlocked.collectAsStateWithLifecycle()
     val blockedSet by viewModel.blockedHostnames.collectAsStateWithLifecycle()
     val pinnedSet by viewModel.pinnedDomains.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     var selectedEntry by remember { mutableStateOf<DedupedLogEntry?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -298,6 +353,37 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             }
             IconButton(onClick = { viewModel.clearLogs() }) {
                 Icon(Icons.Filled.DeleteSweep, "Clear", tint = TextDim)
+            }
+        }
+
+        // Error banner
+        if (error != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = Red.copy(alpha = 0.1f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Error, null, tint = Red, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(error ?: "", color = Red, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.weight(1f))
+                    IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Filled.Close, "Dismiss", tint = Red, modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+        }
+
+        // Loading indicator
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Teal, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
             }
         }
 

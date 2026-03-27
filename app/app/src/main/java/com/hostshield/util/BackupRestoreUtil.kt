@@ -129,10 +129,22 @@ class BackupRestoreUtil @Inject constructor(
 
     /**
      * Write backup JSON to a URI via SAF.
+     * If [passphrase] is non-null and non-empty, the backup is AES-256-GCM encrypted.
+     * Otherwise, plaintext JSON is written (backward-compatible).
      */
-    suspend fun writeBackupToUri(context: Context, uri: Uri, json: String) = withContext(Dispatchers.IO) {
+    suspend fun writeBackupToUri(
+        context: Context,
+        uri: Uri,
+        json: String,
+        passphrase: String? = null
+    ) = withContext(Dispatchers.IO) {
+        val bytes = if (!passphrase.isNullOrEmpty()) {
+            BackupCrypto.encrypt(json.toByteArray(Charsets.UTF_8), passphrase)
+        } else {
+            json.toByteArray(Charsets.UTF_8)
+        }
         context.contentResolver.openOutputStream(uri)?.use { stream ->
-            stream.write(json.toByteArray(Charsets.UTF_8))
+            stream.write(bytes)
         } ?: throw Exception("Cannot open output stream")
     }
 
@@ -253,10 +265,35 @@ class BackupRestoreUtil @Inject constructor(
 
     /**
      * Read backup file content from SAF URI.
+     * Automatically detects whether the file is encrypted.
+     * If encrypted and [passphrase] is provided, decrypts and returns the JSON.
+     * If encrypted but no passphrase is given, throws an exception
+     * so the caller can prompt the user for a passphrase.
+     * Plaintext JSON files are returned as-is regardless of passphrase.
      */
-    suspend fun readBackupFromUri(context: Context, uri: Uri): String = withContext(Dispatchers.IO) {
-        context.contentResolver.openInputStream(uri)?.use { stream ->
-            stream.bufferedReader().readText()
+    suspend fun readBackupFromUri(
+        context: Context,
+        uri: Uri,
+        passphrase: String? = null
+    ): String = withContext(Dispatchers.IO) {
+        val rawBytes = context.contentResolver.openInputStream(uri)?.use { stream ->
+            stream.readBytes()
         } ?: throw Exception("Cannot open input stream")
+
+        if (BackupCrypto.isEncrypted(rawBytes)) {
+            if (passphrase.isNullOrEmpty()) {
+                throw EncryptedBackupException("Backup is encrypted. Please provide a passphrase.")
+            }
+            val decrypted = BackupCrypto.decrypt(rawBytes, passphrase)
+            String(decrypted, Charsets.UTF_8)
+        } else {
+            String(rawBytes, Charsets.UTF_8)
+        }
     }
 }
+
+/**
+ * Thrown when an encrypted backup is encountered but no passphrase was provided.
+ * The UI layer should catch this to prompt the user for a passphrase.
+ */
+class EncryptedBackupException(message: String) : Exception(message)
