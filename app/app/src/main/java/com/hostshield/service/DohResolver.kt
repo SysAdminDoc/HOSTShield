@@ -92,13 +92,6 @@ class DohResolver @Inject constructor() {
         .certificatePinner(certificatePinner)
         .build()
 
-    // Unpinned fallback client — used only when pinned client fails
-    // on ALL providers (e.g. all pins rotated simultaneously)
-    private val fallbackClient = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.SECONDS)
-        .readTimeout(5, TimeUnit.SECONDS)
-        .build()
-
     private val DNS_MESSAGE_TYPE = "application/dns-message".toMediaType()
 
     // Failover order — rotated when a provider fails
@@ -142,13 +135,9 @@ class DohResolver @Inject constructor() {
             }
         }
 
-        // All pinned attempts failed — try unpinned fallback as last resort
-        Log.w(TAG, "All pinned providers failed, trying unpinned fallback")
-        val unpinned = doResolve(dnsQuery, provider, fallbackClient)
-        if (unpinned != null) {
-            Log.w(TAG, "Unpinned fallback succeeded — certificate pins may need update")
-        }
-        unpinned
+        // Fail closed — never downgrade to unpinned resolution
+        Log.e(TAG, "All pinned DoH providers failed — refusing to downgrade to unpinned. DNS resolution failed.")
+        null
     }
 
     /**

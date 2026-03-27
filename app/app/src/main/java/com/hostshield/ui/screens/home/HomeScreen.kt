@@ -1,10 +1,7 @@
 package com.hostshield.ui.screens.home
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,27 +14,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.hostshield.ui.theme.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import java.text.NumberFormat
-import kotlin.math.cos
-import kotlin.math.sin
+import com.hostshield.ui.theme.*
 
 // HostShield v1.6.0 — Premium Home Dashboard
 
@@ -93,93 +81,18 @@ fun HomeScreen(
         // Universal search
         var searchQuery by remember { mutableStateOf("") }
         var searchExpanded by remember { mutableStateOf(false) }
-
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it; searchExpanded = it.isNotBlank() },
-            placeholder = { Text("Search domains, rules, apps...", color = TextDim, fontSize = 13.sp) },
-            leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextDim, modifier = Modifier.size(18.dp)) },
-            trailingIcon = {
-                if (searchQuery.isNotBlank()) {
-                    IconButton(onClick = { searchQuery = ""; searchExpanded = false }) {
-                        Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(16.dp))
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).defaultMinSize(minHeight = 52.dp),
-            singleLine = true, shape = RoundedCornerShape(12.dp),
-            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Teal, unfocusedBorderColor = Surface3,
-                cursorColor = Teal, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
-            )
-        )
-        // Search history chips when field is focused but empty
         val searchHistory by viewModel.searchHistory.collectAsStateWithLifecycle()
-        if (searchQuery.isBlank() && searchHistory.isNotEmpty()) {
-            androidx.compose.foundation.layout.FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                searchHistory.take(6).forEach { term ->
-                    Surface(
-                        onClick = { searchQuery = term; searchExpanded = true; viewModel.saveSearch(term) },
-                        shape = RoundedCornerShape(16.dp),
-                        color = Surface2
-                    ) {
-                        Text(term, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            color = TextDim, fontSize = 11.sp)
-                    }
-                }
-            }
-        }
-        AnimatedVisibility(visible = searchExpanded && searchQuery.length >= 2) {
-            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = Surface1,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Surface(
-                            onClick = { onNavigateToLogs(); searchExpanded = false },
-                            shape = RoundedCornerShape(8.dp),
-                            color = Surface2
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Filled.Dns, null, tint = Blue, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Search \"$searchQuery\" in DNS Logs", color = TextSecondary, fontSize = 12.sp)
-                                Spacer(Modifier.weight(1f))
-                                Icon(Icons.Filled.ChevronRight, null, tint = TextDim, modifier = Modifier.size(16.dp))
-                            }
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Surface(
-                            onClick = { onNavigateToApps(); searchExpanded = false },
-                            shape = RoundedCornerShape(8.dp),
-                            color = Surface2
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Filled.Apps, null, tint = Mauve, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Search \"$searchQuery\" in App Activity", color = TextSecondary, fontSize = 12.sp)
-                                Spacer(Modifier.weight(1f))
-                                Icon(Icons.Filled.ChevronRight, null, tint = TextDim, modifier = Modifier.size(16.dp))
-                            }
-                        }
-                    }
-                }
-            }
-        }
+
+        HomeSearchSection(
+            searchQuery = searchQuery,
+            onSearchQueryChange = { searchQuery = it },
+            searchExpanded = searchExpanded,
+            onSearchExpandedChange = { searchExpanded = it },
+            searchHistory = searchHistory,
+            onSaveSearch = { viewModel.saveSearch(it) },
+            onNavigateToLogs = onNavigateToLogs,
+            onNavigateToApps = onNavigateToApps
+        )
 
         Spacer(Modifier.height(24.dp))
 
@@ -224,403 +137,47 @@ fun HomeScreen(
             ErrorBanner(error) { viewModel.dismissError() }
         }
 
-        // Private DNS warning banner — tap opens system settings
-        state.privateDnsWarning?.let { warning ->
-            Spacer(Modifier.height(8.dp))
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Yellow.copy(alpha = 0.08f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
-                        try { context.startActivity(viewModel.getPrivateDnsSettingsIntent()) }
-                        catch (_: Exception) { }
-                    }
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Icon(
-                        Icons.Filled.Warning, null,
-                        tint = Yellow,
-                        modifier = Modifier.size(16.dp).padding(top = 2.dp)
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Private DNS Active",
-                            color = Yellow,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            "Tap to open Network settings and set Private DNS to \"Off\"",
-                            color = Yellow.copy(alpha = 0.8f),
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp
-                        )
-                    }
-                    IconButton(
-                        onClick = { viewModel.dismissPrivateDnsWarning() },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
-                    }
-                }
-            }
-        }
-
-        // Battery optimization warning banner — tap requests exemption
-        state.batteryWarning?.let { warning ->
-            Spacer(Modifier.height(8.dp))
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Peach.copy(alpha = 0.08f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
-                        viewModel.requestBatteryExemption(context)
-                    }
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Icon(
-                        Icons.Filled.BatteryAlert, null,
-                        tint = Peach,
-                        modifier = Modifier.size(16.dp).padding(top = 2.dp)
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Battery Optimization",
-                            color = Peach,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            "Tap to allow HostShield to run in the background",
-                            color = Peach.copy(alpha = 0.8f),
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp
-                        )
-                    }
-                    IconButton(
-                        onClick = { viewModel.dismissBatteryWarning() },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
-                    }
-                }
-            }
-        }
-
-        // Private Space / work profile VPN bypass warning
-        state.privateSpaceWarning?.let { warning ->
-            Spacer(Modifier.height(8.dp))
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Red.copy(alpha = 0.08f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Icon(
-                        Icons.Filled.Security, null,
-                        tint = Red,
-                        modifier = Modifier.size(16.dp).padding(top = 2.dp)
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Private Space Detected",
-                            color = Red,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            warning,
-                            color = Red.copy(alpha = 0.8f),
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp
-                        )
-                    }
-                    IconButton(
-                        onClick = { viewModel.dismissPrivateSpaceWarning() },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
-                    }
-                }
-            }
-        }
-
-        // Query rate anomaly warning
-        state.queryAnomalyWarning?.let { warning ->
-            Spacer(Modifier.height(8.dp))
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Peach.copy(alpha = 0.08f),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
-            ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.TrendingUp, null, tint = Peach, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("High Query Rate", color = Peach, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                        Text(warning, color = Peach.copy(alpha = 0.8f), fontSize = 11.sp, lineHeight = 15.sp)
-                    }
-                }
-            }
-        }
-
-        // Buffer overflow warning
-        if (state.droppedQueries > 0) {
-            Spacer(Modifier.height(8.dp))
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Red.copy(alpha = 0.08f),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
-            ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Warning, null, tint = Red, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text("${state.droppedQueries} queries dropped (log buffer full)", color = Red, fontSize = 11.sp)
-                }
-            }
-        }
-
-        // Feature status pills (VPN mode only)
-        if (state.isEnabled && state.blockMethod == com.hostshield.data.model.BlockMethod.VPN) {
-            Spacer(Modifier.height(8.dp))
-            androidx.compose.foundation.layout.FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                if (state.dohEnabled) {
-                    FeaturePill("DoH", Blue)
-                }
-                if (state.dnsTrapEnabled) {
-                    FeaturePill("DNS Trap", Teal)
-                }
-                if (state.firewalledApps > 0) {
-                    FeaturePill("${state.firewalledApps} Firewalled", Red)
-                }
-                if (state.networkFirewallActive) {
-                    FeaturePill("iptables", Peach)
-                }
-            }
-        }
-
-        // Live query rate + latency sparkline
-        if (state.isEnabled && (state.queriesPerMinute > 0 || state.blocksPerMinute > 0)) {
-            Spacer(Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("${state.queriesPerMinute}", color = Blue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Text(" q/min", color = TextDim, fontSize = 10.sp)
-                Spacer(Modifier.width(16.dp))
-                Text("${state.blocksPerMinute}", color = Red, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Text(" blk/min", color = TextDim, fontSize = 10.sp)
-                if (state.avgLatencyMs > 0) {
-                    Spacer(Modifier.width(16.dp))
-                    Text("${state.avgLatencyMs}", color = Peach, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    Text(" ms", color = TextDim, fontSize = 10.sp)
-                }
-            }
-            // Latency sparkline
-            if (state.latencySparkline.size >= 3) {
-                Spacer(Modifier.height(6.dp))
-                Canvas(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp).height(24.dp)
-                ) {
-                    val points = state.latencySparkline
-                    val maxVal = points.max().toFloat().coerceAtLeast(1f)
-                    val stepX = size.width / (points.size - 1).coerceAtLeast(1)
-                    val path = androidx.compose.ui.graphics.Path()
-                    points.forEachIndexed { i, v ->
-                        val x = i * stepX
-                        val y = size.height - (v / maxVal * size.height * 0.9f)
-                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                    }
-                    drawPath(
-                        path = path,
-                        color = Peach.copy(alpha = 0.6f),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = 2f,
-                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                        )
-                    )
-                }
-            }
-        }
+        // Warning banners, feature pills, live rates
+        HomeWarningsSection(
+            privateDnsWarning = state.privateDnsWarning,
+            privateDnsSettingsIntent = try { viewModel.getPrivateDnsSettingsIntent() } catch (_: Exception) { null },
+            onDismissPrivateDns = { viewModel.dismissPrivateDnsWarning() },
+            batteryWarning = state.batteryWarning,
+            onRequestBatteryExemption = { viewModel.requestBatteryExemption(context) },
+            onDismissBattery = { viewModel.dismissBatteryWarning() },
+            privateSpaceWarning = state.privateSpaceWarning,
+            onDismissPrivateSpace = { viewModel.dismissPrivateSpaceWarning() },
+            queryAnomalyWarning = state.queryAnomalyWarning,
+            droppedQueries = state.droppedQueries,
+            isEnabled = state.isEnabled,
+            blockMethod = state.blockMethod,
+            dohEnabled = state.dohEnabled,
+            dnsTrapEnabled = state.dnsTrapEnabled,
+            firewalledApps = state.firewalledApps,
+            networkFirewallActive = state.networkFirewallActive,
+            queriesPerMinute = state.queriesPerMinute,
+            blocksPerMinute = state.blocksPerMinute,
+            avgLatencyMs = state.avgLatencyMs,
+            latencySparkline = state.latencySparkline,
+            context = context
+        )
 
         Spacer(Modifier.height(24.dp))
 
-        // Stats grid
-        Column(
-            modifier = Modifier.padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                StatTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.Shield,
-                    value = formatNumber(state.totalDomainsBlocked),
-                    label = "Domains Blocked",
-                    accent = Teal,
-                    glowColor = TealGlow
-                )
-                StatTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.Block,
-                    value = formatNumber(state.blockedToday),
-                    label = "Blocked Today",
-                    accent = Red,
-                    glowColor = Red,
-                    onClick = onNavigateToLogs
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                StatTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.Dns,
-                    value = formatNumber(state.totalQueriesToday),
-                    label = "Queries Today",
-                    accent = Blue,
-                    glowColor = Blue,
-                    onClick = onNavigateToLogs
-                )
-                StatTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.CloudDownload,
-                    value = state.enabledSources.toString(),
-                    label = "Active Sources",
-                    accent = Mauve,
-                    glowColor = Mauve
-                )
-            }
-        }
-
-        // Privacy Score card
-        if (state.privacyScore > 0) {
-            Spacer(Modifier.height(10.dp))
-            GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-                Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    val scoreColor = when {
-                        state.privacyScore >= 80 -> Green
-                        state.privacyScore >= 50 -> Yellow
-                        else -> Red
-                    }
-                    Box(
-                        modifier = Modifier.size(44.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            progress = { state.privacyScore / 100f },
-                            modifier = Modifier.size(44.dp),
-                            color = scoreColor,
-                            trackColor = Surface3,
-                            strokeWidth = 4.dp
-                        )
-                        Text(
-                            "${state.privacyScore}",
-                            color = scoreColor, fontWeight = FontWeight.Bold, fontSize = 14.sp
-                        )
-                    }
-                    Spacer(Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Privacy Score", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                        val passCount = state.privacyItems.count { it.passed }
-                        val totalCount = state.privacyItems.size
-                        Text("$passCount/$totalCount checks passed", color = TextDim, fontSize = 11.sp)
-                    }
-                    val failedItems = state.privacyItems.filter { !it.passed }
-                    if (failedItems.isNotEmpty()) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Yellow.copy(alpha = 0.1f)
-                        ) {
-                            Text(
-                                "${failedItems.size} tips",
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                color = Yellow, fontSize = 10.sp, fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Category quick toggles
-        if (state.categoryCounts.isNotEmpty()) {
-            Spacer(Modifier.height(10.dp))
-            GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text("Source Categories", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                    Spacer(Modifier.height(8.dp))
-                    val catColors = mapOf(
-                        "ADS" to Teal, "TRACKERS" to Blue, "MALWARE" to Red,
-                        "ADULT" to Flamingo, "SOCIAL" to Mauve, "CRYPTO" to Peach,
-                        "ALLOWLIST" to Green, "CUSTOM" to Yellow
-                    )
-                    val cats = state.categoryCounts.entries.sortedBy { it.key }
-                    // Wrap chips across multiple rows using FlowRow
-                    androidx.compose.foundation.layout.FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        cats.forEach { (cat, counts) ->
-                            val (enabled, total) = counts
-                            val color = catColors[cat] ?: TextDim
-                            val allEnabled = enabled == total
-                            Surface(
-                                onClick = { viewModel.toggleCategory(cat, !allEnabled) },
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (allEnabled) color.copy(alpha = 0.12f) else Surface2
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        cat.lowercase().replaceFirstChar { it.uppercase() },
-                                        color = if (allEnabled) color else TextDim,
-                                        fontSize = 11.sp, fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("$enabled/$total", color = TextDim, fontSize = 9.sp)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Stats grid, privacy score, categories, top apps
+        HomeStatsSection(
+            totalDomainsBlocked = state.totalDomainsBlocked,
+            blockedToday = state.blockedToday,
+            totalQueriesToday = state.totalQueriesToday,
+            enabledSources = state.enabledSources,
+            privacyScore = state.privacyScore,
+            privacyItems = state.privacyItems,
+            categoryCounts = state.categoryCounts,
+            topApps = state.topApps,
+            onNavigateToLogs = onNavigateToLogs,
+            onToggleCategory = { cat, enable -> viewModel.toggleCategory(cat, enable) },
+            onNavigateToAppLogs = onNavigateToAppLogs
+        )
 
         Spacer(Modifier.height(20.dp))
 
@@ -650,7 +207,6 @@ fun HomeScreen(
                     onClick = {
                         if (!state.isApplying) {
                             viewModel.setBlockMethod(com.hostshield.data.model.BlockMethod.ROOT_HOSTS)
-                            // Apply if not already active in this mode
                             if (state.activeMethod != com.hostshield.data.model.BlockMethod.ROOT_HOSTS) {
                                 viewModel.applyRootMode()
                             }
@@ -670,7 +226,6 @@ fun HomeScreen(
                     onClick = {
                         if (!state.isApplying) {
                             viewModel.setBlockMethod(com.hostshield.data.model.BlockMethod.VPN)
-                            // Apply if not already active in this mode
                             if (state.activeMethod != com.hostshield.data.model.BlockMethod.VPN) {
                                 requestVpnThenApply()
                             }
@@ -689,33 +244,6 @@ fun HomeScreen(
                     isActive = state.networkFirewallActive,
                     onClick = onNavigateToFirewall
                 )
-            }
-        }
-
-        // ── Top Querying Apps ────────────────────────────────
-        if (state.topApps.isNotEmpty()) {
-            Spacer(Modifier.height(10.dp))
-            GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text("Top Querying Apps", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                    Spacer(Modifier.height(8.dp))
-                    state.topApps.forEachIndexed { idx, (pkg, label, count) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
-                                .clickable { if (pkg.isNotBlank()) onNavigateToAppLogs(pkg) },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val medalColor = when (idx) { 0 -> Teal; 1 -> Blue; else -> TextDim }
-                            Text("${idx + 1}", color = medalColor, fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                                modifier = Modifier.width(18.dp))
-                            Text(label.ifBlank { "Unknown" }, color = TextPrimary, fontSize = 12.sp,
-                                maxLines = 1, modifier = Modifier.weight(1f),
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                            Icon(Icons.Filled.ChevronRight, null, tint = TextDim.copy(alpha = 0.4f), modifier = Modifier.size(14.dp))
-                            Text("$count", color = TextDim, fontSize = 11.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
-                        }
-                    }
-                }
             }
         }
 
@@ -766,7 +294,6 @@ fun HomeScreen(
                     Spacer(Modifier.height(12.dp))
 
                     if (!state.dnsLoggingEnabled) {
-                        // DNS logging is disabled
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -785,7 +312,6 @@ fun HomeScreen(
                             )
                         }
                     } else if (liveLogs.isEmpty()) {
-                        // No logs yet
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -805,7 +331,6 @@ fun HomeScreen(
                             )
                         }
                     } else {
-                        // Show latest log entries
                         val recentEntries = liveLogs.take(8)
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             for (entry in recentEntries) {
@@ -831,7 +356,6 @@ fun HomeScreen(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 2.dp)
             )
-            // Row 1: DNS Logs + Firewall Log
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -855,7 +379,6 @@ fun HomeScreen(
                     onClick = onNavigateToConnectionLog
                 )
             }
-            // Row 2: App Activity + Firewall Rules
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -1047,608 +570,3 @@ fun HomeScreen(
     }
     } // Box
 }
-
-// ── Brand Header ────────────────────────────────────────────
-
-@Composable
-private fun BrandHeader() {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Icon(Icons.Filled.Shield, null, tint = Teal, modifier = Modifier.size(22.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = "HostShield",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary,
-            letterSpacing = (-0.5).sp
-        )
-    }
-}
-
-// ── Shield Orb ──────────────────────────────────────────────
-
-@Composable
-private fun ShieldOrb(
-    isEnabled: Boolean,
-    isApplying: Boolean,
-    blockedCount: Int,
-    onToggle: () -> Unit
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "orb")
-
-    val glowPulse by infiniteTransition.animateFloat(
-        initialValue = 0.2f, targetValue = 0.45f,
-        animationSpec = infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "glow"
-    )
-    val ringRotation by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing), RepeatMode.Restart),
-        label = "ring"
-    )
-    val spinnerRotation by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart),
-        label = "spinner"
-    )
-
-    val orbScale by animateFloatAsState(
-        if (isApplying) 0.95f else 1f, spring(dampingRatio = 0.6f), label = "scale"
-    )
-    val activeGlow by animateFloatAsState(
-        if (isEnabled) 1f else 0f, tween(600), label = "activeGlow"
-    )
-    val accentColor by animateColorAsState(
-        if (isEnabled) TealGlow else TextDim, tween(500), label = "accent"
-    )
-
-    val orbSizeDp = 164.dp
-    val totalSizeDp = orbSizeDp + 48.dp // extra space for glow bleed + rings
-
-    // Everything drawn on a single Canvas — no child Boxes, no blur, no square artifacts
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(totalSizeDp)
-            .scale(orbScale)
-            .clickable(enabled = !isApplying) { onToggle() }
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val cx = size.width / 2f
-            val cy = size.height / 2f
-            val orbRadius = orbSizeDp.toPx() / 2f
-
-            // ── Ambient glow (soft radial gradient, no blur needed) ──
-            if (activeGlow > 0.01f) {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            TealGlow.copy(alpha = glowPulse * activeGlow * 0.35f),
-                            TealGlow.copy(alpha = glowPulse * activeGlow * 0.12f),
-                            Color.Transparent
-                        ),
-                        center = Offset(cx, cy),
-                        radius = orbRadius * 1.5f
-                    ),
-                    radius = orbRadius * 1.5f,
-                    center = Offset(cx, cy)
-                )
-            }
-
-            // ── Outer rotating ring ──
-            rotate(ringRotation, pivot = Offset(cx, cy)) {
-                val ringR = orbRadius + 8.dp.toPx()
-                drawArc(
-                    brush = Brush.sweepGradient(
-                        0f to accentColor.copy(alpha = 0.55f * activeGlow + 0.08f),
-                        0.25f to accentColor.copy(alpha = 0.01f),
-                        0.5f to accentColor.copy(alpha = 0.01f),
-                        0.75f to accentColor.copy(alpha = 0.01f),
-                        1f to accentColor.copy(alpha = 0.55f * activeGlow + 0.08f),
-                        center = Offset(cx, cy)
-                    ),
-                    startAngle = 0f, sweepAngle = 360f, useCenter = false,
-                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
-                    topLeft = Offset(cx - ringR, cy - ringR),
-                    size = androidx.compose.ui.geometry.Size(ringR * 2, ringR * 2)
-                )
-            }
-
-            // ── Secondary counter-rotating ring ──
-            rotate(-ringRotation * 0.6f, pivot = Offset(cx, cy)) {
-                val ringR2 = orbRadius + 2.dp.toPx()
-                drawArc(
-                    brush = Brush.sweepGradient(
-                        0f to accentColor.copy(alpha = 0.2f * activeGlow + 0.04f),
-                        0.5f to Color.Transparent,
-                        1f to accentColor.copy(alpha = 0.2f * activeGlow + 0.04f),
-                        center = Offset(cx, cy)
-                    ),
-                    startAngle = 0f, sweepAngle = 360f, useCenter = false,
-                    style = Stroke(width = 1.dp.toPx()),
-                    topLeft = Offset(cx - ringR2, cy - ringR2),
-                    size = androidx.compose.ui.geometry.Size(ringR2 * 2, ringR2 * 2)
-                )
-            }
-
-            // ── Orb body (radial gradient circle) ──
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(Surface3, Surface1.copy(alpha = 0.95f), Surface0),
-                    center = Offset(cx, cy),
-                    radius = orbRadius
-                ),
-                radius = orbRadius,
-                center = Offset(cx, cy)
-            )
-
-            // ── Orb border ──
-            drawCircle(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        accentColor.copy(alpha = 0.35f),
-                        Surface3.copy(alpha = 0.25f),
-                        accentColor.copy(alpha = 0.12f)
-                    ),
-                    start = Offset(cx - orbRadius, cy - orbRadius),
-                    end = Offset(cx + orbRadius, cy + orbRadius)
-                ),
-                radius = orbRadius,
-                center = Offset(cx, cy),
-                style = Stroke(width = 1.2.dp.toPx())
-            )
-
-            // ── Spinner arc (while applying) ──
-            if (isApplying) {
-                val spinR = 28.dp.toPx()
-                rotate(spinnerRotation, pivot = Offset(cx, cy)) {
-                    drawArc(
-                        color = Teal,
-                        startAngle = 0f, sweepAngle = 100f, useCenter = false,
-                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
-                        topLeft = Offset(cx - spinR, cy - spinR),
-                        size = androidx.compose.ui.geometry.Size(spinR * 2, spinR * 2)
-                    )
-                }
-            }
-
-            // ── Orbiting particles ──
-            if (isEnabled && !isApplying) {
-                val particleAngles = floatArrayOf(0f, 72f, 144f, 216f, 288f)
-                particleAngles.forEachIndexed { i, baseAngle ->
-                    val angle = baseAngle + ringRotation * (0.3f + i * 0.1f)
-                    val pRadius = orbRadius + 7.dp.toPx()
-                    val rad = Math.toRadians(angle.toDouble())
-                    val px = cx + (cos(rad) * pRadius).toFloat()
-                    val py = cy + (sin(rad) * pRadius).toFloat()
-                    val dotR = (1.5f + (i % 2) * 0.5f).dp.toPx()
-                    drawCircle(
-                        color = Teal.copy(alpha = 0.45f + (i % 3) * 0.15f),
-                        radius = dotR,
-                        center = Offset(px, py)
-                    )
-                }
-            }
-        }
-
-        // ── Shield icon + count (overlaid on orb center) ──
-        if (!isApplying) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Filled.Shield,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(42.dp)
-                )
-                if (blockedCount > 0 && isEnabled) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        formatCompact(blockedCount),
-                        color = accentColor.copy(alpha = 0.8f),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ── Status Label ────────────────────────────────────────────
-
-@Composable
-private fun StatusLabel(isEnabled: Boolean, isApplying: Boolean) {
-    val color by animateColorAsState(
-        targetValue = when {
-            isApplying -> TextSecondary
-            isEnabled -> Teal
-            else -> TextDim
-        },
-        animationSpec = tween(400), label = "statusColor"
-    )
-
-    Text(
-        text = when {
-            isApplying -> "Applying..."
-            isEnabled -> "Protection Active"
-            else -> "Tap to Activate"
-        },
-        style = MaterialTheme.typography.titleMedium,
-        color = color,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.3.sp
-    )
-}
-
-// ── Stat Tile ───────────────────────────────────────────────
-
-@Composable
-private fun StatTile(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    value: String,
-    label: String,
-    accent: Color,
-    glowColor: Color,
-    onClick: (() -> Unit)? = null
-) {
-    GlassCard(modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(RoundedCornerShape(7.dp))
-                        .background(accent.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(icon, null, tint = accent, modifier = Modifier.size(14.dp))
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = value,
-                fontSize = 22.sp,
-                color = TextPrimary,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.5).sp
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary,
-                letterSpacing = 0.2.sp
-            )
-        }
-    }
-}
-
-// ── Mode Chip ───────────────────────────────────────────────
-
-@Composable
-private fun ModeChip(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit
-) {
-    val bgColor by animateColorAsState(
-        targetValue = if (selected) Teal.copy(alpha = 0.12f) else Surface2,
-        animationSpec = tween(200), label = "chipBg"
-    )
-    val borderColor by animateColorAsState(
-        targetValue = if (selected) Teal.copy(alpha = 0.4f) else Surface3,
-        animationSpec = tween(200), label = "chipBorder"
-    )
-    val contentColor = when {
-        !enabled -> TextDim
-        selected -> Teal
-        else -> TextSecondary
-    }
-
-    Surface(
-        onClick = { if (enabled) onClick() },
-        shape = RoundedCornerShape(10.dp),
-        color = bgColor,
-        modifier = Modifier.border(1.dp, borderColor, RoundedCornerShape(10.dp))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, null, tint = contentColor, modifier = Modifier.size(15.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(label, color = contentColor, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            if (!enabled) {
-                Spacer(Modifier.width(6.dp))
-                Text("N/A", color = TextDim, fontSize = 10.sp)
-            }
-        }
-    }
-}
-
-// ── Action Row ──────────────────────────────────────────────
-
-@Composable
-private fun ActionRow(
-    icon: ImageVector,
-    label: String,
-    subtitle: String,
-    color: Color,
-    enabled: Boolean,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .clickable(enabled = enabled, onClick = onClick)
-            .background(if (enabled) Color.Transparent else Color.Transparent)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(color.copy(alpha = 0.08f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, null, tint = if (enabled) color else TextDim, modifier = Modifier.size(16.dp))
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                label,
-                color = if (enabled) TextPrimary else TextDim,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(subtitle, color = TextDim, fontSize = 11.sp)
-        }
-        Icon(Icons.Filled.ChevronRight, null, tint = TextDim, modifier = Modifier.size(18.dp))
-    }
-}
-
-// ── Error Banner ────────────────────────────────────────────
-
-@Composable
-private fun ErrorBanner(error: String, onDismiss: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Red.copy(alpha = 0.08f)),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Filled.Error, null, tint = Red, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(error, color = Red.copy(alpha = 0.9f), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-            IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Filled.Close, null, tint = Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
-            }
-        }
-    }
-}
-
-// ── Module Card (Protection Modules) ────────────────────────
-
-@Composable
-private fun ModuleCard(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    title: String,
-    status: String,
-    detail: String,
-    accent: Color,
-    isActive: Boolean,
-    onClick: () -> Unit
-) {
-    val borderColor by animateColorAsState(
-        targetValue = if (isActive) accent.copy(alpha = 0.4f) else Surface3,
-        animationSpec = tween(300), label = "moduleBorder"
-    )
-    val bgAlpha by animateFloatAsState(
-        targetValue = if (isActive) 0.08f else 0f,
-        animationSpec = tween(300), label = "moduleBg"
-    )
-
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        accent.copy(alpha = bgAlpha),
-                        Surface1.copy(alpha = 0.85f)
-                    )
-                )
-            )
-            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(accent.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, null, tint = accent, modifier = Modifier.size(15.dp))
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(title, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(2.dp))
-            Text(
-                status,
-                color = if (isActive) accent else TextDim,
-                fontSize = 11.sp,
-                fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal
-            )
-            Text(detail, color = TextDim, fontSize = 10.sp)
-        }
-    }
-}
-
-// ── Live Log Row ────────────────────────────────────────────
-
-@Composable
-private fun LiveLogRow(entry: com.hostshield.data.model.DnsLogEntry) {
-    val dotColor = if (entry.blocked) Red else Green
-    val timeStr = remember(entry.timestamp) {
-        try {
-            java.time.Instant.ofEpochMilli(entry.timestamp)
-                .atZone(java.time.ZoneId.systemDefault())
-                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
-        } catch (_: Exception) { "" }
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .background(if (entry.blocked) Red.copy(alpha = 0.04f) else Color.Transparent)
-            .padding(horizontal = 6.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Status dot
-        Canvas(modifier = Modifier.size(6.dp)) {
-            drawCircle(color = dotColor, radius = size.minDimension / 2f)
-        }
-        Spacer(Modifier.width(8.dp))
-        // Domain name (truncated)
-        Text(
-            text = entry.hostname,
-            color = if (entry.blocked) Red.copy(alpha = 0.85f) else TextSecondary,
-            fontSize = 11.sp,
-            maxLines = 1,
-            modifier = Modifier.weight(1f),
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-        )
-        // App label if available
-        if (entry.appLabel.isNotEmpty()) {
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = entry.appLabel,
-                color = TextDim,
-                fontSize = 9.sp,
-                maxLines = 1
-            )
-        }
-        Spacer(Modifier.width(6.dp))
-        // Timestamp
-        Text(timeStr, color = TextDim, fontSize = 9.sp)
-    }
-}
-
-// ── Feature Access Card ─────────────────────────────────────
-
-@Composable
-private fun FeatureAccessCard(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    accent: Color,
-    gradientEnd: Color,
-    onClick: () -> Unit
-) {
-    GlassCard(modifier = modifier.clickable(onClick = onClick)) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(9.dp))
-                    .background(
-                        Brush.linearGradient(listOf(accent.copy(alpha = 0.15f), gradientEnd.copy(alpha = 0.08f)))
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, null, tint = accent, modifier = Modifier.size(17.dp))
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(title, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(2.dp))
-            Text(subtitle, color = TextSecondary, fontSize = 10.sp, maxLines = 1)
-        }
-    }
-}
-
-// ── Glass Card ──────────────────────────────────────────────
-
-@Composable
-private fun FeaturePill(label: String, color: Color) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = color.copy(alpha = 0.10f)
-    ) {
-        Text(
-            label,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            color = color,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}
-
-@Composable
-fun GlassCard(
-    modifier: Modifier = Modifier,
-    borderBrush: Brush = Brush.linearGradient(
-        colors = listOf(
-            Surface4.copy(alpha = 0.8f),
-            Surface3.copy(alpha = 0.2f)
-        )
-    ),
-    content: @Composable () -> Unit
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Surface1.copy(alpha = 0.85f),
-                        Surface0.copy(alpha = 0.9f)
-                    )
-                )
-            )
-            .border(
-                width = 1.dp,
-                brush = borderBrush,
-                shape = RoundedCornerShape(16.dp)
-            )
-    ) {
-        content()
-    }
-}
-
-// ── Helpers ─────────────────────────────────────────────────
-
-private fun formatNumber(n: Int): String =
-    NumberFormat.getNumberInstance().format(n)
-
-private fun formatCompact(n: Int): String = when {
-    n >= 1_000_000 -> "${n / 1_000_000}.${(n % 1_000_000) / 100_000}M"
-    n >= 10_000 -> "${n / 1_000}.${(n % 1_000) / 100}K"
-    n >= 1_000 -> "${n / 1_000}.${(n % 1_000) / 100}K"
-    else -> n.toString()
-}
-
-private fun formatLastApply(ms: Long): String = try {
-    java.time.Instant.ofEpochMilli(ms)
-        .atZone(java.time.ZoneId.systemDefault())
-        .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, h:mm a"))
-} catch (e: Exception) { "Unknown" }

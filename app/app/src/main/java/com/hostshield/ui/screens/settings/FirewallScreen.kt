@@ -70,6 +70,12 @@ class FirewallViewModel @Inject constructor(
     val iptablesActive: StateFlow<Boolean> = iptablesManager.isActive
     val iptablesError: StateFlow<String> = iptablesManager.lastError
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading = _isLoading.asStateFlow()
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+    fun clearError() { _error.value = null }
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
     private val _showSystem = MutableStateFlow(false)
@@ -105,8 +111,15 @@ class FirewallViewModel @Inject constructor(
     fun syncApps() {
         viewModelScope.launch(Dispatchers.IO) {
             _isSyncing.value = true
-            iptablesManager.syncInstalledApps()
-            _isSyncing.value = false
+            _isLoading.value = true
+            try {
+                iptablesManager.syncInstalledApps()
+            } catch (e: Exception) {
+                _error.value = "Failed to sync apps: ${e.message}"
+            } finally {
+                _isSyncing.value = false
+                _isLoading.value = false
+            }
         }
     }
 
@@ -231,6 +244,8 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
     val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
     val diagOutput by viewModel.diagnosticOutput.collectAsStateWithLifecycle()
     val isDiagnosing by viewModel.isDiagnosing.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     // Installed apps for DNS tab
     val allApps = remember {
@@ -272,6 +287,34 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
                     if (showSystem) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
                     "System apps", tint = if (showSystem) Teal else TextDim
                 )
+            }
+        }
+
+        // Error banner
+        if (error != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = Red.copy(alpha = 0.1f)
+            ) {
+                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Error, null, tint = Red, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(error ?: "", color = Red, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.weight(1f))
+                    IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Filled.Close, "Dismiss", tint = Red, modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+        }
+
+        // Loading indicator
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Teal, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
             }
         }
 

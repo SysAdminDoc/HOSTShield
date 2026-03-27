@@ -17,15 +17,19 @@ import javax.inject.Singleton
 // ══════════════════════════════════════════════════════════════
 // HostShield v6.2 — WireGuard DNS Proxy (Roadmap #51)
 //
+// ⚠️ EXPERIMENTAL — Simplified WireGuard, not a full tunnel implementation.
+//
 // Routes DNS queries through a WireGuard tunnel for additional
 // privacy. Uses the WireGuard protocol (Noise_IKpsk2) to
 // encrypt DNS traffic between HostShield and a WireGuard peer.
 //
 // This is a simplified WireGuard implementation focused on
-// DNS-only tunneling:
+// DNS-only tunneling (EXPERIMENTAL limitations):
 //   - Single peer, single allowed IP (the DNS resolver)
 //   - No routing of non-DNS traffic
-//   - Uses ChaCha20-Poly1305 (or AES-256-GCM fallback)
+//   - Uses AES-256-GCM (no ChaCha20-Poly1305 — Java crypto limitation)
+//   - No key rotation or handshake state machine recovery
+//   - No persistent keepalive timer (manual only)
 //   - Supports keepalive for NAT traversal
 //
 // Configuration:
@@ -80,8 +84,12 @@ class WireGuardProxy @Inject constructor() {
         val socket: DatagramSocket,
         val sendKey: ByteArray,          // Derived transport send key
         val recvKey: ByteArray,          // Derived transport receive key
-        val sendNonce: java.util.concurrent.atomic.AtomicLong = java.util.concurrent.atomic.AtomicLong(0),
-        val recvNonce: java.util.concurrent.atomic.AtomicLong = java.util.concurrent.atomic.AtomicLong(0),
+        // Nonce must never repeat under the same key. Randomize the starting counter
+        // so that if a session key is accidentally reused, nonces won't overlap with
+        // a previous session that started at 0. The mask ensures a positive Long value
+        // while still providing ~63 bits of random starting offset.
+        val sendNonce: java.util.concurrent.atomic.AtomicLong = java.util.concurrent.atomic.AtomicLong(java.security.SecureRandom().nextLong() and 0x7FFFFFFFFFFFFFFFL),
+        val recvNonce: java.util.concurrent.atomic.AtomicLong = java.util.concurrent.atomic.AtomicLong(java.security.SecureRandom().nextLong() and 0x7FFFFFFFFFFFFFFFL),
         val senderIndex: Int,
         val receiverIndex: Int,
         val createdAt: Long = System.currentTimeMillis(),
@@ -190,6 +198,7 @@ class WireGuardProxy @Inject constructor() {
      * @return Raw DNS response bytes, or null on failure.
      */
     suspend fun resolveDns(dns: ByteArray): ByteArray? = withContext(Dispatchers.IO) {
+        Log.w(TAG, "⚠️ WireGuard proxy is EXPERIMENTAL — simplified Noise_IKpsk2. See class header for limitations.")
         val sess = session
         if (sess == null || !isConnected) {
             Log.w(TAG, "WireGuard tunnel not connected")

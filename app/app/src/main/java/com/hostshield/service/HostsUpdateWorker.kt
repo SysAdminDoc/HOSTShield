@@ -13,7 +13,9 @@ import com.hostshield.domain.parser.HostsParser
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
+import android.util.Log
 import okhttp3.OkHttpClient
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 // HostShield v4.0.0 -- Auto-Update Worker
@@ -134,12 +136,36 @@ class HostsUpdateWorker @AssistedInject constructor(
 
                     // Fetch remote rule sync URLs and merge domains
                     val syncUrls = prefs.getRuleSyncUrlList()
+                    val maxSyncSizeBytes = 10 * 1024 * 1024 // 10 MB size limit
                     for (url in syncUrls) {
+                        // Only allow HTTPS sync URLs for security
+                        if (!url.startsWith("https://")) {
+                            Log.w(TAG, "Skipping non-HTTPS sync URL: $url — only https:// URLs are allowed")
+                            continue
+                        }
                         try {
                             val request = okhttp3.Request.Builder().url(url).build()
                             httpClient.newCall(request).execute().use { response ->
                                 if (response.isSuccessful) {
                                     val content = response.body?.string() ?: ""
+
+                                    // Reject content that exceeds the size limit
+                                    if (content.toByteArray(Charsets.UTF_8).size > maxSyncSizeBytes) {
+                                        Log.w(TAG, "Sync URL content exceeds 10 MB limit, rejecting: $url")
+                                        return@use
+                                    }
+
+                                    // Compute SHA-256 hash for integrity tracking
+                                    val digest = MessageDigest.getInstance("SHA-256")
+                                    val hash = digest.digest(content.toByteArray(Charsets.UTF_8))
+                                        .joinToString("") { "%02x".format(it) }
+
+                                    val previousHash = prefs.getSyncUrlHash(url)
+                                    if (previousHash != null && previousHash != hash) {
+                                        Log.i(TAG, "Sync URL content changed: $url (hash $previousHash -> $hash)")
+                                    }
+                                    prefs.setSyncUrlHash(url, hash)
+
                                     HostsParser.parse(content).forEach { allDomains.add(it.hostname) }
                                 }
                             }

@@ -17,6 +17,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - v5: Added dns_logs.query_type + dns_logs indices + source health columns
  * - v6: Added dns_logs.response_time_ms, dns_logs.upstream_server,
  *        dns_logs.cname_chain columns for per-query detail view
+ * - v13: Composite indices for common query patterns
+ * - v14: Added index on host_sources.category
  */
 object Migrations {
 
@@ -131,6 +133,24 @@ object Migrations {
         }
     }
 
+    // v6.2.1: Add composite indices for common query patterns
+    val MIGRATION_12_13 = object : Migration(12, 13) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Composite index for per-app DNS log drill-down (AppLogsScreen)
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_dns_logs_app_blocked_ts ON dns_logs (app_package, blocked, timestamp)")
+            // Index on enabled for source/rule filtering
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_host_sources_enabled ON host_sources (enabled)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_user_rules_enabled_type ON user_rules (enabled, type)")
+        }
+    }
+
+    // v6.2.2: Add index on host_sources.category for category-filtered queries
+    val MIGRATION_13_14 = object : Migration(13, 14) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_host_sources_category ON host_sources (category)")
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
-    val ALL = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+    val ALL = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
 }

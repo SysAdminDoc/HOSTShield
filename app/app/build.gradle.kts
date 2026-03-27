@@ -1,4 +1,4 @@
-// HostShield v6.2.0
+// HostShield v6.3.0
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,8 +15,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 35
-        versionCode = 55
-        versionName = "6.2.0"
+        versionCode = 56
+        versionName = "6.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -144,6 +144,9 @@ dependencies {
 
     // DataStore for preferences
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // AndroidX Security — EncryptedSharedPreferences (Roadmap #30)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Custom Tabs (captive portal login)
     implementation("androidx.browser:browser:1.8.0")

@@ -651,13 +651,16 @@ class DnsVpnService : VpnService() {
         stabilityFlushJob?.cancel(); stabilityFlushJob = null
         // Flush remaining logs SYNCHRONOUSLY — serviceScope dies with the service,
         // so a launched coroutine would be cancelled before completing.
+        // Timeout-guarded to prevent ANR if DB write hangs.
         try {
             kotlinx.coroutines.runBlocking(Dispatchers.IO) {
-                val pending = logBuffer.size
-                if (pending > 0) Log.i(TAG, "Flushing $pending remaining log entries on stop")
-                flushLogBuffer()
-                flushStats()
-                flushStability()
+                kotlinx.coroutines.withTimeoutOrNull(3000L) {
+                    val pending = logBuffer.size
+                    if (pending > 0) Log.i(TAG, "Flushing $pending remaining log entries on stop")
+                    flushLogBuffer()
+                    flushStats()
+                    flushStability()
+                } ?: Log.w(TAG, "Final log flush timed out after 3s — some entries may be lost")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Final log flush failed: ${e.message}")
@@ -1420,47 +1423,15 @@ class DnsVpnService : VpnService() {
         return blocklist.isBlocked(domain)
     }
 
-    // ── Packet Parsing ───────────────────────────────────────
+    // ── Packet Parsing (delegated to PacketClassifier & DnsPacketParser) ───
 
-    private fun isIpv4UdpDns(p: ByteArray, len: Int): Boolean {
-        if (len < 28) return false
-        val vih = p[0].toInt() and 0xFF
-        if (vih shr 4 != 4) return false
-        if (p[9].toInt() and 0xFF != 17) return false
-        val ihl = (vih and 0x0F) * 4
-        if (len < ihl + 8) return false
-        return ((p[ihl + 2].toInt() and 0xFF) shl 8 or (p[ihl + 3].toInt() and 0xFF)) == DNS_PORT
-    }
-
-    private fun isIpv6UdpDns(p: ByteArray, len: Int): Boolean {
-        if (len < 48) return false
-        if (p[6].toInt() and 0xFF != 17) return false
-        return ((p[42].toInt() and 0xFF) shl 8 or (p[43].toInt() and 0xFF)) == DNS_PORT
-    }
-
-    /** Detect IPv6 TCP packets destined for port 53. Next header = 6 (TCP). */
-    private fun isIpv6TcpDns(p: ByteArray, len: Int): Boolean {
-        if (len < 60) return false // min IPv6(40) + TCP(20)
-        if (p[6].toInt() and 0xFF != 6) return false // next header = TCP
-        // Dest port at byte 40 (start of TCP) + 2
-        return ((p[42].toInt() and 0xFF) shl 8 or (p[43].toInt() and 0xFF)) == DNS_PORT
-    }
+    private fun isIpv4UdpDns(p: ByteArray, len: Int) = PacketClassifier.isIpv4UdpDns(p, len)
+    private fun isIpv6UdpDns(p: ByteArray, len: Int) = PacketClassifier.isIpv6UdpDns(p, len)
+    private fun isIpv6TcpDns(p: ByteArray, len: Int) = PacketClassifier.isIpv6TcpDns(p, len)
 
     // ── TCP DNS (RFC 7766) ───────────────────────────────────
 
-    /**
-     * Detect IPv4 TCP packets destined for port 53.
-     * Protocol 6 = TCP. Destination port at TCP header offset + 2.
-     */
-    private fun isIpv4TcpDns(p: ByteArray, len: Int): Boolean {
-        if (len < 40) return false  // min IP(20) + TCP(20)
-        val vih = p[0].toInt() and 0xFF
-        if (vih shr 4 != 4) return false
-        if (p[9].toInt() and 0xFF != 6) return false  // protocol = TCP
-        val ihl = (vih and 0x0F) * 4
-        if (len < ihl + 20) return false
-        return ((p[ihl + 2].toInt() and 0xFF) shl 8 or (p[ihl + 3].toInt() and 0xFF)) == DNS_PORT
-    }
+    private fun isIpv4TcpDns(p: ByteArray, len: Int) = PacketClassifier.isIpv4TcpDns(p, len)
 
     /**
      * Handle IPv4 TCP DNS packets (RFC 7766).
@@ -1617,179 +1588,10 @@ class DnsVpnService : VpnService() {
         }
     }
 
-    /** Build IPv6 TCP RST by swapping src/dst and computing checksum. */
-    private fun buildTcpRstV6(orig: ByteArray): ByteArray? {
-        if (orig.size < 60) return null // min IPv6(40) + TCP(20)
-        val rstLen = 40 + 20 // IPv6 header + minimal TCP
-        val rst = ByteArray(rstLen)
+    // ── TCP RST Building (delegated to TcpRstBuilder) ──────
 
-        // IPv6 header
-        rst[0] = 0x60.toByte() // version 6
-        rst[1] = 0; rst[2] = 0; rst[3] = 0 // traffic class + flow label
-        val tcpLen = 20
-        rst[4] = ((tcpLen shr 8) and 0xFF).toByte()
-        rst[5] = (tcpLen and 0xFF).toByte()
-        rst[6] = 6 // next header = TCP
-        rst[7] = 64 // hop limit
-        // Swap src/dst IPv6 addresses (each 16 bytes at offsets 8 and 24)
-        System.arraycopy(orig, 24, rst, 8, 16)  // orig dst -> rst src
-        System.arraycopy(orig, 8, rst, 24, 16)   // orig src -> rst dst
-
-        // TCP header
-        val t = 40
-        val origT = 40
-        // Swap ports
-        rst[t] = orig[origT + 2]; rst[t + 1] = orig[origT + 3]
-        rst[t + 2] = orig[origT]; rst[t + 3] = orig[origT + 1]
-        // Seq = 0
-        rst[t + 4] = 0; rst[t + 5] = 0; rst[t + 6] = 0; rst[t + 7] = 0
-        // ACK = orig SEQ + payload + SYN/FIN
-        val origSeq = ((orig[origT + 4].toLong() and 0xFF) shl 24) or
-            ((orig[origT + 5].toLong() and 0xFF) shl 16) or
-            ((orig[origT + 6].toLong() and 0xFF) shl 8) or
-            (orig[origT + 7].toLong() and 0xFF)
-        val origDataOff = ((orig[origT + 12].toInt() and 0xF0) shr 4) * 4
-        val origPayload = orig.size - 40 - origDataOff
-        val origFlags = orig[origT + 13].toInt() and 0xFF
-        val synBit = if ((origFlags and 0x02) != 0) 1 else 0
-        val finBit = if ((origFlags and 0x01) != 0) 1 else 0
-        val ackNum = origSeq + origPayload + synBit + finBit
-        rst[t + 8] = ((ackNum shr 24) and 0xFF).toByte()
-        rst[t + 9] = ((ackNum shr 16) and 0xFF).toByte()
-        rst[t + 10] = ((ackNum shr 8) and 0xFF).toByte()
-        rst[t + 11] = (ackNum and 0xFF).toByte()
-        rst[t + 12] = 0x50.toByte() // data offset 5
-        rst[t + 13] = 0x14.toByte() // RST + ACK
-        rst[t + 14] = 0; rst[t + 15] = 0 // window
-        rst[t + 16] = 0; rst[t + 17] = 0 // checksum (below)
-        rst[t + 18] = 0; rst[t + 19] = 0 // urgent
-
-        // TCP checksum with IPv6 pseudo-header
-        computeTcpChecksumV6(rst, 40, tcpLen)
-
-        return rst
-    }
-
-    /** TCP checksum for IPv6 (pseudo-header uses src/dst IPv6 addresses). */
-    private fun computeTcpChecksumV6(pkt: ByteArray, tcpStart: Int, tcpLen: Int) {
-        var sum = 0L
-        // Pseudo-header: src IPv6 (16 bytes at offset 8) + dst IPv6 (16 bytes at offset 24)
-        for (i in 8 until 40 step 2) {
-            sum += ((pkt[i].toInt() and 0xFF) shl 8) or (pkt[i + 1].toInt() and 0xFF)
-        }
-        sum += 6 // next header (TCP)
-        sum += tcpLen // TCP length
-        // Zero checksum field
-        pkt[tcpStart + 16] = 0; pkt[tcpStart + 17] = 0
-        // TCP segment
-        for (i in tcpStart until tcpStart + tcpLen step 2) {
-            val hi = pkt[i].toInt() and 0xFF
-            val lo = if (i + 1 < pkt.size) pkt[i + 1].toInt() and 0xFF else 0
-            sum += (hi shl 8) or lo
-        }
-        while (sum shr 16 != 0L) sum = (sum and 0xFFFF) + (sum shr 16)
-        val cksum = sum.toInt().inv() and 0xFFFF
-        pkt[tcpStart + 16] = ((cksum shr 8) and 0xFF).toByte()
-        pkt[tcpStart + 17] = (cksum and 0xFF).toByte()
-    }
-
-    /**
-     * Build a TCP RST packet by swapping src/dst addresses and ports,
-     * setting RST+ACK flags, and computing correct checksums.
-     */
-    private fun buildTcpRst(orig: ByteArray, ihl: Int): ByteArray? {
-        if (orig.size < ihl + 20) return null
-        val rstLen = ihl + 20 // IP header + minimal TCP header (no options)
-        val rst = ByteArray(rstLen)
-
-        // ── IP header ──
-        rst[0] = ((4 shl 4) or (ihl / 4)).toByte() // version + IHL
-        rst[1] = 0 // DSCP/ECN
-        rst[2] = ((rstLen shr 8) and 0xFF).toByte()
-        rst[3] = (rstLen and 0xFF).toByte()
-        rst[4] = 0; rst[5] = 0 // identification
-        rst[6] = 0x40.toByte(); rst[7] = 0 // DF flag, no fragment
-        rst[8] = 64 // TTL
-        rst[9] = 6 // protocol = TCP
-        rst[10] = 0; rst[11] = 0 // checksum (computed below)
-        // Swap src/dst IP
-        System.arraycopy(orig, 16, rst, 12, 4) // orig dst → rst src
-        System.arraycopy(orig, 12, rst, 16, 4) // orig src → rst dst
-
-        // ── TCP header ──
-        val t = ihl
-        // Swap src/dst port
-        rst[t] = orig[t + 2]; rst[t + 1] = orig[t + 3] // orig dst port → rst src
-        rst[t + 2] = orig[t]; rst[t + 3] = orig[t + 1] // orig src port → rst dst
-
-        // Sequence number = 0
-        rst[t + 4] = 0; rst[t + 5] = 0; rst[t + 6] = 0; rst[t + 7] = 0
-
-        // ACK number = orig SEQ + payload length (or +1 for SYN)
-        val origSeq = ((orig[t + 4].toLong() and 0xFF) shl 24) or
-            ((orig[t + 5].toLong() and 0xFF) shl 16) or
-            ((orig[t + 6].toLong() and 0xFF) shl 8) or
-            (orig[t + 7].toLong() and 0xFF)
-        val origDataOff = ((orig[t + 12].toInt() and 0xF0) shr 4) * 4
-        val origPayload = orig.size - ihl - origDataOff
-        val origFlags = orig[t + 13].toInt() and 0xFF
-        val synBit = if ((origFlags and 0x02) != 0) 1 else 0
-        val finBit = if ((origFlags and 0x01) != 0) 1 else 0
-        val ackNum = origSeq + origPayload + synBit + finBit
-        rst[t + 8] = ((ackNum shr 24) and 0xFF).toByte()
-        rst[t + 9] = ((ackNum shr 16) and 0xFF).toByte()
-        rst[t + 10] = ((ackNum shr 8) and 0xFF).toByte()
-        rst[t + 11] = (ackNum and 0xFF).toByte()
-
-        rst[t + 12] = 0x50.toByte() // data offset = 5 (20 bytes, no options)
-        rst[t + 13] = 0x14.toByte() // RST + ACK flags
-        rst[t + 14] = 0; rst[t + 15] = 0 // window = 0
-        rst[t + 16] = 0; rst[t + 17] = 0 // checksum (computed below)
-        rst[t + 18] = 0; rst[t + 19] = 0 // urgent pointer
-
-        // TCP checksum (pseudo-header + TCP header)
-        computeTcpChecksum(rst, ihl, 20)
-
-        // IP checksum
-        computeIpChecksum(rst, ihl)
-
-        return rst
-    }
-
-    /** Compute and write TCP checksum into packet[ihl+16..ihl+17]. */
-    private fun computeTcpChecksum(pkt: ByteArray, ihl: Int, tcpLen: Int) {
-        var sum = 0L
-        // Pseudo-header: src IP + dst IP + 0 + protocol(6) + TCP length
-        for (i in 12 until 20 step 2) {
-            sum += ((pkt[i].toInt() and 0xFF) shl 8) or (pkt[i + 1].toInt() and 0xFF)
-        }
-        sum += 6 // protocol
-        sum += tcpLen // TCP length
-        // TCP header
-        pkt[ihl + 16] = 0; pkt[ihl + 17] = 0 // zero checksum field
-        for (i in ihl until ihl + tcpLen step 2) {
-            val hi = pkt[i].toInt() and 0xFF
-            val lo = if (i + 1 < pkt.size) pkt[i + 1].toInt() and 0xFF else 0
-            sum += (hi shl 8) or lo
-        }
-        while (sum shr 16 != 0L) sum = (sum and 0xFFFF) + (sum shr 16)
-        val cksum = sum.toInt().inv() and 0xFFFF
-        pkt[ihl + 16] = ((cksum shr 8) and 0xFF).toByte()
-        pkt[ihl + 17] = (cksum and 0xFF).toByte()
-    }
-
-    /** Compute and write IP header checksum into pkt[10..11]. */
-    private fun computeIpChecksum(pkt: ByteArray, ihl: Int) {
-        pkt[10] = 0; pkt[11] = 0
-        var sum = 0L
-        for (i in 0 until ihl step 2) {
-            sum += ((pkt[i].toInt() and 0xFF) shl 8) or (pkt[i + 1].toInt() and 0xFF)
-        }
-        while (sum shr 16 != 0L) sum = (sum and 0xFFFF) + (sum shr 16)
-        val cksum = sum.toInt().inv() and 0xFFFF
-        pkt[10] = ((cksum shr 8) and 0xFF).toByte()
-        pkt[11] = (cksum and 0xFF).toByte()
-    }
+    private fun buildTcpRstV6(orig: ByteArray) = TcpRstBuilder.buildTcpRstV6(orig)
+    private fun buildTcpRst(orig: ByteArray, ihl: Int) = TcpRstBuilder.buildTcpRst(orig, ihl)
 
     /** Check if a context-aware firewall rule should block this app right now. */
     private fun shouldBlockByContext(rule: com.hostshield.data.model.FirewallRule, pkg: String): Boolean {
@@ -1799,166 +1601,120 @@ class DnsVpnService : VpnService() {
         return false
     }
 
-    private fun extractDnsPayload(p: ByteArray, len: Int, ihl: Int): ByteArray? {
-        if (len < ihl + 8) return null
-        val udpLen = ((p[ihl + 4].toInt() and 0xFF) shl 8) or (p[ihl + 5].toInt() and 0xFF)
-        val dnsLen = udpLen - 8; val dnsStart = ihl + 8
-        if (dnsLen < 12 || dnsStart + dnsLen > len) return null
-        return p.copyOfRange(dnsStart, dnsStart + dnsLen)
-    }
+    // ── DNS Parsing & Response (delegated to DnsPacketParser) ──
 
-    private fun extractDnsPayloadV6(p: ByteArray, len: Int, hdr: Int): ByteArray? {
-        if (len < hdr + 8) return null
-        val udpLen = ((p[hdr + 4].toInt() and 0xFF) shl 8) or (p[hdr + 5].toInt() and 0xFF)
-        val dnsLen = udpLen - 8; val dnsStart = hdr + 8
-        if (dnsLen < 12 || dnsStart + dnsLen > len) return null
-        return p.copyOfRange(dnsStart, dnsStart + dnsLen)
-    }
-
-    private fun parseDnsQueryDomain(dns: ByteArray): String? {
-        if (dns.size < 12) return null
-        var off = 12; val parts = mutableListOf<String>()
-        while (off < dns.size) {
-            val l = dns[off].toInt() and 0xFF
-            if (l == 0) break
-            if (l > 63 || off + 1 + l > dns.size) return null
-            parts.add(String(dns, off + 1, l, Charsets.US_ASCII)); off += 1 + l
-        }
-        return if (parts.isNotEmpty()) parts.joinToString(".").lowercase() else null
-    }
-
-    private fun parseDnsQueryType(dns: ByteArray): String {
-        if (dns.size < 14) return "?"
-        var off = 12
-        while (off < dns.size) {
-            val l = dns[off].toInt() and 0xFF; if (l == 0) { off++; break }; off += 1 + l
-        }
-        if (off + 2 > dns.size) return "?"
-        val qt = ((dns[off].toInt() and 0xFF) shl 8) or (dns[off + 1].toInt() and 0xFF)
-        return when (qt) {
-            1 -> "A"; 28 -> "AAAA"; 5 -> "CNAME"; 15 -> "MX"; 16 -> "TXT"
-            2 -> "NS"; 6 -> "SOA"; 33 -> "SRV"; 65 -> "HTTPS"; 257 -> "CAA"
-            else -> "TYPE$qt"
-        }
-    }
-
-    // ── DNS Response Construction ────────────────────────────
-
-    /** NXDOMAIN with SOA authority for negative caching (RFC 2308). */
-    private fun wrapResponseV4(orig: ByteArray, ihl: Int, dns: ByteArray): ByteArray? {
-        try {
-            val total = ihl + 8 + dns.size
-            val r = ByteArray(total)
-            System.arraycopy(orig, 0, r, 0, ihl)
-            System.arraycopy(orig, 12, r, 16, 4)
-            System.arraycopy(orig, 16, r, 12, 4)
-            r[2] = ((total shr 8) and 0xFF).toByte(); r[3] = (total and 0xFF).toByte()
-            r[6] = 0; r[7] = 0; r[8] = 64
-            r[ihl] = orig[ihl + 2]; r[ihl + 1] = orig[ihl + 3]
-            r[ihl + 2] = orig[ihl]; r[ihl + 3] = orig[ihl + 1]
-            val udpLen = 8 + dns.size
-            r[ihl + 4] = ((udpLen shr 8) and 0xFF).toByte(); r[ihl + 5] = (udpLen and 0xFF).toByte()
-            r[ihl + 6] = 0; r[ihl + 7] = 0
-            System.arraycopy(dns, 0, r, ihl + 8, dns.size)
-            // IP checksum
-            r[10] = 0; r[11] = 0
-            var sum = 0L
-            for (i in 0 until ihl step 2) sum += ((r[i].toInt() and 0xFF) shl 8) or (r[i + 1].toInt() and 0xFF)
-            while (sum shr 16 != 0L) sum = (sum and 0xFFFF) + (sum shr 16)
-            val ck = sum.inv().toInt() and 0xFFFF
-            r[10] = ((ck shr 8) and 0xFF).toByte(); r[11] = (ck and 0xFF).toByte()
-            return r
-        } catch (_: Exception) { return null }
-    }
-
-    private fun wrapResponseV6(orig: ByteArray, hdr: Int, dns: ByteArray): ByteArray? {
-        try {
-            val udpLen = 8 + dns.size; val total = hdr + udpLen
-            val r = ByteArray(total)
-            System.arraycopy(orig, 0, r, 0, hdr)
-            System.arraycopy(orig, 8, r, 24, 16)
-            System.arraycopy(orig, 24, r, 8, 16)
-            r[4] = ((udpLen shr 8) and 0xFF).toByte(); r[5] = (udpLen and 0xFF).toByte()
-            r[7] = 64
-            r[hdr] = orig[hdr + 2]; r[hdr + 1] = orig[hdr + 3]
-            r[hdr + 2] = orig[hdr]; r[hdr + 3] = orig[hdr + 1]
-            r[hdr + 4] = ((udpLen shr 8) and 0xFF).toByte(); r[hdr + 5] = (udpLen and 0xFF).toByte()
-            r[hdr + 6] = 0; r[hdr + 7] = 0
-            System.arraycopy(dns, 0, r, hdr + 8, dns.size)
-            return r
-        } catch (_: Exception) { return null }
-    }
+    private fun extractDnsPayload(p: ByteArray, len: Int, ihl: Int) = DnsPacketParser.extractDnsPayload(p, len, ihl)
+    private fun extractDnsPayloadV6(p: ByteArray, len: Int, hdr: Int) = DnsPacketParser.extractDnsPayloadV6(p, len, hdr)
+    private fun parseDnsQueryDomain(dns: ByteArray) = DnsPacketParser.parseDnsQueryDomain(dns)
+    private fun parseDnsQueryType(dns: ByteArray) = DnsPacketParser.parseDnsQueryType(dns)
+    private fun wrapResponseV4(orig: ByteArray, ihl: Int, dns: ByteArray) = DnsPacketParser.wrapResponseV4(orig, ihl, dns)
+    private fun wrapResponseV6(orig: ByteArray, hdr: Int, dns: ByteArray) = DnsPacketParser.wrapResponseV6(orig, hdr, dns)
 
     // ── DNS Forwarding ───────────────────────────────────────
 
+    /**
+     * Result of [postForwardChecks]: either the response was blocked (CNAME cloak or
+     * threat-intel) or it is clean and should be forwarded to the client.
+     *
+     * @property blocked `true` when the response triggered a block rule.
+     * @property blockResponse the DNS block-response bytes to send back, or `null` when
+     *           [buildBlockResponse] returned `null` (caller should skip sending).
+     */
+    private data class PostForwardResult(val blocked: Boolean, val blockResponse: ByteArray? = null)
+
+    /**
+     * Shared post-forward checks: CNAME cloaking detection + threat intelligence IP lookup.
+     *
+     * When the response is blocked, [PostForwardResult.blocked] is `true` and
+     * [PostForwardResult.blockResponse] contains the DNS block-response bytes (may be
+     * `null` if [buildBlockResponse] failed).  Logging, counter increments, and DNS
+     * caching are handled internally.
+     */
+    private suspend fun postForwardChecks(
+        respBytes: ByteArray,
+        dns: ByteArray,
+        domain: String,
+        app: Pair<String, String>,
+        latencyMs: Int,
+        upstreamServer: String
+    ): PostForwardResult {
+        val qtype = parseDnsQueryType(dns)
+
+        // 1. CNAME cloaking detection — block if any CNAME target is in blocklist
+        val cnameResult = CnameCloakDetector.inspect(respBytes, blocklist)
+        if (cnameResult.blocked) {
+            Log.i(TAG, "CNAME CLOAK blocked: $domain -> ${cnameResult.blockedCname}")
+            logAsyncRich(domain, true, app, qtype,
+                cnameChain = cnameResult.cnameChain.joinToString(","),
+                responseTimeMs = latencyMs, upstreamServer = upstreamServer)
+            val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
+                when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
+            })
+            blockedCount.incrementAndGet()
+            return PostForwardResult(blocked = true, blockResponse = blockResp)
+        }
+
+        // 2. Threat intelligence IP check
+        val resolvedIps = CnameCloakDetector.extractAnswerIps(respBytes)
+        if (threatIntelEnabled) {
+            for (ip in resolvedIps) {
+                val threat = threatIntelManager.isIpMalicious(ip)
+                if (threat != null) {
+                    Log.i(TAG, "THREAT-INTEL blocked IP: $ip for $domain (${threat.feedName})")
+                    logAsyncRich(domain, true, app, qtype,
+                        resolvedIps = resolvedIps.joinToString(","),
+                        responseTimeMs = latencyMs, upstreamServer = upstreamServer)
+                    val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
+                        when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
+                    })
+                    blockedCount.incrementAndGet()
+                    return PostForwardResult(blocked = true, blockResponse = blockResp)
+                }
+            }
+        }
+
+        // 3. Response is clean — log, cache, and let caller forward it
+        logAsyncRich(domain, false, app, qtype,
+            cnameChain = cnameResult.cnameChain.joinToString(","),
+            resolvedIps = resolvedIps.joinToString(","),
+            responseTimeMs = latencyMs, upstreamServer = upstreamServer)
+
+        cacheDnsAnswerIps(domain, respBytes)
+        dnsCache.put(domain, DnsPacketBuilder.parseQueryType(dns), respBytes)
+
+        return PostForwardResult(blocked = false)
+    }
+
     private suspend fun forwardUdp(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                     app: Pair<String, String> = Pair("", "")) {
+        val sock = DatagramSocket()
         try {
             val startMs = System.currentTimeMillis()
-            val sock = DatagramSocket(); protect(sock)
+            protect(sock)
             sock.soTimeout = 5000
             val primary = upstreamDnsServers.firstOrNull() ?: UPSTREAM_DNS[0]
             sock.send(DatagramPacket(dns, dns.size, InetAddress.getByName(primary), DNS_PORT))
             val buf = ByteArray(1500); val rp = DatagramPacket(buf, buf.size)
             try {
-                sock.receive(rp); sock.close()
+                sock.receive(rp)
                 val respBytes = buf.copyOf(rp.length)
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val qtype = parseDnsQueryType(dns)
 
-                // CNAME cloaking detection — block if any CNAME target is in blocklist
-                val cnameResult = CnameCloakDetector.inspect(respBytes, blocklist)
-                if (cnameResult.blocked) {
-                    Log.i(TAG, "CNAME CLOAK blocked: $domain -> ${cnameResult.blockedCname}")
-                    logAsyncRich(domain, true, app, qtype,
-                        cnameChain = cnameResult.cnameChain.joinToString(","),
-                        responseTimeMs = latencyMs, upstreamServer = primary)
-                    val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                        when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                    })
-                    if (blockResp != null) wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
-                    blockedCount.incrementAndGet()
+                val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, primary)
+                if (pfResult.blocked) {
+                    if (pfResult.blockResponse != null) wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
                     return
                 }
 
-                // Log rich data for allowed queries
-                val resolvedIps = CnameCloakDetector.extractAnswerIps(respBytes)
-
-                // v6.0: Threat intelligence IP check
-                if (threatIntelEnabled) {
-                    for (ip in resolvedIps) {
-                        val threat = threatIntelManager.isIpMalicious(ip)
-                        if (threat != null) {
-                            Log.i(TAG, "THREAT-INTEL blocked IP: $ip for $domain (${threat.feedName})")
-                            logAsyncRich(domain, true, app, qtype,
-                                resolvedIps = resolvedIps.joinToString(","),
-                                responseTimeMs = latencyMs, upstreamServer = primary)
-                            val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                                when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                            })
-                            if (blockResp != null) wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
-                            blockedCount.incrementAndGet()
-                            return
-                        }
-                    }
-                }
-
-                logAsyncRich(domain, false, app, qtype,
-                    cnameChain = cnameResult.cnameChain.joinToString(","),
-                    resolvedIps = resolvedIps.joinToString(","),
-                    responseTimeMs = latencyMs, upstreamServer = primary)
-
-                cacheDnsAnswerIps(domain, respBytes)
-                val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-                dnsCache.put(domain, qtypeNum, respBytes)
-
                 wrapResponseV4(orig, ihl, respBytes)?.let { writeChannel.send(it) }
             } catch (_: java.net.SocketTimeoutException) {
-                sock.close(); forwardUdpFallback(dns, domain, orig, ihl, app)
+                forwardUdpFallback(dns, domain, orig, ihl, app)
             }
         } catch (_: Exception) {
             // v5.0: Serve-stale fallback — return expired cache entry if upstream completely fails
             serveStaleV4(dns, domain, orig, ihl)
+        } finally {
+            try { sock.close() } catch (_: Exception) { }
         }
     }
 
@@ -1974,49 +1730,13 @@ class DnsVpnService : VpnService() {
             sock.receive(rp)
             val respBytes = buf.copyOf(rp.length)
             val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-            val qtype = parseDnsQueryType(dns)
 
-            val cnameResult = CnameCloakDetector.inspect(respBytes, blocklist)
-            if (cnameResult.blocked) {
-                logAsyncRich(domain, true, app, qtype,
-                    cnameChain = cnameResult.cnameChain.joinToString(","),
-                    responseTimeMs = latencyMs, upstreamServer = "$fallback (fallback)")
-                val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                    when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                })
-                if (blockResp != null) wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
-                blockedCount.incrementAndGet()
+            val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, "$fallback (fallback)")
+            if (pfResult.blocked) {
+                if (pfResult.blockResponse != null) wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
                 return
             }
 
-            val resolvedIps = CnameCloakDetector.extractAnswerIps(respBytes)
-
-            // v6.0: Threat intelligence IP check
-            if (threatIntelEnabled) {
-                for (ip in resolvedIps) {
-                    val threat = threatIntelManager.isIpMalicious(ip)
-                    if (threat != null) {
-                        Log.i(TAG, "THREAT-INTEL blocked IP (fallback): $ip for $domain (${threat.feedName})")
-                        logAsyncRich(domain, true, app, qtype,
-                            resolvedIps = resolvedIps.joinToString(","),
-                            responseTimeMs = latencyMs, upstreamServer = "$fallback (fallback)")
-                        val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                            when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                        })
-                        if (blockResp != null) wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
-                        blockedCount.incrementAndGet()
-                        return
-                    }
-                }
-            }
-
-            logAsyncRich(domain, false, app, qtype,
-                cnameChain = cnameResult.cnameChain.joinToString(","),
-                resolvedIps = resolvedIps.joinToString(","),
-                responseTimeMs = latencyMs, upstreamServer = "$fallback (fallback)")
-
-            cacheDnsAnswerIps(domain, respBytes)
-            dnsCache.put(domain, DnsPacketBuilder.parseQueryType(dns), respBytes)
             wrapResponseV4(orig, ihl, respBytes)?.let { writeChannel.send(it) }
         } catch (_: Exception) {
             // v5.0: Serve-stale fallback — both upstreams failed, try expired cache
@@ -2050,59 +1770,16 @@ class DnsVpnService : VpnService() {
             val resp = dohResolver.resolve(dns, dohProvider)
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val qtype = parseDnsQueryType(dns)
                 val upstreamLabel = "DoH:${dohProvider.name}"
 
-                // CNAME cloaking detection
-                val cnameResult = CnameCloakDetector.inspect(resp, blocklist)
-                if (cnameResult.blocked) {
-                    Log.i(TAG, "CNAME CLOAK (DoH) blocked: $domain -> ${cnameResult.blockedCname}")
-                    logAsyncRich(domain, true, app, qtype,
-                        cnameChain = cnameResult.cnameChain.joinToString(","),
-                        responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-                    val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                        when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                    })
-                    if (blockResp != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, blockResp)?.let { writeChannel.send(it) }
-                        else wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
+                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
+                if (pfResult.blocked) {
+                    if (pfResult.blockResponse != null) {
+                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
                     }
-                    blockedCount.incrementAndGet()
                     return
                 }
-
-                val resolvedIps = CnameCloakDetector.extractAnswerIps(resp)
-
-                // v6.0: Threat intelligence IP check
-                if (threatIntelEnabled) {
-                    for (ip in resolvedIps) {
-                        val threat = threatIntelManager.isIpMalicious(ip)
-                        if (threat != null) {
-                            Log.i(TAG, "THREAT-INTEL blocked IP (DoH): $ip for $domain (${threat.feedName})")
-                            logAsyncRich(domain, true, app, qtype,
-                                resolvedIps = resolvedIps.joinToString(","),
-                                responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-                            val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                                when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                            })
-                            if (blockResp != null) {
-                                if (wrapV6) wrapResponseV6(orig, v6Hdr, blockResp)?.let { writeChannel.send(it) }
-                                else wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
-                            }
-                            blockedCount.incrementAndGet()
-                            return
-                        }
-                    }
-                }
-
-                logAsyncRich(domain, false, app, qtype,
-                    cnameChain = cnameResult.cnameChain.joinToString(","),
-                    resolvedIps = resolvedIps.joinToString(","),
-                    responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-
-                cacheDnsAnswerIps(domain, resp)
-                val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-                dnsCache.put(domain, qtypeNum, resp)
 
                 if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { writeChannel.send(it) }
                 else wrapResponseV4(orig, ihl, resp)?.let { writeChannel.send(it) }
@@ -2129,59 +1806,16 @@ class DnsVpnService : VpnService() {
             val resp = doqResolver.resolve(dns, doqProvider)
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val qtype = parseDnsQueryType(dns)
                 val upstreamLabel = "DoQ:${doqProvider.name}"
 
-                // CNAME cloaking detection
-                val cnameResult = CnameCloakDetector.inspect(resp, blocklist)
-                if (cnameResult.blocked) {
-                    Log.i(TAG, "CNAME CLOAK (DoQ) blocked: $domain -> ${cnameResult.blockedCname}")
-                    logAsyncRich(domain, true, app, qtype,
-                        cnameChain = cnameResult.cnameChain.joinToString(","),
-                        responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-                    val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                        when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                    })
-                    if (blockResp != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, blockResp)?.let { writeChannel.send(it) }
-                        else wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
+                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
+                if (pfResult.blocked) {
+                    if (pfResult.blockResponse != null) {
+                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
                     }
-                    blockedCount.incrementAndGet()
                     return
                 }
-
-                val resolvedIps = CnameCloakDetector.extractAnswerIps(resp)
-
-                // Threat intelligence IP check
-                if (threatIntelEnabled) {
-                    for (ip in resolvedIps) {
-                        val threat = threatIntelManager.isIpMalicious(ip)
-                        if (threat != null) {
-                            Log.i(TAG, "THREAT-INTEL blocked IP (DoQ): $ip for $domain (${threat.feedName})")
-                            logAsyncRich(domain, true, app, qtype,
-                                resolvedIps = resolvedIps.joinToString(","),
-                                responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-                            val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                                when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                            })
-                            if (blockResp != null) {
-                                if (wrapV6) wrapResponseV6(orig, v6Hdr, blockResp)?.let { writeChannel.send(it) }
-                                else wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
-                            }
-                            blockedCount.incrementAndGet()
-                            return
-                        }
-                    }
-                }
-
-                logAsyncRich(domain, false, app, qtype,
-                    cnameChain = cnameResult.cnameChain.joinToString(","),
-                    resolvedIps = resolvedIps.joinToString(","),
-                    responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-
-                cacheDnsAnswerIps(domain, resp)
-                val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-                dnsCache.put(domain, qtypeNum, resp)
 
                 if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { writeChannel.send(it) }
                 else wrapResponseV4(orig, ihl, resp)?.let { writeChannel.send(it) }
@@ -2211,59 +1845,16 @@ class DnsVpnService : VpnService() {
             val resp = wireGuardProxy.resolveDns(dns)
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val qtype = parseDnsQueryType(dns)
                 val upstreamLabel = "WireGuard"
 
-                // CNAME cloaking detection
-                val cnameResult = CnameCloakDetector.inspect(resp, blocklist)
-                if (cnameResult.blocked) {
-                    Log.i(TAG, "CNAME CLOAK (WG) blocked: $domain -> ${cnameResult.blockedCname}")
-                    logAsyncRich(domain, true, app, qtype,
-                        cnameChain = cnameResult.cnameChain.joinToString(","),
-                        responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-                    val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                        when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                    })
-                    if (blockResp != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, blockResp)?.let { writeChannel.send(it) }
-                        else wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
+                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
+                if (pfResult.blocked) {
+                    if (pfResult.blockResponse != null) {
+                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
                     }
-                    blockedCount.incrementAndGet()
                     return
                 }
-
-                val resolvedIps = CnameCloakDetector.extractAnswerIps(resp)
-
-                // Threat intelligence IP check
-                if (threatIntelEnabled) {
-                    for (ip in resolvedIps) {
-                        val threat = threatIntelManager.isIpMalicious(ip)
-                        if (threat != null) {
-                            Log.i(TAG, "THREAT-INTEL blocked IP (WG): $ip for $domain (${threat.feedName})")
-                            logAsyncRich(domain, true, app, qtype,
-                                resolvedIps = resolvedIps.joinToString(","),
-                                responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-                            val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                                when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                            })
-                            if (blockResp != null) {
-                                if (wrapV6) wrapResponseV6(orig, v6Hdr, blockResp)?.let { writeChannel.send(it) }
-                                else wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
-                            }
-                            blockedCount.incrementAndGet()
-                            return
-                        }
-                    }
-                }
-
-                logAsyncRich(domain, false, app, qtype,
-                    cnameChain = cnameResult.cnameChain.joinToString(","),
-                    resolvedIps = resolvedIps.joinToString(","),
-                    responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-
-                cacheDnsAnswerIps(domain, resp)
-                val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-                dnsCache.put(domain, qtypeNum, resp)
 
                 if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { writeChannel.send(it) }
                 else wrapResponseV4(orig, ihl, resp)?.let { writeChannel.send(it) }
@@ -2298,59 +1889,16 @@ class DnsVpnService : VpnService() {
             val resp = dotResolver.resolve(dns, dotProvider)
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val qtype = parseDnsQueryType(dns)
                 val upstreamLabel = "DoT:${dotProvider.name}"
 
-                // CNAME cloaking detection
-                val cnameResult = CnameCloakDetector.inspect(resp, blocklist)
-                if (cnameResult.blocked) {
-                    Log.i(TAG, "CNAME CLOAK (DoT) blocked: $domain -> ${cnameResult.blockedCname}")
-                    logAsyncRich(domain, true, app, qtype,
-                        cnameChain = cnameResult.cnameChain.joinToString(","),
-                        responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-                    val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                        when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                    })
-                    if (blockResp != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, blockResp)?.let { writeChannel.send(it) }
-                        else wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
+                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
+                if (pfResult.blocked) {
+                    if (pfResult.blockResponse != null) {
+                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
                     }
-                    blockedCount.incrementAndGet()
                     return
                 }
-
-                val resolvedIps = CnameCloakDetector.extractAnswerIps(resp)
-
-                // Threat intelligence IP check
-                if (threatIntelEnabled) {
-                    for (ip in resolvedIps) {
-                        val threat = threatIntelManager.isIpMalicious(ip)
-                        if (threat != null) {
-                            Log.i(TAG, "THREAT-INTEL blocked IP (DoT): $ip for $domain (${threat.feedName})")
-                            logAsyncRich(domain, true, app, qtype,
-                                resolvedIps = resolvedIps.joinToString(","),
-                                responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-                            val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                                when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                            })
-                            if (blockResp != null) {
-                                if (wrapV6) wrapResponseV6(orig, v6Hdr, blockResp)?.let { writeChannel.send(it) }
-                                else wrapResponseV4(orig, ihl, blockResp)?.let { writeChannel.send(it) }
-                            }
-                            blockedCount.incrementAndGet()
-                            return
-                        }
-                    }
-                }
-
-                logAsyncRich(domain, false, app, qtype,
-                    cnameChain = cnameResult.cnameChain.joinToString(","),
-                    resolvedIps = resolvedIps.joinToString(","),
-                    responseTimeMs = latencyMs, upstreamServer = upstreamLabel)
-
-                cacheDnsAnswerIps(domain, resp)
-                val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-                dnsCache.put(domain, qtypeNum, resp)
 
                 if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { writeChannel.send(it) }
                 else wrapResponseV4(orig, ihl, resp)?.let { writeChannel.send(it) }
@@ -2405,49 +1953,13 @@ class DnsVpnService : VpnService() {
             }
             val respBytes = buf.copyOf(rp.length)
             val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-            val qtype = parseDnsQueryType(dns)
 
-            val cnameResult = CnameCloakDetector.inspect(respBytes, blocklist)
-            if (cnameResult.blocked) {
-                logAsyncRich(domain, true, app, qtype,
-                    cnameChain = cnameResult.cnameChain.joinToString(","),
-                    responseTimeMs = latencyMs, upstreamServer = primary)
-                val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                    when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                })
-                if (blockResp != null) wrapResponseV6(orig, hdr, blockResp)?.let { writeChannel.send(it) }
-                blockedCount.incrementAndGet()
+            val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, primary)
+            if (pfResult.blocked) {
+                if (pfResult.blockResponse != null) wrapResponseV6(orig, hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
                 return
             }
 
-            val resolvedIps = CnameCloakDetector.extractAnswerIps(respBytes)
-
-            // v6.0: Threat intelligence IP check
-            if (threatIntelEnabled) {
-                for (ip in resolvedIps) {
-                    val threat = threatIntelManager.isIpMalicious(ip)
-                    if (threat != null) {
-                        Log.i(TAG, "THREAT-INTEL blocked IP (v6): $ip for $domain (${threat.feedName})")
-                        logAsyncRich(domain, true, app, qtype,
-                            resolvedIps = resolvedIps.joinToString(","),
-                            responseTimeMs = latencyMs, upstreamServer = primary)
-                        val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
-                            when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
-                        })
-                        if (blockResp != null) wrapResponseV6(orig, hdr, blockResp)?.let { writeChannel.send(it) }
-                        blockedCount.incrementAndGet()
-                        return
-                    }
-                }
-            }
-
-            logAsyncRich(domain, false, app, qtype,
-                cnameChain = cnameResult.cnameChain.joinToString(","),
-                resolvedIps = resolvedIps.joinToString(","),
-                responseTimeMs = latencyMs, upstreamServer = primary)
-
-            cacheDnsAnswerIps(domain, respBytes)
-            dnsCache.put(domain, DnsPacketBuilder.parseQueryType(dns), respBytes)
             wrapResponseV6(orig, hdr, respBytes)?.let { writeChannel.send(it) }
         } catch (_: Exception) {
             // v5.0: Serve-stale fallback for IPv6
@@ -2532,17 +2044,7 @@ class DnsVpnService : VpnService() {
         } catch (_: Exception) { }
     }
 
-    /** Skip a DNS name (labels or compressed pointer) and return offset after it. */
-    private fun skipDnsName(buf: ByteArray, start: Int): Int {
-        var off = start
-        while (off < buf.size) {
-            val len = buf[off].toInt() and 0xFF
-            if (len == 0) return off + 1                     // end of name
-            if (len and 0xC0 == 0xC0) return off + 2         // compressed pointer
-            off += 1 + len
-        }
-        return -1 // malformed
-    }
+    private fun skipDnsName(buf: ByteArray, start: Int) = DnsPacketParser.skipDnsName(buf, start)
 
     /**
      * Heuristic UID lookup: scan /proc/net/tcp and /proc/net/tcp6 for a
@@ -2626,74 +2128,13 @@ class DnsVpnService : VpnService() {
         return -1
     }
 
-    // ── App Resolution ───────────────────────────────────────
+    // ── App Resolution (delegated to AppResolver) ──────────
 
-    private fun resolveApp(p: ByteArray, ihl: Int): Pair<String, String> {
-        try {
-            val srcPort = ((p[ihl].toInt() and 0xFF) shl 8) or (p[ihl + 1].toInt() and 0xFF)
-            if (srcPort == 0) return "" to ""
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val cm = getSystemService(ConnectivityManager::class.java) ?: return "" to ""
-                val src = InetAddress.getByAddress(p.sliceArray(12 until 16))
-                val dst = InetAddress.getByAddress(p.sliceArray(16 until 20))
-                val uid = cm.getConnectionOwnerUid(
-                    android.system.OsConstants.IPPROTO_UDP,
-                    InetSocketAddress(src, srcPort), InetSocketAddress(dst, DNS_PORT)
-                )
-                if (uid > 0) return resolvePkg(uid)
-            }
-            val uid = findUidFromPort(srcPort)
-            if (uid > 0) return resolvePkg(uid)
-        } catch (_: Exception) { }
-        return "" to ""
-    }
-
-    /**
-     * Resolve the requesting app from an IPv6 DNS packet.
-     * IPv6 header: src at bytes 8..23, dst at 24..39. UDP header starts at byte 40.
-     */
-    private fun resolveAppV6(p: ByteArray, hdr: Int): Pair<String, String> {
-        try {
-            val srcPort = ((p[hdr].toInt() and 0xFF) shl 8) or (p[hdr + 1].toInt() and 0xFF)
-            if (srcPort == 0) return "" to ""
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val cm = getSystemService(ConnectivityManager::class.java) ?: return "" to ""
-                val src = InetAddress.getByAddress(p.sliceArray(8 until 24))
-                val dst = InetAddress.getByAddress(p.sliceArray(24 until 40))
-                val uid = cm.getConnectionOwnerUid(
-                    android.system.OsConstants.IPPROTO_UDP,
-                    InetSocketAddress(src, srcPort), InetSocketAddress(dst, DNS_PORT)
-                )
-                if (uid > 0) return resolvePkg(uid)
-            }
-            // Fallback: /proc/net/udp6 port lookup
-            val uid = findUidFromPort(srcPort)
-            if (uid > 0) return resolvePkg(uid)
-        } catch (_: Exception) { }
-        return "" to ""
-    }
-
-    private fun resolvePkg(uid: Int): Pair<String, String> {
-        try {
-            val pkg = packageManager.getPackagesForUid(uid)?.firstOrNull() ?: return "" to ""
-            return pkg to packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
-        } catch (_: Exception) { }
-        return "" to ""
-    }
-
-    private fun findUidFromPort(port: Int): Int {
-        try {
-            val hex = String.format("%04X", port)
-            for (path in arrayOf("/proc/net/udp", "/proc/net/udp6")) {
-                for (line in java.io.File(path).readLines()) {
-                    val parts = line.trim().split(Regex("\\s+"))
-                    if (parts.size >= 8 && parts[1].endsWith(":$hex"))
-                        return parts[7].toIntOrNull() ?: -1
-                }
-            }
-        } catch (_: Exception) { }
-        return -1
-    }
+    private val appResolver by lazy { AppResolver(this) }
+    private fun resolveApp(p: ByteArray, ihl: Int) = appResolver.resolveApp(p, ihl)
+    private fun resolveAppV6(p: ByteArray, hdr: Int) = appResolver.resolveAppV6(p, hdr)
+    private fun resolvePkg(uid: Int) = appResolver.resolvePkg(uid)
+    private fun findUidFromPort(port: Int) = appResolver.findUidFromPort(port)
 
     // ── VPN Watchdog ──────────────────────────────────────────
 

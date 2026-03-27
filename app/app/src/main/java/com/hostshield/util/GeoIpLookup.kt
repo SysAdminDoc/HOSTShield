@@ -14,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // HostShield v4.0.0 -- GeoIP + ASN Lookup
-// Uses ip-api.com (free, no key, 45 req/min) with in-memory cache.
+// Uses ipapi.co (free HTTPS, no key, ~1000 req/day) with in-memory cache.
 // Rate limit enforcement: tracks requests per minute window + exponential backoff on 429.
 
 @Singleton
@@ -22,7 +22,7 @@ class GeoIpLookup @Inject constructor() {
 
     companion object {
         private const val TAG = "GeoIpLookup"
-        private const val MAX_REQUESTS_PER_MINUTE = 40 // Stay under 45 limit
+        private const val MAX_REQUESTS_PER_MINUTE = 28 // Stay under ipapi.co ~30/min limit
         private const val WINDOW_MS = 60_000L
         private const val MAX_BACKOFF_MS = 120_000L
     }
@@ -92,7 +92,7 @@ class GeoIpLookup @Inject constructor() {
             try {
                 requestCount.incrementAndGet()
                 val request = Request.Builder()
-                    .url("http://ip-api.com/json/$ip?fields=status,country,countryCode,city,isp,org,as")
+                    .url("https://ipapi.co/$ip/json/")
                     .build()
                 val response = client.newCall(request).execute()
                 val body: String
@@ -110,17 +110,17 @@ class GeoIpLookup @Inject constructor() {
                     response.close()
                 }
                 val json = JSONObject(body)
-                if (json.optString("status") != "success") return@withContext null
+                if (json.has("error")) return@withContext null
 
-                val countryCode = json.optString("countryCode", "")
+                val countryCode = json.optString("country_code", "")
                 val info = GeoInfo(
                     ip = ip,
-                    country = json.optString("country", ""),
+                    country = json.optString("country_name", ""),
                     countryCode = countryCode,
                     city = json.optString("city", ""),
-                    isp = json.optString("isp", ""),
+                    isp = json.optString("org", ""),
                     org = json.optString("org", ""),
-                    asn = json.optString("as", ""),
+                    asn = json.optString("asn", ""),
                     flag = countryCodeToFlag(countryCode)
                 )
                 cache[ip] = info

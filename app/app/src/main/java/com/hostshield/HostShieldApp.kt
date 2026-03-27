@@ -3,6 +3,8 @@ package com.hostshield
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.hostshield.data.preferences.SecurityPreferences
+import com.hostshield.data.preferences.SyncPreferences
 import com.hostshield.service.CnameCloakUpdater
 import com.hostshield.service.ThreatIntelWorker
 import com.hostshield.util.OfflineGeoIp
@@ -20,6 +22,8 @@ class HostShieldApp : Application(), Configuration.Provider {
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var cnameCloakUpdater: CnameCloakUpdater
     @Inject lateinit var offlineGeoIp: OfflineGeoIp
+    @Inject lateinit var securityPreferences: SecurityPreferences
+    @Inject lateinit var syncPreferences: SyncPreferences
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -28,6 +32,12 @@ class HostShieldApp : Application(), Configuration.Provider {
         // v5.0: Non-blocking startup initialization
         appScope.launch { cnameCloakUpdater.loadCached() }
         appScope.launch { offlineGeoIp.initialize() }
+
+        // v6.2: Migrate plaintext secrets to EncryptedSharedPreferences (Roadmap #30)
+        appScope.launch {
+            securityPreferences.migratePlaintextSecrets()
+            syncPreferences.migratePlaintextSecrets()
+        }
 
         // v6.0: Schedule daily threat intelligence feed updates
         try { ThreatIntelWorker.schedule(this) }

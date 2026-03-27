@@ -262,11 +262,11 @@ class BlocklistHolder @Inject constructor() {
     }
 
     /**
-     * O(1) hash set fast path → O(m) trie lookup → regex fallback.
+     * Single trie walk + hash set check → regex fallback.
      *
-     * v5.0: Checks filter decision cache first, then hash set for exact matches
-     * (covers ~90% of lookups), then falls back to full trie walk for
-     * wildcard/regex matching. Results cached in decision LRU.
+     * v6.2: Unified check path — one trie traversal gathers all signals
+     * (wildcard allow/block), then O(1) hash set for exact blocks. Regex rules
+     * only evaluated when needed. Results cached in decision LRU.
      */
     fun isBlocked(hostname: String): Boolean {
         val lower = hostname.lowercase()
@@ -296,46 +296,43 @@ class BlocklistHolder @Inject constructor() {
     fun isIpBlocked(ip: String): Boolean = ip in blockedIps
 
     private fun isBlockedInternal(lower: String): Boolean {
-        // Fast path: O(1) hash set lookup for exact blocked domains.
-        // Covers ~90% of real-world queries. No trie traversal needed.
-        if (lower in exactBlockSet) {
-            // Still need to check wildcard ALLOW rules which take priority
-            val labels = lower.split('.').reversed()
-            var node = root
-            for (label in labels) {
-                val child = node.children[label] ?: break
-                if (child.wildcardAllow) return false
-                node = child
-            }
-            // Check regex allow rules
-            if (regexAllowRules.any { it.containsMatchIn(lower) }) return false
-            return true
-        }
-
-        // Full trie walk for wildcard matching
+        // Trie walk (shared by both exact-match fast path and wildcard matching).
+        // Traverses once to gather all signals: wildcard allow, wildcard block,
+        // and terminal (exact) match.
         val labels = lower.split('.').reversed()
         var node = root
         var wildcardBlocked = false
+        var wildcardAllowed = false
         var depth = 0
 
         for (label in labels) {
             val child = node.children[label] ?: break
-            if (child.wildcardAllow) return false
+            if (child.wildcardAllow) { wildcardAllowed = true; break }
             if (child.wildcardBlock) wildcardBlocked = true
             node = child
             depth++
         }
 
-        // Exact match: all labels consumed and node is terminal
-        if (depth == labels.size && node.terminal) return true
+        // Wildcard allow takes absolute priority
+        if (wildcardAllowed) return false
 
-        // Wildcard block matched at some ancestor
-        if (wildcardBlocked) return true
+        // Determine if domain is blocked by any mechanism
+        val exactBlocked = lower in exactBlockSet
+        val trieExact = depth == labels.size && node.terminal
+        val blocked = exactBlocked || trieExact || wildcardBlocked
 
-        // Regex allow rules take priority
-        if (regexAllowRules.any { it.containsMatchIn(lower) }) return false
-        // Regex block rules
-        if (regexBlockRules.any { it.containsMatchIn(lower) }) return true
+        if (blocked) {
+            // Regex allow rules can override any block
+            if (regexAllowRules.any { it.containsMatchIn(lower) }) return false
+            return true
+        }
+
+        // Not blocked by blocklist or trie — check regex rules
+        if (regexBlockRules.any { it.containsMatchIn(lower) }) {
+            // Even regex blocks can be overridden by regex allows
+            if (regexAllowRules.any { it.containsMatchIn(lower) }) return false
+            return true
+        }
 
         // www. prefix fallback
         if (lower.startsWith("www.")) {

@@ -9,7 +9,7 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v1.6.0 — Root Utilities
+// HostShield v6.2.0 — Root Utilities
 
 @Singleton
 class RootUtil @Inject constructor(
@@ -43,7 +43,7 @@ class RootUtil @Inject constructor(
     /** Read current hosts file content. */
     suspend fun readHostsFile(): String = withContext(Dispatchers.IO) {
         val path = getActiveHostsPath()
-        val result = Shell.cmd("cat $path").exec()
+        val result = Shell.cmd("cat \"$path\"").exec()
         if (result.isSuccess) result.out.joinToString("\n") else ""
     }
 
@@ -58,7 +58,7 @@ class RootUtil @Inject constructor(
             val tmpPath = tmp.absolutePath
 
             // Backup current hosts
-            Shell.cmd("cp $path ${path}.bak 2>/dev/null || true").exec()
+            Shell.cmd("cp \"$path\" \"${path}.bak\" 2>/dev/null || true").exec()
 
             if (path.startsWith("/system")) {
                 val r = Shell.cmd(
@@ -102,18 +102,18 @@ class RootUtil @Inject constructor(
         try {
             val path = getActiveHostsPath()
             val backup = "${path}.bak"
-            val hasBackup = Shell.cmd("[ -f $backup ] && echo yes || echo no").exec()
+            val hasBackup = Shell.cmd("[ -f \"$backup\" ] && echo yes || echo no").exec()
                 .out.firstOrNull()?.trim() == "yes"
 
             if (hasBackup) {
                 if (path.startsWith("/system")) {
                     Shell.cmd(
                         "mount -o rw,remount /system",
-                        "cp $backup $path",
+                        "cp \"$backup\" \"$path\"",
                         "mount -o ro,remount /system"
                     ).exec()
                 } else {
-                    Shell.cmd("cp $backup $path").exec()
+                    Shell.cmd("cp \"$backup\" \"$path\"").exec()
                 }
             } else {
                 val tmp = tempFile
@@ -142,7 +142,7 @@ class RootUtil @Inject constructor(
     /** Get line count of current hosts file. */
     suspend fun getHostsLineCount(): Int = withContext(Dispatchers.IO) {
         val path = getActiveHostsPath()
-        val result = Shell.cmd("wc -l < $path").exec()
+        val result = Shell.cmd("wc -l < \"$path\"").exec()
         result.out.firstOrNull()?.trim()?.toIntOrNull() ?: 0
     }
 
@@ -157,9 +157,9 @@ class RootUtil @Inject constructor(
             val path = getActiveHostsPath()
             val line = "$safeIp $safeHost"
             // Only append if not already present
-            val check = Shell.cmd("grep -qF '$safeHost' $path").exec()
+            val check = Shell.cmd("grep -qF '$safeHost' \"$path\"").exec()
             if (!check.isSuccess) {
-                Shell.cmd("echo '$line' >> $path").exec()
+                Shell.cmd("echo '$line' >> \"$path\"").exec()
                 flushDnsCache()
             }
             Result.success(Unit)
@@ -170,14 +170,23 @@ class RootUtil @Inject constructor(
 
     /**
      * Hot-patch: remove all lines matching a hostname from the hosts file.
-     * Used when allowing a previously blocked domain from the DNS log.
+     * Uses Kotlin-side filtering instead of sed to avoid delimiter injection issues.
      */
     suspend fun removeHostEntry(hostname: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val safeHost = hostname.replace("'", "'\\''")
             val path = getActiveHostsPath()
-            // sed -i: delete any line containing the exact hostname as a word
-            Shell.cmd("sed -i '/ $safeHost\$/d' $path").exec()
+            // Read, filter in Kotlin (safe — no shell injection), write back
+            val result = Shell.cmd("cat \"$path\"").exec()
+            if (!result.isSuccess) return@withContext Result.failure(Exception("Cannot read hosts file"))
+            val filtered = result.out.filter { line ->
+                // Keep lines that don't end with the target hostname
+                !line.trimEnd().endsWith(" $hostname") &&
+                    !line.trimEnd().endsWith("\t$hostname")
+            }
+            val tmp = tempFile
+            tmp.writeText(filtered.joinToString("\n") + "\n")
+            Shell.cmd("cp '${tmp.absolutePath}' '$path'", "chmod 644 '$path'").exec()
+            tmp.delete()
             flushDnsCache()
             Result.success(Unit)
         } catch (e: Exception) {

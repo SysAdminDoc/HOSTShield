@@ -20,7 +20,13 @@ enum class SourceHealth {
     UNKNOWN, OK, STALE, ERROR, DEAD
 }
 
-@Entity(tableName = "host_sources")
+@Entity(
+    tableName = "host_sources",
+    indices = [
+        Index(value = ["enabled"]),
+        Index(value = ["category"])
+    ]
+)
 data class HostSource(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "url") val url: String,
@@ -44,7 +50,10 @@ data class HostSource(
 
 @Entity(
     tableName = "user_rules",
-    indices = [Index(value = ["hostname"], unique = true)]
+    indices = [
+        Index(value = ["hostname"], unique = true),
+        Index(value = ["enabled", "type"])
+    ]
 )
 data class UserRule(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -64,7 +73,8 @@ data class UserRule(
         Index(value = ["timestamp"]),
         Index(value = ["blocked", "timestamp"]),  // composite for filtered log queries
         Index(value = ["hostname"]),
-        Index(value = ["app_package"])
+        Index(value = ["app_package"]),
+        Index(value = ["app_package", "blocked", "timestamp"])  // composite for per-app drill-down
     ]
 )
 data class DnsLogEntry(

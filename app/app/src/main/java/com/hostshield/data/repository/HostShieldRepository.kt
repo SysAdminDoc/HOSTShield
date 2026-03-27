@@ -13,7 +13,15 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v1.6.0 — Repository
+// HostShield v6.2.0 — Repository (Facade)
+//
+// Backward-compatible facade over domain-specific repositories.
+// New code should inject the specific repository it needs:
+//   SourceRepository, RuleRepository, DnsLogRepository,
+//   ProfileRepository
+//
+// Business logic (applyBlocking, disableBlocking) remains here
+// since it coordinates across multiple domains.
 // ══════════════════════════════════════════════════════════════
 
 @Singleton
@@ -24,80 +32,76 @@ class HostShieldRepository @Inject constructor(
     private val statsDao: BlockStatsDao,
     private val profileDao: ProfileDao,
     private val downloader: SourceDownloader,
-    private val rootUtil: RootUtil
+    private val rootUtil: RootUtil,
+    val sources: SourceRepository,
+    val rules: RuleRepository,
+    val logs: DnsLogRepository,
+    val profiles: ProfileRepository
 ) {
-    // ── Sources ──────────────────────────────────────────────
-    fun getAllSources(): Flow<List<HostSource>> = sourceDao.getAllSources()
-    fun getSourcesByCategory(cat: SourceCategory): Flow<List<HostSource>> = sourceDao.getByCategory(cat)
-    fun getTotalEnabledEntries(): Flow<Int?> = sourceDao.getTotalEnabledEntries()
-    fun getUnhealthySources(): Flow<List<HostSource>> = sourceDao.getUnhealthySources()
-    suspend fun getEnabledSourcesList(): List<HostSource> = sourceDao.getEnabledSources()
-    suspend fun getEnabledBlockSources(): List<HostSource> = sourceDao.getEnabledBlockSources()
-    suspend fun getEnabledAllowlistSources(): List<HostSource> = sourceDao.getEnabledAllowlistSources()
-    suspend fun addSource(source: HostSource): Long = sourceDao.insert(source)
-    suspend fun updateSource(source: HostSource) = sourceDao.update(source)
-    suspend fun deleteSource(source: HostSource) = sourceDao.delete(source)
-    suspend fun toggleSource(id: Long, enabled: Boolean) = sourceDao.setEnabled(id, enabled)
+    // ── Sources (delegated) ─────────────────────────────────
+    fun getAllSources(): Flow<List<HostSource>> = sources.getAllSources()
+    fun getSourcesByCategory(cat: SourceCategory): Flow<List<HostSource>> = sources.getSourcesByCategory(cat)
+    fun getTotalEnabledEntries(): Flow<Int?> = sources.getTotalEnabledEntries()
+    fun getUnhealthySources(): Flow<List<HostSource>> = sources.getUnhealthySources()
+    suspend fun getEnabledSourcesList(): List<HostSource> = sources.getEnabledSourcesList()
+    suspend fun getEnabledBlockSources(): List<HostSource> = sources.getEnabledBlockSources()
+    suspend fun getEnabledAllowlistSources(): List<HostSource> = sources.getEnabledAllowlistSources()
+    suspend fun addSource(source: HostSource): Long = sources.addSource(source)
+    suspend fun updateSource(source: HostSource) = sources.updateSource(source)
+    suspend fun deleteSource(source: HostSource) = sources.deleteSource(source)
+    suspend fun toggleSource(id: Long, enabled: Boolean) = sources.toggleSource(id, enabled)
 
-    // ── User Rules ───────────────────────────────────────────
-    fun getAllRules(): Flow<List<UserRule>> = ruleDao.getAllRules()
-    fun getRulesByType(type: RuleType): Flow<List<UserRule>> = ruleDao.getByType(type)
-    fun searchRules(query: String): Flow<List<UserRule>> = ruleDao.search(query)
-    fun getRuleCount(type: RuleType): Flow<Int> = ruleDao.countByType(type)
-    suspend fun addRule(rule: UserRule): Long = ruleDao.insert(rule)
-    suspend fun updateRule(rule: UserRule) = ruleDao.update(rule)
-    suspend fun deleteRule(rule: UserRule) = ruleDao.delete(rule)
-    suspend fun toggleRule(id: Long, enabled: Boolean) = ruleDao.setEnabled(id, enabled)
-    suspend fun ruleExists(hostname: String): Boolean = ruleDao.exists(hostname)
-    suspend fun getEnabledWildcards(): List<UserRule> = ruleDao.getEnabledWildcards()
-    suspend fun getEnabledRegexRules(): List<UserRule> = ruleDao.getEnabledRegexRules()
-    suspend fun getEnabledRulesByType(type: RuleType): List<UserRule> = ruleDao.getEnabledByType(type)
+    // ── User Rules (delegated) ──────────────────────────────
+    fun getAllRules(): Flow<List<UserRule>> = rules.getAllRules()
+    fun getRulesByType(type: RuleType): Flow<List<UserRule>> = rules.getRulesByType(type)
+    fun searchRules(query: String): Flow<List<UserRule>> = rules.searchRules(query)
+    fun getRuleCount(type: RuleType): Flow<Int> = rules.getRuleCount(type)
+    suspend fun addRule(rule: UserRule): Long = rules.addRule(rule)
+    suspend fun updateRule(rule: UserRule) = rules.updateRule(rule)
+    suspend fun deleteRule(rule: UserRule) = rules.deleteRule(rule)
+    suspend fun toggleRule(id: Long, enabled: Boolean) = rules.toggleRule(id, enabled)
+    suspend fun ruleExists(hostname: String): Boolean = rules.ruleExists(hostname)
+    suspend fun getEnabledWildcards(): List<UserRule> = rules.getEnabledWildcards()
+    suspend fun getEnabledRegexRules(): List<UserRule> = rules.getEnabledRegexRules()
+    suspend fun getEnabledRulesByType(type: RuleType): List<UserRule> = rules.getEnabledRulesByType(type)
 
-    // ── DNS Logs ─────────────────────────────────────────────
-    fun getRecentLogs(limit: Int = 500): Flow<List<DnsLogEntry>> = logDao.getRecentLogs(limit)
-    fun getBlockedLogs(limit: Int = 500): Flow<List<DnsLogEntry>> = logDao.getBlockedLogs(limit)
-    fun searchLogs(query: String, limit: Int = 200): Flow<List<DnsLogEntry>> = logDao.searchLogs(query, limit)
-    fun getTopBlocked(limit: Int = 20): Flow<List<TopHostname>> = logDao.getTopBlocked(limit)
-    fun getTopBlockedApps(limit: Int = 20): Flow<List<TopApp>> = logDao.getTopBlockedApps(limit)
-    fun getBlockedCountSince(since: Long): Flow<Int> = logDao.getBlockedCountSince(since)
-    fun getTotalCountSince(since: Long): Flow<Int> = logDao.getTotalCountSince(since)
-    fun getHourlyBlocked(since: Long): Flow<List<HourlyStat>> = logDao.getHourlyBlocked(since)
-    fun getHourlyTotal(since: Long): Flow<List<HourlyStat>> = logDao.getHourlyTotal(since)
-    fun getAllAppsWithCounts(): Flow<List<AppQueryStat>> = logDao.getAllAppsWithCounts()
-    fun getDomainsForApp(pkg: String, limit: Int = 200): Flow<List<AppDomainStat>> = logDao.getDomainsForApp(pkg, limit)
-    fun getMostQueriedDomains(since: Long, limit: Int = 30): Flow<List<TopHostname>> = logDao.getMostQueriedDomains(since, limit)
+    // ── DNS Logs (delegated) ────────────────────────────────
+    fun getRecentLogs(limit: Int = 500): Flow<List<DnsLogEntry>> = logs.getRecentLogs(limit)
+    fun getBlockedLogs(limit: Int = 500): Flow<List<DnsLogEntry>> = logs.getBlockedLogs(limit)
+    fun searchLogs(query: String, limit: Int = 200): Flow<List<DnsLogEntry>> = logs.searchLogs(query, limit)
+    fun getTopBlocked(limit: Int = 20): Flow<List<TopHostname>> = logs.getTopBlocked(limit)
+    fun getTopBlockedApps(limit: Int = 20): Flow<List<TopApp>> = logs.getTopBlockedApps(limit)
+    fun getBlockedCountSince(since: Long): Flow<Int> = logs.getBlockedCountSince(since)
+    fun getTotalCountSince(since: Long): Flow<Int> = logs.getTotalCountSince(since)
+    fun getHourlyBlocked(since: Long): Flow<List<HourlyStat>> = logs.getHourlyBlocked(since)
+    fun getHourlyTotal(since: Long): Flow<List<HourlyStat>> = logs.getHourlyTotal(since)
+    fun getAllAppsWithCounts(): Flow<List<AppQueryStat>> = logs.getAllAppsWithCounts()
+    fun getDomainsForApp(pkg: String, limit: Int = 200): Flow<List<AppDomainStat>> = logs.getDomainsForApp(pkg, limit)
+    fun getMostQueriedDomains(since: Long, limit: Int = 30): Flow<List<TopHostname>> = logs.getMostQueriedDomains(since, limit)
+    fun getDailyBreakdown(since: Long): Flow<List<DailyBreakdown>> = logs.getDailyBreakdown(since)
+    fun getHourlyLatency(since: Long): Flow<List<HourlyLatency>> = logs.getHourlyLatency(since)
+    fun getQueryTypeDistribution(since: Long): Flow<List<QueryTypeStat>> = logs.getQueryTypeDistribution(since)
+    suspend fun logDnsQuery(entry: DnsLogEntry) = logs.logDnsQuery(entry)
+    suspend fun clearOldLogs(olderThanMs: Long) = logs.clearOldLogs(olderThanMs)
+    suspend fun clearAllLogs() = logs.clearAllLogs()
 
-    fun getDailyBreakdown(since: Long): Flow<List<com.hostshield.data.database.DailyBreakdown>> = logDao.getDailyBreakdown(since)
-    fun getHourlyLatency(since: Long): Flow<List<com.hostshield.data.database.HourlyLatency>> = logDao.getHourlyLatency(since)
-    fun getQueryTypeDistribution(since: Long): Flow<List<com.hostshield.data.database.QueryTypeStat>> = logDao.getQueryTypeDistribution(since)
-    suspend fun logDnsQuery(entry: DnsLogEntry) = logDao.insert(entry)
-    suspend fun clearOldLogs(olderThanMs: Long) = logDao.deleteOlderThan(System.currentTimeMillis() - olderThanMs)
-    suspend fun clearAllLogs() = logDao.deleteAll()
+    // ── Stats (delegated) ───────────────────────────────────
+    fun getRecentStats(days: Int = 30): Flow<List<BlockStats>> = logs.getRecentStats(days)
+    fun getTotalBlocked(): Flow<Int?> = logs.getTotalBlocked()
+    suspend fun upsertStats(stats: BlockStats) = logs.upsertStats(stats)
 
-    // ── Stats ────────────────────────────────────────────────
-    fun getRecentStats(days: Int = 30): Flow<List<BlockStats>> = statsDao.getRecentStats(days)
-    fun getTotalBlocked(): Flow<Int?> = statsDao.getTotalBlocked()
-    suspend fun upsertStats(stats: BlockStats) = statsDao.upsert(stats)
+    // ── Profiles (delegated) ────────────────────────────────
+    fun getAllProfiles(): Flow<List<BlockingProfile>> = profiles.getAllProfiles()
+    suspend fun getAllProfilesList(): List<BlockingProfile> = profiles.getAllProfilesList()
+    suspend fun getActiveProfile(): BlockingProfile? = profiles.getActiveProfile()
+    suspend fun addProfile(profile: BlockingProfile): Long = profiles.addProfile(profile)
+    suspend fun updateProfile(profile: BlockingProfile) = profiles.updateProfile(profile)
+    suspend fun deleteProfile(profile: BlockingProfile) = profiles.deleteProfile(profile)
+    suspend fun deactivateAllProfiles() = profiles.deactivateAllProfiles()
+    suspend fun activateProfile(id: Long) = profiles.activateProfile(id)
 
-    // ── Profiles ─────────────────────────────────────────────
-    fun getAllProfiles(): Flow<List<BlockingProfile>> = profileDao.getAllProfiles()
-    suspend fun getAllProfilesList(): List<BlockingProfile> = profileDao.getAllProfilesList()
-    suspend fun getActiveProfile(): BlockingProfile? = profileDao.getActiveProfile()
-    suspend fun addProfile(profile: BlockingProfile): Long = profileDao.insert(profile)
-    suspend fun updateProfile(profile: BlockingProfile) = profileDao.update(profile)
-    suspend fun deleteProfile(profile: BlockingProfile) = profileDao.delete(profile)
-    suspend fun deactivateAllProfiles() = profileDao.deactivateAll()
-    suspend fun activateProfile(id: Long) {
-        profileDao.deactivateAll()
-        profileDao.activate(id)
-    }
+    // ── Core Operations (cross-domain business logic) ───────
 
-    // ── Core Operations ──────────────────────────────────────
-
-    /**
-     * Download all enabled sources, parse, merge with user rules,
-     * and write the resulting hosts file.
-     */
     suspend fun applyBlocking(
         redirectIp4: String = "0.0.0.0",
         redirectIp6: String = "::",
@@ -105,13 +109,13 @@ class HostShieldRepository @Inject constructor(
         onProgress: suspend (String) -> Unit = {}
     ): Result<Int> = withContext(Dispatchers.IO) {
         try {
-            val sources = sourceDao.getEnabledSources()
+            val enabledSources = sourceDao.getEnabledSources()
             val parsedSets = mutableListOf<Set<ParsedHost>>()
 
-            onProgress("Downloading ${sources.size} sources...")
+            onProgress("Downloading ${enabledSources.size} sources...")
 
-            for ((index, source) in sources.withIndex()) {
-                onProgress("Downloading ${source.label} (${index + 1}/${sources.size})...")
+            for ((index, source) in enabledSources.withIndex()) {
+                onProgress("Downloading ${source.label} (${index + 1}/${enabledSources.size})...")
                 val result = downloader.download(source)
                 result.onSuccess { dl ->
                     if (!dl.notModified) {
@@ -128,7 +132,6 @@ class HostShieldRepository @Inject constructor(
                         val fresh = downloader.download(source.copy(etag = "", lastModifiedOnline = ""))
                         fresh.onSuccess { f -> parsedSets.add(HostsParser.parse(f.content)) }
                     }
-                    // Mark healthy
                     sourceDao.updateHealth(source.id, SourceHealth.OK, "", 0)
                 }.onFailure { err ->
                     val failures = source.consecutiveFailures + 1
@@ -161,106 +164,9 @@ class HostShieldRepository @Inject constructor(
         }
     }
 
-    /** Disable blocking by restoring original hosts file. */
     suspend fun disableBlocking(): Result<Unit> = rootUtil.restoreHostsFile()
 
-    /** Check root access status. */
     fun isRootAvailable(): Boolean = rootUtil.isRootAvailable()
 
-    /** Seed default built-in sources on first launch. */
-    suspend fun seedDefaultSources() {
-        val existing = sourceDao.getAllSourcesList()
-        if (existing.isNotEmpty()) return
-
-        val defaults = listOf(
-            HostSource(
-                url = "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
-                label = "StevenBlack Unified",
-                description = "Consolidated hosts from multiple curated sources. ~79k entries.",
-                category = SourceCategory.ADS,
-                isBuiltin = true
-            ),
-            HostSource(
-                url = "https://adaway.org/hosts.txt",
-                label = "AdAway Default",
-                description = "Conservative, minimal ad-blocking list. ~400 entries.",
-                category = SourceCategory.ADS,
-                isBuiltin = true
-            ),
-            HostSource(
-                url = "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext",
-                label = "Peter Lowe's List",
-                description = "Lightweight, zero false positives. ~3k entries.",
-                category = SourceCategory.ADS,
-                isBuiltin = true
-            ),
-            HostSource(
-                url = "https://small.oisd.nl/",
-                label = "OISD Small",
-                description = "Well-curated aggregate with minimal false positives. ~70k entries.",
-                category = SourceCategory.ADS,
-                isBuiltin = true,
-                enabled = false
-            ),
-            HostSource(
-                url = "https://big.oisd.nl/",
-                label = "OISD Big",
-                description = "Comprehensive aggregate blocklist. ~200k+ entries.",
-                category = SourceCategory.ADS,
-                isBuiltin = true,
-                enabled = false
-            ),
-            HostSource(
-                url = "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Hosts/GoodbyeAds.txt",
-                label = "GoodbyeAds",
-                description = "Aggressive list including streaming/YouTube ad domains.",
-                category = SourceCategory.ADS,
-                isBuiltin = true,
-                enabled = false
-            ),
-            HostSource(
-                url = "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts",
-                label = "StevenBlack + Fakenews/Gambling/Porn",
-                description = "Extended list blocking adult, gambling, and fake news domains.",
-                category = SourceCategory.ADULT,
-                isBuiltin = true,
-                enabled = false
-            ),
-            HostSource(
-                url = "https://malware-filter.gitlab.io/malware-filter/urlhaus-filter-hosts.txt",
-                label = "URLHaus Malware Filter",
-                description = "Known malware distribution domains from abuse.ch.",
-                category = SourceCategory.MALWARE,
-                isBuiltin = true
-            ),
-            // ── Allowlist Sources ──
-            // Domains in these lists are automatically excluded from blocking.
-            HostSource(
-                url = "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt",
-                label = "Anudeep's Whitelist",
-                description = "Curated allowlist preventing common false positives. ~400 domains.",
-                category = SourceCategory.ALLOWLIST,
-                isBuiltin = true,
-                enabled = false
-            ),
-            HostSource(
-                url = "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt",
-                label = "Anudeep's Optional Whitelist",
-                description = "Extended allowlist including CDNs, analytics safe domains. ~100 domains.",
-                category = SourceCategory.ALLOWLIST,
-                isBuiltin = true,
-                enabled = false
-            ),
-            HostSource(
-                url = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist.txt",
-                label = "HaGeZi Whitelist",
-                description = "Referral allowlist preventing breakage from aggressive blocklists.",
-                category = SourceCategory.ALLOWLIST,
-                isBuiltin = true,
-                enabled = false
-            )
-        )
-
-        sourceDao.insertAll(defaults)
-    }
+    suspend fun seedDefaultSources() = sources.seedDefaultSources()
 }

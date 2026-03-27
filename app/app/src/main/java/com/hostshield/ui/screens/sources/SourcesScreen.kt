@@ -47,20 +47,50 @@ class SourcesViewModel @Inject constructor(
     val sources: StateFlow<List<HostSource>> = repository.getAllSources()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading = _isLoading.asStateFlow()
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+    fun clearError() { _error.value = null }
+
     private val _healthCheckMessage = MutableStateFlow<String?>(null)
     val healthCheckMessage: StateFlow<String?> = _healthCheckMessage.asStateFlow()
     private val _isCheckingHealth = MutableStateFlow(false)
     val isCheckingHealth: StateFlow<Boolean> = _isCheckingHealth.asStateFlow()
 
+    init {
+        // Track when sources have emitted their first real value
+        viewModelScope.launch {
+            sources.first { true }
+            _isLoading.value = false
+        }
+    }
+
     fun toggleSource(id: Long, enabled: Boolean) {
-        viewModelScope.launch { repository.toggleSource(id, enabled) }
+        viewModelScope.launch {
+            try {
+                repository.toggleSource(id, enabled)
+            } catch (e: Exception) {
+                _error.value = "Failed to toggle source: ${e.message}"
+            }
+        }
     }
     fun deleteSource(source: HostSource) {
-        viewModelScope.launch { repository.deleteSource(source) }
+        viewModelScope.launch {
+            try {
+                repository.deleteSource(source)
+            } catch (e: Exception) {
+                _error.value = "Failed to delete source: ${e.message}"
+            }
+        }
     }
     fun addSource(url: String, label: String, category: SourceCategory) {
         viewModelScope.launch {
-            repository.addSource(HostSource(url = url, label = label, category = category))
+            try {
+                repository.addSource(HostSource(url = url, label = label, category = category))
+            } catch (e: Exception) {
+                _error.value = "Failed to add source: ${e.message}"
+            }
         }
     }
 
@@ -68,15 +98,21 @@ class SourcesViewModel @Inject constructor(
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             _isCheckingHealth.value = true
             _healthCheckMessage.value = "Checking sources..."
-            val allSources = sources.value
-            var ok = 0; var fail = 0
-            for (source in allSources) {
-                if (!source.enabled) continue
-                val result = downloader.validate(source.url)
-                result.onSuccess { ok++ }.onFailure { fail++ }
+            try {
+                val allSources = sources.value
+                var ok = 0; var fail = 0
+                for (source in allSources) {
+                    if (!source.enabled) continue
+                    val result = downloader.validate(source.url)
+                    result.onSuccess { ok++ }.onFailure { fail++ }
+                }
+                _healthCheckMessage.value = "$ok reachable, $fail unreachable"
+            } catch (e: Exception) {
+                _error.value = "Health check failed: ${e.message}"
+                _healthCheckMessage.value = null
+            } finally {
+                _isCheckingHealth.value = false
             }
-            _healthCheckMessage.value = "$ok reachable, $fail unreachable"
-            _isCheckingHealth.value = false
         }
     }
 }
@@ -89,6 +125,8 @@ fun SourcesScreen(
     val sources by viewModel.sources.collectAsStateWithLifecycle()
     val healthMsg by viewModel.healthCheckMessage.collectAsStateWithLifecycle()
     val isChecking by viewModel.isCheckingHealth.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
 
     Box(
@@ -96,10 +134,34 @@ fun SourcesScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Teal, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
+            }
+        } else {
         LazyColumn(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Error banner
+            if (error != null) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Red.copy(alpha = 0.1f)
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.Error, null, tint = Red, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(error ?: "", color = Red, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.weight(1f))
+                            IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Filled.Close, "Dismiss", tint = Red, modifier = Modifier.size(14.dp))
+                            }
+                        }
+                    }
+                }
+            }
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -193,6 +255,7 @@ fun SourcesScreen(
             }
             item { Spacer(Modifier.height(80.dp)) }
         }
+        } // end else (not loading)
 
         Column(
             modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
