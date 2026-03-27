@@ -49,14 +49,18 @@ class UpdateChecker @Inject constructor() {
                 .build()
 
             val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                return@withContext Result.failure(
-                    Exception("GitHub API returned ${response.code}")
-                )
+            val body: String
+            try {
+                if (!response.isSuccessful) {
+                    return@withContext Result.failure(
+                        Exception("GitHub API returned ${response.code}")
+                    )
+                }
+                body = response.body?.string()
+                    ?: return@withContext Result.failure(Exception("Empty response"))
+            } finally {
+                response.close()
             }
-
-            val body = response.body?.string()
-                ?: return@withContext Result.failure(Exception("Empty response"))
 
             val releases = JSONArray(body)
             if (releases.length() == 0) {

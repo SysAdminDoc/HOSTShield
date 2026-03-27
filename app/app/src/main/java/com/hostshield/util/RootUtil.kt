@@ -152,10 +152,12 @@ class RootUtil @Inject constructor(
      */
     suspend fun appendHostEntry(hostname: String, redirectIp: String = "0.0.0.0"): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val safeHost = hostname.replace("'", "'\\''")
+            val safeIp = redirectIp.replace("'", "'\\''")
             val path = getActiveHostsPath()
-            val line = "$redirectIp $hostname"
+            val line = "$safeIp $safeHost"
             // Only append if not already present
-            val check = Shell.cmd("grep -qF '$hostname' $path").exec()
+            val check = Shell.cmd("grep -qF '$safeHost' $path").exec()
             if (!check.isSuccess) {
                 Shell.cmd("echo '$line' >> $path").exec()
                 flushDnsCache()
@@ -172,9 +174,10 @@ class RootUtil @Inject constructor(
      */
     suspend fun removeHostEntry(hostname: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val safeHost = hostname.replace("'", "'\\''")
             val path = getActiveHostsPath()
             // sed -i: delete any line containing the exact hostname as a word
-            Shell.cmd("sed -i '/ $hostname\$/d' $path").exec()
+            Shell.cmd("sed -i '/ $safeHost\$/d' $path").exec()
             flushDnsCache()
             Result.success(Unit)
         } catch (e: Exception) {

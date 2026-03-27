@@ -65,13 +65,16 @@ class DohBypassUpdater @Inject constructor(
                 .build()
 
             val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                Log.w(TAG, "Fetch failed: HTTP ${response.code}")
+            val body: String?
+            try {
+                if (!response.isSuccessful) {
+                    Log.w(TAG, "Fetch failed: HTTP ${response.code}")
+                    return@withContext null
+                }
+                body = response.body?.string()?.take(MAX_JSON_SIZE.toInt())
+            } finally {
                 response.close()
-                return@withContext null
             }
-
-            val body = response.body?.string()?.take(MAX_JSON_SIZE.toInt())
             if (body.isNullOrBlank()) {
                 Log.w(TAG, "Empty response body")
                 return@withContext null

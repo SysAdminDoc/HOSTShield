@@ -172,11 +172,8 @@ class DohResolver @Inject constructor() {
                 .build()
 
             val response = client.newCall(request).execute()
-            if (response.isSuccessful) {
-                response.body?.bytes()
-            } else {
-                response.close()
-                null
+            response.use { resp ->
+                if (resp.isSuccessful) resp.body?.bytes() else null
             }
         } catch (e: Exception) {
             null
@@ -193,16 +190,17 @@ class DohResolver @Inject constructor() {
                 .build()
 
             val response = httpClient.newCall(request).execute()
-            if (response.isSuccessful) {
-                val bytes = response.body?.bytes()
-                if (bytes != null) {
-                    val elapsedMs = (System.nanoTime() - start) / 1_000_000
-                    updateLatency(provider, elapsedMs)
+            response.use { resp ->
+                if (resp.isSuccessful) {
+                    val bytes = resp.body?.bytes()
+                    if (bytes != null) {
+                        val elapsedMs = (System.nanoTime() - start) / 1_000_000
+                        updateLatency(provider, elapsedMs)
+                    }
+                    bytes
+                } else {
+                    null
                 }
-                bytes
-            } else {
-                response.close()
-                null
             }
         } catch (e: Exception) {
             Log.d(TAG, "${provider.name} error: ${e.javaClass.simpleName}: ${e.message}")

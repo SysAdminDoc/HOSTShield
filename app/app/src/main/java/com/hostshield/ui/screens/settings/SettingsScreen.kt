@@ -47,7 +47,14 @@ fun SettingsScreen(
     onNavigateToRuleTest: () -> Unit = {},
     onNavigateToHostsEditor: () -> Unit = {},
     onNavigateToAppPrivacy: () -> Unit = {},
-    onNavigateToAutomationAudit: () -> Unit = {}
+    onNavigateToAutomationAudit: () -> Unit = {},
+    onNavigateToContentFilter: () -> Unit = {},
+    onNavigateToParentalControls: () -> Unit = {},
+    onNavigateToDnsBenchmark: () -> Unit = {},
+    onNavigateToWebDavSync: () -> Unit = {},
+    onNavigateToCrashReports: () -> Unit = {},
+    onNavigateToQrConfig: () -> Unit = {},
+    onNavigateToTlsFingerprints: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -112,6 +119,76 @@ fun SettingsScreen(
                 DohProviderSelector(state.dohProvider) { viewModel.setDohProvider(it) }
             }
             Spacer(Modifier.height(8.dp))
+            SettingsToggle("DNS-over-TLS", "TLS-encrypted DNS (RFC 7858)", Icons.Filled.Shield, state.dotEnabled) {
+                viewModel.setDotEnabled(it)
+            }
+            if (state.dotEnabled) {
+                Spacer(Modifier.height(6.dp))
+                DotProviderSelector(state.dotProvider) { viewModel.setDotProvider(it) }
+            }
+            Spacer(Modifier.height(8.dp))
+            SettingsToggle("DNS-over-QUIC", "QUIC-encrypted DNS (RFC 9250)", Icons.Filled.Bolt, state.doqEnabled) {
+                viewModel.setDoqEnabled(it)
+            }
+            if (state.doqEnabled) {
+                Spacer(Modifier.height(6.dp))
+                DoqProviderSelector(state.doqProvider) { viewModel.setDoqProvider(it) }
+            }
+            Spacer(Modifier.height(8.dp))
+            SettingsToggle("WireGuard DNS", "Tunnel DNS through WireGuard VPN", Icons.Filled.VpnKey, state.wireGuardEnabled) {
+                viewModel.setWireGuardEnabled(it)
+            }
+            if (state.wireGuardEnabled) {
+                Spacer(Modifier.height(6.dp))
+                var wgEndpoint by remember { mutableStateOf(state.wireGuardEndpoint) }
+                LaunchedEffect(state.wireGuardEndpoint) { wgEndpoint = state.wireGuardEndpoint }
+                OutlinedTextField(
+                    value = wgEndpoint,
+                    onValueChange = { wgEndpoint = it },
+                    placeholder = { Text("Endpoint (host:port)", color = TextDim, fontSize = 12.sp) },
+                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp),
+                    singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Blue, unfocusedBorderColor = Surface3,
+                        cursorColor = Blue, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
+                    ),
+                    trailingIcon = {
+                        if (wgEndpoint != state.wireGuardEndpoint) {
+                            IconButton(onClick = { viewModel.setWireGuardEndpoint(wgEndpoint) }) {
+                                Icon(Icons.Filled.Check, null, tint = Green, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                )
+                Spacer(Modifier.height(4.dp))
+                var wgDnsIp by remember { mutableStateOf(state.wireGuardDnsIp) }
+                LaunchedEffect(state.wireGuardDnsIp) { wgDnsIp = state.wireGuardDnsIp }
+                OutlinedTextField(
+                    value = wgDnsIp,
+                    onValueChange = { wgDnsIp = it },
+                    placeholder = { Text("DNS IP inside tunnel (e.g. 1.1.1.1)", color = TextDim, fontSize = 12.sp) },
+                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp),
+                    singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Blue, unfocusedBorderColor = Surface3,
+                        cursorColor = Blue, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
+                    ),
+                    trailingIcon = {
+                        if (wgDnsIp != state.wireGuardDnsIp) {
+                            IconButton(onClick = { viewModel.setWireGuardDnsIp(wgDnsIp) }) {
+                                Icon(Icons.Filled.Check, null, tint = Green, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                )
+                Spacer(Modifier.height(4.dp))
+                Text("Configure keys in WireGuard settings", color = TextDim, fontSize = 10.sp)
+            }
+            Spacer(Modifier.height(8.dp))
             SettingsToggle(
                 "DNS Trap",
                 "Catch hardcoded DNS + block DoH/DoT bypass",
@@ -145,6 +222,8 @@ fun SettingsScreen(
                     }
                 }
             )
+            Spacer(Modifier.height(8.dp))
+            SettingsRow("DNS benchmark", "Test latency to public DNS resolvers", Icons.Filled.Speed, onClick = onNavigateToDnsBenchmark)
             Spacer(Modifier.height(8.dp))
             SettingsRow("DNS leak test", "Verify queries go through HostShield", Icons.Filled.VerifiedUser, onClick = onNavigateToDnsLeakTest)
             Spacer(Modifier.height(8.dp))
@@ -200,6 +279,13 @@ fun SettingsScreen(
                 Icons.Filled.Block,
                 onClick = onNavigateToFirewall
             )
+        }
+
+        // Content Protection
+        SettingsSection("Protection", Icons.Filled.FilterList, Mauve) {
+            SettingsRow("Content filtering", "Block categories: adult, gambling, social, etc.", Icons.Filled.FilterList, onClick = onNavigateToContentFilter)
+            Spacer(Modifier.height(4.dp))
+            SettingsRow("Parental controls", "Age profiles with PIN lock", Icons.Filled.AdminPanelSettings, onClick = onNavigateToParentalControls)
         }
 
         // Network Firewall (iptables)
@@ -399,6 +485,10 @@ fun SettingsScreen(
             SettingsRow("Restore backup", "Restore from previous backup", Icons.Filled.RestorePage) {
                 restoreLauncher.launch(arrayOf("application/json"))
             }
+            Spacer(Modifier.height(4.dp))
+            SettingsRow("WebDAV sync", "Sync backups to Nextcloud, ownCloud", Icons.Filled.Cloud, onClick = onNavigateToWebDavSync)
+            Spacer(Modifier.height(4.dp))
+            SettingsRow("QR config sharing", "Share config via QR code", Icons.Filled.QrCode2, onClick = onNavigateToQrConfig)
         }
 
         // Migration from other blockers
@@ -438,6 +528,10 @@ fun SettingsScreen(
                 "Device info, config, logs, network state",
                 Icons.Filled.Description
             ) { viewModel.generateDiagnosticReport() }
+            Spacer(Modifier.height(4.dp))
+            SettingsRow("Crash reports", "View stored crash logs", Icons.Filled.BugReport, onClick = onNavigateToCrashReports)
+            Spacer(Modifier.height(4.dp))
+            SettingsRow("TLS fingerprints", "JA3/JA4 per-app TLS library identification", Icons.Filled.Fingerprint, onClick = onNavigateToTlsFingerprints)
             Spacer(Modifier.height(4.dp))
 
             val csvMessage by viewModel.csvMessage.collectAsStateWithLifecycle()
@@ -786,6 +880,69 @@ private fun DohProviderSelector(current: String, onSelect: (String) -> Unit) {
         "quad9" to "Quad9",
         "nextdns" to "NextDNS",
         "adguard" to "AdGuard"
+    )
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        providers.forEach { (key, label) ->
+            val selected = current == key
+            Surface(
+                onClick = { onSelect(key) },
+                shape = RoundedCornerShape(8.dp),
+                color = if (selected) Blue.copy(alpha = 0.12f) else Surface2
+            ) {
+                Text(
+                    label,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    color = if (selected) Blue else TextDim,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DotProviderSelector(current: String, onSelect: (String) -> Unit) {
+    val providers = listOf(
+        "cloudflare" to "Cloudflare",
+        "google" to "Google",
+        "quad9" to "Quad9",
+        "adguard" to "AdGuard"
+    )
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        providers.forEach { (key, label) ->
+            val selected = current == key
+            Surface(
+                onClick = { onSelect(key) },
+                shape = RoundedCornerShape(8.dp),
+                color = if (selected) Blue.copy(alpha = 0.12f) else Surface2
+            ) {
+                Text(
+                    label,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    color = if (selected) Blue else TextDim,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DoqProviderSelector(current: String, onSelect: (String) -> Unit) {
+    val providers = listOf(
+        "adguard" to "AdGuard",
+        "nextdns" to "NextDNS",
+        "mullvad" to "Mullvad"
     )
     androidx.compose.foundation.layout.FlowRow(
         horizontalArrangement = Arrangement.spacedBy(6.dp),

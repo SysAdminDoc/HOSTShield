@@ -99,6 +99,38 @@ object Migrations {
         }
     }
 
+    // v5.1: Add blocked_countries and lan_allowed columns to firewall_rules
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE firewall_rules ADD COLUMN blocked_countries TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE firewall_rules ADD COLUMN lan_allowed INTEGER NOT NULL DEFAULT 1")
+        }
+    }
+
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE dns_logs ADD COLUMN tracker_category TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE dns_logs ADD COLUMN tracker_owner TEXT NOT NULL DEFAULT ''")
+        }
+    }
+
+    // v6.1: Domain-per-app DNS rules — per-app allow/block rules for specific domains
+    val MIGRATION_11_12 = object : Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS app_dns_rules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    package_name TEXT NOT NULL,
+                    domain TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    created_at INTEGER NOT NULL DEFAULT 0
+                )
+            """)
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_app_dns_rules_package_name_domain ON app_dns_rules (package_name, domain)")
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
-    val ALL = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+    val ALL = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
 }

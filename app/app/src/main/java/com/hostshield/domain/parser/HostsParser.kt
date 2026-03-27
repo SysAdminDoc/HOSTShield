@@ -3,7 +3,7 @@ package com.hostshield.domain.parser
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 
-// HostShield v1.6.0 - Hosts File Parser with Wildcard Support
+// HostShield v5.0.0 - Multi-format parser (hosts, domains-only, adblock-syntax)
 
 data class ParsedHost(
     val hostname: String,
@@ -21,7 +21,68 @@ object HostsParser {
         "ip6-allrouters", "ip6-allhosts"
     )
 
+    /**
+     * Detect if content is adblock-syntax format.
+     * Heuristic: if >20% of non-empty, non-comment lines start with || or @@||,
+     * treat the entire file as adblock syntax.
+     */
+    fun isAdblockFormat(content: String): Boolean {
+        var total = 0
+        var adblock = 0
+        content.lineSequence().take(100).forEach { rawLine ->
+            val line = rawLine.trim()
+            if (line.isEmpty() || line.startsWith('!') || line.startsWith('#') || line.startsWith('[')) return@forEach
+            total++
+            if (line.startsWith("||") || line.startsWith("@@||") || line.startsWith("@@/")) adblock++
+        }
+        return total > 0 && adblock.toFloat() / total > 0.2f
+    }
+
+    /**
+     * Parse a blocklist file, auto-detecting format.
+     *
+     * v5.0: If the content is adblock-syntax (||domain^), delegates to
+     * AdblockRuleParser and converts results to ParsedHost set. For pure
+     * hosts/domains-only files, uses the original parser.
+     *
+     * For adblock-syntax, only block rules are returned as ParsedHost.
+     * Allow rules, $important, $dnstype, and other modifiers are available
+     * via parseAdblock() for callers that need them.
+     */
     fun parse(content: String): Set<ParsedHost> {
+        if (isAdblockFormat(content)) {
+            return parseAdblockAsHosts(content)
+        }
+        return parseHostsFormat(content)
+    }
+
+    /**
+     * v5.0: Parse adblock-syntax content and return full rule details.
+     * Use this instead of parse() when you need allow rules, $important, etc.
+     */
+    fun parseAdblock(content: String): AdblockRuleParser.ParseResult {
+        return AdblockRuleParser.parse(content)
+    }
+
+    /**
+     * Parse adblock-syntax and flatten to simple block domain set (for backward compat).
+     * Uses the same filtering as ParseResult.exactBlockDomains — excludes regex,
+     * explicit wildcards, and $dnstype-filtered rules for consistency.
+     * Allow rules are NOT subtracted here — that's done by the caller (HostsUpdateWorker).
+     */
+    private fun parseAdblockAsHosts(content: String): Set<ParsedHost> {
+        val result = AdblockRuleParser.parse(content)
+        val hosts = mutableSetOf<ParsedHost>()
+        for (rule in result.blockRules) {
+            if (!rule.isRegex && !rule.isWildcard && rule.dnsTypes == null && rule.domain.isNotEmpty()) {
+                hosts.add(ParsedHost(rule.domain))
+            }
+        }
+        return hosts
+    }
+
+    /** Original hosts-file and domains-only parser. */
+    private fun parseHostsFormat(content: String): Set<ParsedHost> {
         val results = mutableSetOf<ParsedHost>()
         content.lineSequence().forEach { rawLine ->
             val line = rawLine.substringBefore('#').trim()
@@ -40,9 +101,15 @@ object HostsParser {
                     }
                 }
             } else {
-                val domain = line.trim().lowercase()
-                if (isValidDomain(domain) && domain !in LOCALHOST_ENTRIES) {
-                    results.add(ParsedHost(domain))
+                // v5.0: Also try parsing as adblock-syntax single line
+                val adblockRule = AdblockRuleParser.parseLine(line)
+                if (adblockRule != null && !adblockRule.isException && !adblockRule.isRegex) {
+                    results.add(ParsedHost(adblockRule.domain))
+                } else {
+                    val domain = line.trim().lowercase()
+                    if (isValidDomain(domain) && domain !in LOCALHOST_ENTRIES) {
+                        results.add(ParsedHost(domain))
+                    }
                 }
             }
         }

@@ -103,11 +103,20 @@ class HostsUpdateWorker @AssistedInject constructor(
                     // BlocklistHolder, so updates take effect immediately.
                     val blockSources = repository.getEnabledBlockSources()
                     val allDomains = mutableSetOf<String>()
+                    // v5.0: Collect adblock-syntax allow rules from sources
+                    val adblockAllowDomains = mutableSetOf<String>()
 
                     for (source in blockSources) {
                         downloader.download(source).onSuccess { dl ->
                             if (!dl.notModified) {
-                                HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
+                                // v5.0: Auto-detect adblock format and extract allow rules
+                                if (HostsParser.isAdblockFormat(dl.content)) {
+                                    val parsed = HostsParser.parseAdblock(dl.content)
+                                    allDomains.addAll(parsed.exactBlockDomains)
+                                    adblockAllowDomains.addAll(parsed.exactAllowDomains)
+                                } else {
+                                    HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
+                                }
                             }
                         }
                     }
@@ -141,8 +150,9 @@ class HostsUpdateWorker @AssistedInject constructor(
                     blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
                     val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
                     allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-                    // Remove allowlist source domains
+                    // Remove allowlist source domains + adblock-syntax @@|| allow rules
                     allDomains.removeAll(sourceAllowDomains)
+                    allDomains.removeAll(adblockAllowDomains)
 
                     val wildcards = repository.getEnabledWildcards()
                     val regexRules = repository.getEnabledRegexRules()

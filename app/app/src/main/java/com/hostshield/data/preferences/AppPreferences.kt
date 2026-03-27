@@ -65,6 +65,27 @@ class AppPreferences @Inject constructor(
         val SCHEDULE_MODE = stringPreferencesKey("schedule_mode")     // "block" or "unblock"
         val RULE_SYNC_URLS = stringPreferencesKey("rule_sync_urls")   // Comma-separated remote rule list URLs
         val CNAME_CLOAK_DOMAINS = stringPreferencesKey("cname_cloak_domains") // v5.0: AdGuard + NextDNS CNAME cloak DB
+        val CAPTIVE_PORTAL_HANDLING = booleanPreferencesKey("captive_portal_handling")
+        val THREAT_INTEL_ENABLED = booleanPreferencesKey("threat_intel_enabled") // v6.0: Threat intelligence feeds
+        val DNS_ONLY_MODE = booleanPreferencesKey("dns_only_mode") // v6.0: DNS-only VPN (port 53 only, ~0.5% battery)
+        val SAFE_SEARCH_ENABLED = booleanPreferencesKey("safe_search_enabled")
+        val CONTENT_FILTER_CATEGORIES = stringSetPreferencesKey("content_filter_categories")
+        val PARENTAL_ENABLED = booleanPreferencesKey("parental_enabled") // v6.1: Parental controls
+        val PARENTAL_PIN_HASH = stringPreferencesKey("parental_pin_hash") // v6.1: SHA-256 of PIN
+        val PARENTAL_AGE_PROFILE = stringPreferencesKey("parental_age_profile") // v6.1: CHILD, TEEN, ADULT
+        val WEBDAV_URL = stringPreferencesKey("webdav_url") // v6.2: WebDAV sync server
+        val WEBDAV_USERNAME = stringPreferencesKey("webdav_username")
+        val WEBDAV_PASSWORD = stringPreferencesKey("webdav_password")
+        val DOT_ENABLED = booleanPreferencesKey("dot_enabled") // v6.2: DNS-over-TLS (RFC 7858)
+        val DOT_PROVIDER = stringPreferencesKey("dot_provider") // v6.2: cloudflare, google, quad9, adguard
+        val DOQ_ENABLED = booleanPreferencesKey("doq_enabled") // v6.2: DNS-over-QUIC (RFC 9250)
+        val DOQ_PROVIDER = stringPreferencesKey("doq_provider") // v6.2: adguard, nextdns, mullvad
+        val WIREGUARD_ENABLED = booleanPreferencesKey("wireguard_enabled") // v6.2: WireGuard DNS proxy
+        val WIREGUARD_ENDPOINT = stringPreferencesKey("wireguard_endpoint") // v6.2: host:port
+        val WIREGUARD_PRIVATE_KEY = stringPreferencesKey("wireguard_private_key")
+        val WIREGUARD_PUBLIC_KEY = stringPreferencesKey("wireguard_public_key")
+        val WIREGUARD_PRESHARED_KEY = stringPreferencesKey("wireguard_preshared_key")
+        val WIREGUARD_DNS_IP = stringPreferencesKey("wireguard_dns_ip") // DNS inside the tunnel
     }
 
     // ── Blocking ─────────────────────────────────────────────
@@ -247,6 +268,83 @@ class AppPreferences @Inject constructor(
         return if (raw.isBlank()) emptyList()
         else raw.split(",").map { it.trim() }.filter { it.startsWith("http") }
     }
+
+    // ── Captive Portal ────────────────────────────────────────
+    val captivePortalHandling: Flow<Boolean> = ds.data.map { it[Keys.CAPTIVE_PORTAL_HANDLING] ?: true }
+    suspend fun setCaptivePortalHandling(enabled: Boolean) = ds.edit { it[Keys.CAPTIVE_PORTAL_HANDLING] = enabled }
+
+    // ── Threat Intelligence (v6.0) ─────────────────────────────
+    val threatIntelEnabled: Flow<Boolean> = ds.data.map { it[Keys.THREAT_INTEL_ENABLED] ?: true }
+    suspend fun setThreatIntelEnabled(enabled: Boolean) = ds.edit { it[Keys.THREAT_INTEL_ENABLED] = enabled }
+
+    // ── DNS-Only Mode (v6.0) ────────────────────────────────
+    val dnsOnlyMode: Flow<Boolean> = ds.data.map { it[Keys.DNS_ONLY_MODE] ?: false }
+    suspend fun setDnsOnlyMode(enabled: Boolean) = ds.edit { it[Keys.DNS_ONLY_MODE] = enabled }
+
+    // ── Safe Search Enforcement (#41) ────────────────────────
+    val safeSearchEnabled: Flow<Boolean> = ds.data.map { it[Keys.SAFE_SEARCH_ENABLED] ?: false }
+    suspend fun setSafeSearchEnabled(enabled: Boolean) = ds.edit { it[Keys.SAFE_SEARCH_ENABLED] = enabled }
+
+    // ── Content Filter Categories (#40) ────────────────────────
+    val contentFilterCategories: Flow<Set<String>> = ds.data.map {
+        it[Keys.CONTENT_FILTER_CATEGORIES] ?: emptySet()
+    }
+    suspend fun setContentFilterCategories(categories: Set<String>) = ds.edit {
+        it[Keys.CONTENT_FILTER_CATEGORIES] = categories
+    }
+
+    // ── Parental Controls (#48) ────────────────────────────────
+    val parentalEnabled: Flow<Boolean> = ds.data.map { it[Keys.PARENTAL_ENABLED] ?: false }
+    suspend fun setParentalEnabled(enabled: Boolean) = ds.edit { it[Keys.PARENTAL_ENABLED] = enabled }
+
+    val parentalPinHash: Flow<String> = ds.data.map { it[Keys.PARENTAL_PIN_HASH] ?: "" }
+    suspend fun setParentalPinHash(hash: String) = ds.edit { it[Keys.PARENTAL_PIN_HASH] = hash }
+
+    val parentalAgeProfile: Flow<String> = ds.data.map { it[Keys.PARENTAL_AGE_PROFILE] ?: "ADULT" }
+    suspend fun setParentalAgeProfile(profile: String) = ds.edit { it[Keys.PARENTAL_AGE_PROFILE] = profile }
+
+    // ── WebDAV Sync (v6.2) ─────────────────────────────────────
+    val webdavUrl: Flow<String> = ds.data.map { it[Keys.WEBDAV_URL] ?: "" }
+    suspend fun setWebdavUrl(url: String) = ds.edit { it[Keys.WEBDAV_URL] = url }
+
+    val webdavUsername: Flow<String> = ds.data.map { it[Keys.WEBDAV_USERNAME] ?: "" }
+    suspend fun setWebdavUsername(user: String) = ds.edit { it[Keys.WEBDAV_USERNAME] = user }
+
+    val webdavPassword: Flow<String> = ds.data.map { it[Keys.WEBDAV_PASSWORD] ?: "" }
+    suspend fun setWebdavPassword(pass: String) = ds.edit { it[Keys.WEBDAV_PASSWORD] = pass }
+
+    // ── DNS-over-TLS (v6.2, Roadmap #44) ──────────────────────
+    val dotEnabled: Flow<Boolean> = ds.data.map { it[Keys.DOT_ENABLED] ?: false }
+    suspend fun setDotEnabled(enabled: Boolean) = ds.edit { it[Keys.DOT_ENABLED] = enabled }
+
+    val dotProvider: Flow<String> = ds.data.map { it[Keys.DOT_PROVIDER] ?: "cloudflare" }
+    suspend fun setDotProvider(provider: String) = ds.edit { it[Keys.DOT_PROVIDER] = provider }
+
+    // ── DNS-over-QUIC (v6.2, Roadmap #45) ─────────────────────
+    val doqEnabled: Flow<Boolean> = ds.data.map { it[Keys.DOQ_ENABLED] ?: false }
+    suspend fun setDoqEnabled(enabled: Boolean) = ds.edit { it[Keys.DOQ_ENABLED] = enabled }
+
+    val doqProvider: Flow<String> = ds.data.map { it[Keys.DOQ_PROVIDER] ?: "adguard" }
+    suspend fun setDoqProvider(provider: String) = ds.edit { it[Keys.DOQ_PROVIDER] = provider }
+
+    // ── WireGuard DNS Proxy (v6.2, Roadmap #51) ──────────────
+    val wireGuardEnabled: Flow<Boolean> = ds.data.map { it[Keys.WIREGUARD_ENABLED] ?: false }
+    suspend fun setWireGuardEnabled(enabled: Boolean) = ds.edit { it[Keys.WIREGUARD_ENABLED] = enabled }
+
+    val wireGuardEndpoint: Flow<String> = ds.data.map { it[Keys.WIREGUARD_ENDPOINT] ?: "" }
+    suspend fun setWireGuardEndpoint(endpoint: String) = ds.edit { it[Keys.WIREGUARD_ENDPOINT] = endpoint }
+
+    val wireGuardPrivateKey: Flow<String> = ds.data.map { it[Keys.WIREGUARD_PRIVATE_KEY] ?: "" }
+    suspend fun setWireGuardPrivateKey(key: String) = ds.edit { it[Keys.WIREGUARD_PRIVATE_KEY] = key }
+
+    val wireGuardPublicKey: Flow<String> = ds.data.map { it[Keys.WIREGUARD_PUBLIC_KEY] ?: "" }
+    suspend fun setWireGuardPublicKey(key: String) = ds.edit { it[Keys.WIREGUARD_PUBLIC_KEY] = key }
+
+    val wireGuardPresharedKey: Flow<String> = ds.data.map { it[Keys.WIREGUARD_PRESHARED_KEY] ?: "" }
+    suspend fun setWireGuardPresharedKey(key: String) = ds.edit { it[Keys.WIREGUARD_PRESHARED_KEY] = key }
+
+    val wireGuardDnsIp: Flow<String> = ds.data.map { it[Keys.WIREGUARD_DNS_IP] ?: "" }
+    suspend fun setWireGuardDnsIp(ip: String) = ds.edit { it[Keys.WIREGUARD_DNS_IP] = ip }
 
     // ── Search History ────────────────────────────────────────
     private object SearchKeys {

@@ -50,25 +50,22 @@ class SourceDownloader @Inject constructor() {
                 }
             }
 
-            val response = client.newCall(requestBuilder.build()).execute()
-
-            when (response.code) {
-                304 -> {
-                    response.close()
-                    Result.success(DownloadResult(notModified = true, etag = source.etag))
-                }
-                200 -> {
-                    val body = response.body?.string() ?: ""
-                    val etag = response.header("ETag") ?: ""
-                    val lastMod = response.header("Last-Modified") ?: ""
-                    val size = body.length.toLong()
-                    response.close()
-                    Result.success(DownloadResult(body, etag, lastMod, size))
-                }
-                else -> {
-                    val msg = "HTTP ${response.code}: ${response.message}"
-                    response.close()
-                    Result.failure(Exception(msg))
+            client.newCall(requestBuilder.build()).execute().use { response ->
+                when (response.code) {
+                    304 -> {
+                        Result.success(DownloadResult(notModified = true, etag = source.etag))
+                    }
+                    200 -> {
+                        val body = response.body?.string() ?: ""
+                        val etag = response.header("ETag") ?: ""
+                        val lastMod = response.header("Last-Modified") ?: ""
+                        val size = body.length.toLong()
+                        Result.success(DownloadResult(body, etag, lastMod, size))
+                    }
+                    else -> {
+                        val msg = "HTTP ${response.code}: ${response.message}"
+                        Result.failure(Exception(msg))
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -82,9 +79,9 @@ class SourceDownloader @Inject constructor() {
     suspend fun validate(url: String): Result<Int> = withContext(Dispatchers.IO) {
         try {
             val request = Request.Builder().url(url).build()
-            val response = client.newCall(request).execute()
-            val body = response.body?.string() ?: ""
-            response.close()
+            val body = client.newCall(request).execute().use { response ->
+                response.body?.string() ?: ""
+            }
 
             val lineCount = body.lines().count { line ->
                 val trimmed = line.trim()

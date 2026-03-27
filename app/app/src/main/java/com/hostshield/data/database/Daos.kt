@@ -2,6 +2,7 @@ package com.hostshield.data.database
 
 import androidx.room.*
 import com.hostshield.data.model.*
+import com.hostshield.data.model.AppDnsRule
 import com.hostshield.data.model.AutomationAuditEntry
 import com.hostshield.data.model.TrackerScanCacheEntry
 import com.hostshield.data.model.VpnStabilityEntry
@@ -257,6 +258,37 @@ interface DnsLogDao {
         GROUP BY hostname ORDER BY cnt DESC LIMIT :limit
     """)
     fun getMostQueriedDomains(since: Long, limit: Int = 30): Flow<List<TopHostname>>
+
+    /** v6.0: Tracker category breakdown — how many queries per tracker category. */
+    @Query("""
+        SELECT tracker_category as category, COUNT(*) as cnt
+        FROM dns_logs WHERE tracker_category != '' AND timestamp > :since
+        GROUP BY tracker_category ORDER BY cnt DESC
+    """)
+    fun getTrackerCategoryBreakdown(since: Long): Flow<List<TrackerCategoryStat>>
+
+    /** v6.0: Top tracker owners by query count. */
+    @Query("""
+        SELECT tracker_owner as owner, tracker_category as category, COUNT(*) as cnt
+        FROM dns_logs WHERE tracker_owner != '' AND timestamp > :since
+        GROUP BY tracker_owner ORDER BY cnt DESC LIMIT :limit
+    """)
+    fun getTopTrackerOwners(since: Long, limit: Int = 20): Flow<List<TrackerOwnerStat>>
+
+    /** v6.0: Per-app tracker breakdown — which tracker categories does each app contact. */
+    @Query("""
+        SELECT app_package, app_label, tracker_category as category, COUNT(*) as cnt
+        FROM dns_logs WHERE app_package != '' AND tracker_category != '' AND timestamp > :since
+        GROUP BY app_package, tracker_category ORDER BY cnt DESC LIMIT :limit
+    """)
+    fun getAppTrackerBreakdown(since: Long, limit: Int = 100): Flow<List<AppTrackerStat>>
+
+    /** v6.0: Count of tracker queries vs total for a given app. */
+    @Query("""
+        SELECT COUNT(*) FROM dns_logs
+        WHERE app_package = :pkg AND tracker_category != '' AND timestamp > :since
+    """)
+    fun getTrackerCountForApp(pkg: String, since: Long): Flow<Int>
 }
 
 @Dao
@@ -390,7 +422,18 @@ interface FirewallRuleDao {
     @Query("UPDATE firewall_rules SET block_metered = :block, updated_at = :ts WHERE uid = :uid")
     suspend fun setBlockMetered(uid: Int, block: Boolean, ts: Long = System.currentTimeMillis())
 
-    @Query("SELECT * FROM firewall_rules WHERE block_screen_off = 1 OR block_background = 1 OR block_metered = 1")
+    // v5.1: Country-based blocking
+    @Query("UPDATE firewall_rules SET blocked_countries = :countries, updated_at = :ts WHERE uid = :uid")
+    suspend fun setBlockedCountries(uid: Int, countries: String, ts: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM firewall_rules WHERE blocked_countries != ''")
+    fun getCountryBlockRules(): Flow<List<FirewallRule>>
+
+    // v5.1: LAN access toggle
+    @Query("UPDATE firewall_rules SET lan_allowed = :allowed, updated_at = :ts WHERE uid = :uid")
+    suspend fun setLanAllowed(uid: Int, allowed: Boolean, ts: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM firewall_rules WHERE block_screen_off = 1 OR block_background = 1 OR block_metered = 1 OR blocked_countries != '' OR lan_allowed = 0")
     fun getContextAwareRules(): Flow<List<FirewallRule>>
 }
 
@@ -449,6 +492,51 @@ data class DailyBreakdown(
     val total: Int,
     val blocked: Int
 )
+
+data class TrackerCategoryStat(
+    val category: String,
+    val cnt: Int
+)
+
+data class TrackerOwnerStat(
+    val owner: String,
+    val category: String,
+    val cnt: Int
+)
+
+data class AppTrackerStat(
+    @ColumnInfo(name = "app_package") val appPackage: String,
+    @ColumnInfo(name = "app_label") val appLabel: String,
+    val category: String,
+    val cnt: Int
+)
+
+@Dao
+interface AppDnsRuleDao {
+    @Query("SELECT * FROM app_dns_rules WHERE package_name = :pkg AND enabled = 1")
+    fun getRulesForApp(pkg: String): Flow<List<AppDnsRule>>
+
+    @Query("SELECT * FROM app_dns_rules ORDER BY package_name, domain")
+    fun getAllRules(): Flow<List<AppDnsRule>>
+
+    @Query("SELECT DISTINCT package_name FROM app_dns_rules WHERE enabled = 1")
+    suspend fun getAppsWithRules(): List<String>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(rule: AppDnsRule): Long
+
+    @Update
+    suspend fun update(rule: AppDnsRule)
+
+    @Delete
+    suspend fun delete(rule: AppDnsRule)
+
+    @Query("DELETE FROM app_dns_rules WHERE package_name = :pkg")
+    suspend fun deleteAllForApp(pkg: String)
+
+    @Query("SELECT COUNT(*) FROM app_dns_rules")
+    fun getRuleCount(): Flow<Int>
+}
 
 @Dao
 interface TrackerScanCacheDao {

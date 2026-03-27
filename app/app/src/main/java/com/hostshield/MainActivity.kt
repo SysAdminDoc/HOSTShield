@@ -326,7 +326,14 @@ private fun HostShieldMainApp(activity: MainActivity) {
                     onNavigateToRuleTest = { navController.navigate(SubScreen.RULE_TEST) },
                     onNavigateToHostsEditor = { navController.navigate(SubScreen.HOSTS_EDITOR) },
                     onNavigateToAppPrivacy = { navController.navigate(SubScreen.APP_PRIVACY) },
-                    onNavigateToAutomationAudit = { navController.navigate(SubScreen.AUTOMATION_AUDIT) }
+                    onNavigateToAutomationAudit = { navController.navigate(SubScreen.AUTOMATION_AUDIT) },
+                    onNavigateToContentFilter = { navController.navigate(SubScreen.CONTENT_FILTER) },
+                    onNavigateToParentalControls = { navController.navigate(SubScreen.PARENTAL_CONTROLS) },
+                    onNavigateToDnsBenchmark = { navController.navigate(SubScreen.DNS_BENCHMARK) },
+                    onNavigateToWebDavSync = { navController.navigate(SubScreen.WEBDAV_SYNC) },
+                    onNavigateToCrashReports = { navController.navigate(SubScreen.CRASH_REPORTS) },
+                    onNavigateToQrConfig = { navController.navigate(SubScreen.QR_CONFIG) },
+                    onNavigateToTlsFingerprints = { navController.navigate(SubScreen.TLS_FINGERPRINTS) }
                 )
             }
             composable(SubScreen.APP_EXCLUSIONS) {
@@ -393,6 +400,41 @@ private fun HostShieldMainApp(activity: MainActivity) {
             }
             composable(SubScreen.AUTOMATION_AUDIT) {
                 com.hostshield.ui.screens.settings.AutomationAuditScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.CONTENT_FILTER) {
+                com.hostshield.ui.screens.settings.ContentFilterScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.PARENTAL_CONTROLS) {
+                com.hostshield.ui.screens.settings.ParentalControlScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.DNS_BENCHMARK) {
+                com.hostshield.ui.screens.settings.DnsBenchmarkScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.WEBDAV_SYNC) {
+                com.hostshield.ui.screens.settings.WebDavSyncScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.CRASH_REPORTS) {
+                com.hostshield.ui.screens.settings.CrashReporterScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.QR_CONFIG) {
+                com.hostshield.ui.screens.settings.QrConfigScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(SubScreen.TLS_FINGERPRINTS) {
+                com.hostshield.ui.screens.settings.TlsFingerprintScreen(
                     onBack = { navController.popBackStack() }
                 )
             }

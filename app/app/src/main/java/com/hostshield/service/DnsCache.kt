@@ -278,6 +278,51 @@ class DnsCache(
         failureCache.clear()
     }
 
+    // ── v5.0: Two-tier cache (L2 disk persistence) ──────────
+
+    /**
+     * Warm the in-memory cache from disk entries (called on VPN start).
+     * Only loads entries that are still valid (not expired).
+     */
+    fun warmFromDisk(entries: List<DnsDiskCache.DiskCacheEntry>) {
+        val now = System.currentTimeMillis()
+        var loaded = 0
+        for (entry in entries) {
+            if (now >= entry.expiresAt) continue
+            if (cache.size >= maxEntries) break
+            val key = CacheKey(entry.domain, entry.qtype)
+            if (cache.containsKey(key)) continue // don't overwrite fresh in-memory entries
+            cache[key] = CacheEntry(
+                response = entry.response,
+                expiresAt = entry.expiresAt,
+                originalTtlMs = entry.originalTtlMs,
+                insertedAt = now,
+                lastAccess = now
+            )
+            loaded++
+        }
+        Log.i(TAG, "Warmed L1 cache from disk: $loaded entries")
+    }
+
+    /**
+     * Export current positive cache entries for disk persistence.
+     * Called periodically by the VPN service to persist to L2.
+     */
+    fun exportForDisk(): List<DnsDiskCache.DiskCacheEntry> {
+        val now = System.currentTimeMillis()
+        return cache.entries
+            .filter { now < it.value.expiresAt } // only non-expired
+            .map { (key, entry) ->
+                DnsDiskCache.DiskCacheEntry(
+                    domain = key.domain,
+                    qtype = key.qtype,
+                    response = entry.response.copyOf(),
+                    expiresAt = entry.expiresAt,
+                    originalTtlMs = entry.originalTtlMs
+                )
+            }
+    }
+
     /** Get cache statistics. */
     fun getStats(): CacheStats {
         val h = hits.get()
@@ -316,14 +361,14 @@ class DnsCache(
      */
     private fun extractMinTtl(response: ByteArray): Int {
         try {
-            val anCount = (response[6].toInt() and 0xFF shl 8) or (response[7].toInt() and 0xFF)
-            val nsCount = (response[8].toInt() and 0xFF shl 8) or (response[9].toInt() and 0xFF)
-            val arCount = (response[10].toInt() and 0xFF shl 8) or (response[11].toInt() and 0xFF)
+            val anCount = ((response[6].toInt() and 0xFF) shl 8) or (response[7].toInt() and 0xFF)
+            val nsCount = ((response[8].toInt() and 0xFF) shl 8) or (response[9].toInt() and 0xFF)
+            val arCount = ((response[10].toInt() and 0xFF) shl 8) or (response[11].toInt() and 0xFF)
             val totalRrs = anCount + nsCount + arCount
 
             // Skip question section
             var off = 12
-            val qdCount = (response[4].toInt() and 0xFF shl 8) or (response[5].toInt() and 0xFF)
+            val qdCount = ((response[4].toInt() and 0xFF) shl 8) or (response[5].toInt() and 0xFF)
             for (i in 0 until qdCount) {
                 off = skipName(response, off)
                 off += 4 // QTYPE + QCLASS
@@ -336,12 +381,12 @@ class DnsCache(
                 if (off + 10 > response.size) break
 
                 // TYPE(2) + CLASS(2) + TTL(4) + RDLENGTH(2)
-                val rrType = (response[off].toInt() and 0xFF shl 8) or (response[off + 1].toInt() and 0xFF)
+                val rrType = ((response[off].toInt() and 0xFF) shl 8) or (response[off + 1].toInt() and 0xFF)
                 val ttl = ((response[off + 4].toInt() and 0xFF) shl 24) or
                     ((response[off + 5].toInt() and 0xFF) shl 16) or
                     ((response[off + 6].toInt() and 0xFF) shl 8) or
                     (response[off + 7].toInt() and 0xFF)
-                val rdLen = (response[off + 8].toInt() and 0xFF shl 8) or (response[off + 9].toInt() and 0xFF)
+                val rdLen = ((response[off + 8].toInt() and 0xFF) shl 8) or (response[off + 9].toInt() and 0xFF)
 
                 // Skip OPT pseudo-record (TYPE 41) — it has no meaningful TTL
                 if (rrType != 41 && ttl in 1 until minTtl) minTtl = ttl
@@ -359,12 +404,12 @@ class DnsCache(
      */
     private fun extractSoaMinTtl(response: ByteArray): Int {
         try {
-            val anCount = (response[6].toInt() and 0xFF shl 8) or (response[7].toInt() and 0xFF)
-            val nsCount = (response[8].toInt() and 0xFF shl 8) or (response[9].toInt() and 0xFF)
+            val anCount = ((response[6].toInt() and 0xFF) shl 8) or (response[7].toInt() and 0xFF)
+            val nsCount = ((response[8].toInt() and 0xFF) shl 8) or (response[9].toInt() and 0xFF)
 
             // Skip question section
             var off = 12
-            val qdCount = (response[4].toInt() and 0xFF shl 8) or (response[5].toInt() and 0xFF)
+            val qdCount = ((response[4].toInt() and 0xFF) shl 8) or (response[5].toInt() and 0xFF)
             for (i in 0 until qdCount) {
                 off = skipName(response, off)
                 off += 4
@@ -375,7 +420,7 @@ class DnsCache(
                 if (off >= response.size) return 0
                 off = skipName(response, off)
                 if (off + 10 > response.size) return 0
-                val rdLen = (response[off + 8].toInt() and 0xFF shl 8) or (response[off + 9].toInt() and 0xFF)
+                val rdLen = ((response[off + 8].toInt() and 0xFF) shl 8) or (response[off + 9].toInt() and 0xFF)
                 off += 10 + rdLen
             }
 
@@ -385,8 +430,8 @@ class DnsCache(
                 off = skipName(response, off)
                 if (off + 10 > response.size) return 0
 
-                val rrType = (response[off].toInt() and 0xFF shl 8) or (response[off + 1].toInt() and 0xFF)
-                val rdLen = (response[off + 8].toInt() and 0xFF shl 8) or (response[off + 9].toInt() and 0xFF)
+                val rrType = ((response[off].toInt() and 0xFF) shl 8) or (response[off + 1].toInt() and 0xFF)
+                val rdLen = ((response[off + 8].toInt() and 0xFF) shl 8) or (response[off + 9].toInt() and 0xFF)
                 off += 10
 
                 if (rrType == 6 && off + rdLen <= response.size) {

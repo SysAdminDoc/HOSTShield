@@ -73,6 +73,15 @@
                 android:value="Root-mode DNS interception proxy for ad and tracker blocking" />
         </service>
 
+        <service
+            android:name=".service.DnsProxyService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Local DNS proxy for ad and tracker blocking without VPN or root" />
+        </service>
+
         <receiver
             android:name=".service.BootReceiver"
             android:exported="true"

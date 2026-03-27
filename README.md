@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-5.0.0-blue)
+![Version](https://img.shields.io/badge/version-6.2.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
@@ -74,6 +74,9 @@
 | Feature | Description |
 |---------|-------------|
 | **DNS-over-HTTPS (DoH)** | RFC 8484 POST+GET. Cloudflare, Google, Quad9, NextDNS, AdGuard, Mullvad, CleanBrowsing |
+| **DNS-over-TLS (DoT)** | RFC 7858, TLSv1.3, SNI + hostname verification. Cloudflare, Google, Quad9, AdGuard |
+| **DNS-over-QUIC (DoQ)** | RFC 9250, QUIC Initial framing. AdGuard, NextDNS, Mullvad. Falls back to DoT |
+| **DNS-over-WireGuard** | Noise_IKpsk2 handshake, AES-256-GCM transport encryption. DNS-only WireGuard tunnel |
 | **Certificate Pinning** | SHA-256 pin validation per provider, unpinned fallback as last resort |
 | **Smart Latency Failover** | EMA-based latency tracking per provider, auto-selects fastest, falls back through all on failure |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through VPN tunnel to prevent bypass |
@@ -154,13 +157,24 @@
 |---------|-------------|
 | **AMOLED Dark Theme** | Material 3 dark UI optimized for OLED displays |
 | **6 Accent Colors** | Teal, Blue, Purple, Green, Pink, Peach |
-| **24+ Screens** | Home, Sources, Rules, Stats, Settings, Logs, Apps, AppPrivacy, AppLogs, Firewall, ConnectionLog, DnsTools, NetworkStats, OverlapAnalysis, DnsLeakTest, RuleTest, HostsEditor, HostsDiff, AppExclusions, Onboarding, BlocklistGallery, AutomationAudit |
+| **31+ Screens** | Home, Sources, Rules, Stats, Settings, Logs, Apps, AppPrivacy, AppLogs, Firewall, ConnectionLog, DnsTools, NetworkStats, OverlapAnalysis, DnsLeakTest, RuleTest, HostsEditor, HostsDiff, AppExclusions, Onboarding, BlocklistGallery, AutomationAudit, ContentFilter, ParentalControls, DnsBenchmark, WebDavSync, CrashReports, QrConfig, TlsFingerprints |
 | **Home Dashboard** | Shield status, live query rate, cache hit rate, latency sparkline, top queried apps, category toggles, search history chips |
 | **Widgets** | Toggle widget + stats widget (blocked count, queries, block rate) |
 | **Quick Settings Tile** | VPN toggle from Quick Settings panel |
 | **App Shortcuts** | Long-press launcher: Toggle, Refresh Lists, Open Logs |
 | **Deep Links** | `hostshield://logs`, `hostshield://stats`, etc. |
 | **Onboarding Wizard** | Private DNS conflict detection, VPN permission, battery optimization |
+
+### Content Filtering & Parental Controls
+
+| Feature | Description |
+|---------|-------------|
+| **15 Content Categories** | Gaming, Streaming, Social Media, News, Shopping, Dating, Gambling, Adult, VPN/Proxy, Malware, and more — toggleable per category |
+| **Parental Controls** | 3 age profiles (Child, Teen, Adult) with automatic category blocking per profile |
+| **PIN Lock** | SHA-256 hashed PIN protects parental control settings from bypass |
+| **Local DNS Server** | "Portable Pi-hole" mode on port 5353 — other LAN devices can use phone as DNS filter |
+| **DNS Proxy Mode** | No-VPN, no-root DNS blocking via local proxy (tri-mode: VPN / Root / Proxy) |
+| **Safe Search Enforcement** | DNS-level rewriting for Google, Bing, DuckDuckGo, YouTube |
 
 ### Import, Export & Backup
 
@@ -247,7 +261,7 @@ All actions are rate-limited (5s cooldown per action per caller) and logged to t
 | Language | Kotlin 2.0 |
 | UI | Jetpack Compose + Material 3 |
 | DI | Hilt (Dagger) |
-| Database | Room (10 tables, 9 migrations) |
+| Database | Room (11 tables, 12 migrations) |
 | Preferences | DataStore |
 | Async | Coroutines + Flow, ViewModels + StateFlow |
 | Networking | OkHttp 4 (source downloads, DoH resolver) |
@@ -262,8 +276,8 @@ All actions are rate-limited (5s cooldown per action per caller) and logged to t
 ```
 app/src/main/java/com/hostshield/
 ├── data/
-│   ├── database/      # Room DB, DAOs, converters, migrations (v1-v9)
-│   ├── model/         # Entities (10 tables), enums
+│   ├── database/      # Room DB, DAOs, converters, migrations (v1-v12)
+│   ├── model/         # Entities (11 tables), enums
 │   ├── preferences/   # DataStore preferences (AppPreferences)
 │   ├── repository/    # HostShieldRepository
 │   └── source/        # SourceDownloader
@@ -273,32 +287,51 @@ app/src/main/java/com/hostshield/
 │   └── parser/
 │       └── HostsParser.kt    # Hosts file parser with wildcard support
 ├── service/
-│   ├── DnsVpnService.kt      # VPN packet loop (~2000 lines)
+│   ├── DnsVpnService.kt      # VPN packet loop (~2700 lines)
 │   ├── DnsCache.kt           # LRU + serve-stale + prefetch + negative/failure cache
 │   ├── DnsPacketBuilder.kt   # DNS wire format builder/parser
 │   ├── DohResolver.kt        # DoH with smart latency failover
+│   ├── DotResolver.kt        # DoT (RFC 7858, TLSv1.3, 4 providers)
+│   ├── DoqResolver.kt        # DoQ (RFC 9250, QUIC Initial, 3 providers)
+│   ├── WireGuardProxy.kt     # DNS-over-WireGuard (Noise_IKpsk2, AES-256-GCM)
 │   ├── CnameCloakDetector.kt # CNAME + SVCB/HTTPS cloak detection
 │   ├── CnameCloakUpdater.kt  # Remote CNAME cloak DB fetcher (AdGuard + NextDNS)
 │   ├── DohBypassUpdater.kt   # Remote DoH bypass list fetcher
 │   ├── RootDnsService.kt     # Root-mode DNS proxy
 │   ├── RootDnsLogger.kt      # Root-mode DNS logging with UID attribution
 │   ├── IptablesManager.kt    # Per-app firewall rule management
-│   ├── DnsCache.kt           # DNS response cache with RFC 8767/2308/9520
+│   ├── LocalDnsServer.kt     # LAN DNS server on port 5353
+│   ├── DnsProxyService.kt    # No-VPN proxy mode DNS blocking
+│   ├── ContentFilterManager.kt # 15 content filter categories
+│   ├── ParentalControlManager.kt # Age-profile parental controls + PIN
+│   ├── AppDnsRuleEngine.kt   # Per-app domain DNS rules
+│   ├── ConnectionTracker.kt  # Real-time per-app connection tracking
+│   ├── ThreatIntelManager.kt # Threat intel feeds + radix trie IP lookup
+│   ├── SafeSearchEnforcer.kt # DNS-level safe search rewriting
 │   ├── NetworkStatsTracker.kt
 │   ├── AutomationReceiver.kt # Broadcast intent API
 │   ├── ScreenStateReceiver.kt # Context-aware firewall state
 │   └── *Worker.kt            # HostsUpdate, AutoBackup, LogCleanup, etc.
 ├── ui/
 │   ├── navigation/    # Compose navigation graph
-│   ├── screens/       # 24+ screens (Home, Logs, Stats, Settings, Firewall, ...)
+│   ├── screens/       # 31+ screens (Home, Logs, Stats, Settings, Firewall, ...)
+│   ├── components/    # Vico charts, Lottie animations, animated log feed
+│   ├── widget/        # Glance widgets (toggle + stats)
 │   └── theme/         # Material 3 theme + accent colors
 └── util/
     ├── OfflineGeoIp.kt        # MaxMind GeoLite2 offline lookups
     ├── GeoIpLookup.kt         # ip-api.com online lookups (legacy)
     ├── TrackerSignatureDb.kt   # Exodus-style APK tracker scanner
+    ├── TlsFingerprinter.kt    # JA3/JA4 TLS ClientHello fingerprinting
     ├── AppPrivacyScorer.kt     # Per-app A-F privacy grades
     ├── ImportExportUtil.kt     # Multi-format import/export
+    ├── EncryptedBackup.kt      # AES-256-GCM encrypted backups
     ├── BackupRestoreUtil.kt    # Backup/restore to app storage
+    ├── WebDavSync.kt           # WebDAV cloud sync
+    ├── QrConfigSharing.kt      # QR code config sharing (GZIP+Base64)
+    ├── CrashReporter.kt        # Custom crash reporting
+    ├── DnsBenchmark.kt         # DNS resolver latency benchmark
+    ├── DnsStampParser.kt       # sdns:// DNS stamp parser
     ├── DiagnosticExporter.kt   # One-tap diagnostic report
     ├── PcapExporter.kt         # PCAP packet capture export
     └── RootUtil.kt             # Root detection + binary management
@@ -335,6 +368,9 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.2.0** | DoQ resolver (RFC 9250), WireGuard DNS proxy, 7 new UI screens, ConnectionTracker + TlsFingerprinter wired in. **Release hardening audit**: fixed ~60 operator precedence bugs in DNS wire format parsing across 6 files, WireGuard encryption failure no longer leaks plaintext, OkHttp response leaks fixed in 8 files, shell command injection prevention in root mode, CoroutineScope lifecycle fix in LocalDnsServer, private IP range validation fix, Compose crash safety, ProGuard rules for all new classes. **52/52 roadmap items complete** |
+| **6.1.0** | Per-app DNS rules, content filtering (15 categories), proxy mode, QR config sharing, parental controls, crash reporter, WebDAV sync, connection tracker, Vico charts, Lottie animations, Glance widgets |
+| **6.0.0** | Threat intel integration, NetworkTrackerDb, Safe Search enforcement, DNS benchmark, local DNS server, DoT resolver, encrypted backups, DNS stamps, schedule presets |
 | **5.0.0** | Serve-stale DNS (RFC 8767), SERVFAIL caching (RFC 9520), cache prefetching, hash set fast path (~2x), filter decision LRU cache, CNAME cloak databases (AdGuard+NextDNS), SVCB/HTTPS record parsing, offline GeoIP (MaxMind GeoLite2), configurable TTL caps |
 | 4.6.0 | DNS latency sparkline, source summary stats, search history persistence |
 | 4.5.0 | Query type distribution chart, per-app DNS log drill-down, permanent block/allow in log detail |

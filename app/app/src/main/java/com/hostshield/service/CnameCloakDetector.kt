@@ -77,12 +77,16 @@ object CnameCloakDetector {
      * Called by CnameCloakUpdater after downloading fresh lists.
      * Merges with (never replaces) the hardcoded fallback set.
      */
+    private val cloakDbLock = Any()
+
     fun updateCloakDatabase(remoteDomains: Set<String>) {
-        val merged = HashSet<String>(cnameCloakDomains.size + remoteDomains.size)
-        merged.addAll(cnameCloakDomains)
-        merged.addAll(remoteDomains)
-        cnameCloakDomains = merged
-        Log.i(TAG, "CNAME cloak database updated: ${merged.size} domains")
+        synchronized(cloakDbLock) {
+            val merged = HashSet<String>(cnameCloakDomains.size + remoteDomains.size)
+            merged.addAll(cnameCloakDomains)
+            merged.addAll(remoteDomains)
+            cnameCloakDomains = merged
+        }
+        Log.i(TAG, "CNAME cloak database updated: ${cnameCloakDomains.size} domains")
     }
 
     data class CnameResult(
@@ -155,12 +159,12 @@ object CnameCloakDetector {
     fun extractCnameChain(response: ByteArray): List<String> {
         if (response.size < 12) return emptyList()
 
-        val anCount = (response[6].toInt() and 0xFF shl 8) or (response[7].toInt() and 0xFF)
+        val anCount = ((response[6].toInt() and 0xFF) shl 8) or (response[7].toInt() and 0xFF)
         if (anCount == 0) return emptyList()
 
         // Skip question section
         var off = 12
-        val qdCount = (response[4].toInt() and 0xFF shl 8) or (response[5].toInt() and 0xFF)
+        val qdCount = ((response[4].toInt() and 0xFF) shl 8) or (response[5].toInt() and 0xFF)
         for (i in 0 until qdCount) {
             off = skipName(response, off)
             if (off < 0 || off >= response.size) return emptyList()
@@ -173,8 +177,8 @@ object CnameCloakDetector {
             off = skipName(response, off)
             if (off < 0 || off + 10 > response.size) break
 
-            val rtype = (response[off].toInt() and 0xFF shl 8) or (response[off + 1].toInt() and 0xFF)
-            val rdLen = (response[off + 8].toInt() and 0xFF shl 8) or (response[off + 9].toInt() and 0xFF)
+            val rtype = ((response[off].toInt() and 0xFF) shl 8) or (response[off + 1].toInt() and 0xFF)
+            val rdLen = ((response[off + 8].toInt() and 0xFF) shl 8) or (response[off + 9].toInt() and 0xFF)
             off += 10 // TYPE + CLASS + TTL + RDLENGTH
 
             if (rtype == TYPE_CNAME && off + rdLen <= response.size) {
@@ -198,11 +202,11 @@ object CnameCloakDetector {
     fun extractAnswerIps(response: ByteArray): List<String> {
         if (response.size < 12) return emptyList()
 
-        val anCount = (response[6].toInt() and 0xFF shl 8) or (response[7].toInt() and 0xFF)
+        val anCount = ((response[6].toInt() and 0xFF) shl 8) or (response[7].toInt() and 0xFF)
         if (anCount == 0) return emptyList()
 
         var off = 12
-        val qdCount = (response[4].toInt() and 0xFF shl 8) or (response[5].toInt() and 0xFF)
+        val qdCount = ((response[4].toInt() and 0xFF) shl 8) or (response[5].toInt() and 0xFF)
         for (i in 0 until qdCount) {
             off = skipName(response, off)
             if (off < 0 || off >= response.size) return emptyList()
@@ -215,8 +219,8 @@ object CnameCloakDetector {
             off = skipName(response, off)
             if (off < 0 || off + 10 > response.size) break
 
-            val rtype = (response[off].toInt() and 0xFF shl 8) or (response[off + 1].toInt() and 0xFF)
-            val rdLen = (response[off + 8].toInt() and 0xFF shl 8) or (response[off + 9].toInt() and 0xFF)
+            val rtype = ((response[off].toInt() and 0xFF) shl 8) or (response[off + 1].toInt() and 0xFF)
+            val rdLen = ((response[off + 8].toInt() and 0xFF) shl 8) or (response[off + 9].toInt() and 0xFF)
             off += 10
 
             if (off + rdLen > response.size) break
@@ -249,11 +253,11 @@ object CnameCloakDetector {
     fun extractSvcbTargets(response: ByteArray): List<String> {
         if (response.size < 12) return emptyList()
 
-        val anCount = (response[6].toInt() and 0xFF shl 8) or (response[7].toInt() and 0xFF)
+        val anCount = ((response[6].toInt() and 0xFF) shl 8) or (response[7].toInt() and 0xFF)
         if (anCount == 0) return emptyList()
 
         var off = 12
-        val qdCount = (response[4].toInt() and 0xFF shl 8) or (response[5].toInt() and 0xFF)
+        val qdCount = ((response[4].toInt() and 0xFF) shl 8) or (response[5].toInt() and 0xFF)
         for (i in 0 until qdCount) {
             off = skipName(response, off)
             if (off < 0 || off >= response.size) return emptyList()
@@ -266,8 +270,8 @@ object CnameCloakDetector {
             off = skipName(response, off)
             if (off < 0 || off + 10 > response.size) break
 
-            val rtype = (response[off].toInt() and 0xFF shl 8) or (response[off + 1].toInt() and 0xFF)
-            val rdLen = (response[off + 8].toInt() and 0xFF shl 8) or (response[off + 9].toInt() and 0xFF)
+            val rtype = ((response[off].toInt() and 0xFF) shl 8) or (response[off + 1].toInt() and 0xFF)
+            val rdLen = ((response[off + 8].toInt() and 0xFF) shl 8) or (response[off + 9].toInt() and 0xFF)
             off += 10
 
             if (off + rdLen > response.size) break
@@ -275,7 +279,7 @@ object CnameCloakDetector {
             // SVCB (64) and HTTPS (65) records: RDATA starts with
             // SvcPriority (2 bytes) + TargetName (compressed name)
             if ((rtype == TYPE_SVCB || rtype == TYPE_HTTPS) && rdLen >= 3) {
-                val priority = (response[off].toInt() and 0xFF shl 8) or (response[off + 1].toInt() and 0xFF)
+                val priority = ((response[off].toInt() and 0xFF) shl 8) or (response[off + 1].toInt() and 0xFF)
                 // AliasMode (priority=0) has a TargetName that redirects
                 // ServiceMode (priority>0) also has TargetName
                 val targetName = readName(response, off + 2)

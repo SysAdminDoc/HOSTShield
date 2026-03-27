@@ -164,11 +164,15 @@ class OfflineGeoIp @Inject constructor(
         }
     }
 
-    private fun isPrivateIp(ip: String): Boolean =
-        ip == "0.0.0.0" || ip.startsWith("10.") || ip.startsWith("192.168.") ||
-            ip.startsWith("127.") || ip.startsWith("172.16.") || ip.startsWith("172.17.") ||
-            ip.startsWith("172.18.") || ip.startsWith("172.19.") || ip.startsWith("172.2") ||
-            ip.startsWith("172.3") || ip.startsWith("::") || ip == "::1"
+    private fun isPrivateIp(ip: String): Boolean {
+        if (ip == "0.0.0.0" || ip.startsWith("10.") || ip.startsWith("192.168.") ||
+            ip.startsWith("127.") || ip.startsWith("::") || ip == "::1") return true
+        if (ip.startsWith("172.")) {
+            val secondOctet = ip.removePrefix("172.").substringBefore('.').toIntOrNull()
+            if (secondOctet != null && secondOctet in 16..31) return true
+        }
+        return false
+    }
 
     private fun countryCodeToFlag(code: String): String {
         if (code.length != 2) return ""

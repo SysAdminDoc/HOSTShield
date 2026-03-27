@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Binder
 import android.util.Log
 import com.hostshield.data.database.AutomationAuditDao
+import com.hostshield.data.database.ProfileDao
 import com.hostshield.data.model.AutomationAuditEntry
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.preferences.AppPreferences
@@ -38,6 +39,9 @@ class AutomationReceiver : BroadcastReceiver() {
         const val ACTION_CLEAR_FIREWALL = "com.hostshield.ACTION_CLEAR_FIREWALL"
         const val ACTION_STATUS = "com.hostshield.ACTION_STATUS"
         const val ACTION_REFRESH_BLOCKLIST = "com.hostshield.ACTION_REFRESH_BLOCKLIST"
+        const val ACTION_SET_PROFILE = "com.hostshield.ACTION_SET_PROFILE"
+        const val ACTION_SET_DNS = "com.hostshield.ACTION_SET_DNS"
+        const val ACTION_PAUSE = "com.hostshield.ACTION_PAUSE"
         const val STATUS_RESULT = "com.hostshield.STATUS_RESULT"
         const val PERMISSION_AUTOMATION = "com.hostshield.permission.AUTOMATION"
 
@@ -51,6 +55,7 @@ class AutomationReceiver : BroadcastReceiver() {
     @Inject lateinit var prefs: AppPreferences
     @Inject lateinit var iptablesManager: IptablesManager
     @Inject lateinit var auditDao: AutomationAuditDao
+    @Inject lateinit var profileDao: ProfileDao
 
     override fun onReceive(context: Context, intent: Intent) {
         val callerUid = Binder.getCallingUid()
@@ -65,16 +70,17 @@ class AutomationReceiver : BroadcastReceiver() {
             return
         }
 
-        // Rate limiting: prevent rapid-fire commands
+        // Rate limiting: prevent rapid-fire commands (atomic check-and-set)
         val rateKey = "$action:$callerUid"
         val now = System.currentTimeMillis()
-        val lastTime = lastExecTime[rateKey] ?: 0L
-        if (now - lastTime < RATE_LIMIT_MS) {
-            Log.w(TAG, "RATE_LIMITED $action from uid=$callerUid (${now - lastTime}ms since last)")
+        val prevTime = lastExecTime.compute(rateKey) { _, existing ->
+            if (existing != null && now - existing < RATE_LIMIT_MS) existing else now
+        } ?: 0L
+        if (prevTime != now) {
+            Log.w(TAG, "RATE_LIMITED $action from uid=$callerUid (${now - prevTime}ms since last)")
             logAudit(action, callerUid, callerPkg, "RATE_LIMITED")
             return
         }
-        lastExecTime[rateKey] = now
 
         Log.i(TAG, "Received: $action from uid=$callerUid pkg=$callerPkg")
         val pendingResult = goAsync()
@@ -100,6 +106,46 @@ class AutomationReceiver : BroadcastReceiver() {
                     ACTION_REFRESH_BLOCKLIST -> {
                         HostsUpdateWorker.runOnce(context)
                         Log.i(TAG, "Blocklist refresh queued via automation (caller=$callerPkg)")
+                    }
+                    ACTION_SET_PROFILE -> {
+                        val profileName = intent.getStringExtra("profile_name")
+                        if (profileName.isNullOrBlank()) {
+                            Log.w(TAG, "SET_PROFILE missing 'profile_name' extra")
+                            logAudit(action, callerUid, callerPkg, "ERROR_MISSING_EXTRA")
+                            pendingResult.finish()
+                            return@launch
+                        }
+                        val profiles = profileDao.getAllProfilesList()
+                        val match = profiles.firstOrNull { it.name.equals(profileName, ignoreCase = true) }
+                        if (match == null) {
+                            Log.w(TAG, "SET_PROFILE profile not found: $profileName")
+                            logAudit(action, callerUid, callerPkg, "ERROR_NOT_FOUND")
+                            pendingResult.finish()
+                            return@launch
+                        }
+                        profileDao.deactivateAll()
+                        profileDao.activate(match.id)
+                        Log.i(TAG, "Profile activated via automation: '${match.name}' (caller=$callerPkg)")
+                    }
+                    ACTION_SET_DNS -> {
+                        val dnsServers = intent.getStringExtra("dns_servers")
+                        if (dnsServers.isNullOrBlank()) {
+                            Log.w(TAG, "SET_DNS missing 'dns_servers' extra")
+                            logAudit(action, callerUid, callerPkg, "ERROR_MISSING_EXTRA")
+                            pendingResult.finish()
+                            return@launch
+                        }
+                        prefs.setCustomUpstreamDns(dnsServers)
+                        Log.i(TAG, "Custom DNS set via automation: $dnsServers (caller=$callerPkg)")
+                    }
+                    ACTION_PAUSE -> {
+                        val durationMinutes = intent.getIntExtra("duration_minutes", 5)
+                            .coerceIn(1, 1440) // clamp: 1 min to 24 hours
+                        disable(context)
+                        Log.i(TAG, "VPN paused for ${durationMinutes}m via automation (caller=$callerPkg)")
+                        delay(durationMinutes * 60_000L)
+                        enable(context)
+                        Log.i(TAG, "VPN resumed after ${durationMinutes}m pause (caller=$callerPkg)")
                     }
                     ACTION_STATUS -> sendStatus(context)
                 }

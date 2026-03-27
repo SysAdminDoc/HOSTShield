@@ -15,10 +15,11 @@ import com.hostshield.data.model.*
         FirewallRule::class,
         ConnectionLogEntry::class,
         TrackerScanCacheEntry::class,
+        AppDnsRule::class,
         AutomationAuditEntry::class,
         VpnStabilityEntry::class
     ],
-    version = 9,
+    version = 12,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -33,4 +34,5 @@ abstract class HostShieldDatabase : RoomDatabase() {
     abstract fun trackerScanCacheDao(): TrackerScanCacheDao
     abstract fun automationAuditDao(): AutomationAuditDao
     abstract fun vpnStabilityDao(): VpnStabilityDao
+    abstract fun appDnsRuleDao(): AppDnsRuleDao
 }
