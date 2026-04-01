@@ -194,14 +194,14 @@ class IptablesManager @Inject constructor(
      * Apply all firewall rules. Rebuilds the entire chain hierarchy.
      * Safe to call multiple times -- clears old chains first.
      */
-    suspend fun applyRules(mode: FirewallMode = FirewallMode.BLACKLIST) {
+    suspend fun applyRules(mode: FirewallMode = FirewallMode.BLACKLIST): Boolean {
         _lastError.value = ""
 
         // Verify root access
         if (!Shell.getShell().isRoot) {
             _lastError.value = "Root access not available. Grant su permission and retry."
             Log.e(TAG, "No root access for iptables")
-            return
+            return false
         }
 
         // Resolve binary path once per apply
@@ -209,18 +209,47 @@ class IptablesManager @Inject constructor(
 
         val rules = firewallRuleDao.getAllRulesList()
         val script = buildScript(rules, mode)
-        val result = Shell.cmd(*resolveCmd(script)).exec()
 
-        if (result.isSuccess) {
-            _isActive.value = true
-            _lastApplyCount.value = rules.size
-            _lastError.value = ""
-            registerNetworkCallback()
-            Log.i(TAG, "Firewall applied: ${rules.size} rules, mode=$mode, bin=${iptablesBin.iptables()}")
-        } else {
-            val err = result.err.joinToString("\n").take(500)
-            _lastError.value = "iptables failed: $err"
-            Log.e(TAG, "Firewall apply failed: $err")
+        try {
+            // Phase 1: Execute chain creation commands separately and verify
+            val chainCmds = script.filter { it.contains("-N ") }
+            if (chainCmds.isNotEmpty()) {
+                val chainResult = Shell.cmd(*resolveCmd(chainCmds)).exec()
+                // Chain creation uses 2>/dev/null so errors on existing chains are
+                // suppressed; a hard failure here means something is seriously wrong
+                if (!chainResult.isSuccess) {
+                    val err = chainResult.err.joinToString("\n").take(500)
+                    _lastError.value = "Chain creation failed: $err"
+                    Log.e(TAG, "Chain creation failed, rolling back: $err")
+                    clearRules()
+                    return false
+                }
+            }
+
+            // Phase 2: Execute the remaining rule commands
+            val ruleCmds = script.filter { !it.contains("-N ") }
+            val result = Shell.cmd(*resolveCmd(ruleCmds)).exec()
+
+            if (result.isSuccess) {
+                _isActive.value = true
+                _lastApplyCount.value = rules.size
+                _lastError.value = ""
+                registerNetworkCallback()
+                Log.i(TAG, "Firewall applied: ${rules.size} rules, mode=$mode, bin=${iptablesBin.iptables()}")
+                return true
+            } else {
+                val err = result.err.joinToString("\n").take(500)
+                _lastError.value = "iptables failed: $err"
+                Log.e(TAG, "Firewall apply failed, rolling back partial rules: $err")
+                clearRules()
+                return false
+            }
+        } catch (e: Exception) {
+            val msg = e.message ?: "Unknown error"
+            _lastError.value = "iptables exception: $msg"
+            Log.e(TAG, "Exception during firewall apply, rolling back: $msg", e)
+            clearRules()
+            return false
         }
     }
 
@@ -300,6 +329,17 @@ class IptablesManager @Inject constructor(
         if (newRules.isNotEmpty()) {
             firewallRuleDao.insertAll(newRules)
             Log.i(TAG, "Synced ${newRules.size} new apps to firewall rules")
+        }
+
+        // Cleanup: remove DB entries for apps that are no longer installed
+        val installedUids = apps.map { it.uid }.toSet()
+        val dbUids = existing
+        val staleUids = dbUids - installedUids
+        for (uid in staleUids) {
+            firewallRuleDao.deleteByUid(uid)
+        }
+        if (staleUids.isNotEmpty()) {
+            Log.i(TAG, "Cleaned up ${staleUids.size} stale firewall rules for uninstalled apps")
         }
     }
 

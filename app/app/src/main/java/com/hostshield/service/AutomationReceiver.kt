@@ -70,17 +70,16 @@ class AutomationReceiver : BroadcastReceiver() {
             return
         }
 
-        // Rate limiting: prevent rapid-fire commands (atomic check-and-set)
+        // Rate limiting: prevent rapid-fire commands
         val rateKey = "$action:$callerUid"
         val now = System.currentTimeMillis()
-        val prevTime = lastExecTime.compute(rateKey) { _, existing ->
-            if (existing != null && now - existing < RATE_LIMIT_MS) existing else now
-        } ?: 0L
-        if (prevTime != now) {
-            Log.w(TAG, "RATE_LIMITED $action from uid=$callerUid (${now - prevTime}ms since last)")
+        val lastTime = lastExecTime.get(rateKey)
+        if (lastTime != null && now - lastTime < RATE_LIMIT_MS) {
+            Log.w(TAG, "RATE_LIMITED $action from uid=$callerUid (${now - lastTime}ms since last)")
             logAudit(action, callerUid, callerPkg, "RATE_LIMITED")
             return
         }
+        lastExecTime.put(rateKey, now)
 
         Log.i(TAG, "Received: $action from uid=$callerUid pkg=$callerPkg")
         val pendingResult = goAsync()

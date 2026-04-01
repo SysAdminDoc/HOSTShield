@@ -62,11 +62,11 @@ class ThreatIntelWorker @AssistedInject constructor(
                 Result.success()
             } else {
                 Log.w(TAG, "Threat intel refresh partial failure, will retry")
-                Result.retry()
+                if (runAttemptCount < 5) Result.retry() else Result.failure()
             }
         } catch (e: Exception) {
             Log.e(TAG, "Threat intel refresh failed: ${e.message}", e)
-            Result.retry()
+            if (runAttemptCount < 5) Result.retry() else Result.failure()
         }
     }
 }

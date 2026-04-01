@@ -168,6 +168,7 @@ class BlocklistHolder @Inject constructor() {
         "canadianshield.cira.ca",   // CIRA variants
     )
 
+    @Synchronized
     fun update(
         newDomains: Set<String>,
         wildcards: List<UserRule>,

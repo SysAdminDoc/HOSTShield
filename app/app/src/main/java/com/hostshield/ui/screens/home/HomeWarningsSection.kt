@@ -1,0 +1,299 @@
+package com.hostshield.ui.screens.home
+
+import android.content.Context
+import android.content.Intent
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.hostshield.data.model.BlockMethod
+import com.hostshield.ui.theme.*
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun HomeWarningsSection(
+    // Private DNS
+    privateDnsWarning: String?,
+    privateDnsSettingsIntent: Intent?,
+    onDismissPrivateDns: () -> Unit,
+    // Battery
+    batteryWarning: String?,
+    onRequestBatteryExemption: () -> Unit,
+    onDismissBattery: () -> Unit,
+    // Private Space
+    privateSpaceWarning: String?,
+    onDismissPrivateSpace: () -> Unit,
+    // Query anomaly
+    queryAnomalyWarning: String?,
+    // Dropped queries
+    droppedQueries: Int,
+    // Feature pills
+    isEnabled: Boolean,
+    blockMethod: BlockMethod,
+    dohEnabled: Boolean,
+    dnsTrapEnabled: Boolean,
+    firewalledApps: Int,
+    networkFirewallActive: Boolean,
+    // Live rates
+    queriesPerMinute: Int,
+    blocksPerMinute: Int,
+    avgLatencyMs: Int,
+    latencySparkline: List<Int>,
+    context: Context
+) {
+    // Private DNS warning banner
+    privateDnsWarning?.let {
+        Spacer(Modifier.height(8.dp))
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Yellow.copy(alpha = 0.08f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable {
+                    try { privateDnsSettingsIntent?.let { intent -> context.startActivity(intent) } }
+                    catch (_: Exception) { }
+                }
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(
+                    Icons.Filled.Warning, null,
+                    tint = Yellow,
+                    modifier = Modifier.size(16.dp).padding(top = 2.dp)
+                )
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Private DNS Active",
+                        color = Yellow,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        "Tap to open Network settings and set Private DNS to \"Off\"",
+                        color = Yellow.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                }
+                IconButton(
+                    onClick = onDismissPrivateDns,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
+                }
+            }
+        }
+    }
+
+    // Battery optimization warning banner
+    batteryWarning?.let {
+        Spacer(Modifier.height(8.dp))
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Peach.copy(alpha = 0.08f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onRequestBatteryExemption() }
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(
+                    Icons.Filled.BatteryAlert, null,
+                    tint = Peach,
+                    modifier = Modifier.size(16.dp).padding(top = 2.dp)
+                )
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Battery Optimization",
+                        color = Peach,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        "Tap to allow HostShield to run in the background",
+                        color = Peach.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                }
+                IconButton(
+                    onClick = onDismissBattery,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
+                }
+            }
+        }
+    }
+
+    // Private Space / work profile VPN bypass warning
+    privateSpaceWarning?.let { warning ->
+        Spacer(Modifier.height(8.dp))
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Red.copy(alpha = 0.08f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(
+                    Icons.Filled.Security, null,
+                    tint = Red,
+                    modifier = Modifier.size(16.dp).padding(top = 2.dp)
+                )
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Private Space Detected",
+                        color = Red,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        warning,
+                        color = Red.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                }
+                IconButton(
+                    onClick = onDismissPrivateSpace,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
+                }
+            }
+        }
+    }
+
+    // Query rate anomaly warning
+    queryAnomalyWarning?.let { warning ->
+        Spacer(Modifier.height(8.dp))
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Peach.copy(alpha = 0.08f),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+        ) {
+            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.TrendingUp, null, tint = Peach, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("High Query Rate", color = Peach, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                    Text(warning, color = Peach.copy(alpha = 0.8f), fontSize = 11.sp, lineHeight = 15.sp)
+                }
+            }
+        }
+    }
+
+    // Buffer overflow warning
+    if (droppedQueries > 0) {
+        Spacer(Modifier.height(8.dp))
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Red.copy(alpha = 0.08f),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+        ) {
+            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Warning, null, tint = Red, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(10.dp))
+                Text("$droppedQueries queries dropped (log buffer full)", color = Red, fontSize = 11.sp)
+            }
+        }
+    }
+
+    // Feature status pills (VPN mode only)
+    if (isEnabled && blockMethod == BlockMethod.VPN) {
+        Spacer(Modifier.height(8.dp))
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            if (dohEnabled) {
+                FeaturePill("DoH", Blue)
+            }
+            if (dnsTrapEnabled) {
+                FeaturePill("DNS Trap", Teal)
+            }
+            if (firewalledApps > 0) {
+                FeaturePill("$firewalledApps Firewalled", Red)
+            }
+            if (networkFirewallActive) {
+                FeaturePill("iptables", Peach)
+            }
+        }
+    }
+
+    // Live query rate + latency sparkline
+    if (isEnabled && (queriesPerMinute > 0 || blocksPerMinute > 0)) {
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("$queriesPerMinute", color = Blue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(" q/min", color = TextDim, fontSize = 10.sp)
+            Spacer(Modifier.width(16.dp))
+            Text("$blocksPerMinute", color = Red, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(" blk/min", color = TextDim, fontSize = 10.sp)
+            if (avgLatencyMs > 0) {
+                Spacer(Modifier.width(16.dp))
+                Text("$avgLatencyMs", color = Peach, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text(" ms", color = TextDim, fontSize = 10.sp)
+            }
+        }
+        // Latency sparkline
+        if (latencySparkline.size >= 3) {
+            Spacer(Modifier.height(6.dp))
+            Canvas(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp).height(24.dp)
+            ) {
+                val points = latencySparkline
+                val maxVal = points.max().toFloat().coerceAtLeast(1f)
+                val stepX = size.width / (points.size - 1).coerceAtLeast(1)
+                val path = androidx.compose.ui.graphics.Path()
+                points.forEachIndexed { i, v ->
+                    val x = i * stepX
+                    val y = size.height - (v / maxVal * size.height * 0.9f)
+                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                drawPath(
+                    path = path,
+                    color = Peach.copy(alpha = 0.6f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 2f,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                    )
+                )
+            }
+        }
+    }
+}

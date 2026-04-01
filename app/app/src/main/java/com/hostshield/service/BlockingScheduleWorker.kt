@@ -36,6 +36,10 @@ class BlockingScheduleWorker @AssistedInject constructor(
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<BlockingScheduleWorker>(
                 10, TimeUnit.MINUTES
+            ).setBackoffCriteria(
+                BackoffPolicy.EXPONENTIAL,
+                WorkRequest.MIN_BACKOFF_MILLIS,
+                TimeUnit.MILLISECONDS
             ).build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
@@ -106,7 +110,8 @@ class BlockingScheduleWorker @AssistedInject constructor(
                 HostShieldWidgetProvider.updateWidget(applicationContext, shouldBeEnabled, 0)
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Schedule check failed: ${e.message}")
+            Log.e(TAG, "Schedule check failed: ${e.message}", e)
+            return if (runAttemptCount < 5) Result.retry() else Result.failure()
         }
         return Result.success()
     }

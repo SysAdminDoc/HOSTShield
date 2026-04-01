@@ -105,8 +105,10 @@ class ThreatIntelManager @Inject constructor(
             val parts = ip.split(".")
             if (parts.size != 4) return 0
             return try {
-                (parts[0].toInt() shl 24) or (parts[1].toInt() shl 16) or
-                        (parts[2].toInt() shl 8) or parts[3].toInt()
+                val octets = parts.map { it.toInt() }
+                if (octets.any { it !in 0..255 }) return 0
+                (octets[0] shl 24) or (octets[1] shl 16) or
+                        (octets[2] shl 8) or octets[3]
             } catch (_: NumberFormatException) { 0 }
         }
 

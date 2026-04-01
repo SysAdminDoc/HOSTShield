@@ -6,6 +6,7 @@ import android.util.Base64
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
@@ -85,7 +86,7 @@ class SecureStore @Inject constructor(
                 .generateSecret(spec)
                 .encoded
             val hashB64 = Base64.encodeToString(hash, Base64.NO_WRAP)
-            return hashB64 == expectedB64
+            return MessageDigest.isEqual(hashB64.toByteArray(), expectedB64.toByteArray())
         }
     }
 }
