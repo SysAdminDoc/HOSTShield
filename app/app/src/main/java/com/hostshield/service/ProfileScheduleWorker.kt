@@ -1,6 +1,7 @@
 package com.hostshield.service
 
 import android.content.Context
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.hostshield.data.database.ProfileDao
@@ -119,7 +120,10 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 // and fall back to default (no profile active = use all enabled sources)
                 profileDao.deactivateAll()
             }
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            Log.e("ProfileSchedule", "Profile schedule check failed: ${e.message}", e)
+            return if (runAttemptCount < 5) Result.retry() else Result.failure()
+        }
 
         return Result.success()
     }
@@ -144,6 +148,10 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 15, TimeUnit.MINUTES
             ).setConstraints(
                 Constraints.Builder().setRequiresBatteryNotLow(true).build()
+            ).setBackoffCriteria(
+                BackoffPolicy.EXPONENTIAL,
+                WorkRequest.MIN_BACKOFF_MILLIS,
+                TimeUnit.MILLISECONDS
             ).build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(

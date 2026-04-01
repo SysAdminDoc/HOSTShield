@@ -144,7 +144,7 @@ class ParentalControlManager @Inject constructor(
             SecureStore.verifyPin(pin, storedHash)
         } else {
             // Legacy SHA-256 format — verify then upgrade to PBKDF2
-            val legacyMatch = hashPin(pin) == storedHash
+            val legacyMatch = MessageDigest.isEqual(hashPin(pin).toByteArray(), storedHash.toByteArray())
             if (legacyMatch) {
                 // Re-hash with PBKDF2 and store the upgraded hash
                 prefs.setParentalPinHash(SecureStore.hashPin(pin))

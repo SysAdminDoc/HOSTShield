@@ -35,6 +35,11 @@ class LogCleanupWorker @AssistedInject constructor(
                 6, TimeUnit.HOURS
             )
                 .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build())
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    WorkRequest.MIN_BACKOFF_MILLIS,
+                    TimeUnit.MILLISECONDS
+                )
                 .build()
 
             WorkManager.getInstance(context)
@@ -71,7 +76,7 @@ class LogCleanupWorker @AssistedInject constructor(
 
             Result.success()
         } catch (e: Exception) {
-            Log.w("LogCleanup", "Cleanup failed: ${e.message}")
+            Log.e("LogCleanup", "Cleanup failed: ${e.message}", e)
             Result.failure()
         }
     }

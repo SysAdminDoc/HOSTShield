@@ -197,3 +197,13 @@
 -keep class com.hostshield.service.RootDnsLogger$** { *; }
 -keep class com.hostshield.service.BlockNotificationService { *; }
 -keep class com.hostshield.service.BlockingScheduleWorker { *; }
+
+# --- Jetpack Compose (v6.3) ---
+-dontwarn androidx.compose.**
+-keep class androidx.compose.runtime.** { *; }
+-keepclassmembers class androidx.compose.runtime.** { *; }
+-keep class androidx.compose.ui.** { *; }
+-keep @androidx.compose.runtime.Composable class * { *; }
+-keepclasseswithmembers class * {
+    @androidx.compose.runtime.Composable <methods>;
+}

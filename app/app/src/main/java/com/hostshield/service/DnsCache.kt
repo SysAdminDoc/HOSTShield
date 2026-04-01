@@ -46,8 +46,13 @@ class DnsCache(
     private val staleTtlMs: Long = 259_200_000,     // 3 days max stale window (RFC 8767)
     private val staleServeTtlMs: Long = 30_000,     // 30s TTL when serving stale
     private val prefetchThreshold: Float = 0.10f,   // prefetch at <10% TTL remaining
-    private val prefetchMinQueries: Int = 3          // only prefetch popular domains
+    private val prefetchMinQueries: Int = 3,         // only prefetch popular domains
+    private val clock: Clock = Clock { System.currentTimeMillis() }
 ) {
+    /** Injectable clock for deterministic testing. */
+    fun interface Clock {
+        fun currentTimeMillis(): Long
+    }
     companion object {
         private const val TAG = "DnsCache"
     }
@@ -114,7 +119,7 @@ class DnsCache(
      */
     fun get(domain: String, qtype: Int, transactionId: ByteArray): CacheResult? {
         val key = CacheKey(domain.lowercase(), qtype)
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
 
         // Check positive cache
         val entry = cache[key]
@@ -195,7 +200,7 @@ class DnsCache(
      */
     fun getStale(domain: String, qtype: Int, transactionId: ByteArray): ByteArray? {
         val key = CacheKey(domain.lowercase(), qtype)
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         val entry = cache[key] ?: return null
 
         if (entry.isStale(now, staleTtlMs)) {
@@ -222,7 +227,7 @@ class DnsCache(
         if (response[2].toInt() and 0x02 != 0) return
 
         val rcode = response[3].toInt() and 0x0F
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         val key = CacheKey(domain.lowercase(), qtype)
 
         when (rcode) {
@@ -285,7 +290,7 @@ class DnsCache(
      * Only loads entries that are still valid (not expired).
      */
     fun warmFromDisk(entries: List<DnsDiskCache.DiskCacheEntry>) {
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         var loaded = 0
         for (entry in entries) {
             if (now >= entry.expiresAt) continue
@@ -309,7 +314,7 @@ class DnsCache(
      * Called periodically by the VPN service to persist to L2.
      */
     fun exportForDisk(): List<DnsDiskCache.DiskCacheEntry> {
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         return cache.entries
             .filter { now < it.value.expiresAt } // only non-expired
             .map { (key, entry) ->
@@ -482,7 +487,7 @@ class DnsCache(
 
     /** Evict least-recently-used entries. O(n) scan instead of O(n log n) sort. */
     private fun evictLru(map: ConcurrentHashMap<CacheKey, CacheEntry>, count: Int) {
-        val now = System.currentTimeMillis()
+        val now = clock.currentTimeMillis()
         // First pass: remove expired entries (free eviction)
         val iter = map.entries.iterator()
         var removed = 0

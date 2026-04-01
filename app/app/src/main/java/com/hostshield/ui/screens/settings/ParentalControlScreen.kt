@@ -48,6 +48,10 @@ class ParentalControlViewModel @Inject constructor(
         private set
     var message by mutableStateOf<String?>(null)
         private set
+    var showPinDialog by mutableStateOf(false)
+        private set
+    var pinAction by mutableStateOf<String?>(null)
+        private set
 
     init {
         viewModelScope.launch { pinRequired = manager.isPinSet() }
@@ -58,9 +62,35 @@ class ParentalControlViewModel @Inject constructor(
             if (value) {
                 manager.enable(AgeProfile.fromName(profile.value))
             } else {
-                manager.disable()
+                disableParentalControls()
             }
         }
+    }
+
+    fun disableParentalControls(pin: String? = null) {
+        viewModelScope.launch {
+            if (manager.isPinSet()) {
+                if (pin == null || !manager.verifyPin(pin)) {
+                    showPinDialog = true
+                    pinAction = "disable"
+                    return@launch
+                }
+            }
+            manager.disable()
+        }
+    }
+
+    fun dismissPinDialog() {
+        showPinDialog = false
+        pinAction = null
+    }
+
+    fun onPinSubmitted(pin: String) {
+        showPinDialog = false
+        when (pinAction) {
+            "disable" -> disableParentalControls(pin)
+        }
+        pinAction = null
     }
 
     fun setProfile(profileName: String) {
@@ -292,5 +322,64 @@ fun ParentalControlScreen(
         }
 
         Spacer(Modifier.height(24.dp))
+    }
+
+    // PIN verification dialog for disabling parental controls
+    if (viewModel.showPinDialog) {
+        var dialogPin by remember { mutableStateOf("") }
+        var pinError by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissPinDialog() },
+            title = { Text("Enter PIN", color = TextPrimary) },
+            text = {
+                Column {
+                    Text("Enter your 4-digit PIN to disable parental controls.", color = TextDim, fontSize = 13.sp)
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = dialogPin,
+                        onValueChange = {
+                            if (it.length <= 4 && it.all { c -> c.isDigit() }) {
+                                dialogPin = it
+                                pinError = false
+                            }
+                        },
+                        placeholder = { Text("PIN", color = TextDim, fontSize = 13.sp) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        singleLine = true,
+                        isError = pinError,
+                        supportingText = if (pinError) {{ Text("Incorrect PIN", color = Red, fontSize = 11.sp) }} else null,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Yellow, unfocusedBorderColor = Surface3,
+                            cursorColor = Yellow, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                        ),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (dialogPin.length == 4) {
+                            viewModel.onPinSubmitted(dialogPin)
+                        } else {
+                            pinError = true
+                        }
+                    },
+                    enabled = dialogPin.length == 4,
+                ) {
+                    Text("Confirm", color = Yellow)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissPinDialog() }) {
+                    Text("Cancel", color = TextDim)
+                }
+            },
+            containerColor = Surface2,
+            shape = RoundedCornerShape(16.dp),
+        )
     }
 }
