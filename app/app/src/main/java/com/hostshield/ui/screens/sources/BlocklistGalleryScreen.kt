@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -136,7 +137,7 @@ fun BlocklistGalleryScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = TextPrimary) }
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
             Column(modifier = Modifier.weight(1f)) {
                 Text("Blocklist Gallery", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
                 val total = state.lists.values.sumOf { it.size }
@@ -190,7 +191,7 @@ fun BlocklistGalleryScreen(
                         style = MaterialTheme.typography.labelLarge,
                         color = galleryCategoryColor(category),
                         modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
-                        letterSpacing = 0.5.sp
+                        letterSpacing = 0.sp
                     )
                 }
                 items(lists, key = { it.url }) { list ->
@@ -236,7 +237,7 @@ private fun GalleryListItem(
                                 .padding(horizontal = 5.dp, vertical = 1.dp)
                         ) {
                             Text("RECOMMENDED", style = MaterialTheme.typography.labelSmall,
-                                color = Green, fontSize = 8.sp, letterSpacing = 0.5.sp)
+                                color = Green, fontSize = 8.sp, letterSpacing = 0.sp)
                         }
                     }
                 }

@@ -3,6 +3,33 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.5.1] - 2026-05-13
+
+Premium product-polish pass focused on first-run trust, visual cohesion, action
+discoverability, and on-device layout correctness.
+
+### UX / UI
+- Refined the global Compose shape system and removed oversized rounded surfaces
+  from the checked user-facing flows for a sharper, more intentional visual
+  language.
+- Reworked onboarding footer layout so page indicators no longer collide with
+  primary actions, converted the feature overview into a compact two-column
+  summary, and kept DNS resolver choice scrollable with a fixed Continue action.
+- Improved Sources and Rules action placement by moving add/gallery/paste
+  actions into compact header controls instead of floating over list content.
+- Added clearer loading, empty, error, disabled, selection, and accessibility
+  semantics across onboarding, home, sources, rules, stats, and settings.
+
+### Reliability
+- Fixed debug/release side-by-side installation by deriving the automation
+  permission from the package id instead of hard-coding the release id.
+- Fixed WebDAV connection testing so a failed PROPFIND is not reported as a
+  successful empty remote directory.
+
+### Verification
+- Built and installed the full debug APK on a connected Samsung SM-S938B.
+- Smoked onboarding, dashboard, sources, rules, stats, and settings on-device.
+
 ## [v6.5.0] - 2026-05-13
 
 Engineering hardening pass — focused on real correctness, security, and reliability

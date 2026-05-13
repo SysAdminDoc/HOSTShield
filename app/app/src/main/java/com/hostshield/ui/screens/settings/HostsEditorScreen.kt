@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -105,9 +106,9 @@ fun HostsEditorScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = TextPrimary) }
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
             Column(modifier = Modifier.weight(1f)) {
-                Text("Hosts Editor", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                Text("Hosts editor", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
                 Text("${state.lineCount} lines, ${state.entryCount} entries", color = TextDim, fontSize = 11.sp)
             }
             if (state.isEdited) {
@@ -117,7 +118,7 @@ fun HostsEditorScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Teal),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    if (state.isSaving) CircularProgressIndicator(Modifier.size(14.dp), color = Color.White, strokeWidth = 2.dp)
+                    if (state.isSaving) CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
                     else Text("Save", fontSize = 12.sp)
                 }
             }

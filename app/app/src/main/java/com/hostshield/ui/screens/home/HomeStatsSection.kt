@@ -137,7 +137,7 @@ fun HomeStatsSection(
         Spacer(Modifier.height(10.dp))
         GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
             Column(modifier = Modifier.padding(14.dp)) {
-                Text("Source Categories", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text("Source Categories", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
                 Spacer(Modifier.height(8.dp))
                 val catColors = mapOf(
                     "ADS" to Teal, "TRACKERS" to Blue, "MALWARE" to Red,
@@ -183,7 +183,7 @@ fun HomeStatsSection(
         Spacer(Modifier.height(10.dp))
         GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
             Column(modifier = Modifier.padding(14.dp)) {
-                Text("Top Querying Apps", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text("Top Querying Apps", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
                 Spacer(Modifier.height(8.dp))
                 topApps.forEachIndexed { idx, (pkg, label, count) ->
                     Row(

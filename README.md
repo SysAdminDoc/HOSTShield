@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.5.0-blue)
+![Version](https://img.shields.io/badge/version-6.5.1-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
@@ -368,6 +368,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.5.1** | Premium UX/UI polish pass. Refined Compose shape and typography consistency, improved first-run onboarding layout and copy, fixed page-indicator/CTA collisions, converted the feature overview to a compact grid, anchored DNS resolver actions, moved Sources/Rules actions into header controls, improved loading/empty/error/selection/accessibility states, fixed debug automation permission side-by-side install, and corrected WebDAV failed-listing handling. |
 | **6.5.0** | Engineering hardening pass. Parental PIN fail-closed + brute-force lockout, PBKDF2 iterations raised to 600k, backup decrypt off-by-one fixed, RootUtil hostname injection guard, device-transfer no longer leaks encrypted prefs, widget receiver no longer launchable by other apps. ACTION_PAUSE > 10s now works via WorkManager (was killed by `goAsync()` timeout). TCP DNS fallback on TC=1 (RFC 7766). BlocklistHolder atomic snapshot + real LRU decision cache. DoH/DoT response size caps + cert-pin diagnostics. DnsCache RFC 2308 MINIMUM=0 honored, RR cap raised. Onboarding DNS choice now persisted. Sources URL validation + category picker. Settings update-check throttled. CHANGELOG / README version drift repaired. |
 | **6.4.0** | Security hardening audit, architecture refactor, reliability improvements. See [`app/CHANGELOG.md`](app/CHANGELOG.md). |
 | **6.3.0** | Preferences facade over 6 domain managers, BlocklistHolder unified trie walk, DB v14 composite indices, PBKDF2 PIN hashing, encrypted backups, DoH fail-closed, HTTPS-only sync URLs, SHA-256 integrity, RootUtil shell injection fixes. |

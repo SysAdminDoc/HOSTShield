@@ -7,6 +7,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -64,7 +66,11 @@ class WebDavSyncViewModel @Inject constructor(
             val files = webDavSync.listFiles(url, creds, "/")
             if (files != null) {
                 remoteFiles = files
-                message = "Connected — ${files.size} items found"
+                message = if (files.isEmpty()) {
+                    "Connected — no remote files found"
+                } else {
+                    "Connected — ${files.size} items found"
+                }
             } else {
                 message = "Connection failed — check URL and credentials"
             }
@@ -109,7 +115,7 @@ fun WebDavSyncScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, null, tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary)
             }
             Text("WebDAV Sync", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         }
@@ -214,7 +220,7 @@ fun WebDavSyncScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
-                                if (file.isDirectory) Icons.Filled.Folder else Icons.Filled.InsertDriveFile,
+                                if (file.isDirectory) Icons.Filled.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
                                 null, tint = if (file.isDirectory) Yellow else TextSecondary,
                                 modifier = Modifier.size(16.dp),
                             )

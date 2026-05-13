@@ -7,8 +7,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -23,6 +25,11 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -61,10 +68,14 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .systemBarsPadding()
             .background(Color.Black)
     ) {
         AnimatedContent(
             targetState = page,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 64.dp),
             transitionSpec = {
                 slideInHorizontally { it } + fadeIn() togetherWith
                 slideOutHorizontally { -it } + fadeOut()
@@ -111,13 +122,13 @@ fun OnboardingScreen(
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 48.dp),
+                .padding(bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             repeat(totalPages) { idx ->
                 Box(
                     modifier = Modifier
-                        .size(if (idx == page) 24.dp else 8.dp, 8.dp)
+                        .size(if (idx == page) 10.dp else 8.dp)
                         .clip(CircleShape)
                         .background(if (idx == page) Teal else Surface3)
                         .animateContentSize(spring())
@@ -195,7 +206,7 @@ private fun WelcomePage(onNext: () -> Unit) {
 
         Spacer(Modifier.height(40.dp))
 
-        Text("HostShield", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = TextPrimary, letterSpacing = (-0.5).sp)
+        Text("HostShield", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = TextPrimary, letterSpacing = 0.sp)
         Spacer(Modifier.height(8.dp))
         Text(
             "System-wide ad blocking\nfor your Android device",
@@ -208,10 +219,10 @@ private fun WelcomePage(onNext: () -> Unit) {
         Button(
             onClick = onNext,
             colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().height(54.dp)
         ) {
-            Text("Get Started", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            Text("Get started", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         }
     }
 }
@@ -230,9 +241,9 @@ private fun MethodPage(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Choose Mode", style = MaterialTheme.typography.headlineMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
+        Text("Choose protection mode", style = MaterialTheme.typography.headlineMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
-        Text("How should HostShield block ads?", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
+        Text("Select the path that matches this device.", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(28.dp))
 
         MethodOption(
@@ -259,7 +270,7 @@ private fun MethodPage(
         Button(
             onClick = onNext,
             colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().height(54.dp)
         ) {
             Text("Continue", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
@@ -292,10 +303,19 @@ private fun MethodOption(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-            .clickable(enabled = enabled, onClick = onClick)
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+            .semantics(mergeDescendants = true) {
+                role = Role.RadioButton
+                contentDescription = "$title. $description"
+                stateDescription = when {
+                    !enabled -> disabledReason ?: "Unavailable"
+                    selected -> "Selected"
+                    else -> "Not selected"
+                }
+            }
+            .clickable(enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.Top) {
@@ -386,7 +406,7 @@ private fun PrivateDnsWarningPage(
         // Instructions
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(8.dp),
             color = Surface1
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -412,7 +432,7 @@ private fun PrivateDnsWarningPage(
         Button(
             onClick = onNext,
             colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = Color.Black),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().height(54.dp)
         ) {
             Text("I understand, continue", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
@@ -426,26 +446,26 @@ private fun PrivateDnsWarningPage(
 private fun FeaturesOverviewPage(onNext: () -> Unit) {
     val features = remember {
         listOf(
-            Triple(Icons.Default.Shield, "Ad & Tracker Blocking", "Block ads, trackers, and malware across all apps with curated blocklists"),
-            Triple(Icons.Default.Dns, "Encrypted DNS", "DNS-over-HTTPS and DNS-over-TLS keep your queries private"),
-            Triple(Icons.Default.Security, "Threat Intelligence", "Real-time malicious domain and IP detection from community feeds"),
-            Triple(Icons.Default.FamilyRestroom, "Parental Controls", "Age-based content filtering with PIN lock for family safety"),
-            Triple(Icons.Default.Fingerprint, "Privacy Scoring", "Per-app privacy analysis based on tracker activity and permissions"),
-            Triple(Icons.Default.Speed, "Performance", "DNS caching, benchmarking, and latency-optimized resolution")
+            Triple(Icons.Default.Shield, "Ad & tracker blocking", "Block ads, trackers, and malware across apps"),
+            Triple(Icons.Default.Dns, "Encrypted DNS", "Private DNS-over-HTTPS and DNS-over-TLS"),
+            Triple(Icons.Default.Security, "Threat intelligence", "Malicious domain and IP detection"),
+            Triple(Icons.Default.FamilyRestroom, "Parental controls", "Age-based filtering with PIN lock"),
+            Triple(Icons.Default.Fingerprint, "Privacy scoring", "Per-app tracker and permission insight"),
+            Triple(Icons.Default.Speed, "Performance", "Caching, benchmarks, and latency tuning")
         )
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp, vertical = 48.dp),
+            .padding(horizontal = 32.dp, vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
 
         Text(
-            "What HostShield Does",
-            color = Color.White,
+            "Protection at a glance",
+            color = TextPrimary,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
@@ -455,56 +475,80 @@ private fun FeaturesOverviewPage(onNext: () -> Unit) {
 
         Text(
             "System-wide protection without compromises",
-            color = Teal.copy(alpha = 0.7f),
+            color = TextSecondary,
             fontSize = 14.sp,
             textAlign = TextAlign.Center
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            features.forEachIndexed { idx, (icon, title, desc) ->
-                var visible by remember { mutableStateOf(false) }
-                LaunchedEffect(Unit) {
-                    kotlinx.coroutines.delay(idx * 100L)
-                    visible = true
-                }
-
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn(tween(300)) + slideInHorizontally(tween(300)) { -40 }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Surface3.copy(alpha = 0.3f))
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = Teal,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                            Text(desc, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, lineHeight = 14.sp)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            features.chunked(2).forEachIndexed { rowIndex, rowFeatures ->
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    rowFeatures.forEachIndexed { columnIndex, (icon, title, desc) ->
+                        val idx = rowIndex * 2 + columnIndex
+                        var visible by remember { mutableStateOf(false) }
+                        LaunchedEffect(Unit) {
+                            kotlinx.coroutines.delay(idx * 80L)
+                            visible = true
                         }
+
+                        AnimatedVisibility(
+                            visible = visible,
+                            modifier = Modifier.weight(1f),
+                            enter = fadeIn(tween(240)) + slideInHorizontally(tween(240)) { -24 }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 128.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Surface3.copy(alpha = 0.3f))
+                                    .padding(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = Teal,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                                Spacer(Modifier.height(10.dp))
+                                Text(
+                                    title,
+                                    color = TextPrimary,
+                                    fontSize = 12.sp,
+                                    lineHeight = 15.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    desc,
+                                    color = TextSecondary,
+                                    fontSize = 10.sp,
+                                    lineHeight = 13.sp
+                                )
+                            }
+                        }
+                    }
+                    if (rowFeatures.size == 1) {
+                        Spacer(Modifier.weight(1f))
                     }
                 }
             }
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(20.dp))
 
         Button(
             onClick = onNext,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Teal),
-            shape = RoundedCornerShape(14.dp)
+            shape = RoundedCornerShape(8.dp)
         ) {
             Text("Continue", color = Color.Black, fontWeight = FontWeight.Bold)
         }
@@ -548,8 +592,8 @@ private fun DnsConfigPage(
         Spacer(Modifier.height(16.dp))
 
         Text(
-            "Choose Your DNS",
-            color = Color.White,
+            "Choose DNS resolver",
+            color = TextPrimary,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
@@ -559,7 +603,7 @@ private fun DnsConfigPage(
 
         Text(
             "DNS resolves domain names to IP addresses.\nYou can change this anytime in settings.",
-            color = Color.White.copy(alpha = 0.5f),
+            color = TextSecondary,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
             lineHeight = 18.sp
@@ -567,7 +611,12 @@ private fun DnsConfigPage(
 
         Spacer(Modifier.height(28.dp))
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             dnsOptions.forEach { option ->
                 val isSelected = option.id == selectedDns
                 val borderColor by animateColorAsState(
@@ -597,13 +646,13 @@ private fun DnsConfigPage(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             option.name,
-                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f),
+                            color = if (isSelected) TextPrimary else TextSecondary,
                             fontSize = 14.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                         )
                         Text(
                             option.desc,
-                            color = Color.White.copy(alpha = 0.4f),
+                            color = TextDim,
                             fontSize = 11.sp
                         )
                     }
@@ -611,13 +660,13 @@ private fun DnsConfigPage(
             }
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(20.dp))
 
         Button(
             onClick = onNext,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Teal),
-            shape = RoundedCornerShape(14.dp)
+            shape = RoundedCornerShape(8.dp)
         ) {
             Text("Continue", color = Color.Black, fontWeight = FontWeight.Bold)
         }
@@ -710,10 +759,20 @@ private fun ReadyPage(
 
         if (vpnDenied) {
             Spacer(Modifier.height(12.dp))
-            Text(
-                "VPN permission is required for ad blocking without root. Please try again.",
-                color = Red, textAlign = TextAlign.Center, fontSize = 12.sp
-            )
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Red.copy(alpha = 0.08f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "VPN permission is required for no-root protection. Try again when you are ready.",
+                    color = Red,
+                    textAlign = TextAlign.Center,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
         }
 
         Spacer(Modifier.height(40.dp))
@@ -737,7 +796,7 @@ private fun ReadyPage(
             },
             enabled = !isActivating,
             colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().height(54.dp)
         ) {
             if (isActivating) {
@@ -757,7 +816,7 @@ private fun ReadyPage(
         Spacer(Modifier.height(12.dp))
 
         TextButton(onClick = onSkip) {
-            Text("Skip for now", color = TextDim, fontSize = 13.sp)
+            Text("Set up later", color = TextDim, fontSize = 13.sp)
         }
     }
 }

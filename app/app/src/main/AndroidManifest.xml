@@ -18,7 +18,7 @@
          Only apps signed with the same key (or granted via adb) can send
          control intents. Shell/root callers bypass this check. -->
     <permission
-        android:name="com.hostshield.permission.AUTOMATION"
+        android:name="${applicationId}.permission.AUTOMATION"
         android:protectionLevel="signature" />
 
     <application
@@ -123,7 +123,7 @@
         <receiver
             android:name=".service.AutomationReceiver"
             android:exported="true"
-            android:permission="com.hostshield.permission.AUTOMATION">
+            android:permission="${applicationId}.permission.AUTOMATION">
             <intent-filter>
                 <action android:name="com.hostshield.ACTION_ENABLE" />
                 <action android:name="com.hostshield.ACTION_DISABLE" />

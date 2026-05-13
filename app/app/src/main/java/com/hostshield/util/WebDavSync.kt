@@ -105,7 +105,7 @@ class WebDavSync @Inject constructor(
         serverUrl: String,
         credentials: Credentials,
         remotePath: String
-    ): List<RemoteFile> {
+    ): List<RemoteFile>? {
         val url = buildUrl(serverUrl, remotePath)
         val propfindBody = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -131,11 +131,11 @@ class WebDavSync @Inject constructor(
                     val xml = response.body?.string() ?: return@use emptyList()
                     parsePropfindResponse(xml, remotePath)
                 } else {
-                    emptyList()
+                    null
                 }
             }
         } catch (_: Exception) {
-            emptyList()
+            null
         }
     }
 
@@ -252,6 +252,7 @@ class WebDavSync @Inject constructor(
     ): Pair<SyncResult, ByteArray?> {
         return try {
             val files = listFiles(serverUrl, credentials, BACKUPS_DIR)
+                ?: return Pair(SyncResult.NetworkError("Failed to list remote backups"), null)
             val backups = files.filter { !it.isDirectory && it.name.endsWith(".json") }
 
             if (backups.isEmpty()) {

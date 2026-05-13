@@ -1,3 +1,28 @@
+# HostShield v6.5.1
+
+**Release Date:** 2026-05-13
+**Version Code:** 59
+
+## Premium polish
+
+- Refined the Compose shape system, typography consistency, selected states, and icon treatment across the main user-facing surfaces.
+- Reworked onboarding into a more resilient first-run flow: compact feature overview grid, non-overlapping page indicators, fixed bottom actions, clearer DNS and VPN copy, and stronger accessibility semantics.
+- Moved Sources and Rules actions into compact header controls so add/gallery/paste actions no longer cover source rows, rule empty states, or bottom navigation.
+- Added calmer loading, empty, warning, error, disabled, and selection states across home, sources, rules, stats, settings, and onboarding.
+
+## Reliability
+
+- Debug and release builds can now install side by side because the automation permission derives from the package id.
+- WebDAV remote listing now distinguishes failed connections from successful empty directories.
+
+## Verification
+
+- `:app:compileFullDebugKotlin`
+- `:app:installFullDebug`
+- Connected-device smoke pass on Samsung SM-S938B covering onboarding, dashboard, sources, rules, stats, and settings.
+
+---
+
 # HostShield v6.4.0
 
 **Release Date:** 2026-03-27

@@ -282,7 +282,7 @@ fun HomeScreen(
                             color = Surface2
                         ) {
                             Text(
-                                "View All",
+                                "View all",
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 color = Teal,
                                 fontSize = 11.sp,
@@ -324,7 +324,7 @@ fun HomeScreen(
                             Icon(Icons.Filled.HourglassEmpty, null, tint = TextDim, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                if (state.isEnabled) "Waiting for DNS queries..."
+                                if (state.isEnabled) "Waiting for DNS queries"
                                 else "Enable protection to see DNS activity",
                                 color = TextDim,
                                 fontSize = 12.sp
@@ -497,7 +497,7 @@ fun HomeScreen(
                     Spacer(Modifier.height(12.dp))
                     ActionRow(
                         icon = Icons.Filled.Refresh,
-                        label = "Update & Apply",
+                        label = "Update and apply",
                         subtitle = "Download latest sources and apply",
                         color = Teal,
                         enabled = !state.isApplying,
@@ -512,8 +512,8 @@ fun HomeScreen(
                     Spacer(Modifier.height(4.dp))
                     ActionRow(
                         icon = Icons.Filled.RestartAlt,
-                        label = "Restore Default Hosts",
-                        subtitle = "Remove all blocking rules",
+                        label = "Pause protection",
+                        subtitle = "Stop blocking and restore the system hosts file",
                         color = TextSecondary,
                         enabled = !state.isApplying,
                         onClick = { viewModel.disableBlocking() }

@@ -56,7 +56,7 @@ fun HomeSearchSection(
             searchHistory.take(6).forEach { term ->
                 Surface(
                     onClick = { onSearchQueryChange(term); onSearchExpandedChange(true); onSaveSearch(term) },
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = Surface2
                 ) {
                     Text(term, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),

@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -268,7 +269,7 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, "Back", tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text("Firewall", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
