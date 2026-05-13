@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -67,7 +68,7 @@ fun AutomationAuditScreen(
         if (entries.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Filled.ReceiptLong, null, tint = TextDim, modifier = Modifier.size(48.dp))
+                    Icon(Icons.AutoMirrored.Filled.ReceiptLong, null, tint = TextDim, modifier = Modifier.size(48.dp))
                     Spacer(Modifier.height(12.dp))
                     Text("No automation commands recorded", color = TextDim, fontSize = 14.sp)
                     Text("Commands from Tasker, ADB, or other apps appear here", color = TextDim, fontSize = 11.sp)

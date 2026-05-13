@@ -61,9 +61,9 @@ class HostShieldApp : Application(), Configuration.Provider {
     companion object {
         init {
             Shell.enableVerboseLogging = BuildConfig.DEBUG
+            Shell.enableLegacyStderrRedirection = true
             Shell.setDefaultBuilder(
                 Shell.Builder.create()
-                    .setFlags(Shell.FLAG_REDIRECT_STDERR)
                     .setTimeout(10)
             )
         }

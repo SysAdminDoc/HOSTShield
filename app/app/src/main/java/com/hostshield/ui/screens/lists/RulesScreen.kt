@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.AltRoute
+import androidx.compose.material.icons.automirrored.filled.Rule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -60,6 +64,7 @@ class RulesViewModel @Inject constructor(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
@@ -71,6 +76,19 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
     val filtered = remember(rules, filterType) {
         if (filterType == null) rules else rules.filter { it.type == filterType }
     }
+    val pasteDomainsFromClipboard = {
+        val text = clipboardManager.getText()?.text ?: ""
+        val domains = text.lines()
+            .map { it.trim().lowercase() }
+            .filter { it.isNotBlank() && it.contains('.') && !it.startsWith("#") }
+            .distinct()
+        if (domains.isNotEmpty()) {
+            domains.forEach { viewModel.addRule(it, RuleType.BLOCK) }
+            clipboardMessage = "Added ${domains.size} domains from clipboard"
+        } else {
+            clipboardMessage = "No valid domains in clipboard"
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         LazyColumn(
@@ -78,9 +96,54 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
-                Text("Rules", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
-                Spacer(Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Rules", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Create exact, wildcard, regex, allow, and redirect rules.",
+                            color = TextSecondary,
+                            style = MaterialTheme.typography.bodySmall,
+                            lineHeight = 16.sp
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(
+                            onClick = pasteDomainsFromClipboard,
+                            shape = RoundedCornerShape(8.dp),
+                            color = Surface3.copy(alpha = 0.8f),
+                            contentColor = Teal,
+                            modifier = Modifier
+                                .size(40.dp)
+                        ) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Filled.ContentPaste, "Paste domains", modifier = Modifier.size(18.dp))
+                            }
+                        }
+                        Surface(
+                            onClick = { showAddDialog = true },
+                            shape = RoundedCornerShape(8.dp),
+                            color = Teal.copy(alpha = 0.14f),
+                            contentColor = Teal,
+                            modifier = Modifier
+                                .size(40.dp)
+                        ) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Filled.Add, "Add rule", modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     TypeChip(null, "All", filterType == null) { filterType = null }
                     TypeChip(RuleType.BLOCK, "Block", filterType == RuleType.BLOCK) { filterType = RuleType.BLOCK }
                     TypeChip(RuleType.ALLOW, "Allow", filterType == RuleType.ALLOW) { filterType = RuleType.ALLOW }
@@ -96,11 +159,16 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
                             modifier = Modifier.padding(32.dp).fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Filled.Rule, null, tint = TextDim, modifier = Modifier.size(40.dp))
+                            Icon(Icons.AutoMirrored.Filled.Rule, null, tint = TextDim, modifier = Modifier.size(40.dp))
                             Spacer(Modifier.height(12.dp))
-                            Text("No rules yet", color = TextSecondary, fontSize = 14.sp)
+                            Text("No custom rules yet", color = TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                             Spacer(Modifier.height(4.dp))
-                            Text("Tap + to add block, allow, or redirect rules", color = TextDim, fontSize = 12.sp)
+                            Text(
+                                "Add a rule when a domain needs to be blocked, allowed, or redirected.",
+                                color = TextDim,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
                         }
                     }
                 }
@@ -109,38 +177,7 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
             items(filtered, key = { it.id }) { rule ->
                 RuleItem(rule = rule, onToggle = { viewModel.toggleRule(rule.id, it) }, onDelete = { viewModel.deleteRule(rule) })
             }
-            item { Spacer(Modifier.height(80.dp)) }
-        }
-
-        Column(
-            modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            // Paste from clipboard
-            SmallFloatingActionButton(
-                onClick = {
-                    val text = clipboardManager.getText()?.text ?: ""
-                    val domains = text.lines()
-                        .map { it.trim().lowercase() }
-                        .filter { it.isNotBlank() && it.contains('.') && !it.startsWith("#") }
-                        .distinct()
-                    if (domains.isNotEmpty()) {
-                        domains.forEach { viewModel.addRule(it, RuleType.BLOCK) }
-                        clipboardMessage = "Added ${domains.size} domains from clipboard"
-                    } else {
-                        clipboardMessage = "No valid domains in clipboard"
-                    }
-                },
-                containerColor = Surface3, contentColor = Teal,
-                shape = RoundedCornerShape(12.dp)
-            ) { Icon(Icons.Filled.ContentPaste, "Paste domains") }
-
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = Teal, contentColor = Color.Black,
-                shape = RoundedCornerShape(16.dp)
-            ) { Icon(Icons.Filled.Add, "Add rule") }
+            item { Spacer(Modifier.height(140.dp)) }
         }
 
         // Clipboard message snackbar
@@ -175,7 +212,12 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
 @Composable
 private fun TypeChip(type: RuleType?, label: String, selected: Boolean, onClick: () -> Unit) {
     val color = ruleColor(type)
-    Surface(onClick = onClick, shape = RoundedCornerShape(8.dp), color = if (selected) color.copy(alpha = 0.12f) else Surface2) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(8.dp),
+        color = if (selected) color.copy(alpha = 0.12f) else Surface2,
+        modifier = Modifier.semantics { stateDescription = if (selected) "Selected" else "Not selected" }
+    ) {
         Text(label, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = if (selected) color else TextDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
@@ -184,7 +226,7 @@ private fun TypeChip(type: RuleType?, label: String, selected: Boolean, onClick:
 private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -> Unit) {
     val color = ruleColor(rule.type)
     GlassCard(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.padding(14.dp).heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(color.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
@@ -192,7 +234,7 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
                 Icon(when (rule.type) {
                     RuleType.BLOCK -> Icons.Filled.Block
                     RuleType.ALLOW -> Icons.Filled.CheckCircle
-                    RuleType.REDIRECT -> Icons.Filled.AltRoute
+                    RuleType.REDIRECT -> Icons.AutoMirrored.Filled.AltRoute
                 }, null, tint = color, modifier = Modifier.size(16.dp))
             }
             Spacer(Modifier.width(12.dp))
@@ -220,7 +262,7 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
                 }
             }
             IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
-                Icon(Icons.Filled.Delete, null, tint = Red.copy(alpha = 0.5f), modifier = Modifier.size(15.dp))
+                Icon(Icons.Filled.Delete, "Delete ${rule.hostname}", tint = Red.copy(alpha = 0.5f), modifier = Modifier.size(15.dp))
             }
             Spacer(Modifier.width(4.dp))
             Switch(
@@ -241,8 +283,8 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
     var regexError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
-        onDismissRequest = onDismiss, containerColor = Surface1, shape = RoundedCornerShape(20.dp),
-        title = { Text("Add Rule", color = TextPrimary) },
+        onDismissRequest = onDismiss, containerColor = Surface1, shape = RoundedCornerShape(12.dp),
+        title = { Text("Add rule", color = TextPrimary) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -257,7 +299,7 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
                             regexError = try { Regex(it); null } catch (e: Exception) { e.message?.take(50) }
                         }
                     },
-                    label = { Text(if (isRegex) "Regex Pattern" else "Hostname") },
+                    label = { Text(if (isRegex) "Regex pattern" else "Hostname") },
                     placeholder = { Text(if (isRegex) ".*\\.ad[sv]?\\." else "*.example.com", color = TextDim) },
                     singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors(),
                     isError = regexError != null
@@ -289,16 +331,11 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
             TextButton(
                 onClick = {
                     if (hostname.isNotBlank() && regexError == null) {
-                        // Pass regex flag through comment prefix hack — ViewModel reads it
-                        if (isRegex) {
-                            (onAdd as? Function4<String, RuleType, String, String, Unit>)
-                            // Use the ViewModel method directly
-                        }
                         onAdd(hostname, type, redirectIp, if (isRegex) "REGEX:$comment" else comment)
                     }
                 },
                 enabled = hostname.isNotBlank() && regexError == null
-            ) { Text("Add", color = Teal) }
+            ) { Text("Add rule", color = Teal) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) } }
     )

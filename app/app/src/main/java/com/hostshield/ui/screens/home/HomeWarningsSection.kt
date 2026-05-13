@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -202,7 +203,7 @@ fun HomeWarningsSection(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
         ) {
             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.TrendingUp, null, tint = Peach, modifier = Modifier.size(16.dp))
+                Icon(Icons.AutoMirrored.Filled.TrendingUp, null, tint = Peach, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text("High Query Rate", color = Peach, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
@@ -237,16 +238,16 @@ fun HomeWarningsSection(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             if (dohEnabled) {
-                FeaturePill("DoH", Blue)
+                FeatureBadge("DoH", Blue)
             }
             if (dnsTrapEnabled) {
-                FeaturePill("DNS Trap", Teal)
+                FeatureBadge("DNS Trap", Teal)
             }
             if (firewalledApps > 0) {
-                FeaturePill("$firewalledApps Firewalled", Red)
+                FeatureBadge("$firewalledApps Firewalled", Red)
             }
             if (networkFirewallActive) {
-                FeaturePill("iptables", Peach)
+                FeatureBadge("iptables", Peach)
             }
         }
     }

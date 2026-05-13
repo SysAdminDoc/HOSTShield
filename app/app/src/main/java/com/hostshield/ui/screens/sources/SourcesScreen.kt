@@ -135,8 +135,30 @@ fun SourcesScreen(
             .background(Color.Black)
     ) {
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Teal, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(Icons.Filled.CloudDownload, null, tint = Teal, modifier = Modifier.size(32.dp))
+                        Spacer(Modifier.height(14.dp))
+                        Text("Loading sources", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Checking configured blocklists and health data.",
+                            color = TextSecondary,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        CircularProgressIndicator(color = Teal, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    }
+                }
             }
         } else {
         LazyColumn(
@@ -191,6 +213,30 @@ fun SourcesScreen(
                             if (isChecking) CircularProgressIndicator(Modifier.size(14.dp), color = Teal, strokeWidth = 2.dp)
                             else Icon(Icons.Filled.HealthAndSafety, "Health check", tint = TextDim, modifier = Modifier.size(18.dp))
                         }
+                        Surface(
+                            onClick = onNavigateToGallery,
+                            shape = RoundedCornerShape(8.dp),
+                            color = Mauve.copy(alpha = 0.12f),
+                            contentColor = Mauve,
+                            modifier = Modifier
+                                .size(40.dp)
+                        ) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Filled.Explore, "Browse source gallery", modifier = Modifier.size(18.dp))
+                            }
+                        }
+                        Surface(
+                            onClick = { showAddDialog = true },
+                            shape = RoundedCornerShape(8.dp),
+                            color = Teal.copy(alpha = 0.14f),
+                            contentColor = Teal,
+                            modifier = Modifier
+                                .size(40.dp)
+                        ) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Filled.Add, "Add source", modifier = Modifier.size(20.dp))
+                            }
+                        }
                     }
                 }
                 healthMsg?.let { msg ->
@@ -234,6 +280,27 @@ fun SourcesScreen(
             }
 
             val grouped = sources.groupBy { it.category }
+            if (sources.isEmpty()) {
+                item {
+                    GlassCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(28.dp).fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Filled.CloudOff, null, tint = TextDim, modifier = Modifier.size(40.dp))
+                            Spacer(Modifier.height(12.dp))
+                            Text("No sources configured", color = TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Add a trusted blocklist or browse the gallery to start protection.",
+                                color = TextDim,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                }
+            }
             SourceCategory.entries.forEach { category ->
                 val items = grouped[category] ?: return@forEach
                 item {
@@ -242,7 +309,7 @@ fun SourcesScreen(
                         style = MaterialTheme.typography.labelLarge,
                         color = categoryColor(category),
                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-                        letterSpacing = 0.5.sp
+                        letterSpacing = 0.sp
                     )
                 }
                 items(items, key = { it.id }) { source ->
@@ -253,32 +320,9 @@ fun SourcesScreen(
                     )
                 }
             }
-            item { Spacer(Modifier.height(80.dp)) }
+            item { Spacer(Modifier.height(140.dp)) }
         }
         } // end else (not loading)
-
-        Column(
-            modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            SmallFloatingActionButton(
-                onClick = onNavigateToGallery,
-                containerColor = Mauve,
-                contentColor = Color.Black,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Filled.Explore, "Browse gallery", modifier = Modifier.size(20.dp))
-            }
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = Teal,
-                contentColor = Color.Black,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Icon(Icons.Filled.Add, "Add source")
-            }
-        }
     }
 
     if (showAddDialog) {
@@ -388,7 +432,7 @@ private fun SourceItem(source: HostSource, onToggle: (Boolean) -> Unit, onDelete
 
             if (!source.isBuiltin) {
                 IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Filled.Delete, null, tint = Red.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Delete, "Delete ${source.label}", tint = Red.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
                 }
             }
 
@@ -433,13 +477,13 @@ private fun AddSourceDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Surface1,
-        shape = RoundedCornerShape(20.dp),
-        title = { Text("Add Source", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
+        shape = RoundedCornerShape(12.dp),
+        title = { Text("Add source", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = label, onValueChange = { label = it },
-                    label = { Text("Label") }, singleLine = true,
+                    label = { Text("Source name") }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -449,10 +493,10 @@ private fun AddSourceDialog(
                 )
                 OutlinedTextField(
                     value = url, onValueChange = { url = it },
-                    label = { Text("URL (https://...)") }, singleLine = true,
+                    label = { Text("Source URL") }, singleLine = true,
                     isError = url.isNotBlank() && !urlValid,
                     supportingText = if (url.isNotBlank() && !urlValid) {
-                        { Text("Must be a valid http:// or https:// URL", color = Red, fontSize = 11.sp) }
+                        { Text("Use a complete http:// or https:// URL.", color = Red, fontSize = 11.sp) }
                     } else null,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -493,7 +537,7 @@ private fun AddSourceDialog(
             TextButton(
                 onClick = { if (canSubmit) onAdd(url.trim(), label.trim(), category) },
                 enabled = canSubmit
-            ) { Text("Add", color = Teal, fontWeight = FontWeight.SemiBold) }
+            ) { Text("Add source", color = Teal, fontWeight = FontWeight.SemiBold) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) }

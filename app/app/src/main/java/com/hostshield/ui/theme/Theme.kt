@@ -1,6 +1,7 @@
 package com.hostshield.ui.theme
 
 import android.app.Activity
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -8,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 
@@ -72,11 +74,11 @@ private val DarkColorScheme = darkColorScheme(
 val HostShieldTypography = Typography(
     headlineLarge = Typography().headlineLarge.copy(
         fontWeight = FontWeight.Bold,
-        letterSpacing = (-0.5).sp
+        letterSpacing = 0.sp
     ),
     headlineMedium = Typography().headlineMedium.copy(
         fontWeight = FontWeight.SemiBold,
-        letterSpacing = (-0.25).sp
+        letterSpacing = 0.sp
     ),
     titleLarge = Typography().titleLarge.copy(
         fontWeight = FontWeight.SemiBold
@@ -87,8 +89,16 @@ val HostShieldTypography = Typography(
     bodyLarge = Typography().bodyLarge.copy(lineHeight = 24.sp),
     labelLarge = Typography().labelLarge.copy(
         fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.sp
     )
+)
+
+private val HostShieldShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(6.dp),
+    medium = RoundedCornerShape(8.dp),
+    large = RoundedCornerShape(12.dp),
+    extraLarge = RoundedCornerShape(12.dp)
 )
 
 @Composable
@@ -112,6 +122,7 @@ fun HostShieldTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = DarkColorScheme,
         typography = HostShieldTypography,
+        shapes = HostShieldShapes,
         content = content
     )
 }

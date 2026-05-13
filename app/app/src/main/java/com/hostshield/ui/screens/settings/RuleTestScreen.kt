@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -134,7 +135,7 @@ fun RuleTestScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = TextPrimary) }
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
             Column(modifier = Modifier.weight(1f)) {
                 Text("Rule Tester", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
                 Text("Test if domains match your rules", color = TextDim, fontSize = 11.sp)
@@ -175,7 +176,7 @@ fun RuleTestScreen(
             // Batch test
             item {
                 Spacer(Modifier.height(8.dp))
-                Text("BATCH TEST", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text("BATCH TEST", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
                 Spacer(Modifier.height(6.dp))
                 OutlinedTextField(
                     value = state.batchInput,

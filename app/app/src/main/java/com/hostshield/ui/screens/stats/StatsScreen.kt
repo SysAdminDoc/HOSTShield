@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -169,9 +170,18 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
     ) {
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Statistics", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Statistics", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Protection trends, DNS cache health, and VPN reliability.",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall,
+                        lineHeight = 16.sp
+                    )
+                }
                 TextButton(onClick = onNavigateToLogs) {
-                    Text("View Logs", color = Teal, fontSize = 13.sp)
+                    Text("View logs", color = Teal, fontSize = 13.sp)
                     Spacer(Modifier.width(2.dp))
                     Icon(Icons.Filled.ChevronRight, null, tint = Teal, modifier = Modifier.size(16.dp))
                 }
@@ -396,7 +406,7 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(Blue.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Filled.TrendingUp, null, tint = Blue, modifier = Modifier.size(14.dp))
+                            Icon(Icons.AutoMirrored.Filled.TrendingUp, null, tint = Blue, modifier = Modifier.size(14.dp))
                         }
                         Spacer(Modifier.width(10.dp))
                         Text("7-Day Trend", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
@@ -638,7 +648,7 @@ private fun MiniStat(modifier: Modifier, label: String, value: String, color: Co
                 Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
             }
             Spacer(Modifier.height(8.dp))
-            Text(value, color = color, fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = (-0.5).sp)
+            Text(value, color = color, fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = 0.sp)
             Spacer(Modifier.height(2.dp))
             Text(label, color = TextSecondary, fontSize = 10.sp)
         }

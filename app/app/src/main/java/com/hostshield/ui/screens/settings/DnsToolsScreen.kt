@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -320,7 +322,7 @@ fun DnsToolsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, "Back", tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
             Text("DNS Tools", style = MaterialTheme.typography.titleLarge, color = TextPrimary,
                 modifier = Modifier.weight(1f))
@@ -365,7 +367,7 @@ private fun LookupTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Teal, strokeWidth = 2.dp)
                 } else {
                     IconButton(onClick = { viewModel.performLookup() }) {
-                        Icon(Icons.Filled.Send, "Lookup", tint = Teal)
+                        Icon(Icons.AutoMirrored.Filled.Send, "Lookup", tint = Teal)
                     }
                 }
             },
@@ -650,11 +652,11 @@ private fun DiagTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         if (state.isBatchRunning) {
-                            CircularProgressIndicator(Modifier.size(14.dp), color = Color.White, strokeWidth = 2.dp)
+                            CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
                             Spacer(Modifier.width(6.dp))
                             Text("${state.batchProgress}/${state.batchTotal}", fontSize = 12.sp)
                         } else {
-                            Text("Test All", fontSize = 12.sp)
+                            Text("Test all", fontSize = 12.sp)
                         }
                     }
                     if (state.batchResults.isNotEmpty()) {
@@ -753,7 +755,7 @@ private fun GlassInfoCard(title: String, content: @Composable ColumnScope.() -> 
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(title, color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp)
+                letterSpacing = 0.sp)
             Spacer(Modifier.height(8.dp))
             content()
         }

@@ -25,7 +25,7 @@ import javax.inject.Inject
 //
 // Shell callers (uid 0 or 2000) are always trusted.
 // App callers must hold the signature-level permission
-// com.hostshield.permission.AUTOMATION or be the HostShield app itself.
+// <applicationId>.permission.AUTOMATION or be the HostShield app itself.
 
 @AndroidEntryPoint
 class AutomationReceiver : BroadcastReceiver() {
@@ -43,7 +43,7 @@ class AutomationReceiver : BroadcastReceiver() {
         const val ACTION_SET_DNS = "com.hostshield.ACTION_SET_DNS"
         const val ACTION_PAUSE = "com.hostshield.ACTION_PAUSE"
         const val STATUS_RESULT = "com.hostshield.STATUS_RESULT"
-        const val PERMISSION_AUTOMATION = "com.hostshield.permission.AUTOMATION"
+        private const val PERMISSION_AUTOMATION_SUFFIX = ".permission.AUTOMATION"
 
         private val TRUSTED_UIDS = setOf(0, 2000) // root, shell
         private const val RATE_LIMIT_MS = 5_000L
@@ -61,11 +61,12 @@ class AutomationReceiver : BroadcastReceiver() {
         val callerUid = Binder.getCallingUid()
         val callerPkg = resolveCallerPackage(context, callerUid)
         val action = intent.action ?: return
+        val automationPermission = automationPermission(context)
 
         // Security: verify the caller is trusted before executing
-        if (!isCallerTrusted(context, callerUid)) {
+        if (!isCallerTrusted(context, callerUid, automationPermission)) {
             Log.w(TAG, "DENIED $action from uid=$callerUid pkg=$callerPkg " +
-                "(missing $PERMISSION_AUTOMATION)")
+                "(missing $automationPermission)")
             logAudit(action, callerUid, callerPkg, "DENIED")
             return
         }
@@ -181,14 +182,14 @@ class AutomationReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun isCallerTrusted(context: Context, callerUid: Int): Boolean {
+    private fun isCallerTrusted(context: Context, callerUid: Int, automationPermission: String): Boolean {
         if (callerUid in TRUSTED_UIDS) return true
         if (callerUid == android.os.Process.myUid()) return true
 
         val packages = context.packageManager.getPackagesForUid(callerUid)
         if (packages != null) {
             for (pkg in packages) {
-                if (context.packageManager.checkPermission(PERMISSION_AUTOMATION, pkg) ==
+                if (context.packageManager.checkPermission(automationPermission, pkg) ==
                     PackageManager.PERMISSION_GRANTED) {
                     return true
                 }
@@ -203,6 +204,9 @@ class AutomationReceiver : BroadcastReceiver() {
         return context.packageManager.getPackagesForUid(uid)?.firstOrNull() ?: "uid:$uid"
     }
 
+    private fun automationPermission(context: Context): String =
+        "${context.packageName}$PERMISSION_AUTOMATION_SUFFIX"
+
     private suspend fun sendStatus(context: Context) {
         val enabled = prefs.isEnabled.first()
         val method = prefs.blockMethod.first()
@@ -216,7 +220,7 @@ class AutomationReceiver : BroadcastReceiver() {
                 putExtra("firewall_rules", fwRules)
                 putExtra("version", com.hostshield.BuildConfig.VERSION_NAME)
             },
-            PERMISSION_AUTOMATION
+            automationPermission(context)
         )
     }
 

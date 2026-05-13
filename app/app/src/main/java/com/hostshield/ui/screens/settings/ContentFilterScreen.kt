@@ -6,7 +6,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -74,7 +76,7 @@ fun ContentFilterScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, null, tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary)
             }
             Text("Content Filtering", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         }
@@ -148,7 +150,7 @@ private fun CategoryCard(
         ContentCategory.WEAPONS -> Icons.Filled.RemoveCircle
         ContentCategory.PIRACY -> Icons.Filled.ContentCopy
         ContentCategory.CRYPTO -> Icons.Filled.AttachMoney
-        ContentCategory.NEWS -> Icons.Filled.Article
+        ContentCategory.NEWS -> Icons.AutoMirrored.Filled.Article
         ContentCategory.SHOPPING -> Icons.Filled.ShoppingCart
         ContentCategory.VPN_PROXY -> Icons.Filled.VpnLock
         ContentCategory.MALWARE -> Icons.Filled.BugReport

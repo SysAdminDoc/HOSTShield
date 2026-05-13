@@ -2,6 +2,8 @@ package com.hostshield.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.Rule
+import androidx.compose.material.icons.automirrored.outlined.Rule
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -15,7 +17,7 @@ sealed class Screen(
 ) {
     data object Home : Screen("home", "Dashboard", Icons.Filled.Shield, Icons.Outlined.Shield)
     data object Sources : Screen("sources", "Sources", Icons.Filled.CloudDownload, Icons.Outlined.CloudDownload)
-    data object Rules : Screen("rules", "Rules", Icons.Filled.Rule, Icons.Outlined.Rule)
+    data object Rules : Screen("rules", "Rules", Icons.AutoMirrored.Filled.Rule, Icons.AutoMirrored.Outlined.Rule)
     data object Stats : Screen("stats", "Stats", Icons.Filled.BarChart, Icons.Outlined.BarChart)
     data object Settings : Screen("settings", "Settings", Icons.Filled.Settings, Icons.Outlined.Settings)
 }

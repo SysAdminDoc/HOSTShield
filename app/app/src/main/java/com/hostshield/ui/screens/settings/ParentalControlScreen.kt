@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -164,7 +165,7 @@ fun ParentalControlScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, null, tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary)
             }
             Text("Parental Controls", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         }
@@ -423,7 +424,7 @@ fun ParentalControlScreen(
                 }
             },
             containerColor = Surface2,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
         )
     }
 }

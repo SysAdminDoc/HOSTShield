@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -145,10 +147,10 @@ fun OverlapAnalysisScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, "Back", tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text("Overlap Analysis", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                Text("Overlap analysis", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
                 Text("Find redundant domains across sources", color = TextDim, fontSize = 11.sp)
             }
             Button(
@@ -158,10 +160,10 @@ fun OverlapAnalysisScreen(
                 shape = RoundedCornerShape(10.dp)
             ) {
                 if (state.isAnalyzing) {
-                    CircularProgressIndicator(Modifier.size(14.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
                     Spacer(Modifier.width(6.dp))
                 }
-                Text(if (state.isAnalyzing) "Analyzing..." else "Analyze", fontSize = 12.sp)
+                Text(if (state.isAnalyzing) "Analyzing" else "Analyze", fontSize = 12.sp)
             }
         }
 
@@ -254,7 +256,7 @@ fun OverlapAnalysisScreen(
                 item {
                     Spacer(Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.CompareArrows, null, tint = Yellow, modifier = Modifier.size(18.dp))
+                        Icon(Icons.AutoMirrored.Filled.CompareArrows, null, tint = Yellow, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Overlap Details", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
@@ -319,7 +321,7 @@ fun OverlapAnalysisScreen(
                             modifier = Modifier.padding(32.dp).fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Filled.CompareArrows, null, tint = TextDim, modifier = Modifier.size(40.dp))
+                            Icon(Icons.AutoMirrored.Filled.CompareArrows, null, tint = TextDim, modifier = Modifier.size(40.dp))
                             Spacer(Modifier.height(12.dp))
                             Text("Tap Analyze to compare your enabled sources", color = TextSecondary, fontSize = 13.sp)
                             Spacer(Modifier.height(4.dp))

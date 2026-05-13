@@ -13,6 +13,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +24,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -106,6 +113,12 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+        Text(
+            "Tune protection, DNS routing, backups, diagnostics, and sharing.",
+            color = TextSecondary,
+            style = MaterialTheme.typography.bodySmall,
+            lineHeight = 16.sp
+        )
         Spacer(Modifier.height(4.dp))
 
         // DNS Configuration (extracted)
@@ -242,7 +255,7 @@ fun SettingsScreen(
                         Text("Start", color = TextDim, fontSize = 10.sp)
                         Text(state.scheduleStart, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
-                    Icon(Icons.Filled.ArrowForward, null, tint = TextDim, modifier = Modifier.padding(top = 12.dp).size(16.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = TextDim, modifier = Modifier.padding(top = 12.dp).size(16.dp))
                     Column {
                         Text("End", color = TextDim, fontSize = 10.sp)
                         Text(state.scheduleEnd, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
@@ -274,13 +287,13 @@ fun SettingsScreen(
             Spacer(Modifier.height(4.dp))
             SettingsRow("Edit hosts file", "Direct editor for /etc/hosts (root)", Icons.Filled.Edit, onClick = onNavigateToHostsEditor)
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Overlap analysis", "Find redundant domains across sources", Icons.Filled.CompareArrows, onClick = onNavigateToOverlapAnalysis)
+            SettingsRow("Overlap analysis", "Find redundant domains across sources", Icons.AutoMirrored.Filled.CompareArrows, onClick = onNavigateToOverlapAnalysis)
             Spacer(Modifier.height(4.dp))
             SettingsRow("Rule tester", "Test if domains match your rules", Icons.Filled.Science, onClick = onNavigateToRuleTest)
             Spacer(Modifier.height(4.dp))
             SettingsRow("App privacy report", "Grade each app's tracking behavior", Icons.Filled.PrivacyTip, onClick = onNavigateToAppPrivacy)
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Automation audit log", "View commands from Tasker, ADB, etc", Icons.Filled.ReceiptLong, onClick = onNavigateToAutomationAudit)
+            SettingsRow("Automation audit log", "View commands from Tasker, ADB, etc", Icons.AutoMirrored.Filled.ReceiptLong, onClick = onNavigateToAutomationAudit)
             Spacer(Modifier.height(4.dp))
             SettingsRow("Export firewall rules", "Save per-app network rules as JSON", Icons.Filled.Shield) {
                 viewModel.exportFirewallRules()
@@ -381,7 +394,7 @@ fun SettingsScreen(
                     if (isExportingCsv) CircularProgressIndicator(Modifier.size(12.dp), color = Yellow, strokeWidth = 1.5.dp)
                     else Icon(Icons.Filled.TableChart, null, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Export Stats CSV", fontSize = 10.sp)
+                    Text("Export CSV", fontSize = 10.sp)
                 }
             }
             csvMessage?.let { msg ->
@@ -410,7 +423,7 @@ fun SettingsScreen(
 
             // Accent color picker
             Spacer(Modifier.height(8.dp))
-            Text("Accent Color", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text("Accent color", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val colors = listOf(
@@ -467,7 +480,7 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        if (state.isCheckingUpdate) "Checking..." else "Check for Updates",
+                        if (state.isCheckingUpdate) "Checking..." else "Check for updates",
                         color = TextPrimary,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
@@ -511,7 +524,7 @@ fun SettingsScreen(
                                 onClick = { viewModel.dismissUpdateMessage() },
                                 modifier = Modifier.size(20.dp)
                             ) {
-                                Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(12.dp))
+                                Icon(Icons.Filled.Close, "Dismiss update message", tint = TextDim, modifier = Modifier.size(12.dp))
                             }
                         }
                         if (isUpdate && state.updatePublishedAt.isNotEmpty()) {
@@ -602,7 +615,7 @@ fun SettingsScreen(
                         onClick = { viewModel.clearBackupMessage(); viewModel.clearImportMessage() },
                         modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.Close, "Dismiss status message", tint = TextDim, modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -648,7 +661,15 @@ internal fun SettingsToggle(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .semantics(mergeDescendants = true) {
+                role = Role.Switch
+                stateDescription = if (checked) "On" else "Off"
+            }
+            .clickable(role = Role.Switch) { onCheckedChange(!checked) }
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, null, tint = TextSecondary, modifier = Modifier.size(18.dp))
@@ -658,7 +679,7 @@ internal fun SettingsToggle(
             Text(subtitle, color = TextDim, fontSize = 11.sp)
         }
         Switch(
-            checked = checked, onCheckedChange = onCheckedChange,
+            checked = checked, onCheckedChange = null,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Teal, checkedTrackColor = Teal.copy(alpha = 0.25f),
                 uncheckedThumbColor = TextDim, uncheckedTrackColor = Surface3
@@ -677,8 +698,9 @@ internal fun SettingsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

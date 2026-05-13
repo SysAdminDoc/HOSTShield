@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -158,9 +159,9 @@ fun DnsLeakTestScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = TextPrimary) }
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
             Column(modifier = Modifier.weight(1f)) {
-                Text("DNS Leak Test", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                Text("DNS leak test", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
                 Text("Verify DNS queries go through HostShield", color = TextDim, fontSize = 11.sp)
             }
             Button(
@@ -170,10 +171,10 @@ fun DnsLeakTestScreen(
                 shape = RoundedCornerShape(10.dp)
             ) {
                 if (state.isRunning) {
-                    CircularProgressIndicator(Modifier.size(14.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
                     Spacer(Modifier.width(6.dp))
                 }
-                Text(if (state.isRunning) "Testing..." else "Run Test", fontSize = 12.sp)
+                Text(if (state.isRunning) "Testing" else "Run test", fontSize = 12.sp)
             }
         }
 
@@ -291,7 +292,7 @@ fun DnsLeakTestScreen(
                         ) {
                             Icon(Icons.Filled.VerifiedUser, null, tint = TextDim, modifier = Modifier.size(40.dp))
                             Spacer(Modifier.height(12.dp))
-                            Text("Tap Run Test to check for DNS leaks", color = TextSecondary, fontSize = 13.sp)
+                            Text("Tap Run test to check for DNS leaks", color = TextSecondary, fontSize = 13.sp)
                             Spacer(Modifier.height(4.dp))
                             Text("Tests random domains, blocked domains, and connectivity", color = TextDim, fontSize = 11.sp)
                         }

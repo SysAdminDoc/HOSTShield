@@ -23,6 +23,11 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -47,7 +52,7 @@ fun BrandHeader() {
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
-            letterSpacing = (-0.5).sp
+            letterSpacing = 0.sp
         )
     }
 }
@@ -97,7 +102,20 @@ fun ShieldOrb(
         modifier = Modifier
             .size(totalSizeDp)
             .scale(orbScale)
-            .clickable(enabled = !isApplying) { onToggle() }
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = when {
+                    isApplying -> "HostShield is applying protection"
+                    isEnabled -> "HostShield protection is active. Tap to pause protection."
+                    else -> "HostShield protection is off. Tap to activate protection."
+                }
+                stateDescription = when {
+                    isApplying -> "Applying"
+                    isEnabled -> "Active"
+                    else -> "Inactive"
+                }
+            }
+            .clickable(enabled = !isApplying, role = Role.Button) { onToggle() }
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val cx = size.width / 2f
@@ -233,7 +251,7 @@ fun ShieldOrb(
                         color = accentColor.copy(alpha = 0.8f),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
+                        letterSpacing = 0.sp
                     )
                 }
             }
@@ -256,14 +274,14 @@ fun StatusLabel(isEnabled: Boolean, isApplying: Boolean) {
 
     Text(
         text = when {
-            isApplying -> "Applying..."
-            isEnabled -> "Protection Active"
-            else -> "Tap to Activate"
+            isApplying -> "Applying"
+            isEnabled -> "Protection active"
+            else -> "Tap to activate"
         },
         style = MaterialTheme.typography.titleMedium,
         color = color,
         fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.3.sp
+        letterSpacing = 0.sp
     )
 }
 
@@ -279,7 +297,17 @@ fun StatTile(
     glowColor: Color,
     onClick: (() -> Unit)? = null
 ) {
-    GlassCard(modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)) {
+    GlassCard(
+        modifier = modifier.then(
+            if (onClick != null) {
+                Modifier
+                    .semantics { contentDescription = "$label, $value" }
+                    .clickable(role = Role.Button, onClick = onClick)
+            } else {
+                Modifier
+            }
+        )
+    ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -298,14 +326,14 @@ fun StatTile(
                 fontSize = 22.sp,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.5).sp
+                letterSpacing = 0.sp
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = TextSecondary,
-                letterSpacing = 0.2.sp
+                letterSpacing = 0.sp
             )
         }
     }
@@ -336,10 +364,19 @@ fun ModeChip(
     }
 
     Surface(
-        onClick = { if (enabled) onClick() },
+        onClick = onClick,
+        enabled = enabled,
         shape = RoundedCornerShape(10.dp),
         color = bgColor,
-        modifier = Modifier.border(1.dp, borderColor, RoundedCornerShape(10.dp))
+        modifier = Modifier
+            .border(1.dp, borderColor, RoundedCornerShape(10.dp))
+            .semantics {
+                stateDescription = when {
+                    !enabled -> "Unavailable"
+                    selected -> "Selected"
+                    else -> "Not selected"
+                }
+            }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
@@ -371,7 +408,11 @@ fun ActionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .semantics {
+                contentDescription = "$label. $subtitle"
+                stateDescription = if (enabled) "Available" else "Unavailable"
+            }
             .background(if (enabled) Color.Transparent else Color.Transparent)
             .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -418,7 +459,7 @@ fun ErrorBanner(error: String, onDismiss: () -> Unit) {
             Spacer(Modifier.width(8.dp))
             Text(error, color = Red.copy(alpha = 0.9f), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
             IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Filled.Close, null, tint = Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
+                Icon(Icons.Filled.Close, "Dismiss error", tint = Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
             }
         }
     }
@@ -448,7 +489,7 @@ fun ModuleCard(
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
@@ -457,8 +498,13 @@ fun ModuleCard(
                     )
                 )
             )
-            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+            .semantics {
+                role = Role.Button
+                contentDescription = "$title module. $status. $detail"
+                stateDescription = if (isActive) "Active" else "Off"
+            }
+            .clickable(role = Role.Button, onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Box(
@@ -543,7 +589,11 @@ fun FeatureAccessCard(
     gradientEnd: Color,
     onClick: () -> Unit
 ) {
-    GlassCard(modifier = modifier.clickable(onClick = onClick)) {
+    GlassCard(
+        modifier = modifier
+            .semantics { contentDescription = "$title. $subtitle" }
+            .clickable(role = Role.Button, onClick = onClick)
+    ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Box(
                 modifier = Modifier
@@ -564,12 +614,12 @@ fun FeatureAccessCard(
     }
 }
 
-// ── Feature Pill ────────────────────────────────────────────
+// ── Feature Badge ───────────────────────────────────────────
 
 @Composable
-fun FeaturePill(label: String, color: Color) {
+fun FeatureBadge(label: String, color: Color) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(6.dp),
         color = color.copy(alpha = 0.10f)
     ) {
         Text(
@@ -597,7 +647,7 @@ fun GlassCard(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
@@ -609,7 +659,7 @@ fun GlassCard(
             .border(
                 width = 1.dp,
                 brush = borderBrush,
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(12.dp)
             )
     ) {
         content()

@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -76,7 +77,7 @@ fun CrashReporterScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, null, tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary)
             }
             Text("Crash Reports", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         }
@@ -204,7 +205,7 @@ fun CrashReporterScreen(
 @Composable
 private fun InfoChip(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+        Text(label, color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
         Text(value, color = TextSecondary, fontSize = 11.sp)
     }
 }
