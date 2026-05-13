@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -440,7 +441,13 @@ fun SettingsScreen(
                         onClick = { viewModel.setAccentColor(key) },
                         shape = RoundedCornerShape(8.dp),
                         color = if (isSelected) color.copy(alpha = 0.2f) else Surface2,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier
+                            .size(32.dp)
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = "Set accent color to $key"
+                                stateDescription = if (isSelected) "Selected" else "Not selected"
+                            }
                     ) {
                         Box(
                             modifier = Modifier.fillMaxSize().padding(6.dp)
@@ -449,7 +456,7 @@ fun SettingsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             if (isSelected) {
-                                Icon(Icons.Filled.Check, null, tint = Color.Black, modifier = Modifier.size(14.dp))
+                                Icon(Icons.Filled.Check, "Selected accent color", tint = Color.Black, modifier = Modifier.size(14.dp))
                             }
                         }
                     }

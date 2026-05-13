@@ -142,7 +142,7 @@ fun QrConfigScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
             Text("QR Config Sharing", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         }
@@ -290,7 +290,7 @@ fun QrConfigScreen(
                     Spacer(Modifier.width(8.dp))
                     Text(msg, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
                     IconButton(onClick = { viewModel.clearImportResult() }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.Close, "Dismiss QR import message", tint = TextDim, modifier = Modifier.size(14.dp))
                     }
                 }
             }

@@ -34,7 +34,7 @@ fun HomeSearchSection(
         trailingIcon = {
             if (searchQuery.isNotBlank()) {
                 IconButton(onClick = { onSearchQueryChange(""); onSearchExpandedChange(false) }) {
-                    Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Close, "Clear search", tint = TextDim, modifier = Modifier.size(16.dp))
                 }
             }
         },
