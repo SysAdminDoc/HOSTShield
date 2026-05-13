@@ -9,6 +9,8 @@
 - Reworked onboarding into a more resilient first-run flow: compact feature overview grid, non-overlapping page indicators, fixed bottom actions, clearer DNS and VPN copy, and stronger accessibility semantics.
 - Moved Sources and Rules actions into compact header controls so add/gallery/paste actions no longer cover source rows, rule empty states, or bottom navigation.
 - Added calmer loading, empty, warning, error, disabled, and selection states across home, sources, rules, stats, settings, and onboarding.
+- Added consistent confirmation dialogs for destructive actions: clearing DNS logs, connection logs, TLS fingerprints, crash reports, and deleting custom rules or sources.
+- Added an intentional empty state for Connection Log's top blocked apps tab.
 
 ## Reliability
 

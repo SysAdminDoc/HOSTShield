@@ -28,6 +28,7 @@ import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
+import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -128,6 +129,7 @@ fun SourcesScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
+    var pendingDeleteSource by remember { mutableStateOf<HostSource?>(null) }
 
     Box(
         modifier = Modifier
@@ -316,7 +318,7 @@ fun SourcesScreen(
                     SourceItem(
                         source = source,
                         onToggle = { viewModel.toggleSource(source.id, it) },
-                        onDelete = { viewModel.deleteSource(source) }
+                        onDelete = { pendingDeleteSource = source }
                     )
                 }
             }
@@ -332,6 +334,16 @@ fun SourcesScreen(
                 viewModel.addSource(url, label, cat)
                 showAddDialog = false
             }
+        )
+    }
+
+    pendingDeleteSource?.let { source ->
+        ConfirmDestructiveDialog(
+            title = "Delete source?",
+            body = "This removes ${source.label} from configured blocklists. Downloaded counts and source health for this entry will no longer appear.",
+            confirmLabel = "Delete source",
+            onConfirm = { viewModel.deleteSource(source) },
+            onDismiss = { pendingDeleteSource = null },
         )
     }
 }

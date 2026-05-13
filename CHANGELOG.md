@@ -19,6 +19,10 @@ discoverability, and on-device layout correctness.
   actions into compact header controls instead of floating over list content.
 - Added clearer loading, empty, error, disabled, selection, and accessibility
   semantics across onboarding, home, sources, rules, stats, and settings.
+- Added consistent destructive-action confirmations for clearing logs,
+  fingerprints, crash reports, and deleting custom rules or sources.
+- Added a deliberate empty state for Connection Log's top blocked apps view so
+  the secondary monitoring surface no longer appears blank with no data.
 
 ### Reliability
 - Fixed debug/release side-by-side installation by deriving the automation

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.TlsFingerprinter
@@ -66,6 +67,7 @@ fun TlsFingerprintScreen(
 ) {
     val dateFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.US) }
     var expandedIndex by remember { mutableStateOf(-1) }
+    var showClearFingerprintsDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -77,7 +79,7 @@ fun TlsFingerprintScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
             Text("TLS Fingerprints", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         }
@@ -110,11 +112,11 @@ fun TlsFingerprintScreen(
                 }
                 Row {
                     IconButton(onClick = { viewModel.refresh() }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Filled.Refresh, null, tint = Teal, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Refresh, "Refresh fingerprints", tint = Teal, modifier = Modifier.size(18.dp))
                     }
                     if (viewModel.fingerprints.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.clear() }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Filled.DeleteSweep, null, tint = Red, modifier = Modifier.size(18.dp))
+                        IconButton(onClick = { showClearFingerprintsDialog = true }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Filled.DeleteSweep, "Clear fingerprints", tint = Red, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -238,6 +240,19 @@ fun TlsFingerprintScreen(
         }
 
         Spacer(Modifier.height(24.dp))
+    }
+
+    if (showClearFingerprintsDialog) {
+        ConfirmDestructiveDialog(
+            title = "Clear TLS fingerprints?",
+            body = "This removes the captured fingerprint history used for local inspection. Live capture and protection settings stay unchanged.",
+            confirmLabel = "Clear fingerprints",
+            onConfirm = {
+                viewModel.clear()
+                expandedIndex = -1
+            },
+            onDismiss = { showClearFingerprintsDialog = false },
+        )
     }
 }
 

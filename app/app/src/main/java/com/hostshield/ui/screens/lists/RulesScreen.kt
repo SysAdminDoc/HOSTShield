@@ -30,6 +30,7 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -71,6 +72,7 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
     var showAddDialog by remember { mutableStateOf(false) }
     var filterType by remember { mutableStateOf<RuleType?>(null) }
     var clipboardMessage by remember { mutableStateOf<String?>(null) }
+    var pendingDeleteRule by remember { mutableStateOf<UserRule?>(null) }
     val clipboardManager = LocalClipboardManager.current
 
     val filtered = remember(rules, filterType) {
@@ -175,7 +177,11 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
             }
 
             items(filtered, key = { it.id }) { rule ->
-                RuleItem(rule = rule, onToggle = { viewModel.toggleRule(rule.id, it) }, onDelete = { viewModel.deleteRule(rule) })
+                RuleItem(
+                    rule = rule,
+                    onToggle = { viewModel.toggleRule(rule.id, it) },
+                    onDelete = { pendingDeleteRule = rule }
+                )
             }
             item { Spacer(Modifier.height(140.dp)) }
         }
@@ -205,6 +211,16 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
                 viewModel.addRule(host, type, redir, cleanComment, isRegex)
                 showAddDialog = false
             }
+        )
+    }
+
+    pendingDeleteRule?.let { rule ->
+        ConfirmDestructiveDialog(
+            title = "Delete rule?",
+            body = "This removes ${rule.hostname} from custom rules. Existing log history remains unchanged.",
+            confirmLabel = "Delete rule",
+            onConfirm = { viewModel.deleteRule(rule) },
+            onDismiss = { pendingDeleteRule = null },
         )
     }
 }
