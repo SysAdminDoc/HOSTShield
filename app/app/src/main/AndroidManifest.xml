@@ -135,12 +135,19 @@
             </intent-filter>
         </receiver>
 
+        <!--
+            Widget providers must stay exported=true so the launcher (a different
+            package) can deliver APPWIDGET_UPDATE. The previously-exposed
+            com.hostshield.WIDGET_TOGGLE action let any third-party app force a
+            MainActivity launch by broadcasting the toggle — removed from the
+            intent-filter. The widget's own PendingIntent.getBroadcast targets
+            the receiver by component, not by action, so the toggle still works.
+        -->
         <receiver
             android:name=".service.HostShieldWidgetProvider"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.hostshield.WIDGET_TOGGLE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

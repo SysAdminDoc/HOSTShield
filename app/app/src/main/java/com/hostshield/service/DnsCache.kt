@@ -233,6 +233,9 @@ class DnsCache(
         when (rcode) {
             0 -> { // NOERROR — positive cache
                 val ttl = extractMinTtl(response)
+                // ttl==0 indicates parse failure or server-mandated TTL=0 — either
+                // way, do not cache (mostly applies to dynamic CDN responses).
+                if (ttl <= 0) return
                 val ttlMs = (ttl * 1000L).coerceIn(minTtlMs, maxTtlMs)
                 val entry = CacheEntry(
                     response = response.copyOf(),
@@ -241,12 +244,17 @@ class DnsCache(
                     insertedAt = now,
                     lastAccess = now
                 )
-                if (cache.size >= maxEntries) evictLru(cache, maxEntries / 10)
+                if (cache.size >= maxEntries) evictLru(cache, (maxEntries / 10).coerceAtLeast(1))
                 cache[key] = entry
             }
             3 -> { // NXDOMAIN — negative cache with SOA-derived TTL (RFC 2308)
                 val soaTtl = extractSoaMinTtl(response)
-                val ttlMs = if (soaTtl > 0) {
+                // RFC 2308: server-declared MINIMUM=0 means "do not cache". Skip.
+                // If the response had no SOA at all (null), fall back to our
+                // configured `negativeTtlMs` so the negative cache still does
+                // its job — the test suite asserts this.
+                if (soaTtl == 0) return
+                val ttlMs = if (soaTtl != null) {
                     (soaTtl * 1000L).coerceIn(minTtlMs, negativeTtlMs * 5)
                 } else {
                     negativeTtlMs
@@ -258,7 +266,7 @@ class DnsCache(
                     insertedAt = now,
                     lastAccess = now
                 )
-                if (negativeCache.size >= maxNegativeEntries) evictLru(negativeCache, maxNegativeEntries / 5)
+                if (negativeCache.size >= maxNegativeEntries) evictLru(negativeCache, (maxNegativeEntries / 5).coerceAtLeast(1))
                 negativeCache[key] = entry
             }
             2, 5 -> { // SERVFAIL, REFUSED — failure cache (RFC 9520)
@@ -269,7 +277,7 @@ class DnsCache(
                     insertedAt = now,
                     lastAccess = now
                 )
-                if (failureCache.size >= maxFailureEntries) evictLru(failureCache, maxFailureEntries / 5)
+                if (failureCache.size >= maxFailureEntries) evictLru(failureCache, (maxFailureEntries / 5).coerceAtLeast(1))
                 failureCache[key] = entry
             }
             // Don't cache other rcodes (FORMERR, NOTIMP, etc.)
@@ -380,7 +388,10 @@ class DnsCache(
             }
 
             var minTtl = 300 // default 5 min
-            for (i in 0 until totalRrs.coerceAtMost(20)) {
+            // Cap raised from 20 → 100 to cover large CNAME chains and multi-A
+            // round-robin sets. Real-world maximum we have seen is ~80 RRs in
+            // CDN responses.
+            for (i in 0 until totalRrs.coerceAtMost(100)) {
                 if (off >= response.size) break
                 off = skipName(response, off)
                 if (off + 10 > response.size) break
@@ -399,15 +410,19 @@ class DnsCache(
             }
             return minTtl
         } catch (_: Exception) {
-            return 300 // safe default
+            // On parse failure, return 0 so the response is *not* cached rather
+            // than being pinned at 5 minutes regardless of what the server said.
+            return 0
         }
     }
 
     /**
      * Extract SOA minimum TTL from authority section for negative caching (RFC 2308).
-     * Returns 0 if no SOA record found.
+     * Returns null when no SOA record was found (e.g. malformed response or the
+     * server omitted it) — distinguish from `MINIMUM=0` (server-mandated "do not
+     * cache") which returns 0.
      */
-    private fun extractSoaMinTtl(response: ByteArray): Int {
+    private fun extractSoaMinTtl(response: ByteArray): Int? {
         try {
             val anCount = ((response[6].toInt() and 0xFF) shl 8) or (response[7].toInt() and 0xFF)
             val nsCount = ((response[8].toInt() and 0xFF) shl 8) or (response[9].toInt() and 0xFF)
@@ -422,18 +437,18 @@ class DnsCache(
 
             // Skip answer section
             for (i in 0 until anCount.coerceAtMost(20)) {
-                if (off >= response.size) return 0
+                if (off >= response.size) return null
                 off = skipName(response, off)
-                if (off + 10 > response.size) return 0
+                if (off + 10 > response.size) return null
                 val rdLen = ((response[off + 8].toInt() and 0xFF) shl 8) or (response[off + 9].toInt() and 0xFF)
                 off += 10 + rdLen
             }
 
             // Search authority section for SOA record (TYPE 6)
             for (i in 0 until nsCount.coerceAtMost(10)) {
-                if (off >= response.size) return 0
+                if (off >= response.size) return null
                 off = skipName(response, off)
-                if (off + 10 > response.size) return 0
+                if (off + 10 > response.size) return null
 
                 val rrType = ((response[off].toInt() and 0xFF) shl 8) or (response[off + 1].toInt() and 0xFF)
                 val rdLen = ((response[off + 8].toInt() and 0xFF) shl 8) or (response[off + 9].toInt() and 0xFF)
@@ -457,9 +472,9 @@ class DnsCache(
                 }
                 off += rdLen
             }
-            return 0
+            return null
         } catch (_: Exception) {
-            return 0
+            return null
         }
     }
 
@@ -500,17 +515,21 @@ class DnsCache(
             }
         }
         if (removed >= count) return
-        // Second pass: evict oldest by lastAccess
+        // Second pass: take a single snapshot then sort by lastAccess. Sorting
+        // a `ConcurrentHashMap` directly with `asSequence().sortedBy` would
+        // observe concurrent mutations and could produce duplicate keys.
         val remaining = count - removed
-        val oldest = map.entries
-            .asSequence()
-            .sortedBy { it.value.lastAccess }
-            .take(remaining)
-            .map { it.key }
-            .toList()
-        for (key in oldest) {
-            map.remove(key)
-            evictions.incrementAndGet()
+        val snapshot = ArrayList<Map.Entry<CacheKey, CacheEntry>>(map.size).apply {
+            addAll(map.entries)
+        }
+        snapshot.sortBy { it.value.lastAccess }
+        var evicted = 0
+        for (entry in snapshot) {
+            if (evicted >= remaining) break
+            if (map.remove(entry.key, entry.value)) {
+                evictions.incrementAndGet()
+                evicted++
+            }
         }
     }
 }

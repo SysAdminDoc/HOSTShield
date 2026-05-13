@@ -18,10 +18,25 @@ class RootUtil @Inject constructor(
 
     companion object {
         const val HOSTS_PATH = "/system/etc/hosts"
+
+        // RFC 1123 hostname + IPv4 dotted-quad. Anything else is rejected before
+        // it reaches the root shell, preventing newline/backtick/`$()` injection.
+        private val HOSTNAME_RE = Regex("^[a-zA-Z0-9][a-zA-Z0-9._\\-]{0,253}$")
+        private val IPV4_RE = Regex("^(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d?\\d)$")
+        // IPv6 + ::1 + 0.0.0.0 + 127.0.0.1 all match either of the above when canonical.
+        private val IPV6_RE = Regex("^[0-9a-fA-F:]+$")
+
+        internal fun isValidHostname(name: String): Boolean =
+            name.length in 1..253 && HOSTNAME_RE.matches(name)
+
+        internal fun isValidRedirectIp(ip: String): Boolean =
+            IPV4_RE.matches(ip) || IPV6_RE.matches(ip)
     }
 
     /** Temp file inside app-private cache (no root or SELinux issues). */
     private val tempFile: File get() = File(context.cacheDir, "hostshield_hosts_tmp")
+
+    @Volatile private var cachedActivePath: String? = null
 
     /** Check if root access is available. Requests a shell if needed. */
     fun isRootAvailable(): Boolean {
@@ -152,14 +167,25 @@ class RootUtil @Inject constructor(
      */
     suspend fun appendHostEntry(hostname: String, redirectIp: String = "0.0.0.0"): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val safeHost = hostname.replace("'", "'\\''")
-            val safeIp = redirectIp.replace("'", "'\\''")
+            // Reject anything that isn't a strict hostname / IP — protects against
+            // newline / `;` / `$(...)` / backslash injection through the root shell.
+            if (!isValidHostname(hostname)) {
+                return@withContext Result.failure(
+                    IllegalArgumentException("Invalid hostname: $hostname")
+                )
+            }
+            if (!isValidRedirectIp(redirectIp)) {
+                return@withContext Result.failure(
+                    IllegalArgumentException("Invalid redirect IP: $redirectIp")
+                )
+            }
             val path = getActiveHostsPath()
-            val line = "$safeIp $safeHost"
-            // Only append if not already present
-            val check = Shell.cmd("grep -qF '$safeHost' \"$path\"").exec()
+            val line = "$redirectIp $hostname"
+            // Only append if not already present. grep -wF matches whole-word.
+            val check = Shell.cmd("grep -qwF '$hostname' \"$path\"").exec()
             if (!check.isSuccess) {
-                Shell.cmd("echo '$line' >> \"$path\"").exec()
+                // Use printf to avoid 'echo' interpreting backslashes on some shells.
+                Shell.cmd("printf '%s\\n' '$line' >> \"$path\"").exec()
                 flushDnsCache()
             }
             Result.success(Unit)
@@ -174,14 +200,26 @@ class RootUtil @Inject constructor(
      */
     suspend fun removeHostEntry(hostname: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            if (!isValidHostname(hostname)) {
+                return@withContext Result.failure(
+                    IllegalArgumentException("Invalid hostname: $hostname")
+                )
+            }
             val path = getActiveHostsPath()
-            // Read, filter in Kotlin (safe — no shell injection), write back
             val result = Shell.cmd("cat \"$path\"").exec()
             if (!result.isSuccess) return@withContext Result.failure(Exception("Cannot read hosts file"))
-            val filtered = result.out.filter { line ->
-                // Keep lines that don't end with the target hostname
-                !line.trimEnd().endsWith(" $hostname") &&
-                    !line.trimEnd().endsWith("\t$hostname")
+
+            // Token-aware match: strip trailing comments at '#', split on whitespace,
+            // case-insensitive equality on token[1]. Catches `0.0.0.0 host # comment`,
+            // `0.0.0.0\thost`, multi-host lines (`0.0.0.0 a b c`).
+            val targetLc = hostname.lowercase()
+            val filtered = result.out.filter { rawLine ->
+                val noComment = rawLine.substringBefore('#').trim()
+                if (noComment.isEmpty()) return@filter true
+                val tokens = noComment.split(Regex("\\s+"))
+                if (tokens.size < 2) return@filter true
+                // Drop the line only when one of the hostname tokens matches.
+                tokens.drop(1).none { it.lowercase() == targetLc }
             }
             val tmp = tempFile
             tmp.writeText(filtered.joinToString("\n") + "\n")
@@ -202,11 +240,14 @@ class RootUtil @Inject constructor(
     }
 
     private suspend fun getActiveHostsPath(): String {
-        return if (isMagiskSystemless()) {
+        cachedActivePath?.let { return it }
+        val resolved = if (isMagiskSystemless()) {
             "/data/adb/modules/hosts/system/etc/hosts"
         } else {
             HOSTS_PATH
         }
+        cachedActivePath = resolved
+        return resolved
     }
 
     suspend fun getSystemInfo(): Map<String, String> = withContext(Dispatchers.IO) {

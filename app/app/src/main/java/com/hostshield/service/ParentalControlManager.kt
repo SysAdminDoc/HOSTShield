@@ -31,6 +31,27 @@ class ParentalControlManager @Inject constructor(
     companion object {
         private const val TAG = "ParentalControl"
         private const val PIN_LENGTH = 4
+
+        // Brute-force lockout: 5 failures → 30 s, then 60, 120, 300 (cap)
+        private const val LOCKOUT_THRESHOLD = 5
+        private val LOCKOUT_DURATIONS_MS = longArrayOf(
+            30_000L, 60_000L, 120_000L, 300_000L
+        )
+    }
+
+    @Volatile private var failedAttempts = 0
+    @Volatile private var lockoutUntil = 0L
+
+    /**
+     * Result of a PIN verification attempt. [LOCKED_OUT] surfaces the remaining
+     * wait time so the UI can show a countdown.
+     */
+    sealed class PinResult {
+        object Success : PinResult()
+        object Wrong : PinResult()
+        data class LockedOut(val retryAfterMs: Long) : PinResult()
+        /** No PIN has been set; caller must enforce via [isPinSet] gate. */
+        object NoPin : PinResult()
     }
 
     /**
@@ -134,24 +155,63 @@ class ParentalControlManager @Inject constructor(
      * Verify a PIN against the stored hash.
      * Supports both legacy SHA-256 (hex string without ':') and
      * new PBKDF2 ("salt:hash") formats for seamless migration.
-     * @return true if PIN matches, or if no PIN is set.
+     * Returns false if no PIN is set — callers MUST gate with [isPinSet] first.
+     * (Returning true on no-PIN previously allowed bypass of every PIN-gated action.)
      */
-    suspend fun verifyPin(pin: String): Boolean {
+    suspend fun verifyPin(pin: String): Boolean = when (verifyPinDetailed(pin)) {
+        PinResult.Success -> true
+        else -> false
+    }
+
+    /**
+     * Verify with full result detail (lockout-aware, distinguishes "no PIN set").
+     * Brute-force protected: after [LOCKOUT_THRESHOLD] consecutive failures the
+     * caller is locked out for an exponentially growing window.
+     */
+    suspend fun verifyPinDetailed(pin: String): PinResult {
+        val now = System.currentTimeMillis()
+        val until = lockoutUntil
+        if (until > now) return PinResult.LockedOut(until - now)
+
         val storedHash = prefs.parentalPinHash.first()
-        if (storedHash.isEmpty()) return true // no PIN set
-        return if (storedHash.contains(':')) {
-            // New PBKDF2 format
+        if (storedHash.isEmpty()) return PinResult.NoPin
+
+        val match = if (storedHash.contains(':')) {
             SecureStore.verifyPin(pin, storedHash)
         } else {
             // Legacy SHA-256 format — verify then upgrade to PBKDF2
-            val legacyMatch = MessageDigest.isEqual(hashPin(pin).toByteArray(), storedHash.toByteArray())
+            val legacyMatch = MessageDigest.isEqual(
+                hashPin(pin).toByteArray(),
+                storedHash.toByteArray()
+            )
             if (legacyMatch) {
-                // Re-hash with PBKDF2 and store the upgraded hash
                 prefs.setParentalPinHash(SecureStore.hashPin(pin))
                 Log.d(TAG, "PIN hash upgraded from SHA-256 to PBKDF2")
             }
             legacyMatch
         }
+
+        if (match) {
+            failedAttempts = 0
+            lockoutUntil = 0L
+            return PinResult.Success
+        }
+        val attempts = ++failedAttempts
+        if (attempts >= LOCKOUT_THRESHOLD) {
+            val tier = ((attempts - LOCKOUT_THRESHOLD) / LOCKOUT_THRESHOLD)
+                .coerceIn(0, LOCKOUT_DURATIONS_MS.size - 1)
+            val wait = LOCKOUT_DURATIONS_MS[tier]
+            lockoutUntil = now + wait
+            Log.w(TAG, "PIN lockout: $attempts attempts, retry after ${wait / 1000}s")
+            return PinResult.LockedOut(wait)
+        }
+        return PinResult.Wrong
+    }
+
+    /** Remaining lockout ms, or 0 if not locked out. */
+    fun lockoutRemainingMs(): Long {
+        val remaining = lockoutUntil - System.currentTimeMillis()
+        return if (remaining > 0) remaining else 0L
     }
 
     /**

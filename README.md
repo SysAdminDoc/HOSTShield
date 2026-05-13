@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.2.0-blue)
+![Version](https://img.shields.io/badge/version-6.5.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
@@ -368,6 +368,9 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.5.0** | Engineering hardening pass. Parental PIN fail-closed + brute-force lockout, PBKDF2 iterations raised to 600k, backup decrypt off-by-one fixed, RootUtil hostname injection guard, device-transfer no longer leaks encrypted prefs, widget receiver no longer launchable by other apps. ACTION_PAUSE > 10s now works via WorkManager (was killed by `goAsync()` timeout). TCP DNS fallback on TC=1 (RFC 7766). BlocklistHolder atomic snapshot + real LRU decision cache. DoH/DoT response size caps + cert-pin diagnostics. DnsCache RFC 2308 MINIMUM=0 honored, RR cap raised. Onboarding DNS choice now persisted. Sources URL validation + category picker. Settings update-check throttled. CHANGELOG / README version drift repaired. |
+| **6.4.0** | Security hardening audit, architecture refactor, reliability improvements. See [`app/CHANGELOG.md`](app/CHANGELOG.md). |
+| **6.3.0** | Preferences facade over 6 domain managers, BlocklistHolder unified trie walk, DB v14 composite indices, PBKDF2 PIN hashing, encrypted backups, DoH fail-closed, HTTPS-only sync URLs, SHA-256 integrity, RootUtil shell injection fixes. |
 | **6.2.0** | DoQ resolver (RFC 9250), WireGuard DNS proxy, 7 new UI screens, ConnectionTracker + TlsFingerprinter wired in. **Release hardening audit**: fixed ~60 operator precedence bugs in DNS wire format parsing across 6 files, WireGuard encryption failure no longer leaks plaintext, OkHttp response leaks fixed in 8 files, shell command injection prevention in root mode, CoroutineScope lifecycle fix in LocalDnsServer, private IP range validation fix, Compose crash safety, ProGuard rules for all new classes. **52/52 roadmap items complete** |
 | **6.1.0** | Per-app DNS rules, content filtering (15 categories), proxy mode, QR config sharing, parental controls, crash reporter, WebDAV sync, connection tracker, Vico charts, Lottie animations, Glance widgets |
 | **6.0.0** | Threat intel integration, NetworkTrackerDb, Safe Search enforcement, DNS benchmark, local DNS server, DoT resolver, encrypted backups, DNS stamps, schedule presets |

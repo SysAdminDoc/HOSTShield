@@ -406,6 +406,7 @@ private fun SourceItem(source: HostSource, onToggle: (Boolean) -> Unit, onDelete
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun AddSourceDialog(
     onDismiss: () -> Unit,
@@ -414,6 +415,20 @@ private fun AddSourceDialog(
     var url by remember { mutableStateOf("") }
     var label by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(SourceCategory.ADS) }
+
+    // Validate URL: must parse as http:// or https://. https:// is the only safe
+    // choice for remote blocklists, but http:// is allowed for LAN mirrors.
+    val urlValid = remember(url) {
+        val trimmed = url.trim()
+        try {
+            val parsed = java.net.URL(trimmed)
+            (parsed.protocol == "http" || parsed.protocol == "https") && !parsed.host.isNullOrBlank()
+        } catch (_: Exception) {
+            false
+        }
+    }
+    val labelValid = label.trim().isNotEmpty()
+    val canSubmit = urlValid && labelValid
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -434,7 +449,11 @@ private fun AddSourceDialog(
                 )
                 OutlinedTextField(
                     value = url, onValueChange = { url = it },
-                    label = { Text("URL") }, singleLine = true,
+                    label = { Text("URL (https://...)") }, singleLine = true,
+                    isError = url.isNotBlank() && !urlValid,
+                    supportingText = if (url.isNotBlank() && !urlValid) {
+                        { Text("Must be a valid http:// or https:// URL", color = Red, fontSize = 11.sp) }
+                    } else null,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -442,12 +461,38 @@ private fun AddSourceDialog(
                         cursorColor = Teal, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
                     )
                 )
+
+                Text(
+                    "Category",
+                    color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium
+                )
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    SourceCategory.entries.forEach { c ->
+                        val selected = c == category
+                        FilterChip(
+                            selected = selected,
+                            onClick = { category = c },
+                            label = { Text(c.name, fontSize = 11.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = Surface2,
+                                labelColor = TextDim,
+                                selectedContainerColor = categoryColor(c).copy(alpha = 0.18f),
+                                selectedLabelColor = categoryColor(c),
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { if (url.isNotBlank() && label.isNotBlank()) onAdd(url, label, category) },
-                enabled = url.isNotBlank() && label.isNotBlank()
+                onClick = { if (canSubmit) onAdd(url.trim(), label.trim(), category) },
+                enabled = canSubmit
             ) { Text("Add", color = Teal, fontWeight = FontWeight.SemiBold) }
         },
         dismissButton = {

@@ -5,10 +5,21 @@ import com.hostshield.data.model.UserRule
 
 // HostShield v5.0.0 - Multi-format parser (hosts, domains-only, adblock-syntax)
 
-data class ParsedHost(
+/**
+ * A single parsed host entry. Equality is defined on [hostname] only — the IP
+ * is informational (which sinkhole the source pointed at) and not relevant for
+ * dedupe. Same hostname listed twice with different sinkhole IPs is one logical
+ * block entry, not two.
+ */
+class ParsedHost(
     val hostname: String,
-    val ip: String = "0.0.0.0"
-)
+    val ip: String = "0.0.0.0",
+) {
+    override fun equals(other: Any?): Boolean =
+        other is ParsedHost && other.hostname == hostname
+    override fun hashCode(): Int = hostname.hashCode()
+    override fun toString(): String = "ParsedHost($hostname -> $ip)"
+}
 
 object HostsParser {
 

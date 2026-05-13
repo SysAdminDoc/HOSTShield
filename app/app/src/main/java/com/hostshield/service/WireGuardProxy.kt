@@ -306,6 +306,22 @@ class WireGuardProxy @Inject constructor() {
     }
 
     private fun buildDnsUdpPacket(srcIp: String, dstIp: String, srcPort: Int, dstPort: Int, payload: ByteArray): ByteArray {
+        // Parse via InetAddress so hostnames + IPv6 don't crash on split(".").
+        // We require both endpoints to be IPv4 because tunnelAddress is IPv4-shaped.
+        val srcBytes = try {
+            java.net.InetAddress.getByName(srcIp).address
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Invalid WireGuard source IP '$srcIp' — must be IPv4", e)
+        }
+        val dstBytes = try {
+            java.net.InetAddress.getByName(dstIp).address
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Invalid WireGuard dest IP '$dstIp' — must be IPv4", e)
+        }
+        require(srcBytes.size == 4 && dstBytes.size == 4) {
+            "WireGuard DNS path only supports IPv4 endpoints (got src=$srcIp dst=$dstIp)"
+        }
+
         val ipHeader = ByteArray(20)
         val udpHeader = ByteArray(8)
 
@@ -318,12 +334,9 @@ class WireGuardProxy @Inject constructor() {
         ipHeader[9] = 17  // Protocol: UDP
 
         // Source IP
-        val srcParts = srcIp.split(".")
-        for (i in 0..3) ipHeader[12 + i] = srcParts[i].toInt().toByte()
-
+        System.arraycopy(srcBytes, 0, ipHeader, 12, 4)
         // Dest IP
-        val dstParts = dstIp.split(".")
-        for (i in 0..3) ipHeader[16 + i] = dstParts[i].toInt().toByte()
+        System.arraycopy(dstBytes, 0, ipHeader, 16, 4)
 
         // IP checksum
         var sum = 0
@@ -460,10 +473,28 @@ class WireGuardProxy @Inject constructor() {
         MessageDigest.getInstance("SHA-256").digest(input)
 
     private fun parseEndpoint(endpoint: String): InetSocketAddress {
-        val parts = endpoint.split(":")
-        val host = parts.dropLast(1).joinToString(":")
-        val port = parts.last().toIntOrNull() ?: WG_PORT
-        return InetSocketAddress(host, port)
+        // Bracketed IPv6 form: [2001:db8::1]:51820
+        if (endpoint.startsWith("[")) {
+            val closeBracket = endpoint.indexOf(']')
+            if (closeBracket > 0) {
+                val host = endpoint.substring(1, closeBracket)
+                val port = endpoint.substringAfter("]:", "").toIntOrNull() ?: WG_PORT
+                return InetSocketAddress(host, port)
+            }
+        }
+        // Otherwise host:port — only split on the LAST colon so unbracketed
+        // (and unusual) IPv6 entries don't get mangled. Hostnames and IPv4
+        // never contain ':'.
+        val lastColon = endpoint.lastIndexOf(':')
+        return if (lastColon > 0 && endpoint.indexOf(':') == lastColon) {
+            // Single colon → host:port form
+            val host = endpoint.substring(0, lastColon)
+            val port = endpoint.substring(lastColon + 1).toIntOrNull() ?: WG_PORT
+            InetSocketAddress(host, port)
+        } else {
+            // Multiple colons without brackets → assume entire string is IPv6 host on default port
+            InetSocketAddress(endpoint, WG_PORT)
+        }
     }
 
     private fun readUint32LE(data: ByteArray, offset: Int): Long =

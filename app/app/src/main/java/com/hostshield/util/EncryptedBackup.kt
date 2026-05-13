@@ -25,9 +25,15 @@ class EncryptedBackup @Inject constructor(
         private const val SALT_LENGTH = 16
         private const val IV_LENGTH = 12
         private const val KEY_LENGTH_BITS = 256
-        private const val PBKDF2_ITERATIONS = 100_000
+        // OWASP 2023 PBKDF2-HMAC-SHA256 baseline is 600_000. Align with the rest
+        // of the app (SecureStore PIN uses 210_000; backup is higher-value because
+        // the file is exfiltratable to a desktop attacker).
+        private const val PBKDF2_ITERATIONS = 600_000
         private const val GCM_TAG_BITS = 128
+        private const val GCM_TAG_BYTES = GCM_TAG_BITS / 8
         private const val HEADER_SIZE = 8 + 1 + SALT_LENGTH + IV_LENGTH // 37 bytes
+        // Smallest legal ciphertext encrypts empty plaintext → just the GCM tag.
+        private const val MIN_PAYLOAD_SIZE = HEADER_SIZE + GCM_TAG_BYTES
 
         /**
          * Check whether raw bytes look like an encrypted HostShield backup
@@ -77,7 +83,7 @@ class EncryptedBackup @Inject constructor(
      * @throws javax.crypto.AEADBadTagException if the password is wrong or data is corrupt.
      */
     fun decrypt(data: ByteArray, password: String): String {
-        require(data.size > HEADER_SIZE) {
+        require(data.size >= MIN_PAYLOAD_SIZE) {
             "Data too short to be an encrypted HostShield backup"
         }
 
@@ -120,9 +126,15 @@ class EncryptedBackup @Inject constructor(
 
     private fun deriveKey(password: String, salt: ByteArray): SecretKeySpec {
         val spec = PBEKeySpec(password.toCharArray(), salt, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
-        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-        val keyBytes = factory.generateSecret(spec).encoded
-        spec.clearPassword()
-        return SecretKeySpec(keyBytes, "AES")
+        val keyBytes = try {
+            SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+                .generateSecret(spec).encoded
+        } finally {
+            spec.clearPassword()
+        }
+        val keySpec = SecretKeySpec(keyBytes, "AES")
+        // Wipe the raw byte array; SecretKeySpec retains its own copy.
+        java.util.Arrays.fill(keyBytes, 0)
+        return keySpec
     }
 }

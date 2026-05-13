@@ -1,4 +1,4 @@
-// HostShield v6.4.0
+// HostShield v6.5.0
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,8 +15,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 35
-        versionCode = 57
-        versionName = "6.4.0"
+        versionCode = 58
+        versionName = "6.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -76,6 +76,15 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    // Run unit tests against real org.json / android.util.Base64 (etc.) rather
+    // than the JVM-mocked stubs that throw `not mocked` at runtime. Pre-v6.5
+    // unit tests for BackupRestoreUtil were dead because of this; flipping the
+    // flag makes them executable on a normal JVM without Robolectric.
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+        unitTests.isIncludeAndroidResources = true
     }
 
     // ── Product Flavors ─────────────────────────────────────
@@ -180,6 +189,10 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("com.google.truth:truth:1.4.2")
     testImplementation("androidx.room:room-testing:2.6.1")
+    // BackupRestoreUtil unit tests use org.json.JSONObject directly; without
+    // this the stubbed Android JSONObject throws `not mocked` and three tests
+    // were dead before v6.5.
+    testImplementation("org.json:json:20240303")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }

@@ -9,10 +9,16 @@ import org.junit.Test
 class BlocklistHolderTest {
 
     private lateinit var holder: BlocklistHolder
+    // domainCount includes the hardcoded DoH-bypass set added by update().
+    // We snapshot it after an empty update and treat it as the baseline.
+    private var dohBaseline: Int = 0
 
     @Before
     fun setup() {
         holder = BlocklistHolder()
+        holder.update(emptySet(), emptyList())
+        dohBaseline = holder.domainCount
+        holder.clear()
     }
 
     @Test
@@ -31,7 +37,7 @@ class BlocklistHolderTest {
         assertTrue(holder.isBlocked("tracker.evil.com"))
         assertFalse(holder.isBlocked("example.com"))
         assertFalse(holder.isBlocked("safe.example.com"))
-        assertEquals(2, holder.domainCount)
+        assertEquals(2 + dohBaseline, holder.domainCount)
     }
 
     @Test
@@ -72,23 +78,31 @@ class BlocklistHolderTest {
     @Test
     fun `addDomain increments count and blocks`() {
         holder.update(setOf("initial.com"), emptyList())
-        assertEquals(1, holder.domainCount)
+        val before = holder.domainCount
 
         holder.addDomain("added.com")
-        assertEquals(2, holder.domainCount)
+        assertEquals(before + 1, holder.domainCount)
         assertTrue(holder.isBlocked("added.com"))
         assertTrue(holder.isBlocked("initial.com"))
+
+        // Adding the same domain twice must not double-count.
+        holder.addDomain("added.com")
+        assertEquals(before + 1, holder.domainCount)
     }
 
     @Test
     fun `removeDomain decrements count and unblocks`() {
         holder.update(setOf("a.com", "b.com"), emptyList())
-        assertEquals(2, holder.domainCount)
+        val before = holder.domainCount
 
         holder.removeDomain("a.com")
-        assertEquals(1, holder.domainCount)
+        assertEquals(before - 1, holder.domainCount)
         assertFalse(holder.isBlocked("a.com"))
         assertTrue(holder.isBlocked("b.com"))
+
+        // Removing a domain that was never added must NOT drop the counter.
+        holder.removeDomain("never-existed.example")
+        assertEquals(before - 1, holder.domainCount)
     }
 
     @Test
@@ -98,7 +112,7 @@ class BlocklistHolderTest {
 
         assertEquals(0, holder.domainCount)
         assertFalse(holder.isBlocked("a.com"))
-        assertTrue(holder.domains.isEmpty())
+        assertFalse(holder.isBlocked("b.com"))
     }
 
     @Test
@@ -116,7 +130,7 @@ class BlocklistHolderTest {
         val domains = (1..100_000).map { "domain$it.example.com" }.toSet()
         holder.update(domains, emptyList())
 
-        assertEquals(100_000, holder.domainCount)
+        assertEquals(100_000 + dohBaseline, holder.domainCount)
 
         // Lookups should be fast even with 100k entries
         val start = System.nanoTime()
@@ -132,6 +146,6 @@ class BlocklistHolderTest {
     @Test
     fun `getBlockedCount returns accurate count`() {
         holder.update(setOf("a.com", "b.com", "c.com"), emptyList())
-        assertEquals(3, holder.getBlockedCount())
+        assertEquals(3 + dohBaseline, holder.getBlockedCount())
     }
 }

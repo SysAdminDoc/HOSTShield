@@ -50,6 +50,10 @@ class ParentalControlViewModel @Inject constructor(
         private set
     var showPinDialog by mutableStateOf(false)
         private set
+    var pinError by mutableStateOf<String?>(null)
+        private set
+    var pinLockoutMs by mutableStateOf(0L)
+        private set
     var pinAction by mutableStateOf<String?>(null)
         private set
 
@@ -62,35 +66,52 @@ class ParentalControlViewModel @Inject constructor(
             if (value) {
                 manager.enable(AgeProfile.fromName(profile.value))
             } else {
-                disableParentalControls()
-            }
-        }
-    }
-
-    fun disableParentalControls(pin: String? = null) {
-        viewModelScope.launch {
-            if (manager.isPinSet()) {
-                if (pin == null || !manager.verifyPin(pin)) {
+                if (manager.isPinSet()) {
                     showPinDialog = true
+                    pinError = null
+                    pinLockoutMs = manager.lockoutRemainingMs()
                     pinAction = "disable"
-                    return@launch
+                } else {
+                    manager.disable()
                 }
             }
-            manager.disable()
         }
     }
 
     fun dismissPinDialog() {
         showPinDialog = false
         pinAction = null
+        pinError = null
+        pinLockoutMs = 0L
     }
 
     fun onPinSubmitted(pin: String) {
-        showPinDialog = false
-        when (pinAction) {
-            "disable" -> disableParentalControls(pin)
+        viewModelScope.launch {
+            when (val r = manager.verifyPinDetailed(pin)) {
+                is ParentalControlManager.PinResult.Success -> {
+                    showPinDialog = false
+                    pinError = null
+                    pinLockoutMs = 0L
+                    when (pinAction) {
+                        "disable" -> manager.disable()
+                    }
+                    pinAction = null
+                }
+                is ParentalControlManager.PinResult.LockedOut -> {
+                    pinError = "Too many attempts"
+                    pinLockoutMs = r.retryAfterMs
+                }
+                is ParentalControlManager.PinResult.Wrong -> {
+                    pinError = "Incorrect PIN"
+                    pinLockoutMs = 0L
+                }
+                is ParentalControlManager.PinResult.NoPin -> {
+                    // PIN was cleared between dialog open and submit — just disable
+                    showPinDialog = false
+                    manager.disable()
+                }
+            }
         }
-        pinAction = null
     }
 
     fun setProfile(profileName: String) {
@@ -327,7 +348,22 @@ fun ParentalControlScreen(
     // PIN verification dialog for disabling parental controls
     if (viewModel.showPinDialog) {
         var dialogPin by remember { mutableStateOf("") }
-        var pinError by remember { mutableStateOf(false) }
+        val errorMessage = viewModel.pinError
+        val lockoutMs = viewModel.pinLockoutMs
+        var lockoutCountdown by remember(lockoutMs) { mutableStateOf(lockoutMs) }
+
+        // Live-tick the lockout countdown
+        LaunchedEffect(lockoutMs) {
+            if (lockoutMs > 0) {
+                val deadline = System.currentTimeMillis() + lockoutMs
+                while (System.currentTimeMillis() < deadline) {
+                    lockoutCountdown = (deadline - System.currentTimeMillis()).coerceAtLeast(0L)
+                    kotlinx.coroutines.delay(250)
+                }
+                lockoutCountdown = 0L
+            }
+        }
+        val locked = lockoutCountdown > 0
 
         AlertDialog(
             onDismissRequest = { viewModel.dismissPinDialog() },
@@ -341,15 +377,24 @@ fun ParentalControlScreen(
                         onValueChange = {
                             if (it.length <= 4 && it.all { c -> c.isDigit() }) {
                                 dialogPin = it
-                                pinError = false
                             }
                         },
+                        enabled = !locked,
                         placeholder = { Text("PIN", color = TextDim, fontSize = 13.sp) },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         singleLine = true,
-                        isError = pinError,
-                        supportingText = if (pinError) {{ Text("Incorrect PIN", color = Red, fontSize = 11.sp) }} else null,
+                        isError = errorMessage != null,
+                        supportingText = {
+                            when {
+                                locked -> Text(
+                                    "Locked out — retry in ${(lockoutCountdown / 1000) + 1}s",
+                                    color = Red, fontSize = 11.sp,
+                                )
+                                errorMessage != null -> Text(errorMessage, color = Red, fontSize = 11.sp)
+                                else -> {}
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -362,13 +407,12 @@ fun ParentalControlScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (dialogPin.length == 4) {
+                        if (dialogPin.length == 4 && !locked) {
                             viewModel.onPinSubmitted(dialogPin)
-                        } else {
-                            pinError = true
+                            dialogPin = ""
                         }
                     },
-                    enabled = dialogPin.length == 4,
+                    enabled = dialogPin.length == 4 && !locked,
                 ) {
                     Text("Confirm", color = Yellow)
                 }

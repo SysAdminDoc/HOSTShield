@@ -68,7 +68,11 @@ class HostsUpdateWorker @AssistedInject constructor(
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
         }
 
-        /** Run an immediate one-shot update. */
+        /**
+         * Run an immediate one-shot update. Marked expedited on API 31+ so it
+         * runs through Doze; falls back to non-expedited if the quota is empty
+         * (per `RUN_AS_NON_EXPEDITED_WORK_REQUEST`).
+         */
         fun runNow(context: Context) {
             val request = OneTimeWorkRequestBuilder<HostsUpdateWorker>()
                 .addTag(TAG)
@@ -77,9 +81,15 @@ class HostsUpdateWorker @AssistedInject constructor(
                         .setRequiredNetworkType(NetworkType.CONNECTED)
                         .build()
                 )
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build()
 
-            WorkManager.getInstance(context).enqueue(request)
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(
+                    "${WORK_NAME}_oneshot",
+                    ExistingWorkPolicy.KEEP,
+                    request,
+                )
         }
 
         /** Alias for automation API. */
@@ -108,30 +118,44 @@ class HostsUpdateWorker @AssistedInject constructor(
                     // v5.0: Collect adblock-syntax allow rules from sources
                     val adblockAllowDomains = mutableSetOf<String>()
 
+                    // Track per-source failures so the user can see why a blocklist
+                    // is stale (silent swallow used to make this look like the lists
+                    // were fresh when they were actually 404'ing for weeks).
+                    val failedSources = mutableListOf<String>()
                     for (source in blockSources) {
-                        downloader.download(source).onSuccess { dl ->
-                            if (!dl.notModified) {
-                                // v5.0: Auto-detect adblock format and extract allow rules
-                                if (HostsParser.isAdblockFormat(dl.content)) {
-                                    val parsed = HostsParser.parseAdblock(dl.content)
-                                    allDomains.addAll(parsed.exactBlockDomains)
-                                    adblockAllowDomains.addAll(parsed.exactAllowDomains)
-                                } else {
-                                    HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
+                        downloader.download(source)
+                            .onSuccess { dl ->
+                                if (!dl.notModified) {
+                                    // v5.0: Auto-detect adblock format and extract allow rules
+                                    if (HostsParser.isAdblockFormat(dl.content)) {
+                                        val parsed = HostsParser.parseAdblock(dl.content)
+                                        allDomains.addAll(parsed.exactBlockDomains)
+                                        adblockAllowDomains.addAll(parsed.exactAllowDomains)
+                                    } else {
+                                        HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
+                                    }
                                 }
                             }
-                        }
+                            .onFailure { err ->
+                                failedSources += source.url
+                                Log.w(TAG, "Block source download failed: ${source.url} — ${err.message}")
+                            }
                     }
 
                     // Download allowlist sources and subtract their domains
                     val allowlistSources = repository.getEnabledAllowlistSources()
                     val sourceAllowDomains = mutableSetOf<String>()
                     for (source in allowlistSources) {
-                        downloader.download(source).onSuccess { dl ->
-                            if (!dl.notModified) {
-                                HostsParser.parse(dl.content).forEach { sourceAllowDomains.add(it.hostname) }
+                        downloader.download(source)
+                            .onSuccess { dl ->
+                                if (!dl.notModified) {
+                                    HostsParser.parse(dl.content).forEach { sourceAllowDomains.add(it.hostname) }
+                                }
                             }
-                        }
+                            .onFailure { err ->
+                                failedSources += source.url
+                                Log.w(TAG, "Allowlist source download failed: ${source.url} — ${err.message}")
+                            }
                     }
 
                     // Fetch remote rule sync URLs and merge domains
@@ -169,7 +193,14 @@ class HostsUpdateWorker @AssistedInject constructor(
                                     HostsParser.parse(content).forEach { allDomains.add(it.hostname) }
                                 }
                             }
-                        } catch (_: Exception) { }
+                        } catch (e: Exception) {
+                            failedSources += url
+                            Log.w(TAG, "Sync URL fetch failed: $url — ${e.message}")
+                        }
+                    }
+                    if (failedSources.isNotEmpty()) {
+                        Log.w(TAG, "Blocklist refresh completed with ${failedSources.size} failed source(s): " +
+                            failedSources.joinToString(", "))
                     }
 
                     val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)

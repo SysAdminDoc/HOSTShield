@@ -27,6 +27,10 @@ class DotResolver @Inject constructor() {
         private const val DOT_PORT = 853
         private const val CONNECT_TIMEOUT_MS = 5000
         private const val READ_TIMEOUT_MS = 5000
+        // RFC 7858 caps the length-prefixed message at 65535. Large DNSSEC /
+        // RRSIG / TXT responses routinely exceed 4096 bytes.
+        private const val MAX_DOT_RESPONSE = 65535
+        private const val MIN_DNS_MESSAGE = 12
     }
 
     enum class Provider(val hostname: String, val ip: String) {
@@ -89,8 +93,8 @@ class DotResolver @Inject constructor() {
 
             // Read response: 2-byte length prefix + DNS message
             val respLen = input.readUnsignedShort()
-            if (respLen < 12 || respLen > 4096) {
-                Log.w(TAG, "DoT response length out of range (12..4096): $respLen")
+            if (respLen < MIN_DNS_MESSAGE || respLen > MAX_DOT_RESPONSE) {
+                Log.w(TAG, "DoT response length out of range ($MIN_DNS_MESSAGE..$MAX_DOT_RESPONSE): $respLen")
                 return null
             }
 
