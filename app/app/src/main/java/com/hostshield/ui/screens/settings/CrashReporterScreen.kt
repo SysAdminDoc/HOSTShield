@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.CrashReport
@@ -66,6 +67,7 @@ fun CrashReporterScreen(
     viewModel: CrashReporterViewModel = hiltViewModel(),
 ) {
     var expandedIndex by remember { mutableStateOf(-1) }
+    var showClearReportsDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -77,7 +79,7 @@ fun CrashReporterScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
             Text("Crash Reports", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         }
@@ -114,10 +116,10 @@ fun CrashReporterScreen(
                 }
                 if (viewModel.reports.isNotEmpty()) {
                     IconButton(
-                        onClick = { viewModel.clearAll() },
+                        onClick = { showClearReportsDialog = true },
                         modifier = Modifier.size(32.dp),
                     ) {
-                        Icon(Icons.Filled.DeleteSweep, null, tint = Red, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.DeleteSweep, "Clear crash reports", tint = Red, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -199,6 +201,19 @@ fun CrashReporterScreen(
         }
 
         Spacer(Modifier.height(24.dp))
+    }
+
+    if (showClearReportsDialog) {
+        ConfirmDestructiveDialog(
+            title = "Clear crash reports?",
+            body = "This removes locally stored diagnostic reports from this device. It does not change protection settings or send anything externally.",
+            confirmLabel = "Clear reports",
+            onConfirm = {
+                viewModel.clearAll()
+                expandedIndex = -1
+            },
+            onDismiss = { showClearReportsDialog = false },
+        )
     }
 }
 

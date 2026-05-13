@@ -29,6 +29,7 @@ import com.hostshield.data.database.ConnectionLogDao
 import com.hostshield.data.database.FirewallTopApp
 import com.hostshield.data.model.ConnectionLogEntry
 import com.hostshield.service.NflogReader
+import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -81,6 +82,7 @@ fun ConnectionLogScreen(
     val liveCount by viewModel.liveCount.collectAsStateWithLifecycle()
     val tab by viewModel.tab.collectAsStateWithLifecycle()
     val timeFmt = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
+    var showClearLogsDialog by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         // Header
@@ -106,8 +108,15 @@ fun ConnectionLogScreen(
                     )
                 }
             }
-            IconButton(onClick = { viewModel.clearLogs() }) {
-                Icon(Icons.Filled.DeleteSweep, "Clear", tint = Red)
+            IconButton(
+                onClick = { showClearLogsDialog = true },
+                enabled = logs.isNotEmpty()
+            ) {
+                Icon(
+                    Icons.Filled.DeleteSweep,
+                    "Clear connection log",
+                    tint = if (logs.isNotEmpty()) Red else TextDim.copy(alpha = 0.35f)
+                )
             }
         }
 
@@ -164,40 +173,66 @@ fun ConnectionLogScreen(
                 }
             }
             ConnLogTab.TOP_APPS -> {
-                LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp)) {
-                    items(topApps, key = { it.uid }) { app ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier.size(8.dp).clip(CircleShape).background(Red)
+                if (topApps.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Filled.Apps, null, tint = TextDim, modifier = Modifier.size(48.dp))
+                            Spacer(Modifier.height(8.dp))
+                            Text("No blocked apps yet", color = TextSecondary, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Apps will appear here after firewall rules block network traffic.",
+                                color = TextDim,
+                                fontSize = 11.sp,
                             )
-                            Spacer(Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    app.appLabel.ifBlank { app.packageName },
-                                    color = TextPrimary, fontWeight = FontWeight.Medium,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis
-                                )
-                                Text("UID ${app.uid}", color = TextDim, fontSize = 10.sp)
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Red.copy(alpha = 0.12f)
-                            ) {
-                                Text(
-                                    "${app.cnt} blocked",
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                    color = Red, fontSize = 11.sp, fontWeight = FontWeight.SemiBold
-                                )
-                            }
                         }
-                        HorizontalDivider(color = Surface2.copy(alpha = 0.3f))
+                    }
+                } else {
+                    LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp)) {
+                        items(topApps, key = { it.uid }) { app ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(8.dp).clip(CircleShape).background(Red)
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        app.appLabel.ifBlank { app.packageName },
+                                        color = TextPrimary, fontWeight = FontWeight.Medium,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text("UID ${app.uid}", color = TextDim, fontSize = 10.sp)
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Red.copy(alpha = 0.12f)
+                                ) {
+                                    Text(
+                                        "${app.cnt} blocked",
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        color = Red, fontSize = 11.sp, fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                            HorizontalDivider(color = Surface2.copy(alpha = 0.3f))
+                        }
                     }
                 }
             }
         }
+    }
+
+    if (showClearLogsDialog) {
+        ConfirmDestructiveDialog(
+            title = "Clear connection log?",
+            body = "This removes the local firewall connection history. Active firewall rules and protection settings stay unchanged.",
+            confirmLabel = "Clear log",
+            onConfirm = { viewModel.clearLogs() },
+            onDismiss = { showClearLogsDialog = false },
+        )
     }
 }
 

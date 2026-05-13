@@ -38,6 +38,7 @@ import com.hostshield.data.model.UserRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
+import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.GeoIpLookup
@@ -287,6 +288,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     // Multi-select state
     var multiSelectMode by remember { mutableStateOf(false) }
     var selectedHostnames by remember { mutableStateOf(setOf<String>()) }
+    var showClearLogsDialog by remember { mutableStateOf(false) }
 
     // Query type filter
     var queryTypeFilter by remember { mutableStateOf<String?>(null) }
@@ -353,8 +355,15 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                     tint = if (multiSelectMode) Teal else TextDim
                 )
             }
-            IconButton(onClick = { viewModel.clearLogs() }) {
-                Icon(Icons.Filled.DeleteSweep, "Clear", tint = TextDim)
+            IconButton(
+                onClick = { showClearLogsDialog = true },
+                enabled = logs.isNotEmpty()
+            ) {
+                Icon(
+                    Icons.Filled.DeleteSweep,
+                    "Clear DNS logs",
+                    tint = if (logs.isNotEmpty()) TextDim else TextDim.copy(alpha = 0.35f)
+                )
             }
         }
 
@@ -560,6 +569,16 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                 geoIpLookup = viewModel.geoIpLookup
             )
         }
+    }
+
+    if (showClearLogsDialog) {
+        ConfirmDestructiveDialog(
+            title = "Clear DNS logs?",
+            body = "This removes the local DNS query history used by this screen. Rules, sources, and blocking settings stay unchanged.",
+            confirmLabel = "Clear logs",
+            onConfirm = { viewModel.clearLogs() },
+            onDismiss = { showClearLogsDialog = false },
+        )
     }
 }
 
