@@ -533,9 +533,20 @@ class DnsVpnService : VpnService() {
             val builder = Builder()
                 .setSession("HostShield")
                 .setMtu(VPN_MTU)
-                // IPv4 + IPv6 dual-stack
-                .addAddress(VPN_ADDRESS, 24)
-                .addAddress(VPN_ADDRESS6, 120)
+            // IPv4 + IPv6 dual-stack. Some OEM builds reject the IPv6 ULA
+            // address on `addAddress` — skip it gracefully and continue v4-only
+            // so the VPN still establishes.
+            try {
+                builder.addAddress(VPN_ADDRESS, 24)
+            } catch (e: IllegalArgumentException) {
+                Log.e(TAG, "addAddress(IPv4) rejected: ${e.message}")
+                stopVpn(); return
+            }
+            try {
+                builder.addAddress(VPN_ADDRESS6, 120)
+            } catch (e: IllegalArgumentException) {
+                Log.w(TAG, "addAddress(IPv6) rejected by OEM, continuing v4-only: ${e.message}")
+            }
 
             // Virtual DNS with RFC 5737 prefix fallback.
             // Try each TEST-NET prefix until one doesn't conflict with active routes.
@@ -1697,7 +1708,17 @@ class DnsVpnService : VpnService() {
             val buf = ByteArray(1500); val rp = DatagramPacket(buf, buf.size)
             try {
                 sock.receive(rp)
-                val respBytes = buf.copyOf(rp.length)
+                var respBytes = buf.copyOf(rp.length)
+
+                // RFC 7766 §6.2: when the UDP response has the TC (truncated) bit
+                // set, retry the same query over TCP and substitute the response.
+                // Many large DNSSEC RRSIG / TXT records can't fit in the 1500-byte
+                // UDP buffer.
+                if (respBytes.size >= 3 && (respBytes[2].toInt() and 0x02) != 0) {
+                    val tcpResp = forwardOverTcp(dns, primary)
+                    if (tcpResp != null) respBytes = tcpResp
+                }
+
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
 
                 val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, primary)
@@ -1713,6 +1734,35 @@ class DnsVpnService : VpnService() {
         } catch (_: Exception) {
             // v5.0: Serve-stale fallback — return expired cache entry if upstream completely fails
             serveStaleV4(dns, domain, orig, ihl)
+        } finally {
+            try { sock.close() } catch (_: Exception) { }
+        }
+    }
+
+    /**
+     * RFC 7766 TCP DNS fallback: 2-byte length prefix + DNS message, both ways.
+     * Used when an upstream UDP response has TC=1. Returns null on failure so
+     * the caller keeps the original truncated UDP response (which is still a
+     * legitimate, parseable answer — just incomplete).
+     */
+    private fun forwardOverTcp(dns: ByteArray, upstream: String): ByteArray? {
+        val sock = java.net.Socket()
+        try {
+            protect(sock)
+            sock.connect(InetSocketAddress(InetAddress.getByName(upstream), DNS_PORT), 3000)
+            sock.soTimeout = 4000
+            val out = java.io.DataOutputStream(sock.getOutputStream())
+            val input = java.io.DataInputStream(sock.getInputStream())
+            out.writeShort(dns.size)
+            out.write(dns)
+            out.flush()
+            val respLen = input.readUnsignedShort()
+            if (respLen < 12 || respLen > 65535) return null
+            val resp = ByteArray(respLen)
+            input.readFully(resp)
+            return resp
+        } catch (_: Exception) {
+            return null
         } finally {
             try { sock.close() } catch (_: Exception) { }
         }

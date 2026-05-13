@@ -140,11 +140,18 @@ class AutomationReceiver : BroadcastReceiver() {
                     ACTION_PAUSE -> {
                         val durationMinutes = intent.getIntExtra("duration_minutes", 5)
                             .coerceIn(1, 1440) // clamp: 1 min to 24 hours
-                        disable(context)
-                        Log.i(TAG, "VPN paused for ${durationMinutes}m via automation (caller=$callerPkg)")
-                        delay(durationMinutes * 60_000L)
-                        enable(context)
-                        Log.i(TAG, "VPN resumed after ${durationMinutes}m pause (caller=$callerPkg)")
+                        // duration_minutes == 0 (per README) → resume immediately
+                        if (intent.getIntExtra("duration_minutes", -1) == 0) {
+                            PauseResumeWorker.cancel(context)
+                            enable(context)
+                            Log.i(TAG, "VPN resumed via PAUSE 0 (caller=$callerPkg)")
+                        } else {
+                            disable(context)
+                            // BroadcastReceiver.goAsync() is killed after ~10s, so we cannot
+                            // sleep here. Schedule WorkManager resume — survives Doze.
+                            PauseResumeWorker.schedule(context, durationMinutes)
+                            Log.i(TAG, "VPN paused for ${durationMinutes}m via automation (caller=$callerPkg)")
+                        }
                     }
                     ACTION_STATUS -> sendStatus(context)
                 }

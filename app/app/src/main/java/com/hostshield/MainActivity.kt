@@ -177,9 +177,22 @@ class MainActivity : ComponentActivity() {
                         OnboardingScreen(
                             isRootAvailable = rootAvail,
                             privateDnsStatus = privateDnsDetector.detect(),
-                            onComplete = { method, autoEnable ->
+                            onComplete = { method, autoEnable, dnsChoice ->
                                 CoroutineScope(Dispatchers.Main).launch {
                                     prefs.setBlockMethod(method)
+                                    // Persist the user's onboarding DNS choice so the
+                                    // protection mode that starts in `if (autoEnable)`
+                                    // actually uses the chosen upstream.
+                                    val dnsServers = when (dnsChoice) {
+                                        com.hostshield.ui.screens.onboarding.OnboardingDns.CLOUDFLARE -> "1.1.1.1,1.0.0.1"
+                                        com.hostshield.ui.screens.onboarding.OnboardingDns.GOOGLE -> "8.8.8.8,8.8.4.4"
+                                        com.hostshield.ui.screens.onboarding.OnboardingDns.QUAD9 -> "9.9.9.9,149.112.112.112"
+                                        com.hostshield.ui.screens.onboarding.OnboardingDns.ADGUARD -> "94.140.14.14,94.140.15.15"
+                                        com.hostshield.ui.screens.onboarding.OnboardingDns.DEFAULT -> ""
+                                    }
+                                    if (dnsServers.isNotEmpty()) {
+                                        prefs.setCustomUpstreamDns(dnsServers)
+                                    }
                                     if (autoEnable) prefs.setEnabled(true)
                                     prefs.setFirstLaunch(false)
                                 }

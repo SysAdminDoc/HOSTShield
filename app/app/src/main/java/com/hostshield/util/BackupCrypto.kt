@@ -22,11 +22,14 @@ class BackupCrypto private constructor() {
         private const val SALT_LENGTH = 16
         private const val IV_LENGTH = 12
         private const val KEY_LENGTH_BITS = 256
-        private const val PBKDF2_ITERATIONS = 100_000
+        // OWASP 2023 PBKDF2-HMAC-SHA256 baseline.
+        private const val PBKDF2_ITERATIONS = 600_000
         private const val GCM_TAG_BITS = 128
+        private const val GCM_TAG_BYTES = GCM_TAG_BITS / 8
 
         // magic(4) + version(1) + salt(16) + iv(12) = 33 bytes
         private const val HEADER_SIZE = 4 + 1 + SALT_LENGTH + IV_LENGTH
+        private const val MIN_PAYLOAD_SIZE = HEADER_SIZE + GCM_TAG_BYTES
 
         /**
          * Encrypt plaintext bytes with a passphrase-derived AES-256-GCM key.
@@ -61,7 +64,7 @@ class BackupCrypto private constructor() {
          * @throws javax.crypto.AEADBadTagException if the passphrase is wrong or data is corrupt.
          */
         fun decrypt(encrypted: ByteArray, passphrase: String): ByteArray {
-            require(encrypted.size > HEADER_SIZE) {
+            require(encrypted.size >= MIN_PAYLOAD_SIZE) {
                 "Data too short to be an encrypted HostShield backup"
             }
 
@@ -113,13 +116,15 @@ class BackupCrypto private constructor() {
 
         private fun deriveKey(passphrase: String, salt: ByteArray): SecretKeySpec {
             val spec = PBEKeySpec(passphrase.toCharArray(), salt, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
-            try {
-                val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-                val keyBytes = factory.generateSecret(spec).encoded
-                return SecretKeySpec(keyBytes, "AES")
+            val keyBytes = try {
+                SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+                    .generateSecret(spec).encoded
             } finally {
                 spec.clearPassword()
             }
+            val keySpec = SecretKeySpec(keyBytes, "AES")
+            java.util.Arrays.fill(keyBytes, 0)
+            return keySpec
         }
     }
 }

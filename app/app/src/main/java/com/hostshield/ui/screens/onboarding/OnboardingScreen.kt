@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,17 +33,27 @@ import com.hostshield.util.PrivateDnsDetector
 
 // HostShield v6.1 - Premium Onboarding (6-screen progressive flow, Roadmap #32)
 
+/**
+ * Identifier for the DNS choice made on the onboarding DNS page. The actual
+ * upstream IPs are mapped from this id by [DnsConfigPage]. Persisted via the
+ * `onComplete` callback so the protection mode that starts immediately after
+ * onboarding actually uses the chosen resolver.
+ */
+enum class OnboardingDns { DEFAULT, CLOUDFLARE, GOOGLE, QUAD9, ADGUARD }
+
 @Composable
 fun OnboardingScreen(
     isRootAvailable: Boolean,
     privateDnsStatus: PrivateDnsDetector.PrivateDnsStatus? = null,
-    onComplete: (BlockMethod, Boolean) -> Unit,
+    onComplete: (BlockMethod, Boolean, OnboardingDns) -> Unit,
     onRequestVpnPermission: ((Boolean) -> Unit) -> Unit = {}
 ) {
-    var page by remember { mutableIntStateOf(0) }
-    var selectedMethod by remember {
+    var page by rememberSaveable { mutableIntStateOf(0) }
+    var selectedMethod by rememberSaveable {
         mutableStateOf(if (isRootAvailable) BlockMethod.ROOT_HOSTS else BlockMethod.VPN)
     }
+    // Default to Cloudflare — matches the "(recommended)" tag in DnsConfigPage.
+    var selectedDnsIdx by rememberSaveable { mutableStateOf(OnboardingDns.CLOUDFLARE) }
     val hasPrivateDnsIssue = privateDnsStatus?.bypassesVpn == true && selectedMethod == BlockMethod.VPN
     // Pages: Welcome(0), Method(1), Features(2), DnsConfig(3), [PrivateDns(4)], Ready(last)
     val totalPages = if (hasPrivateDnsIssue) 6 else 5
@@ -69,9 +80,11 @@ fun OnboardingScreen(
                     onNext = { page = 2 }
                 )
                 2 -> FeaturesOverviewPage(onNext = { page = 3 })
-                3 -> DnsConfigPage(onNext = {
-                    page = if (hasPrivateDnsIssue) 4 else totalPages - 1
-                })
+                3 -> DnsConfigPage(
+                    selectedDns = selectedDnsIdx,
+                    onSelectDns = { selectedDnsIdx = it },
+                    onNext = { page = if (hasPrivateDnsIssue) 4 else totalPages - 1 }
+                )
                 4 -> if (hasPrivateDnsIssue) {
                     PrivateDnsWarningPage(
                         status = privateDnsStatus!!,
@@ -80,15 +93,15 @@ fun OnboardingScreen(
                 } else {
                     ReadyPage(
                         method = selectedMethod,
-                        onActivate = { onComplete(selectedMethod, true) },
-                        onSkip = { onComplete(selectedMethod, false) },
+                        onActivate = { onComplete(selectedMethod, true, selectedDnsIdx) },
+                        onSkip = { onComplete(selectedMethod, false, selectedDnsIdx) },
                         onRequestVpnPermission = onRequestVpnPermission
                     )
                 }
                 else -> ReadyPage(
                     method = selectedMethod,
-                    onActivate = { onComplete(selectedMethod, true) },
-                    onSkip = { onComplete(selectedMethod, false) },
+                    onActivate = { onComplete(selectedMethod, true, selectedDnsIdx) },
+                    onSkip = { onComplete(selectedMethod, false, selectedDnsIdx) },
                     onRequestVpnPermission = onRequestVpnPermission
                 )
             }
@@ -501,17 +514,21 @@ private fun FeaturesOverviewPage(onNext: () -> Unit) {
 // ── Page 4: DNS Configuration (new in v6.1) ─────────────────
 
 @Composable
-private fun DnsConfigPage(onNext: () -> Unit) {
+private fun DnsConfigPage(
+    selectedDns: OnboardingDns,
+    onSelectDns: (OnboardingDns) -> Unit,
+    onNext: () -> Unit,
+) {
+    data class DnsOption(val id: OnboardingDns, val name: String, val desc: String)
     val dnsOptions = remember {
         listOf(
-            Triple("Default (ISP)", "Use your network's default DNS resolver", false),
-            Triple("Cloudflare", "1.1.1.1 — Fast, privacy-focused (recommended)", true),
-            Triple("Google", "8.8.8.8 — Reliable, global coverage", false),
-            Triple("Quad9", "9.9.9.9 — Security-focused, blocks malware", false),
-            Triple("AdGuard", "94.140.14.14 — Additional ad blocking at DNS level", false)
+            DnsOption(OnboardingDns.DEFAULT, "Default (ISP)", "Use your network's default DNS resolver"),
+            DnsOption(OnboardingDns.CLOUDFLARE, "Cloudflare", "1.1.1.1 — Fast, privacy-focused (recommended)"),
+            DnsOption(OnboardingDns.GOOGLE, "Google", "8.8.8.8 — Reliable, global coverage"),
+            DnsOption(OnboardingDns.QUAD9, "Quad9", "9.9.9.9 — Security-focused, blocks malware"),
+            DnsOption(OnboardingDns.ADGUARD, "AdGuard", "94.140.14.14 — Additional ad blocking at DNS level"),
         )
     }
-    var selectedDns by remember { mutableIntStateOf(1) } // Default to Cloudflare
 
     Column(
         modifier = Modifier
@@ -551,8 +568,8 @@ private fun DnsConfigPage(onNext: () -> Unit) {
         Spacer(Modifier.height(28.dp))
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            dnsOptions.forEachIndexed { idx, (name, desc, _) ->
-                val isSelected = idx == selectedDns
+            dnsOptions.forEach { option ->
+                val isSelected = option.id == selectedDns
                 val borderColor by animateColorAsState(
                     targetValue = if (isSelected) Teal else Surface3,
                     label = "dnsBorder"
@@ -564,13 +581,13 @@ private fun DnsConfigPage(onNext: () -> Unit) {
                         .clip(RoundedCornerShape(12.dp))
                         .border(1.dp, borderColor, RoundedCornerShape(12.dp))
                         .background(if (isSelected) Teal.copy(alpha = 0.08f) else Color.Transparent)
-                        .clickable { selectedDns = idx }
+                        .clickable { onSelectDns(option.id) }
                         .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
                         selected = isSelected,
-                        onClick = { selectedDns = idx },
+                        onClick = { onSelectDns(option.id) },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = Teal,
                             unselectedColor = Surface3
@@ -579,13 +596,13 @@ private fun DnsConfigPage(onNext: () -> Unit) {
                     Spacer(Modifier.width(8.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            name,
+                            option.name,
                             color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f),
                             fontSize = 14.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                         )
                         Text(
-                            desc,
+                            option.desc,
                             color = Color.White.copy(alpha = 0.4f),
                             fontSize = 11.sp
                         )

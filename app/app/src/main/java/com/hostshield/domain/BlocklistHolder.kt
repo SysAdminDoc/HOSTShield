@@ -2,9 +2,7 @@ package com.hostshield.domain
 
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
-import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -41,26 +39,52 @@ class BlocklistHolder @Inject constructor() {
         var wildcardAllow = false
     }
 
-    @Volatile private var root = TrieNode()
-    private val _domainCount = AtomicInteger(0)
-    val domainCount: Int get() = _domainCount.get()
-    @Volatile var wildcardRules: List<UserRule> = emptyList(); private set
-    @Volatile private var regexBlockRules: List<Regex> = emptyList()
-    @Volatile private var regexAllowRules: List<Regex> = emptyList()
-    @Volatile var blockedIps: Set<String> = emptySet(); private set
+    /**
+     * Immutable snapshot of the blocklist state. The single volatile [snapshot]
+     * reference is atomically swapped on every [update] so readers either see
+     * the entire old state or the entire new state — never a torn mix.
+     */
+    private class Snapshot(
+        val root: TrieNode,
+        val exactBlockSet: Set<String>,
+        val wildcardRules: List<UserRule>,
+        val regexBlockRules: List<Regex>,
+        val regexAllowRules: List<Regex>,
+        val blockedIps: Set<String>,
+        val domainCount: Int,
+    ) {
+        companion object {
+            val EMPTY = Snapshot(
+                root = TrieNode(),
+                exactBlockSet = emptySet(),
+                wildcardRules = emptyList(),
+                regexBlockRules = emptyList(),
+                regexAllowRules = emptyList(),
+                blockedIps = emptySet(),
+                domainCount = 0,
+            )
+        }
+    }
 
-    // v5.0: Hash set fast path for O(1) exact-match lookups.
-    // Contains all exact-match blocked domains (no wildcards/regex).
-    // Checked BEFORE the trie — covers ~90% of lookups.
-    // Uses ConcurrentHashMap.newKeySet() for thread-safe mutation by addDomain/removeDomain.
-    @Volatile private var exactBlockSet: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    @Volatile private var snapshot: Snapshot = Snapshot.EMPTY
 
-    // v5.0: Filter decision LRU cache.
-    // Caches the result of isBlocked() for hot domains to avoid repeated
-    // trie/hash/regex lookups. ConcurrentHashMap for thread safety.
-    // Invalidated on every update() call.
-    private val decisionCache = ConcurrentHashMap<String, Boolean>(4096)
+    val domainCount: Int get() = snapshot.domainCount
+    val wildcardRules: List<UserRule> get() = snapshot.wildcardRules
+    val blockedIps: Set<String> get() = snapshot.blockedIps
+
+    /**
+     * Filter decision cache: bounded access-ordered LRU. Wrapped in a
+     * synchronized map because Compose/UI readers and the VPN packet loop
+     * mutate it concurrently. Invalidated on every [update].
+     */
     private val decisionCacheMaxSize = 8192
+    private val decisionCache: MutableMap<String, Boolean> =
+        java.util.Collections.synchronizedMap(
+            object : LinkedHashMap<String, Boolean>(2048, 0.75f, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Boolean>?): Boolean =
+                    size > decisionCacheMaxSize
+            }
+        )
 
     // DoH canary and bypass domains — always blocked to prevent DNS filter bypass.
     // use-application-dns.net: Firefox checks this; NXDOMAIN disables Firefox DoH.
@@ -176,9 +200,7 @@ class BlocklistHolder @Inject constructor() {
         ipBlocks: Set<String> = emptySet()
     ) {
         val newRoot = TrieNode()
-
-        // v5.0: Build thread-safe set for O(1) exact-match fast path
-        val newExactSet: MutableSet<String> = ConcurrentHashMap.newKeySet(newDomains.size + dohBypassDomains.size)
+        val newExactSet: MutableSet<String> = HashSet(newDomains.size + dohBypassDomains.size)
 
         for (domain in newDomains) {
             val lower = domain.lowercase()
@@ -223,42 +245,76 @@ class BlocklistHolder @Inject constructor() {
             } catch (_: Exception) { /* skip invalid regex */ }
         }
 
-        // Atomic swap — volatile write ensures visibility to reader threads
-        _domainCount.set(newDomains.size + dohBypassDomains.size)
-        wildcardRules = wildcards
-        regexBlockRules = newRegexBlock
-        regexAllowRules = newRegexAllow
-        blockedIps = ipBlocks
-        exactBlockSet = newExactSet
-        root = newRoot
+        // Atomic single-reference swap. Readers either see fully-built newSnapshot
+        // or the previous snapshot — never a torn view of root vs exactBlockSet.
+        snapshot = Snapshot(
+            root = newRoot,
+            exactBlockSet = newExactSet,
+            wildcardRules = wildcards,
+            regexBlockRules = newRegexBlock,
+            regexAllowRules = newRegexAllow,
+            blockedIps = ipBlocks,
+            domainCount = newDomains.size + dohBypassDomains.size,
+        )
 
-        // Invalidate filter decision cache — blocklist changed
         decisionCache.clear()
     }
 
     fun clear() {
-        root = TrieNode()
-        _domainCount.set(0)
-        wildcardRules = emptyList()
-        exactBlockSet = ConcurrentHashMap.newKeySet()
+        snapshot = Snapshot.EMPTY
         decisionCache.clear()
     }
 
-    fun getBlockedCount(): Int = _domainCount.get()
+    fun getBlockedCount(): Int = snapshot.domainCount
 
+    @Synchronized
     fun addDomain(hostname: String) {
         val h = hostname.lowercase()
-        insertDomain(root, h, terminal = true)
-        exactBlockSet.add(h)
-        _domainCount.incrementAndGet()
+        val current = snapshot
+        if (h in current.exactBlockSet) {
+            // Already present — keep counts honest and skip work.
+            decisionCache.remove(h)
+            return
+        }
+        // Mutate copies, then swap atomically.
+        val newRoot = current.root // trie mutation is structural-only; readers see new terminal flag through volatile snapshot swap below
+        insertDomain(newRoot, h, terminal = true)
+        val newSet = HashSet(current.exactBlockSet).apply { add(h) }
+        snapshot = Snapshot(
+            root = newRoot,
+            exactBlockSet = newSet,
+            wildcardRules = current.wildcardRules,
+            regexBlockRules = current.regexBlockRules,
+            regexAllowRules = current.regexAllowRules,
+            blockedIps = current.blockedIps,
+            domainCount = current.domainCount + 1,
+        )
         decisionCache.remove(h)
     }
 
+    @Synchronized
     fun removeDomain(hostname: String) {
         val h = hostname.lowercase()
-        removeDomainFromTrie(root, h)
-        exactBlockSet.remove(h)
-        _domainCount.decrementAndGet()
+        val current = snapshot
+        val wasPresent = h in current.exactBlockSet ||
+            removeDomainFromTrie(current.root, h)
+        if (!wasPresent) {
+            // Don't drop the counter for domains we never had.
+            decisionCache.remove(h)
+            return
+        }
+        // If the entry came from exactBlockSet, also clear the trie terminal.
+        if (h in current.exactBlockSet) removeDomainFromTrie(current.root, h)
+        val newSet = HashSet(current.exactBlockSet).apply { remove(h) }
+        snapshot = Snapshot(
+            root = current.root,
+            exactBlockSet = newSet,
+            wildcardRules = current.wildcardRules,
+            regexBlockRules = current.regexBlockRules,
+            regexAllowRules = current.regexAllowRules,
+            blockedIps = current.blockedIps,
+            domainCount = (current.domainCount - 1).coerceAtLeast(0),
+        )
         decisionCache.remove(h)
     }
 
@@ -272,36 +328,28 @@ class BlocklistHolder @Inject constructor() {
     fun isBlocked(hostname: String): Boolean {
         val lower = hostname.lowercase()
 
-        // L1: Filter decision cache — O(1) for hot domains
-        val cached = decisionCache[lower]
-        if (cached != null) return cached
+        // L1: Filter decision LRU cache — O(1) for hot domains. LinkedHashMap in
+        // access-order auto-evicts the LRU entry on overflow (removeEldestEntry).
+        decisionCache[lower]?.let { return it }
 
-        val result = isBlockedInternal(lower)
-
-        // Cache the decision (bounded size, evict randomly on overflow)
-        if (decisionCache.size >= decisionCacheMaxSize) {
-            synchronized(decisionCache) {
-                // Double-check under lock to avoid redundant eviction
-                if (decisionCache.size >= decisionCacheMaxSize) {
-                    val keys = decisionCache.keys().toList().take(decisionCacheMaxSize / 2)
-                    keys.forEach { decisionCache.remove(it) }
-                }
-            }
-        }
+        // Snapshot once so we evaluate against a consistent view across the
+        // entire decision (trie + set + regex). A concurrent update() can land
+        // mid-evaluation and atomically swap `snapshot`, but the local copy is
+        // immutable from this thread's perspective.
+        val snap = snapshot
+        val result = isBlockedInternal(lower, snap)
         decisionCache[lower] = result
-
         return result
     }
 
     /** Check if a resolved IP address is in the IP blocklist. */
-    fun isIpBlocked(ip: String): Boolean = ip in blockedIps
+    fun isIpBlocked(ip: String): Boolean = ip in snapshot.blockedIps
 
-    private fun isBlockedInternal(lower: String): Boolean {
-        // Trie walk (shared by both exact-match fast path and wildcard matching).
-        // Traverses once to gather all signals: wildcard allow, wildcard block,
-        // and terminal (exact) match.
+    private fun isBlockedInternal(lower: String, snap: Snapshot): Boolean {
+        // Trie walk over a stable snapshot — gathers wildcard allow/block and
+        // exact-match signal in one traversal.
         val labels = lower.split('.').reversed()
-        var node = root
+        var node = snap.root
         var wildcardBlocked = false
         var wildcardAllowed = false
         var depth = 0
@@ -314,30 +362,24 @@ class BlocklistHolder @Inject constructor() {
             depth++
         }
 
-        // Wildcard allow takes absolute priority
         if (wildcardAllowed) return false
 
-        // Determine if domain is blocked by any mechanism
-        val exactBlocked = lower in exactBlockSet
+        val exactBlocked = lower in snap.exactBlockSet
         val trieExact = depth == labels.size && node.terminal
         val blocked = exactBlocked || trieExact || wildcardBlocked
 
         if (blocked) {
-            // Regex allow rules can override any block
-            if (regexAllowRules.any { it.containsMatchIn(lower) }) return false
+            if (snap.regexAllowRules.any { it.containsMatchIn(lower) }) return false
             return true
         }
 
-        // Not blocked by blocklist or trie — check regex rules
-        if (regexBlockRules.any { it.containsMatchIn(lower) }) {
-            // Even regex blocks can be overridden by regex allows
-            if (regexAllowRules.any { it.containsMatchIn(lower) }) return false
+        if (snap.regexBlockRules.any { it.containsMatchIn(lower) }) {
+            if (snap.regexAllowRules.any { it.containsMatchIn(lower) }) return false
             return true
         }
 
-        // www. prefix fallback
         if (lower.startsWith("www.")) {
-            return isBlockedInternal(lower.removePrefix("www."))
+            return isBlockedInternal(lower.removePrefix("www."), snap)
         }
 
         return false
@@ -359,12 +401,19 @@ class BlocklistHolder @Inject constructor() {
         if (wildcardAllow) node.wildcardAllow = true
     }
 
-    private fun removeDomainFromTrie(trieRoot: TrieNode, domain: String) {
+    /**
+     * Walks the trie and clears the [TrieNode.terminal] flag for [domain].
+     * Returns true if the domain was actually present (terminal was set).
+     * Used by [removeDomain] to decide whether to decrement the domain count.
+     */
+    private fun removeDomainFromTrie(trieRoot: TrieNode, domain: String): Boolean {
         val labels = domain.split('.').reversed()
         var node = trieRoot
         for (label in labels) {
-            node = node.children[label] ?: return
+            node = node.children[label] ?: return false
         }
+        val was = node.terminal
         node.terminal = false
+        return was
     }
 }

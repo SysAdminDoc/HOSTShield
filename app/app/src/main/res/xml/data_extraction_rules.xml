@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Disable cloud backup of all app data to prevent leaking
-     blocklists, DNS logs, WireGuard keys, and credentials. -->
+<!--
+    Cloud backup: fully disabled. Avoids leaking blocklists, DNS logs,
+    WireGuard keys, and credentials to Google Drive.
+
+    Device transfer: include user-visible state (DataStore prefs, Room DB),
+    BUT exclude Android Keystore-wrapped EncryptedSharedPreferences.
+    Their value ciphertexts are tied to the source device's hardware-backed
+    master key — copying them to a new device produces unrecoverable bytes
+    and locks the user out of WireGuard / WebDAV / parental PIN until they
+    re-enter the credentials. Forcing re-entry is the safer default.
+-->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" />
@@ -8,5 +17,7 @@
     <device-transfer>
         <include domain="sharedpref" path="." />
         <include domain="database" path="." />
+        <exclude domain="sharedpref" path="hostshield_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="hostshield_secure_prefs" />
     </device-transfer>
 </data-extraction-rules>

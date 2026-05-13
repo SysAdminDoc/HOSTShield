@@ -562,8 +562,17 @@ class SettingsViewModel @Inject constructor(
 
     fun dismissUpdateMessage() { _uiState.update { it.copy(updateMessage = null) } }
 
-    /** Silent auto-check: only shows result if an update is available (no error/no "up to date"). */
+    /**
+     * Silent auto-check: only shows result if an update is available.
+     * Throttled to once per `AUTO_CHECK_INTERVAL_MS` per process so navigating
+     * back into Settings doesn't hit GitHub on every open. Resets on process
+     * restart, which is a reasonable acceptance window for a side-loaded app.
+     */
     private fun autoCheckForUpdate() {
+        val now = System.currentTimeMillis()
+        val last = lastAutoCheckMs.get()
+        if (now - last < AUTO_CHECK_INTERVAL_MS) return
+        if (!lastAutoCheckMs.compareAndSet(last, now)) return
         viewModelScope.launch(Dispatchers.IO) {
             updateChecker.check().onSuccess { info ->
                 if (info.hasUpdate) {
@@ -579,8 +588,17 @@ class SettingsViewModel @Inject constructor(
                         )
                     }
                 }
+            }.onFailure {
+                // Roll back the throttle so a transient failure doesn't suppress
+                // the next legitimate check.
+                lastAutoCheckMs.compareAndSet(now, last)
             }
         }
+    }
+
+    companion object {
+        private const val AUTO_CHECK_INTERVAL_MS = 24L * 60L * 60L * 1000L
+        private val lastAutoCheckMs = java.util.concurrent.atomic.AtomicLong(0L)
     }
 
     // ── Stats CSV Export ──────────────────────────────────────

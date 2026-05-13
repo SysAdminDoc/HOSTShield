@@ -29,6 +29,15 @@ class DohResolver @Inject constructor() {
 
     companion object {
         private const val TAG = "DohResolver"
+
+        // RFC 8484 caps the wire-format response at 65535 bytes. Anything larger
+        // is malformed or hostile. We also reject responses smaller than the
+        // 12-byte DNS header to avoid handing partial messages to parsers.
+        private const val MAX_DOH_RESPONSE = 65535
+        private const val MIN_DNS_MESSAGE = 12
+        // After this many consecutive failures, a provider is demoted to the end
+        // of the failover order so we stop hitting a known-broken endpoint first.
+        private const val FAILURE_DEMOTE_THRESHOLD = 3
     }
 
     enum class Provider(val url: String, val hostname: String) {
@@ -94,9 +103,13 @@ class DohResolver @Inject constructor() {
 
     private val DNS_MESSAGE_TYPE = "application/dns-message".toMediaType()
 
-    // Failover order — rotated when a provider fails
-    private val failoverOrder = Provider.entries.toMutableList()
-    private val consecutiveFailures = AtomicInteger(0)
+    // Failover order — providers are demoted to the end of this list after
+    // [FAILURE_DEMOTE_THRESHOLD] consecutive failures, so we stop trying known-broken
+    // providers first.
+    private val failoverOrder = java.util.Collections.synchronizedList(
+        Provider.entries.toMutableList()
+    )
+    private val consecutiveFailures = java.util.concurrent.ConcurrentHashMap<Provider, AtomicInteger>()
 
     // Latency tracking — exponential moving average per provider
     private val latencyEma = java.util.concurrent.ConcurrentHashMap<Provider, Long>()
@@ -113,31 +126,44 @@ class DohResolver @Inject constructor() {
         dnsQuery: ByteArray,
         provider: Provider = Provider.CLOUDFLARE
     ): ByteArray? = withContext(Dispatchers.IO) {
-        // Smart DNS: if we have latency data, prefer the fastest provider
         val preferredProvider = getFastestProvider() ?: provider
 
-        // Try preferred provider first
         val result = doResolve(dnsQuery, preferredProvider, client)
         if (result != null) {
-            consecutiveFailures.set(0)
+            consecutiveFailures[preferredProvider]?.set(0)
             return@withContext result
         }
+        recordFailure(preferredProvider)
 
-        // Failover: try other providers ordered by latency (fastest first)
         Log.w(TAG, "${preferredProvider.name} failed, trying failover...")
-        val orderedFallbacks = failoverOrder.sortedBy { latencyEma[it] ?: Long.MAX_VALUE }
+        val orderedFallbacks = synchronized(failoverOrder) { failoverOrder.toList() }
+            .sortedBy { latencyEma[it] ?: Long.MAX_VALUE }
         for (fallback in orderedFallbacks) {
             if (fallback == preferredProvider) continue
             val fbResult = doResolve(dnsQuery, fallback, client)
             if (fbResult != null) {
+                consecutiveFailures[fallback]?.set(0)
                 Log.i(TAG, "Failover to ${fallback.name} succeeded")
                 return@withContext fbResult
             }
+            recordFailure(fallback)
         }
 
         // Fail closed — never downgrade to unpinned resolution
         Log.e(TAG, "All pinned DoH providers failed — refusing to downgrade to unpinned. DNS resolution failed.")
         null
+    }
+
+    private fun recordFailure(provider: Provider) {
+        val counter = consecutiveFailures.getOrPut(provider) { AtomicInteger(0) }
+        val n = counter.incrementAndGet()
+        if (n >= FAILURE_DEMOTE_THRESHOLD) {
+            synchronized(failoverOrder) {
+                if (failoverOrder.remove(provider)) failoverOrder.add(provider)
+            }
+            counter.set(0)
+            Log.w(TAG, "Demoted ${provider.name} to end of failover order")
+        }
     }
 
     /**
@@ -160,13 +186,35 @@ class DohResolver @Inject constructor() {
                 .addHeader("Accept", "application/dns-message")
                 .build()
 
-            val response = client.newCall(request).execute()
-            response.use { resp ->
-                if (resp.isSuccessful) resp.body?.bytes() else null
+            client.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) return@withContext null
+                readBoundedBody(resp)
             }
         } catch (e: Exception) {
             null
         }
+    }
+
+    /**
+     * Read at most [MAX_DOH_RESPONSE] bytes from a DoH response body. Refuses to
+     * load a multi-megabyte body into memory, which a hostile or misconfigured
+     * endpoint could use to OOM the VPN process.
+     */
+    private fun readBoundedBody(resp: okhttp3.Response): ByteArray? {
+        val body = resp.body ?: return null
+        val declared = body.contentLength()
+        if (declared > MAX_DOH_RESPONSE) {
+            Log.w(TAG, "DoH response too large: declared=$declared")
+            return null
+        }
+        val src = body.source()
+        val read = src.readByteArray((MAX_DOH_RESPONSE + 1).toLong())
+        if (read.size > MAX_DOH_RESPONSE) {
+            Log.w(TAG, "DoH response exceeded $MAX_DOH_RESPONSE-byte cap")
+            return null
+        }
+        if (read.size < MIN_DNS_MESSAGE) return null
+        return read
     }
 
     private fun doResolve(dnsQuery: ByteArray, provider: Provider, httpClient: OkHttpClient): ByteArray? {
@@ -178,19 +226,21 @@ class DohResolver @Inject constructor() {
                 .addHeader("Accept", "application/dns-message")
                 .build()
 
-            val response = httpClient.newCall(request).execute()
-            response.use { resp ->
-                if (resp.isSuccessful) {
-                    val bytes = resp.body?.bytes()
-                    if (bytes != null) {
-                        val elapsedMs = (System.nanoTime() - start) / 1_000_000
-                        updateLatency(provider, elapsedMs)
-                    }
-                    bytes
-                } else {
-                    null
+            httpClient.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) return@use null
+                val bytes = readBoundedBody(resp)
+                if (bytes != null) {
+                    val elapsedMs = (System.nanoTime() - start) / 1_000_000
+                    updateLatency(provider, elapsedMs)
                 }
+                bytes
             }
+        } catch (e: javax.net.ssl.SSLPeerUnverifiedException) {
+            // Pin failure — distinct from network errors. Log loudly so a cert
+            // rotation that breaks pinning is investigable from `logcat` rather
+            // than silently appearing as "all DoH providers failed".
+            Log.e(TAG, "Cert pin failure for ${provider.name}: ${e.message}")
+            null
         } catch (e: Exception) {
             Log.d(TAG, "${provider.name} error: ${e.javaClass.simpleName}: ${e.message}")
             null

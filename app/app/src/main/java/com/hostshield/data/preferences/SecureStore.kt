@@ -66,9 +66,13 @@ class SecureStore @Inject constructor(
         fun hashPin(rawPin: String): String {
             val salt = ByteArray(SALT_BYTES).also { SecureRandom().nextBytes(it) }
             val spec = PBEKeySpec(rawPin.toCharArray(), salt, ITERATIONS, KEY_LENGTH_BITS)
-            val hash = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
-                .generateSecret(spec)
-                .encoded
+            val hash = try {
+                SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
+                    .generateSecret(spec)
+                    .encoded
+            } finally {
+                spec.clearPassword()
+            }
             val saltB64 = Base64.encodeToString(salt, Base64.NO_WRAP)
             val hashB64 = Base64.encodeToString(hash, Base64.NO_WRAP)
             return "$saltB64:$hashB64"
@@ -76,17 +80,31 @@ class SecureStore @Inject constructor(
 
         /**
          * Verify a raw PIN against a stored `"salt:hash"` string produced by [hashPin].
+         * Constant-time comparison on decoded bytes (not Base64 strings, which can
+         * leak length differences). Returns false on any decode failure.
          */
         fun verifyPin(rawPin: String, stored: String): Boolean {
             if (!stored.contains(':')) return false
-            val (saltB64, expectedB64) = stored.split(':', limit = 2)
-            val salt = Base64.decode(saltB64, Base64.NO_WRAP)
+            val parts = stored.split(':', limit = 2)
+            if (parts.size != 2 || parts[0].isEmpty() || parts[1].isEmpty()) return false
+            val salt: ByteArray
+            val expected: ByteArray
+            try {
+                salt = Base64.decode(parts[0], Base64.NO_WRAP)
+                expected = Base64.decode(parts[1], Base64.NO_WRAP)
+            } catch (_: IllegalArgumentException) {
+                return false
+            }
+            if (salt.isEmpty() || expected.size * 8 != KEY_LENGTH_BITS) return false
             val spec = PBEKeySpec(rawPin.toCharArray(), salt, ITERATIONS, KEY_LENGTH_BITS)
-            val hash = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
-                .generateSecret(spec)
-                .encoded
-            val hashB64 = Base64.encodeToString(hash, Base64.NO_WRAP)
-            return MessageDigest.isEqual(hashB64.toByteArray(), expectedB64.toByteArray())
+            val hash = try {
+                SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
+                    .generateSecret(spec)
+                    .encoded
+            } finally {
+                spec.clearPassword()
+            }
+            return MessageDigest.isEqual(hash, expected)
         }
     }
 }
