@@ -76,7 +76,7 @@ fun ContentFilterScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
             Text("Content Filtering", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         }

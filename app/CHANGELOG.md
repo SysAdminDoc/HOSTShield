@@ -11,6 +11,7 @@
 - Added calmer loading, empty, warning, error, disabled, and selection states across home, sources, rules, stats, settings, and onboarding.
 - Added consistent confirmation dialogs for destructive actions: clearing DNS logs, connection logs, TLS fingerprints, crash reports, and deleting custom rules or sources.
 - Added an intentional empty state for Connection Log's top blocked apps tab.
+- Improved accessible names for warning banners, icon-only actions, DNS save controls, status dismiss buttons, and accent color swatches.
 
 ## Reliability
 

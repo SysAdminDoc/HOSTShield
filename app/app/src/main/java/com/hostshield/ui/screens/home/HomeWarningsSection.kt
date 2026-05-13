@@ -14,6 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,7 +66,11 @@ fun HomeWarningsSection(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .clickable {
+                .semantics {
+                    role = Role.Button
+                    contentDescription = "Private DNS is active. Open Network settings to turn it off."
+                }
+                .clickable(role = Role.Button) {
                     try { privateDnsSettingsIntent?.let { intent -> context.startActivity(intent) } }
                     catch (_: Exception) { }
                 }
@@ -96,7 +104,7 @@ fun HomeWarningsSection(
                     onClick = onDismissPrivateDns,
                     modifier = Modifier.size(24.dp)
                 ) {
-                    Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Filled.Close, "Dismiss Private DNS warning", tint = TextDim, modifier = Modifier.size(14.dp))
                 }
             }
         }
@@ -112,7 +120,11 @@ fun HomeWarningsSection(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .clickable { onRequestBatteryExemption() }
+                .semantics {
+                    role = Role.Button
+                    contentDescription = "Battery optimization may interrupt protection. Open battery exemption settings."
+                }
+                .clickable(role = Role.Button) { onRequestBatteryExemption() }
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
@@ -143,7 +155,7 @@ fun HomeWarningsSection(
                     onClick = onDismissBattery,
                     modifier = Modifier.size(24.dp)
                 ) {
-                    Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Filled.Close, "Dismiss battery optimization warning", tint = TextDim, modifier = Modifier.size(14.dp))
                 }
             }
         }
@@ -188,7 +200,7 @@ fun HomeWarningsSection(
                     onClick = onDismissPrivateSpace,
                     modifier = Modifier.size(24.dp)
                 ) {
-                    Icon(Icons.Filled.Close, null, tint = TextDim, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Filled.Close, "Dismiss Private Space warning", tint = TextDim, modifier = Modifier.size(14.dp))
                 }
             }
         }

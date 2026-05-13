@@ -23,6 +23,8 @@ discoverability, and on-device layout correctness.
   fingerprints, crash reports, and deleting custom rules or sources.
 - Added a deliberate empty state for Connection Log's top blocked apps view so
   the secondary monitoring surface no longer appears blank with no data.
+- Improved accessible names for prominent icon-only controls, warning banners,
+  status dismiss actions, DNS save affordances, and accent color swatches.
 
 ### Reliability
 - Fixed debug/release side-by-side installation by deriving the automation

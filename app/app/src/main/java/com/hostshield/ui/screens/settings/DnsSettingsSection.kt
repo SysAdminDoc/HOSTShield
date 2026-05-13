@@ -91,7 +91,7 @@ fun DnsSettingsSection(
                 trailingIcon = {
                     if (wgEndpoint != wireGuardEndpoint) {
                         IconButton(onClick = { onWireGuardEndpointChange(wgEndpoint) }) {
-                            Icon(Icons.Filled.Check, null, tint = Green, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Filled.Check, "Save WireGuard endpoint", tint = Green, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -114,7 +114,7 @@ fun DnsSettingsSection(
                 trailingIcon = {
                     if (wgDnsIp != wireGuardDnsIp) {
                         IconButton(onClick = { onWireGuardDnsIpChange(wgDnsIp) }) {
-                            Icon(Icons.Filled.Check, null, tint = Green, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Filled.Check, "Save WireGuard DNS IP", tint = Green, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -151,7 +151,7 @@ fun DnsSettingsSection(
             trailingIcon = {
                 if (customDns != customUpstreamDns) {
                     IconButton(onClick = { onCustomUpstreamDnsChange(customDns) }) {
-                        Icon(Icons.Filled.Check, null, tint = Green, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Check, "Save custom upstream DNS", tint = Green, modifier = Modifier.size(18.dp))
                     }
                 }
             }
