@@ -23,7 +23,7 @@ Each item lists `Impact (1–5) / Effort (1–5) / Risk` and a citation tag like
 ## Now — v6.5 / v6.6
 
 ### Stability & platform
-- **Android 16 always-on VPN reboot bug — detection + user-visible advisory.** Build a runtime check that detects the post-update VPN-stack corruption (no inbound traffic on always-on, lockdown engaged) and surfaces a "Restart device to recover VPN" banner with a one-tap reboot intent on rooted devices. `4 / 2 / Low` `[A1]`
+- [x] **Android 16 always-on VPN reboot bug — detection + user-visible advisory.** Runtime check detects the post-update VPN-stack corruption pattern (Android 16+, always-on, lockdown engaged, validated physical network, valid TUN fd, zero inbound packets after startup) and surfaces a "Restart device to recover VPN" banner with rooted one-tap restart. **DONE v6.5.2.** `4 / 2 / Low` `[A1]`
 - **Doze + App Standby resilience.** Audit every `WorkManager` and `JobScheduler` use; verify foreground-service category is `dataSync`/`connectedDevice` (not generic). Add `setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)` to blocklist refresh. Add a heartbeat assertion that the VPN tunnel is still alive every 60s and logs a structured event when the OS kills it. `4 / 2 / Low` `[A2]`
 - **Hot-reload blocklists with double-buffered trie.** Build new `BlocklistHolder` instance off-thread, atomic-swap reference, GC old. Eliminates the 1–2 s DNS pause currently experienced on large list updates. Proven pattern from RethinkDNS `RethinkBlocklistManager`. `5 / 3 / Low` `[A3]`
 - **TCP DNS fallback verification.** Existing TCP fallback path needs a regression test for IPv6 path-MTU truncation: when reply has TC=1 over UDP, retry over TCP within 200 ms. `4 / 2 / Low` `[A4]`

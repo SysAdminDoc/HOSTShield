@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hostshield.data.model.BlockMethod
+import com.hostshield.service.VpnRecoveryAdvisory
 import com.hostshield.ui.theme.*
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -35,6 +36,11 @@ fun HomeWarningsSection(
     batteryWarning: String?,
     onRequestBatteryExemption: () -> Unit,
     onDismissBattery: () -> Unit,
+    // Android 16 VPN stack recovery
+    vpnRecoveryAdvisory: VpnRecoveryAdvisory?,
+    canRestartDevice: Boolean,
+    onRestartDevice: () -> Unit,
+    onDismissVpnRecovery: () -> Unit,
     // Private Space
     privateSpaceWarning: String?,
     onDismissPrivateSpace: () -> Unit,
@@ -156,6 +162,81 @@ fun HomeWarningsSection(
                     modifier = Modifier.size(24.dp)
                 ) {
                     Icon(Icons.Filled.Close, "Dismiss battery optimization warning", tint = TextDim, modifier = Modifier.size(14.dp))
+                }
+            }
+        }
+    }
+
+    // Android 16 always-on lockdown recovery advisory
+    vpnRecoveryAdvisory?.let { advisory ->
+        Spacer(Modifier.height(8.dp))
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Red.copy(alpha = 0.09f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .semantics {
+                    contentDescription = "${advisory.title}. ${advisory.message}"
+                }
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(verticalAlignment = Alignment.Top) {
+                    Icon(
+                        Icons.Filled.RestartAlt,
+                        contentDescription = null,
+                        tint = Red,
+                        modifier = Modifier.size(17.dp).padding(top = 2.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            advisory.title,
+                            color = Red,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            if (canRestartDevice) {
+                                "HostShield is in always-on lockdown but has received no tunnel traffic. Restart now to recover the Android VPN stack."
+                            } else {
+                                "HostShield is in always-on lockdown but has received no tunnel traffic. Restart the device manually to recover the Android VPN stack."
+                            },
+                            color = Red.copy(alpha = 0.82f),
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
+                        )
+                    }
+                    IconButton(
+                        onClick = onDismissVpnRecovery,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Filled.Close, "Dismiss VPN recovery advisory", tint = TextDim, modifier = Modifier.size(14.dp))
+                    }
+                }
+                if (canRestartDevice) {
+                    Spacer(Modifier.height(10.dp))
+                    Surface(
+                        onClick = onRestartDevice,
+                        shape = RoundedCornerShape(8.dp),
+                        color = Red.copy(alpha = 0.18f),
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = "Restart device to recover the VPN stack"
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Filled.RestartAlt, null, tint = Red, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Restart device", color = Red, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
                 }
             }
         }

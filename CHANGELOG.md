@@ -3,6 +3,18 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.5.2] - 2026-05-14
+
+### Reliability
+- Added Android 16 always-on VPN recovery detection for the post-update
+  lockdown corruption pattern where the VPN is established but receives no
+  tunnel traffic despite a validated physical network.
+- Added a Home advisory banner that tells the user to restart the device and,
+  on rooted devices, exposes a one-tap restart action.
+- Added focused detector coverage so the advisory only appears for Android 16+
+  always-on lockdown sessions with a valid TUN fd, validated physical network,
+  two-minute observation window, and zero inbound packets.
+
 ## [v6.5.1] - 2026-05-13
 
 Premium product-polish pass focused on first-run trust, visual cohesion, action

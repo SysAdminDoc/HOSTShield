@@ -34,6 +34,7 @@ import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
+import com.hostshield.util.Android16VpnRecoveryDetector
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -48,6 +49,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentLinkedQueue
 import javax.inject.Inject
+import java.util.concurrent.atomic.AtomicLong
 
 // HostShield v4.0.0 - VPN DNS Blocking Service
 //
@@ -77,6 +79,12 @@ import javax.inject.Inject
 //   with TRANSPORT_VPN filtering to ignore the VPN's own network events.
 // - Watchdog alarm every 10 minutes restarts VPN if killed by OEM
 //   battery managers (Samsung Device Care, MIUI Security, etc.).
+
+data class VpnRecoveryAdvisory(
+    val title: String,
+    val message: String,
+    val detectedAtMillis: Long
+)
 
 @AndroidEntryPoint
 class DnsVpnService : VpnService() {
@@ -118,6 +126,15 @@ class DnsVpnService : VpnService() {
         /** Live blocked-query count for the current session. Read from QS tile / widgets. */
         @Volatile var currentBlockedCount: Int = 0
             private set
+
+        private val vpnRecoveryAdvisoryState =
+            kotlinx.coroutines.flow.MutableStateFlow<VpnRecoveryAdvisory?>(null)
+        val vpnRecoveryAdvisory: kotlinx.coroutines.flow.StateFlow<VpnRecoveryAdvisory?> =
+            vpnRecoveryAdvisoryState
+
+        fun dismissVpnRecoveryAdvisory() {
+            vpnRecoveryAdvisoryState.value = null
+        }
 
         // VPN interface
         private const val VPN_ADDRESS = "10.120.0.1"
@@ -289,8 +306,10 @@ class DnsVpnService : VpnService() {
     private val totalQueriesCount = java.util.concurrent.atomic.AtomicInteger(0)
     private val fdErrorCount = java.util.concurrent.atomic.AtomicInteger(0)
     private val rebuildCount = java.util.concurrent.atomic.AtomicInteger(0)
+    private val tunInboundPacketCount = AtomicLong(0L)
     private var vpnStartTime = 0L
     @Volatile private var stabilityFlushJob: Job? = null
+    @Volatile private var vpnRecoveryMonitorJob: Job? = null
 
     // Pause state: when paused, all queries are allowed (no blocking)
     @Volatile private var isPaused = false
@@ -417,6 +436,7 @@ class DnsVpnService : VpnService() {
     override fun onDestroy() {
         isRunning = false
         cancelWatchdog()
+        cancelVpnRecoveryMonitor()
         unregisterNetworkCallback()
         serviceScope.cancel()
         super.onDestroy()
@@ -432,6 +452,8 @@ class DnsVpnService : VpnService() {
             blockedCount.set(0)
             currentBlockedCount = 0
             allowedCount.set(0)
+            tunInboundPacketCount.set(0L)
+            vpnRecoveryAdvisoryState.value = null
 
             excludedApps = prefs.excludedApps.first()
             blockedApps = prefs.blockedApps.first()
@@ -624,6 +646,7 @@ class DnsVpnService : VpnService() {
             startStabilityFlusher()
             registerNetworkCallback()
             scheduleWatchdog()
+            startVpnRecoveryMonitor()
 
             // Captive portal handling
             serviceScope.launch {
@@ -657,6 +680,7 @@ class DnsVpnService : VpnService() {
         try { shutdownPipeWrite?.let { Os.close(it) } } catch (_: Exception) { }
         shutdownPipeRead = null; shutdownPipeWrite = null
         cancelWatchdog()
+        cancelVpnRecoveryMonitor()
         unregisterNetworkCallback()
         logFlushJob?.cancel(); logFlushJob = null
         stabilityFlushJob?.cancel(); stabilityFlushJob = null
@@ -842,6 +866,10 @@ class DnsVpnService : VpnService() {
                 if (pollFds[0].revents.toInt() and OsConstants.POLLIN != 0) {
                     val length = Os.read(vpnFd, packet, 0, packet.size)
                     if (length <= 0) continue
+                    tunInboundPacketCount.incrementAndGet()
+                    if (vpnRecoveryAdvisoryState.value != null) {
+                        vpnRecoveryAdvisoryState.value = null
+                    }
                     count++
 
                     val ipVer = (packet[0].toInt() and 0xF0) shr 4
@@ -2225,6 +2253,59 @@ class DnsVpnService : VpnService() {
             )
             if (pi != null) { am.cancel(pi); pi.cancel() }
         } catch (_: Exception) { }
+    }
+
+    private fun startVpnRecoveryMonitor() {
+        vpnRecoveryMonitorJob?.cancel()
+        vpnRecoveryMonitorJob = serviceScope.launch(Dispatchers.IO) {
+            while (isActive && isRunning) {
+                delay(30_000L)
+                evaluateVpnRecoveryAdvisory()
+            }
+        }
+    }
+
+    private fun cancelVpnRecoveryMonitor() {
+        vpnRecoveryMonitorJob?.cancel()
+        vpnRecoveryMonitorJob = null
+        vpnRecoveryAdvisoryState.value = null
+    }
+
+    private fun evaluateVpnRecoveryAdvisory() {
+        val snapshot = Android16VpnRecoveryDetector.Snapshot(
+            sdkInt = Build.VERSION.SDK_INT,
+            vpnRunning = isRunning,
+            alwaysOn = try { isAlwaysOn() } catch (_: Exception) { false },
+            lockdownEnabled = try { isLockdownEnabled() } catch (_: Exception) { false },
+            tunFdValid = vpnInterface?.fileDescriptor?.valid() == true,
+            hasValidatedPhysicalNetwork = hasValidatedPhysicalNetwork(),
+            elapsedSinceVpnStartMs = SystemClock.elapsedRealtime() - vpnEstablishedAt,
+            inboundPacketCount = tunInboundPacketCount.get()
+        )
+
+        if (Android16VpnRecoveryDetector.shouldShowRecoveryAdvisory(snapshot)) {
+            if (vpnRecoveryAdvisoryState.value == null) {
+                vpnRecoveryAdvisoryState.value = VpnRecoveryAdvisory(
+                    title = "Restart device to recover VPN",
+                    message = "Android 16 always-on lockdown is active, but HostShield has not received tunnel traffic since startup. This can happen after system updates; a device restart usually restores the VPN stack.",
+                    detectedAtMillis = System.currentTimeMillis()
+                )
+                Log.w(TAG, "Android 16 VPN recovery advisory raised: $snapshot")
+            }
+        } else if (snapshot.inboundPacketCount > 0L && vpnRecoveryAdvisoryState.value != null) {
+            vpnRecoveryAdvisoryState.value = null
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun hasValidatedPhysicalNetwork(): Boolean {
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return false
+        return cm.allNetworks.any { network ->
+            val caps = cm.getNetworkCapabilities(network) ?: return@any false
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) &&
+                !caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+        }
     }
 
     // ── Stats ────────────────────────────────────────────────
