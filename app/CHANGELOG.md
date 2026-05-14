@@ -1,3 +1,30 @@
+# HostShield v6.5.5
+
+**Release Date:** 2026-05-14
+**Version Code:** 63
+
+## Reliability
+
+- Added shared RFC 7766 TCP fallback handling for UDP DNS responses with the
+  `TC=1` truncation bit.
+- Wired IPv6 UDP forwarding through the same TCP retry path as IPv4 so
+  path-MTU-truncated AAAA/DNSSEC-sized responses are retried over TCP instead
+  of being returned incomplete.
+- Added JVM regression coverage that verifies a path-MTU-sized truncated UDP
+  response starts TCP retry within the 200 ms budget and preserves the UDP
+  response only when TCP retry fails.
+
+## Verification
+
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest --tests com.hostshield.service.DnsTcpFallbackTest`
+- `:app:assembleFullDebug`
+- Installed `app-full-debug.apk` on connected adb device and verified
+  `com.hostshield.debug` launches as v6.5.5 / versionCode 63 with no crash-log
+  hit.
+
+---
+
 # HostShield v6.5.4
 
 **Release Date:** 2026-05-14

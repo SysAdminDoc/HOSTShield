@@ -3,6 +3,16 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.5.5] - 2026-05-14
+
+### Reliability
+- Added shared TCP DNS fallback policy coverage for UDP responses with the
+  `TC=1` truncation bit, including an IPv6 path-MTU-sized regression that
+  verifies TCP retry starts within 200 ms.
+- Reused the shared fallback path for IPv4 primary, IPv4 secondary, and IPv6
+  UDP forwarding so truncated IPv6 DNS answers are retried over TCP instead of
+  being forwarded incomplete.
+
 ## [v6.5.4] - 2026-05-14
 
 ### Reliability

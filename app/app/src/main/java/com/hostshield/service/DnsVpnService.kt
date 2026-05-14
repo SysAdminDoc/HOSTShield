@@ -1751,10 +1751,7 @@ class DnsVpnService : VpnService() {
                 // set, retry the same query over TCP and substitute the response.
                 // Many large DNSSEC RRSIG / TXT records can't fit in the 1500-byte
                 // UDP buffer.
-                if (respBytes.size >= 3 && (respBytes[2].toInt() and 0x02) != 0) {
-                    val tcpResp = forwardOverTcp(dns, primary)
-                    if (tcpResp != null) respBytes = tcpResp
-                }
+                respBytes = retryTruncatedUdpOverTcp(dns, respBytes, primary)
 
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
 
@@ -1774,6 +1771,28 @@ class DnsVpnService : VpnService() {
         } finally {
             try { sock.close() } catch (_: Exception) { }
         }
+    }
+
+    private fun retryTruncatedUdpOverTcp(
+        dns: ByteArray,
+        udpResponse: ByteArray,
+        upstream: String
+    ): ByteArray {
+        val udpReceivedAtMs = DnsTcpFallback.monotonicNowMs()
+        val result = DnsTcpFallback.resolveTruncatedUdpResponse(
+            udpResponse = udpResponse,
+            udpReceivedAtMs = udpReceivedAtMs
+        ) {
+            forwardOverTcp(dns, upstream)
+        }
+        if (result.retriedOverTcp && !result.retryStartedWithinDeadline) {
+            Log.w(
+                TAG,
+                "TCP DNS fallback for TC=1 started after ${result.retryStartDelayMs}ms " +
+                    "(expected <= ${DnsTcpFallback.MAX_TCP_RETRY_START_DELAY_MS}ms)"
+            )
+        }
+        return result.response
     }
 
     /**
@@ -1815,7 +1834,7 @@ class DnsVpnService : VpnService() {
             sock.send(DatagramPacket(dns, dns.size, InetAddress.getByName(fallback), DNS_PORT))
             val buf = ByteArray(1500); val rp = DatagramPacket(buf, buf.size)
             sock.receive(rp)
-            val respBytes = buf.copyOf(rp.length)
+            val respBytes = retryTruncatedUdpOverTcp(dns, buf.copyOf(rp.length), fallback)
             val latencyMs = (System.currentTimeMillis() - startMs).toInt()
 
             val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, "$fallback (fallback)")
@@ -2023,6 +2042,7 @@ class DnsVpnService : VpnService() {
         try {
             val startMs = System.currentTimeMillis()
             val primary = upstreamDnsServers.firstOrNull() ?: UPSTREAM_DNS[0]
+            var responseUpstream = primary
             protect(sock); sock.soTimeout = 5000
             sock.send(DatagramPacket(dns, dns.size, InetAddress.getByName(primary), DNS_PORT))
             val buf = ByteArray(1500); val rp = DatagramPacket(buf, buf.size)
@@ -2036,12 +2056,13 @@ class DnsVpnService : VpnService() {
                 try {
                     sock2.send(DatagramPacket(dns, dns.size, InetAddress.getByName(fallback), DNS_PORT))
                     sock2.receive(rp)
+                    responseUpstream = fallback
                 } finally { try { sock2.close() } catch (_: Exception) { } }
             }
-            val respBytes = buf.copyOf(rp.length)
+            val respBytes = retryTruncatedUdpOverTcp(dns, buf.copyOf(rp.length), responseUpstream)
             val latencyMs = (System.currentTimeMillis() - startMs).toInt()
 
-            val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, primary)
+            val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, responseUpstream)
             if (pfResult.blocked) {
                 if (pfResult.blockResponse != null) wrapResponseV6(orig, hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
                 return

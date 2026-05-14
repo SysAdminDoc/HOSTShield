@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.5.4-blue)
+![Version](https://img.shields.io/badge/version-6.5.5-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
@@ -368,6 +368,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.5.5** | TCP DNS fallback verification. Added shared RFC 7766 truncation handling, wired IPv6 UDP forwarding through the same `TC=1` TCP retry path as IPv4, and covered path-MTU-sized truncated responses with a 200 ms retry-start regression. |
 | **6.5.4** | Hot-reload blocklist hardening. Production rebuild paths now use `BlocklistHolder.updateAsync()` so trie construction happens off the caller thread before the single snapshot swap, with concurrent-reader regression coverage. |
 | **6.5.3** | Doze/App Standby resilience pass. Moved protection foreground services to `dataSync`, documented every WorkManager job, kept blocklist refresh expedited for immediate runs, and added a 60-second VPN heartbeat with structured kill/fd-failure events. |
 | **6.5.2** | Android 16 always-on VPN recovery advisory. Detects the always-on + lockdown + validated-network + zero-tunnel-ingress pattern, surfaces a Home recovery banner, and offers a rooted device restart action for the post-update VPN-stack corruption case. |
