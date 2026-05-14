@@ -1,3 +1,25 @@
+# HostShield v6.5.2
+
+**Release Date:** 2026-05-14
+**Version Code:** 60
+
+## Reliability
+
+- Added Android 16 always-on VPN recovery detection for the known post-update
+  lockdown corruption pattern where the VPN is established but receives no TUN
+  ingress despite a validated physical network.
+- Added a Home recovery advisory that instructs the user to restart the device
+  and exposes a rooted one-tap restart action when root is available.
+- Added focused JVM coverage for the detector gates so the banner is limited to
+  Android 16+ always-on lockdown sessions after a two-minute zero-packet window.
+
+## Verification
+
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest --tests com.hostshield.util.Android16VpnRecoveryDetectorTest`
+
+---
+
 # HostShield v6.5.1
 
 **Release Date:** 2026-05-13

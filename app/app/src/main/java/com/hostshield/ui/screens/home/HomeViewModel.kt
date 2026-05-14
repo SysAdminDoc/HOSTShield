@@ -22,6 +22,7 @@ import com.hostshield.service.IptablesManager
 import com.hostshield.service.NflogReader
 import com.hostshield.service.DnsProxyService
 import com.hostshield.service.RootDnsService
+import com.hostshield.service.VpnRecoveryAdvisory
 import com.hostshield.util.PrivacyScorer
 import com.hostshield.util.PrivateDnsDetector
 import com.hostshield.util.PrivateSpaceDetector
@@ -63,6 +64,8 @@ data class HomeUiState(
     val firewalledApps: Int = 0,
     /** Battery optimization warning. */
     val batteryWarning: String? = null,
+    /** Android 16 always-on VPN stack recovery advisory. */
+    val vpnRecoveryAdvisory: VpnRecoveryAdvisory? = null,
     /** Android Private Space / work profile VPN bypass warning. */
     val privateSpaceWarning: String? = null,
     /** Network firewall (iptables) active. */
@@ -139,6 +142,7 @@ class HomeViewModel @Inject constructor(
         scheduleAutoUpdate()
         checkPrivateDns()
         checkBattery()
+        observeVpnRecoveryAdvisory()
         checkPrivateSpace()
         resumeBlockingIfNeeded()
         calculatePrivacyScore()
@@ -266,6 +270,30 @@ class HomeViewModel @Inject constructor(
     }
 
     fun dismissBatteryWarning() { _uiState.update { it.copy(batteryWarning = null) } }
+
+    private fun observeVpnRecoveryAdvisory() {
+        viewModelScope.launch {
+            DnsVpnService.vpnRecoveryAdvisory.collect { advisory ->
+                _uiState.update { it.copy(vpnRecoveryAdvisory = advisory) }
+            }
+        }
+    }
+
+    fun dismissVpnRecoveryAdvisory() {
+        DnsVpnService.dismissVpnRecoveryAdvisory()
+        _uiState.update { it.copy(vpnRecoveryAdvisory = null) }
+    }
+
+    fun restartDeviceForVpnRecovery() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = rootUtil.rebootDeviceForVpnRecovery()
+            if (result.isFailure) {
+                _uiState.update {
+                    it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Unable to restart device")
+                }
+            }
+        }
+    }
 
     private fun checkPrivateSpace() {
         viewModelScope.launch(Dispatchers.IO) {

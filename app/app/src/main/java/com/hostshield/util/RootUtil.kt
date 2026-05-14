@@ -266,4 +266,17 @@ class RootUtil @Inject constructor(
 
         info
     }
+
+    suspend fun rebootDeviceForVpnRecovery(): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (!isRootAvailable()) {
+                return@withContext Result.failure(IllegalStateException("Root access is not available"))
+            }
+            val result = Shell.cmd("svc power reboot || reboot").exec()
+            if (result.isSuccess) Result.success(Unit)
+            else Result.failure(Exception(result.err.joinToString().ifBlank { "Reboot command failed" }))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
