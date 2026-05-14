@@ -3,6 +3,17 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.5.4] - 2026-05-14
+
+### Reliability
+- Added `BlocklistHolder.updateAsync()` so production blocklist rebuilds build
+  the replacement trie on `Dispatchers.Default` before the existing atomic
+  snapshot swap.
+- Moved Home, VPN service, profile schedule, and hosts refresh rebuild paths to
+  the async blocklist update path.
+- Added concurrent-reader regression coverage around repeated async blocklist
+  swaps.
+
 ## [v6.5.3] - 2026-05-14
 
 ### Reliability

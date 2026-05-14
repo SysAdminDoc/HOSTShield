@@ -5,6 +5,10 @@ import com.hostshield.data.model.UserRule
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 class BlocklistHolderTest {
 
@@ -147,5 +151,39 @@ class BlocklistHolderTest {
     fun `getBlockedCount returns accurate count`() {
         holder.update(setOf("a.com", "b.com", "c.com"), emptyList())
         assertEquals(3 + dohBaseline, holder.getBlockedCount())
+    }
+
+    @Test
+    fun `async update does not interrupt concurrent readers`() = runBlocking {
+        holder.update(setOf("old.example.com"), emptyList())
+        val started = CountDownLatch(1)
+        val running = AtomicBoolean(true)
+        val failures = AtomicInteger(0)
+
+        val reader = Thread {
+            started.countDown()
+            while (running.get()) {
+                try {
+                    holder.isBlocked("old.example.com")
+                    holder.isBlocked("new.example.com")
+                    holder.isBlocked("safe.example.com")
+                } catch (_: Throwable) {
+                    failures.incrementAndGet()
+                }
+            }
+        }
+
+        reader.start()
+        started.await()
+        repeat(100) {
+            holder.updateAsync(setOf("new.example.com"), emptyList())
+            holder.updateAsync(setOf("old.example.com"), emptyList())
+        }
+        running.set(false)
+        reader.join()
+
+        assertEquals("Concurrent readers should not fail during async snapshot swaps", 0, failures.get())
+        assertTrue(holder.isBlocked("old.example.com"))
+        assertFalse(holder.isBlocked("new.example.com"))
     }
 }

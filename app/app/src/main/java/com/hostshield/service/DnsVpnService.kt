@@ -824,7 +824,7 @@ class DnsVpnService : VpnService() {
                 .forEach { allDomains.add(it.hostname.lowercase()) }
             repository.getEnabledRulesByType(RuleType.ALLOW).filter { !it.isWildcard }
                 .forEach { allDomains.remove(it.hostname.lowercase()) }
-            blocklist.update(allDomains, repository.getEnabledWildcards())
+            blocklist.updateAsync(allDomains, repository.getEnabledWildcards())
         } catch (e: Exception) { Log.w(TAG, "Blocklist rebuild failed: ${e.message}") }
     }
 
