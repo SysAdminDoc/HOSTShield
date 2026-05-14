@@ -1,4 +1,4 @@
-// HostShield v6.5.7
+// HostShield v6.5.8
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,8 +15,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 35
-        versionCode = 65
-        versionName = "6.5.7"
+        versionCode = 66
+        versionName = "6.5.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -145,6 +145,9 @@ dependencies {
 
     // Networking (for downloading hosts sources)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Embedded Cronet gives the DoH resolver a real HTTP/3/QUIC transport
+    // without depending on Google Play Services availability.
+    implementation("org.chromium.net:cronet-embedded:143.7445.0")
 
     // Root access via libsu
     implementation("com.github.topjohnwu.libsu:core:6.0.0")

@@ -3,6 +3,16 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.5.8] - 2026-05-14
+
+### DNS
+- Added a Cronet-backed DoH3 transport that sends DNS-over-HTTPS requests over
+  real HTTP/3/QUIC when the selected provider negotiates `h3`/QUIC.
+- Kept DoH reliable by falling back to the existing pinned OkHttp DoH transport
+  whenever Cronet negotiates HTTP/2, redirects, times out, or fails.
+- Added DoH3 provider mapping, bounded response handling, QUIC hints, public
+  key pinning, provider latency EMA, and query-log transport labels.
+
 ## [v6.5.7] - 2026-05-14
 
 ### Reliability

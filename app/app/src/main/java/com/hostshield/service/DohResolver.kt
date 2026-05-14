@@ -25,7 +25,9 @@ import javax.inject.Singleton
 // ══════════════════════════════════════════════════════════════
 
 @Singleton
-class DohResolver @Inject constructor() {
+class DohResolver @Inject constructor(
+    private val doh3Resolver: Doh3Resolver
+) {
 
     companion object {
         private const val TAG = "DohResolver"
@@ -39,6 +41,18 @@ class DohResolver @Inject constructor() {
         // of the failover order so we stop hitting a known-broken endpoint first.
         private const val FAILURE_DEMOTE_THRESHOLD = 3
     }
+
+    enum class Transport {
+        DOH3,
+        DOH
+    }
+
+    data class DohResponse(
+        val response: ByteArray,
+        val provider: Provider,
+        val transport: Transport,
+        val negotiatedProtocol: String
+    )
 
     enum class Provider(val url: String, val hostname: String) {
         CLOUDFLARE("https://cloudflare-dns.com/dns-query", "cloudflare-dns.com"),
@@ -125,13 +139,33 @@ class DohResolver @Inject constructor() {
     suspend fun resolve(
         dnsQuery: ByteArray,
         provider: Provider = Provider.CLOUDFLARE
-    ): ByteArray? = withContext(Dispatchers.IO) {
+    ): ByteArray? = resolveWithMetadata(dnsQuery, provider)?.response
+
+    suspend fun resolveWithMetadata(
+        dnsQuery: ByteArray,
+        provider: Provider = Provider.CLOUDFLARE
+    ): DohResponse? = withContext(Dispatchers.IO) {
         val preferredProvider = getFastestProvider() ?: provider
+
+        doh3Resolver.resolve(dnsQuery, Doh3Resolver.Provider.fromDohProvider(preferredProvider))?.let { doh3 ->
+            updateLatency(doh3.provider.dohProvider, doh3.latencyMs)
+            return@withContext DohResponse(
+                response = doh3.response,
+                provider = doh3.provider.dohProvider,
+                transport = Transport.DOH3,
+                negotiatedProtocol = doh3.negotiatedProtocol
+            )
+        }
 
         val result = doResolve(dnsQuery, preferredProvider, client)
         if (result != null) {
             consecutiveFailures[preferredProvider]?.set(0)
-            return@withContext result
+            return@withContext DohResponse(
+                response = result,
+                provider = preferredProvider,
+                transport = Transport.DOH,
+                negotiatedProtocol = "https"
+            )
         }
         recordFailure(preferredProvider)
 
@@ -144,7 +178,12 @@ class DohResolver @Inject constructor() {
             if (fbResult != null) {
                 consecutiveFailures[fallback]?.set(0)
                 Log.i(TAG, "Failover to ${fallback.name} succeeded")
-                return@withContext fbResult
+                return@withContext DohResponse(
+                    response = fbResult,
+                    provider = fallback,
+                    transport = Transport.DOH,
+                    negotiatedProtocol = "https"
+                )
             }
             recordFailure(fallback)
         }
