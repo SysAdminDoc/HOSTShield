@@ -3,6 +3,17 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.5.6] - 2026-05-14
+
+### Reliability
+- Added a shared root-shell runner that detects Magisk 26+ and prefers libsu's
+  mount-master shell for firewall commands that touch `iptables`, `ip6tables`,
+  or route-localnet sysctls.
+- Routed the network firewall and root DNS redirect firewall through the shared
+  runner so Magisk mount-namespace isolation no longer makes rule application
+  silently target the wrong namespace.
+- Added focused Magisk version parsing coverage for the mount-master decision.
+
 ## [v6.5.5] - 2026-05-14
 
 ### Reliability

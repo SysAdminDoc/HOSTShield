@@ -8,6 +8,7 @@ import com.hostshield.data.model.BlockStats
 import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.domain.BlocklistHolder
+import com.hostshield.util.RootShellRunner
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
@@ -60,7 +61,8 @@ class RootDnsLogger @Inject constructor(
     private val dnsLogDao: DnsLogDao,
     private val blockStatsDao: BlockStatsDao,
     private val blocklist: BlocklistHolder,
-    private val prefs: AppPreferences
+    private val prefs: AppPreferences,
+    private val rootShell: RootShellRunner
 ) {
     companion object {
         private const val TAG = "RootDnsLogger"
@@ -96,6 +98,9 @@ class RootDnsLogger @Inject constructor(
     private var blockResponseType = "nxdomain"
     private val pendingBlockedStats = java.util.concurrent.atomic.AtomicInteger(0)
     private val pendingAllowedStats = java.util.concurrent.atomic.AtomicInteger(0)
+
+    private fun runIptables(vararg commands: String): Shell.Result =
+        rootShell.runIptables(commands.toList())
 
     fun start() {
         if (proxyJob?.isActive == true) return
@@ -169,12 +174,12 @@ class RootDnsLogger @Inject constructor(
         scope.launch {
             removeIptablesRules()
             // Restore route_localnet to default (0) and remove compensating INPUT rules
-            Shell.cmd(
+            runIptables(
                 "sysctl -w net.ipv4.conf.all.route_localnet=0 2>/dev/null",
                 "sysctl -w net.ipv4.conf.default.route_localnet=0 2>/dev/null",
                 "iptables -D INPUT -d 127.0.0.0/8 ! -i lo -j DROP 2>/dev/null",
                 "ip6tables -D INPUT -d ::1/128 ! -i lo -j DROP 2>/dev/null"
-            ).exec()
+            )
             restorePrivateDns()
         }
     }
@@ -231,28 +236,28 @@ class RootDnsLogger @Inject constructor(
         // on the same LAN to reach loopback-bound services on this device
         // (CVE-2020-8558 attack vector). These rules ensure only the loopback
         // interface can deliver packets to 127.0.0.0/8 and ::1.
-        Shell.cmd(
+        runIptables(
             "iptables -I INPUT -d 127.0.0.0/8 ! -i lo -j DROP",
             "ip6tables -I INPUT -d ::1/128 ! -i lo -j DROP"
-        ).exec()
+        )
         Log.i(TAG, "Compensating INPUT rules installed (loopback protection)")
 
         // Now enable route_localnet so the kernel allows DNAT to 127.0.0.1.
         // Without this sysctl, packets redirected to loopback are silently dropped.
-        Shell.cmd(
+        runIptables(
             "sysctl -w net.ipv4.conf.all.route_localnet=1",
             "sysctl -w net.ipv4.conf.default.route_localnet=1"
-        ).exec()
+        )
         Log.i(TAG, "route_localnet enabled (hardened with INPUT DROP rules)")
 
         // 1. Redirect all DNS (UDP port 53) to local proxy
-        Shell.cmd("iptables -t nat -I OUTPUT ${natRule4()}").exec()
-        Shell.cmd("ip6tables -t nat -I OUTPUT ${natRule6()}").exec()
+        runIptables("iptables -t nat -I OUTPUT ${natRule4()}")
+        runIptables("ip6tables -t nat -I OUTPUT ${natRule6()}")
 
         // 2. Block DNS-over-TLS (port 853) to prevent Private DNS bypass.
         // Apps/system using DoT will fail and fall back to port 53 (which we redirect).
-        Shell.cmd("iptables -I OUTPUT -p tcp --dport 853 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null || true").exec()
-        Shell.cmd("ip6tables -I OUTPUT -p tcp --dport 853 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null || true").exec()
+        runIptables("iptables -I OUTPUT -p tcp --dport 853 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null || true")
+        runIptables("ip6tables -I OUTPUT -p tcp --dport 853 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null || true")
 
         // 3. Block DNS-over-HTTPS to known DoH provider IPs (port 443).
         // This prevents apps from hardcoding DoH endpoints to bypass DNS filtering.
@@ -264,13 +269,13 @@ class RootDnsLogger @Inject constructor(
             "9.9.9.11", "149.112.112.11",             // Quad9 DoH alt
         )
         for (ip in dohIps) {
-            Shell.cmd("iptables -I OUTPUT -p tcp -d $ip --dport 443 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null || true").exec()
+            runIptables("iptables -I OUTPUT -p tcp -d $ip --dport 443 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null || true")
             // Also block QUIC (UDP 443) — prevents DNS-over-HTTP/3 and DNS-over-QUIC bypass
-            Shell.cmd("iptables -I OUTPUT -p udp -d $ip --dport 443 -m owner ! --uid-owner $myUid -j REJECT --reject-with icmp-port-unreachable 2>/dev/null || true").exec()
+            runIptables("iptables -I OUTPUT -p udp -d $ip --dport 443 -m owner ! --uid-owner $myUid -j REJECT --reject-with icmp-port-unreachable 2>/dev/null || true")
         }
 
         // 4. Also redirect TCP DNS (port 53) — some apps use TCP for large responses
-        Shell.cmd("iptables -t nat -I OUTPUT -p tcp --dport 53 -m owner ! --uid-owner $myUid -j DNAT --to-destination 127.0.0.1:$PROXY_PORT 2>/dev/null || true").exec()
+        runIptables("iptables -t nat -I OUTPUT -p tcp --dport 53 -m owner ! --uid-owner $myUid -j DNAT --to-destination 127.0.0.1:$PROXY_PORT 2>/dev/null || true")
 
         Log.i(TAG, "iptables rules installed (NAT redirect + DoT block + DoH block)")
     }
@@ -278,29 +283,29 @@ class RootDnsLogger @Inject constructor(
     private suspend fun removeIptablesRules() {
         val myUid = android.os.Process.myUid()
         for (i in 0..4) {
-            val a = Shell.cmd("iptables -t nat -D OUTPUT ${natRule4()} 2>/dev/null").exec()
-            val b = Shell.cmd("ip6tables -t nat -D OUTPUT ${natRule6()} 2>/dev/null").exec()
+            val a = runIptables("iptables -t nat -D OUTPUT ${natRule4()} 2>/dev/null")
+            val b = runIptables("ip6tables -t nat -D OUTPUT ${natRule6()} 2>/dev/null")
             if (!a.isSuccess && !b.isSuccess) break
         }
         // Clean up DoT blocking rules
         for (i in 0..2) {
-            Shell.cmd("iptables -D OUTPUT -p tcp --dport 853 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null").exec()
-            Shell.cmd("ip6tables -D OUTPUT -p tcp --dport 853 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null").exec()
+            runIptables("iptables -D OUTPUT -p tcp --dport 853 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null")
+            runIptables("ip6tables -D OUTPUT -p tcp --dport 853 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null")
         }
         // Clean up DoH blocking rules
         val dohIps = arrayOf("8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1", "9.9.9.9", "149.112.112.112",
             "104.16.248.249", "104.16.249.249", "9.9.9.11", "149.112.112.11")
         for (ip in dohIps) {
-            Shell.cmd("iptables -D OUTPUT -p tcp -d $ip --dport 443 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null").exec()
-            Shell.cmd("iptables -D OUTPUT -p udp -d $ip --dport 443 -m owner ! --uid-owner $myUid -j REJECT --reject-with icmp-port-unreachable 2>/dev/null").exec()
+            runIptables("iptables -D OUTPUT -p tcp -d $ip --dport 443 -m owner ! --uid-owner $myUid -j REJECT --reject-with tcp-reset 2>/dev/null")
+            runIptables("iptables -D OUTPUT -p udp -d $ip --dport 443 -m owner ! --uid-owner $myUid -j REJECT --reject-with icmp-port-unreachable 2>/dev/null")
         }
         // Clean up TCP DNS redirect
-        Shell.cmd("iptables -t nat -D OUTPUT -p tcp --dport 53 -m owner ! --uid-owner $myUid -j DNAT --to-destination 127.0.0.1:$PROXY_PORT 2>/dev/null").exec()
+        runIptables("iptables -t nat -D OUTPUT -p tcp --dport 53 -m owner ! --uid-owner $myUid -j DNAT --to-destination 127.0.0.1:$PROXY_PORT 2>/dev/null")
         // Clean up compensating loopback protection INPUT rules
-        Shell.cmd(
+        runIptables(
             "iptables -D INPUT -d 127.0.0.0/8 ! -i lo -j DROP 2>/dev/null",
             "ip6tables -D INPUT -d ::1/128 ! -i lo -j DROP 2>/dev/null"
-        ).exec()
+        )
     }
 
     // ---- /proc/net UID Fast-Path ---------------------------------

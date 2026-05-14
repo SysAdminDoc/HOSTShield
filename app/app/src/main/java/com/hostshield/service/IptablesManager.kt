@@ -11,6 +11,7 @@ import android.util.Log
 import com.hostshield.data.database.FirewallRuleDao
 import com.hostshield.data.model.FirewallRule
 import com.hostshield.util.IptablesBinaryManager
+import com.hostshield.util.RootShellRunner
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
@@ -51,7 +52,8 @@ import javax.inject.Singleton
 class IptablesManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val firewallRuleDao: FirewallRuleDao,
-    private val iptablesBin: IptablesBinaryManager
+    private val iptablesBin: IptablesBinaryManager,
+    private val rootShell: RootShellRunner
 ) {
     companion object {
         private const val TAG = "IptablesManager"
@@ -190,6 +192,9 @@ class IptablesManager @Inject constructor(
         }
     }
 
+    private fun runIptables(cmds: List<String>): Shell.Result =
+        rootShell.runIptables(resolveCmd(cmds).toList())
+
     /**
      * Apply all firewall rules. Rebuilds the entire chain hierarchy.
      * Safe to call multiple times -- clears old chains first.
@@ -214,7 +219,7 @@ class IptablesManager @Inject constructor(
             // Phase 1: Execute chain creation commands separately and verify
             val chainCmds = script.filter { it.contains("-N ") }
             if (chainCmds.isNotEmpty()) {
-                val chainResult = Shell.cmd(*resolveCmd(chainCmds)).exec()
+                val chainResult = runIptables(chainCmds)
                 // Chain creation uses 2>/dev/null so errors on existing chains are
                 // suppressed; a hard failure here means something is seriously wrong
                 if (!chainResult.isSuccess) {
@@ -228,7 +233,7 @@ class IptablesManager @Inject constructor(
 
             // Phase 2: Execute the remaining rule commands
             val ruleCmds = script.filter { !it.contains("-N ") }
-            val result = Shell.cmd(*resolveCmd(ruleCmds)).exec()
+            val result = runIptables(ruleCmds)
 
             if (result.isSuccess) {
                 _isActive.value = true
@@ -258,7 +263,7 @@ class IptablesManager @Inject constructor(
      */
     suspend fun clearRules() {
         val script = buildClearScript()
-        Shell.cmd(*resolveCmd(script)).exec()
+        runIptables(script)
         _isActive.value = false
         unregisterNetworkCallback()
         Log.i(TAG, "Firewall rules cleared")
@@ -289,7 +294,7 @@ class IptablesManager @Inject constructor(
             cmds.add("ip6tables -A $CHAIN_MOBILE -m owner --uid-owner $hexUid -j $CHAIN_REJECT")
         }
 
-        Shell.cmd(*resolveCmd(cmds)).exec()
+        runIptables(cmds)
     }
 
     /**
@@ -485,13 +490,15 @@ class IptablesManager @Inject constructor(
      */
     suspend fun dumpCurrentRules(): String {
         val ipt = iptablesBin.iptables()
-        val result = Shell.cmd(
-            "echo '=== IPv4 ===' && $ipt -L OUTPUT -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '=== hs-main ===' && $ipt -L $CHAIN_MAIN -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '=== hs-wifi ===' && $ipt -L $CHAIN_WIFI -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '=== hs-mobile ===' && $ipt -L $CHAIN_MOBILE -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '=== hs-reject ===' && $ipt -L $CHAIN_REJECT -n -v --line-numbers 2>/dev/null"
-        ).exec()
+        val result = rootShell.runIptables(
+            listOf(
+                "echo '=== IPv4 ===' && $ipt -L OUTPUT -n -v --line-numbers 2>/dev/null",
+                "echo '' && echo '=== hs-main ===' && $ipt -L $CHAIN_MAIN -n -v --line-numbers 2>/dev/null",
+                "echo '' && echo '=== hs-wifi ===' && $ipt -L $CHAIN_WIFI -n -v --line-numbers 2>/dev/null",
+                "echo '' && echo '=== hs-mobile ===' && $ipt -L $CHAIN_MOBILE -n -v --line-numbers 2>/dev/null",
+                "echo '' && echo '=== hs-reject ===' && $ipt -L $CHAIN_REJECT -n -v --line-numbers 2>/dev/null"
+            )
+        )
         return result.out.joinToString("\n")
     }
 
@@ -512,32 +519,36 @@ class IptablesManager @Inject constructor(
         parts.add("")
 
         val ipt = iptablesBin.iptables()
-        val rules = Shell.cmd(
-            "echo '--- iptables OUTPUT ---'",
-            "$ipt -L OUTPUT -n -v --line-numbers 2>/dev/null | head -30",
-            "echo '' && echo '--- hs-main ---'",
-            "$ipt -L $CHAIN_MAIN -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '--- hs-wifi ---'",
-            "$ipt -L $CHAIN_WIFI -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '--- hs-mobile ---'",
-            "$ipt -L $CHAIN_MOBILE -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '--- hs-vpn ---'",
-            "$ipt -L $CHAIN_VPN -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '--- hs-tether ---'",
-            "$ipt -L $CHAIN_TETHER -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '--- hs-reject ---'",
-            "$ipt -L $CHAIN_REJECT -n -v --line-numbers 2>/dev/null",
-            "echo '' && echo '--- NAT ---'",
-            "$ipt -t nat -L OUTPUT -n -v --line-numbers 2>/dev/null | head -20",
-            "echo '' && echo '--- Interfaces ---'",
-            "ip link show 2>/dev/null | grep -E 'state|mtu'",
-            "echo '' && echo '--- Active DNS ---'",
-            "getprop net.dns1 2>/dev/null", "getprop net.dns2 2>/dev/null",
-            "echo '' && echo '--- Kernel iptables modules ---'",
-            "cat /proc/net/ip_tables_targets 2>/dev/null",
-            "cat /proc/net/ip_tables_matches 2>/dev/null | head -20",
-            "echo '' && echo '--- Binary: ${iptablesBin.getVersionInfo()} ---'"
-        ).exec()
+        val rules = rootShell.runIptables(
+            listOf(
+                "echo '--- iptables OUTPUT ---'",
+                "$ipt -L OUTPUT -n -v --line-numbers 2>/dev/null | head -30",
+                "echo '' && echo '--- hs-main ---'",
+                "$ipt -L $CHAIN_MAIN -n -v --line-numbers 2>/dev/null",
+                "echo '' && echo '--- hs-wifi ---'",
+                "$ipt -L $CHAIN_WIFI -n -v --line-numbers 2>/dev/null",
+                "echo '' && echo '--- hs-mobile ---'",
+                "$ipt -L $CHAIN_MOBILE -n -v --line-numbers 2>/dev/null",
+                "echo '' && echo '--- hs-vpn ---'",
+                "$ipt -L $CHAIN_VPN -n -v --line-numbers 2>/dev/null",
+                "echo '' && echo '--- hs-tether ---'",
+                "$ipt -L $CHAIN_TETHER -n -v --line-numbers 2>/dev/null",
+                "echo '' && echo '--- hs-reject ---'",
+                "$ipt -L $CHAIN_REJECT -n -v --line-numbers 2>/dev/null",
+                "echo '' && echo '--- NAT ---'",
+                "$ipt -t nat -L OUTPUT -n -v --line-numbers 2>/dev/null | head -20",
+                "echo '' && echo '--- Interfaces ---'",
+                "ip link show 2>/dev/null | grep -E 'state|mtu'",
+                "echo '' && echo '--- Active DNS ---'",
+                "getprop net.dns1 2>/dev/null",
+                "getprop net.dns2 2>/dev/null",
+                "echo '' && echo '--- Kernel iptables modules ---'",
+                "cat /proc/net/ip_tables_targets 2>/dev/null",
+                "cat /proc/net/ip_tables_matches 2>/dev/null | head -20",
+                "echo '' && echo '--- Binary: ${iptablesBin.getVersionInfo()} ---'",
+                "echo '--- Shell: ${rootShell.getIptablesShellLabel()} ---'"
+            )
+        )
 
         parts.addAll(rules.out)
         return parts.joinToString("\n")
