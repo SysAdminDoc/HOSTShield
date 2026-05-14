@@ -104,7 +104,7 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
                 val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
                 allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-                blocklistHolder.update(allDomains, repository.getEnabledWildcards())
+                blocklistHolder.updateAsync(allDomains, repository.getEnabledWildcards())
 
                 prefs.setLastApplyTime(System.currentTimeMillis())
                 prefs.setLastApplyCount(allDomains.size)

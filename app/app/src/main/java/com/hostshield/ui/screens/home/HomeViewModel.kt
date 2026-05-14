@@ -613,7 +613,7 @@ class HomeViewModel @Inject constructor(
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             val wildcards = repository.getEnabledWildcards()
-            blocklistHolder.update(allDomains, wildcards)
+            blocklistHolder.updateAsync(allDomains, wildcards)
 
             val count = allDomains.size
             if (count == 0 && sources.isNotEmpty()) {
@@ -683,7 +683,7 @@ class HomeViewModel @Inject constructor(
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             val wildcards = repository.getEnabledWildcards()
-            blocklistHolder.update(allDomains, wildcards)
+            blocklistHolder.updateAsync(allDomains, wildcards)
 
             _uiState.update {
                 it.copy(progressMessage = "Starting VPN (${allDomains.size} domains)...")
@@ -828,7 +828,7 @@ class HomeViewModel @Inject constructor(
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             val wildcards = repository.getEnabledWildcards()
-            blocklistHolder.update(allDomains, wildcards)
+            blocklistHolder.updateAsync(allDomains, wildcards)
 
             if (allDomains.isEmpty() && sources.isNotEmpty()) {
                 android.util.Log.w("HomeViewModel", "Blocklist build produced 0 domains from ${sources.size} sources")

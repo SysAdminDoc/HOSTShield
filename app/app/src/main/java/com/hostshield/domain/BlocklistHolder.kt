@@ -2,6 +2,8 @@ package com.hostshield.domain
 
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -258,6 +260,15 @@ class BlocklistHolder @Inject constructor() {
         )
 
         decisionCache.clear()
+    }
+
+    suspend fun updateAsync(
+        newDomains: Set<String>,
+        wildcards: List<UserRule>,
+        regexRules: List<UserRule> = emptyList(),
+        ipBlocks: Set<String> = emptySet()
+    ) = withContext(Dispatchers.Default) {
+        update(newDomains, wildcards, regexRules, ipBlocks)
     }
 
     fun clear() {

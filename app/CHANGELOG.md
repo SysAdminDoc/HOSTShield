@@ -1,3 +1,24 @@
+# HostShield v6.5.4
+
+**Release Date:** 2026-05-14
+**Version Code:** 62
+
+## Reliability
+
+- Added `BlocklistHolder.updateAsync()` so production blocklist rebuilds happen
+  off the caller thread before the existing single-reference snapshot swap.
+- Moved Home apply/resume, VPN rebuild, profile schedule, and hosts refresh
+  paths to the async blocklist update API.
+- Added concurrent-reader regression coverage for repeated async blocklist
+  swaps.
+
+## Verification
+
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest --tests com.hostshield.domain.BlocklistHolderTest`
+
+---
+
 # HostShield v6.5.3
 
 **Release Date:** 2026-05-14
