@@ -1,3 +1,26 @@
+# HostShield v6.5.3
+
+**Release Date:** 2026-05-14
+**Version Code:** 61
+
+## Reliability
+
+- Moved `DnsVpnService`, `RootDnsService`, and `DnsProxyService` to Android
+  `dataSync` foreground-service declarations and runtime service types.
+- Added a 60-second VPN tunnel heartbeat that checks the TUN fd while protection
+  is running and restarts the VPN if the fd becomes invalid.
+- Shortened the watchdog alarm to 60 seconds and changed kill/fd-failure logs to
+  structured JSON events for local diagnostics.
+- Added `docs/WORKMANAGER_AUDIT.md` covering every WorkManager job, the lack of
+  direct JobScheduler usage, and the expedited immediate blocklist refresh path.
+
+## Verification
+
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest --tests com.hostshield.util.Android16VpnRecoveryDetectorTest`
+
+---
+
 # HostShield v6.5.2
 
 **Release Date:** 2026-05-14
