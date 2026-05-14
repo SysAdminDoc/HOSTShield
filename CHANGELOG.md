@@ -3,6 +3,17 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.5.7] - 2026-05-14
+
+### Reliability
+- Added strict VPN route canonicalization before every `VpnService.Builder`
+  route insertion so host bits are masked before Android validates routes.
+- Replaced direct DNS trap and virtual DNS `addRoute` calls with a shared
+  canonical route helper, covering IPv4, IPv6, host routes, and future
+  network-prefix route additions.
+- Added focused JVM coverage for IPv4/IPv6 host-bit masking, non-byte-aligned
+  prefixes, and invalid route input rejection.
+
 ## [v6.5.6] - 2026-05-14
 
 ### Reliability

@@ -450,6 +450,11 @@ class DnsVpnService : VpnService() {
 
     // ── VPN Lifecycle ─────────────────────────────────────────
 
+    private fun VpnService.Builder.addCanonicalRoute(address: String, prefixLength: Int) {
+        val route = VpnRouteCanonicalizer.canonicalize(address, prefixLength)
+        addRoute(route.address, route.prefixLength)
+    }
+
     private suspend fun startVpn() {
         if (isRunning) return
         try {
@@ -587,8 +592,8 @@ class DnsVpnService : VpnService() {
                     val secondary = "$prefix.2"
                     builder.addDnsServer(primary)
                     builder.addDnsServer(secondary)
-                    builder.addRoute(primary, 32)
-                    builder.addRoute(secondary, 32)
+                    builder.addCanonicalRoute(primary, 32)
+                    builder.addCanonicalRoute(secondary, 32)
                     vdns4Primary = primary
                     vdns4Secondary = secondary
                     break
@@ -604,19 +609,19 @@ class DnsVpnService : VpnService() {
 
             // IPv6 virtual DNS
             builder.addDnsServer(VDNS6_PRIMARY)
-            builder.addRoute(VDNS6_PRIMARY, 128)
+            builder.addCanonicalRoute(VDNS6_PRIMARY, 128)
 
             // DNS Trap: route well-known public DNS through TUN
             // v6.0: Skip trap routes in DNS-only mode for lower battery (~0.5%)
             if (dnsTrapEnabled && !dnsOnlyMode) {
                 for (ip in DNS_TRAP_IPS) {
-                    try { builder.addRoute(ip, 32) } catch (_: Exception) { }
+                    try { builder.addCanonicalRoute(ip, 32) } catch (_: Exception) { }
                 }
                 // Route known DoH provider IPs too -- we'll drop port 443
                 // traffic to these IPs so apps can't bypass DNS filtering
                 // via DNS-over-HTTPS to hardcoded resolver IPs.
                 for (ip in DOH_BYPASS_IPS) {
-                    try { builder.addRoute(ip, 32) } catch (_: Exception) { }
+                    try { builder.addCanonicalRoute(ip, 32) } catch (_: Exception) { }
                 }
             }
 

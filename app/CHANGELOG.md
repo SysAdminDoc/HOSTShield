@@ -1,3 +1,31 @@
+# HostShield v6.5.7
+
+**Release Date:** 2026-05-14
+**Version Code:** 65
+
+## Reliability
+
+- Added `VpnRouteCanonicalizer` to normalize numeric VPN route addresses before
+  passing them into `VpnService.Builder.addRoute`.
+- Masked IPv4 and IPv6 host bits for network prefixes, including
+  non-byte-aligned prefixes, so Android 11+ route validation does not reject
+  otherwise valid user-provided routes.
+- Routed virtual DNS, IPv6 virtual DNS, DNS trap, and DoH bypass route
+  insertions through the shared canonical route helper.
+- Added JVM coverage for IPv4, IPv6, host-route preservation, invalid prefix
+  rejection, CIDR-suffix rejection, and non-numeric hostname rejection.
+
+## Verification
+
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest --tests com.hostshield.service.VpnRouteCanonicalizerTest`
+- `:app:assembleFullDebug`
+- Installed `app-full-debug.apk` on connected adb device and verified
+  `com.hostshield.debug` launches as v6.5.7 / versionCode 65 with no crash-log
+  hit.
+
+---
+
 # HostShield v6.5.6
 
 **Release Date:** 2026-05-14
