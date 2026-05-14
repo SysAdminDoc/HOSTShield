@@ -1,4 +1,4 @@
-// HostShield v6.5.4
+// HostShield v6.5.7
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,8 +15,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 35
-        versionCode = 64
-        versionName = "6.5.6"
+        versionCode = 65
+        versionName = "6.5.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
