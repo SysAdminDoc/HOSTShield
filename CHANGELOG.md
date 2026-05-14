@@ -3,6 +3,18 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.5.9] - 2026-05-14
+
+### DNS
+- Corrected DNS stamp parsing to the current 8-byte property format and kept
+  legacy one-byte HostShield stamp compatibility.
+- Preserved DNSCrypt resolver provider public keys, added `0x81` Anonymized
+  DNSCrypt relay stamp parsing, and introduced a route planner that sends
+  anonymized traffic to the relay while prefixing the resolver target.
+- Added focused JVM coverage for resolver stamp keys, relay stamps, relay
+  target prefixes, IPv4-mapped/IPv6 target encoding, and invalid privacy
+  collapses.
+
 ## [v6.5.8] - 2026-05-14
 
 ### DNS
