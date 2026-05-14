@@ -1,3 +1,31 @@
+# HostShield v6.5.6
+
+**Release Date:** 2026-05-14
+**Version Code:** 64
+
+## Reliability
+
+- Added `RootShellRunner` to centralize root command execution and Magisk version
+  detection.
+- On Magisk 26+, firewall command paths now prefer libsu's mount-master shell
+  for `iptables`, `ip6tables`, and route-localnet sysctl work.
+- Routed both the network firewall (`IptablesManager`) and root DNS redirect
+  firewall (`RootDnsLogger`) through the shared runner so rule changes apply in
+  the intended mount namespace.
+- Added JVM coverage for Magisk version parsing and the mount-master support
+  gate.
+
+## Verification
+
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest --tests com.hostshield.util.RootShellRunnerTest`
+- `:app:assembleFullDebug`
+- Installed `app-full-debug.apk` on connected adb device and verified
+  `com.hostshield.debug` launches as v6.5.6 / versionCode 64 with no crash-log
+  hit.
+
+---
+
 # HostShield v6.5.5
 
 **Release Date:** 2026-05-14
