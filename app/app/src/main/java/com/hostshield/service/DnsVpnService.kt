@@ -98,7 +98,8 @@ class DnsVpnService : VpnService() {
         const val ALERT_CHANNEL_ID = "hostshield_alerts"
         const val NOTIFICATION_ID = 1
         private const val TAG = "HostShield"
-        private const val WATCHDOG_INTERVAL_MS = 600_000L  // 10 minutes
+        private const val WATCHDOG_INTERVAL_MS = 60_000L  // Doze/App Standby heartbeat
+        private const val HEARTBEAT_INTERVAL_MS = 60_000L
         private const val WATCHDOG_REQUEST_CODE = 99
 
         // Live query stream — hot SharedFlow for real-time log tail in UI.
@@ -310,6 +311,7 @@ class DnsVpnService : VpnService() {
     private var vpnStartTime = 0L
     @Volatile private var stabilityFlushJob: Job? = null
     @Volatile private var vpnRecoveryMonitorJob: Job? = null
+    @Volatile private var tunnelHeartbeatJob: Job? = null
 
     // Pause state: when paused, all queries are allowed (no blocking)
     @Volatile private var isPaused = false
@@ -343,7 +345,10 @@ class DnsVpnService : VpnService() {
                     serviceScope.launch {
                         val shouldRun = prefs.isEnabled.first()
                         if (shouldRun) {
-                            Log.i(TAG, "Watchdog: VPN was killed — restarting")
+                            logStructuredVpnEvent("vpn_os_kill", mapOf(
+                                "source" to "watchdog",
+                                "action" to "restart"
+                            ))
                             startVpn()
                         }
                     }
@@ -390,7 +395,7 @@ class DnsVpnService : VpnService() {
                 ServiceCompat.startForeground(
                     this, NOTIFICATION_ID, buildNotification(0),
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
                 )
                 serviceScope.launch { startVpn() }
             }
@@ -400,7 +405,7 @@ class DnsVpnService : VpnService() {
                 ServiceCompat.startForeground(
                     this, NOTIFICATION_ID, buildNotification(0),
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
                 )
                 serviceScope.launch {
                     val shouldRun = prefs.isEnabled.first()
@@ -436,6 +441,7 @@ class DnsVpnService : VpnService() {
     override fun onDestroy() {
         isRunning = false
         cancelWatchdog()
+        cancelTunnelHeartbeat()
         cancelVpnRecoveryMonitor()
         unregisterNetworkCallback()
         serviceScope.cancel()
@@ -646,6 +652,7 @@ class DnsVpnService : VpnService() {
             startStabilityFlusher()
             registerNetworkCallback()
             scheduleWatchdog()
+            startTunnelHeartbeat()
             startVpnRecoveryMonitor()
 
             // Captive portal handling
@@ -680,6 +687,7 @@ class DnsVpnService : VpnService() {
         try { shutdownPipeWrite?.let { Os.close(it) } } catch (_: Exception) { }
         shutdownPipeRead = null; shutdownPipeWrite = null
         cancelWatchdog()
+        cancelTunnelHeartbeat()
         cancelVpnRecoveryMonitor()
         unregisterNetworkCallback()
         logFlushJob?.cancel(); logFlushJob = null
@@ -724,6 +732,7 @@ class DnsVpnService : VpnService() {
             try { shutdownPipeWrite?.let { Os.close(it) } } catch (_: Exception) { }
             shutdownPipeRead = null; shutdownPipeWrite = null
             cancelWatchdog()
+            cancelTunnelHeartbeat()
             unregisterNetworkCallback()
             // Flush buffered logs before restart — don't lose entries
             logFlushJob?.cancel(); logFlushJob = null
@@ -2253,6 +2262,43 @@ class DnsVpnService : VpnService() {
             )
             if (pi != null) { am.cancel(pi); pi.cancel() }
         } catch (_: Exception) { }
+    }
+
+    private fun startTunnelHeartbeat() {
+        tunnelHeartbeatJob?.cancel()
+        tunnelHeartbeatJob = serviceScope.launch(Dispatchers.IO) {
+            while (isActive && isRunning) {
+                delay(HEARTBEAT_INTERVAL_MS)
+                assertTunnelHeartbeat()
+            }
+        }
+    }
+
+    private fun cancelTunnelHeartbeat() {
+        tunnelHeartbeatJob?.cancel()
+        tunnelHeartbeatJob = null
+    }
+
+    private fun assertTunnelHeartbeat() {
+        if (!isRunning) return
+        val fdValid = vpnInterface?.fileDescriptor?.valid() == true
+        if (!fdValid) {
+            fdErrorCount.incrementAndGet()
+            logStructuredVpnEvent("vpn_heartbeat_failed", mapOf(
+                "reason" to "tun_fd_invalid",
+                "uptime_ms" to (System.currentTimeMillis() - vpnStartTime),
+                "action" to "restart"
+            ))
+            serviceScope.launch { restartVpn() }
+        }
+    }
+
+    private fun logStructuredVpnEvent(event: String, fields: Map<String, Any?> = emptyMap()) {
+        val obj = org.json.JSONObject()
+            .put("event", event)
+            .put("timestamp_ms", System.currentTimeMillis())
+        fields.forEach { (key, value) -> obj.put(key, value) }
+        Log.w(TAG, obj.toString())
     }
 
     private fun startVpnRecoveryMonitor() {

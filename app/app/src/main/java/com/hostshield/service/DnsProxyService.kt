@@ -128,7 +128,7 @@ class DnsProxyService : Service() {
                     Log.i(TAG, "Starting DNS proxy service")
                     ServiceCompat.startForeground(
                         this, NOTIFICATION_ID, buildNotification("Initializing..."),
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                     )
                     serviceScope.launch { startProxy() }
                 }
@@ -142,7 +142,7 @@ class DnsProxyService : Service() {
                 Log.i(TAG, "System restarted DNS proxy service -- resuming")
                 ServiceCompat.startForeground(
                     this, NOTIFICATION_ID, buildNotification("Resuming..."),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                 )
                 serviceScope.launch { startProxy() }
             }

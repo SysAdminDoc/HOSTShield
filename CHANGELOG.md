@@ -3,6 +3,18 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.5.3] - 2026-05-14
+
+### Reliability
+- Moved HostShield's long-running protection foreground services from
+  `specialUse` to `dataSync` foreground-service type declarations.
+- Added a 60-second VPN tunnel heartbeat that asserts the TUN fd is still valid
+  and restarts the VPN if the fd dies while the service is marked running.
+- Shortened the VPN watchdog to 60 seconds and logs structured JSON events when
+  the watchdog observes an OS kill or the heartbeat finds an invalid tunnel fd.
+- Documented every WorkManager job and confirmed that immediate blocklist
+  refresh uses expedited WorkManager with `RUN_AS_NON_EXPEDITED_WORK_REQUEST`.
+
 ## [v6.5.2] - 2026-05-14
 
 ### Reliability

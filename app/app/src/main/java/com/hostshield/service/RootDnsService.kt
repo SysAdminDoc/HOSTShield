@@ -67,7 +67,7 @@ class RootDnsService : Service() {
                 Log.i(TAG, "Starting root DNS service")
                 ServiceCompat.startForeground(
                     this, NOTIFICATION_ID, buildNotification("Initializing..."),
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                 )
                 rootDnsLogger.start()
                 blockNotificationService.start()
@@ -86,7 +86,7 @@ class RootDnsService : Service() {
                 Log.i(TAG, "System restarted root DNS service -- resuming")
                 ServiceCompat.startForeground(
                     this, NOTIFICATION_ID, buildNotification("Resuming..."),
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                 )
                 rootDnsLogger.start()
                 blockNotificationService.start()
