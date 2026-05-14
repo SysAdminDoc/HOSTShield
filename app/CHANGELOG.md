@@ -1,3 +1,32 @@
+# HostShield v6.5.8
+
+**Release Date:** 2026-05-14
+**Version Code:** 66
+
+## DNS
+
+- Added `Doh3Resolver`, an embedded-Cronet DNS-over-HTTPS/3 transport with QUIC
+  enabled, provider QUIC hints, bounded DNS response reads, and public-key pins
+  matching the existing DoH provider pin set.
+- The existing DoH setting now tries DoH3 first and accepts the result only
+  when Cronet reports an HTTP/3/QUIC negotiated protocol; HTTP/2 and failures
+  fall back to the existing pinned OkHttp DoH resolver.
+- Query logs now label successful HTTP/3 upstreams as `DoH3:<provider>` while
+  preserving ordinary `DoH:<provider>` labels for fallback traffic.
+- Added focused JVM coverage for DoH-to-DoH3 provider mapping and negotiated
+  protocol acceptance policy.
+
+## Verification
+
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest --tests com.hostshield.service.Doh3ResolverTest`
+- `:app:assembleFullDebug`
+- Installed `app-full-debug.apk` on connected adb device and verified
+  `com.hostshield.debug` launches as v6.5.8 / versionCode 66 with no crash-log
+  hit.
+
+---
+
 # HostShield v6.5.7
 
 **Release Date:** 2026-05-14

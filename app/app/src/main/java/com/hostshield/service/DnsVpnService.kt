@@ -1878,10 +1878,14 @@ class DnsVpnService : VpnService() {
                                     wrapV6: Boolean = false, v6Hdr: Int = 0) {
         try {
             val startMs = System.currentTimeMillis()
-            val resp = dohResolver.resolve(dns, dohProvider)
+            val dohResult = dohResolver.resolveWithMetadata(dns, dohProvider)
+            val resp = dohResult?.response
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val upstreamLabel = "DoH:${dohProvider.name}"
+                val upstreamLabel = when (dohResult.transport) {
+                    DohResolver.Transport.DOH3 -> "DoH3:${dohResult.provider.name}"
+                    DohResolver.Transport.DOH -> "DoH:${dohResult.provider.name}"
+                }
 
                 val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
                 if (pfResult.blocked) {

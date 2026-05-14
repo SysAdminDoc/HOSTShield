@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.5.7-blue)
+![Version](https://img.shields.io/badge/version-6.5.8-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
@@ -368,6 +368,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.5.8** | DoH3 resolver transport. Existing DoH now tries embedded-Cronet HTTP/3/QUIC first, accepts only actual `h3`/QUIC negotiation, labels successful query-log upstreams as `DoH3`, and falls back to the existing pinned OkHttp DoH path when HTTP/3 is unavailable. |
 | **6.5.7** | VPN route canonicalization. `VpnService.Builder.addRoute` paths now mask IPv4/IPv6 host bits before route insertion, preserving host routes while preventing Android 11+ validation failures for user-provided network prefixes. |
 | **6.5.6** | Magisk 26+ mount-master hardening. Root firewall command paths now detect Magisk 26+ and prefer libsu's mount-master shell for `iptables`, `ip6tables`, and route-localnet sysctl work, with focused version-gate coverage. |
 | **6.5.5** | TCP DNS fallback verification. Added shared RFC 7766 truncation handling, wired IPv6 UDP forwarding through the same `TC=1` TCP retry path as IPv4, and covered path-MTU-sized truncated responses with a 200 ms retry-start regression. |
