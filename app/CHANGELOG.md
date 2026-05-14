@@ -1,3 +1,35 @@
+# HostShield v6.5.9
+
+**Release Date:** 2026-05-14
+**Version Code:** 67
+
+## DNS
+
+- Corrected `sdns://` parsing to the current DNS stamp format with 8-byte
+  little-endian properties while preserving compatibility with legacy
+  one-byte HostShield-encoded stamps.
+- DNSCrypt resolver stamps now retain and validate the required 32-byte
+  provider public key instead of silently discarding it.
+- Added Anonymized DNSCrypt relay stamp support (`0x81`) and a route planner
+  that validates resolver/relay roles, rejects resolver-as-relay privacy
+  collapses, and builds the relay prefix that targets the resolver while the
+  network destination remains the relay.
+- Added DoQ and ODoH stamp protocol identifiers in the shared parser so the
+  next DNS protocol work can reuse the same spec-correct stamp layer.
+
+## Verification
+
+- `:app:testFullDebugUnitTest --tests com.hostshield.util.DnsStampParserTest --tests com.hostshield.service.DnsCryptRoutePlannerTest`
+
+## Remaining DNSCrypt transport work
+
+- Full DNSCrypt v2 query encryption/decryption is not wired yet. The parser
+  and anonymized route layer are now correct, but production transport still
+  needs an audited Android-compatible crypto/engine choice before exposing a
+  user-facing DNSCrypt toggle.
+
+---
+
 # HostShield v6.5.8
 
 **Release Date:** 2026-05-14
