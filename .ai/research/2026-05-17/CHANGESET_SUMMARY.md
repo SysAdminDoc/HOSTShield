@@ -33,6 +33,7 @@ Research date: 2026-05-17
 - Experimental resolver gating - added shared maturity labels for DoQ and WireGuard DNS in Settings, diagnostics, runtime logs, and README. Production DNS defaults remain pinned DoH/DoH3/DoT, with DoQ and WireGuard DNS opt-in only.
 - DoH pin rotation manifest - moved built-in provider SPKI pins into `DohPinManifest` with manifest version, issued date, primary/backup labels, review dates, expiry dates, diagnostic summary lines, and pin-failure event fields while keeping OkHttp fail-closed certificate pinning.
 - Room migration golden test matrix - moved v1-v5 migrations from private DI fields into public `Migrations.ALL`, added a current database version constant, wired Room schema JSONs into androidTest assets, added `HostShieldMigrationTest` with frozen SQL fixtures for start versions 1 through 14, and documented unreconstructable missing official schema exports in `docs/database-migration-fixtures.md`.
+- Parser fuzz harness - added deterministic malformed-input/property coverage for DNS packet parsing/building, DNS stamps, hosts/adblock imports, regex guard behavior, malformed backup payloads, and malformed source URLs; hardened `DnsPacketParser.skipDnsName` to reject truncated compression pointers.
 
 ## Files Intentionally Not Modified
 

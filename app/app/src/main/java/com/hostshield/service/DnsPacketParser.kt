@@ -48,8 +48,9 @@ object DnsPacketParser {
         if (off + 2 > dns.size) return "?"
         val qt = ((dns[off].toInt() and 0xFF) shl 8) or (dns[off + 1].toInt() and 0xFF)
         return when (qt) {
-            1 -> "A"; 28 -> "AAAA"; 5 -> "CNAME"; 15 -> "MX"; 16 -> "TXT"
-            2 -> "NS"; 6 -> "SOA"; 33 -> "SRV"; 65 -> "HTTPS"; 257 -> "CAA"
+            1 -> "A"; 2 -> "NS"; 5 -> "CNAME"; 6 -> "SOA"; 12 -> "PTR"
+            15 -> "MX"; 16 -> "TXT"; 28 -> "AAAA"; 33 -> "SRV"; 41 -> "OPT"
+            43 -> "DS"; 48 -> "DNSKEY"; 64 -> "SVCB"; 65 -> "HTTPS"; 255 -> "ANY"; 257 -> "CAA"
             else -> "TYPE$qt"
         }
     }
@@ -60,7 +61,9 @@ object DnsPacketParser {
         while (off < buf.size) {
             val len = buf[off].toInt() and 0xFF
             if (len == 0) return off + 1
-            if (len and 0xC0 == 0xC0) return off + 2
+            if (len and 0xC0 == 0xC0) {
+                return if (off + 1 < buf.size) off + 2 else -1
+            }
             off += 1 + len
         }
         return -1
