@@ -95,6 +95,21 @@ class BlocklistHolderTest {
     }
 
     @Test
+    fun `preview export includes effective exact and source wildcard entries`() {
+        holder.update(
+            newDomains = setOf("ads.example.com"),
+            wildcards = emptyList(),
+            sourceWildcardBlocks = setOf("Tracker.Example")
+        )
+
+        val keys = holder.exportBlockKeysForPreview()
+
+        assertTrue(keys.contains("ads.example.com"))
+        assertTrue(keys.contains("*.tracker.example"))
+        assertFalse(keys.contains("dns.google"))
+    }
+
+    @Test
     fun `addDomain increments count and blocks`() {
         holder.update(setOf("initial.com"), emptyList())
         val before = holder.domainCount

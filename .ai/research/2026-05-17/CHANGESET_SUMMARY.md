@@ -37,6 +37,7 @@ Research date: 2026-05-17
 - Backup crypto regression coverage - extracted `BackupRestoreUtil.decodeBackupBytes` for pure import decoding tests and added coverage for AES-GCM roundtrip, wrong-passphrase authentication failure, short payload/header rejection, salt/IV/ciphertext uniqueness, legacy plaintext decoding, and encrypted-import prompt messaging.
 - Hagezi pack chooser - expanded `curated_blocklists.json` to 51 sources with HaGeZi Light/Multi-Light, Normal, Pro, Pro++, Ultimate, TIF, TIF Mini, DynDNS, NRD, and Most Abused TLDs, added tier/breakage warnings to the gallery UI, and preserved adblock wildcard plus `$denyallow=` semantics during source blocklist rebuilds.
 - Subscribed allowlist packs - refreshed Anudeep and HaGeZi unbreak allowlists, repaired stale HaGeZi builtin URLs, added `HostsParser.parseForAllowing` for plain and adblock `@@||` allowlist files, kept allowlist precedence in Home/VPN/profile/worker rebuild paths, and added Sources UI allowlist impact analysis with neutralized counts and sample domains.
+- Source impact preview - added a Sources-screen preview action that downloads enabled sources into a temporary blocklist snapshot, shows added/removed effective entries versus the active in-memory filter, and lists recent DNS queries whose block/allow verdict would change before applying updates.
 
 ## Files Intentionally Not Modified
 
