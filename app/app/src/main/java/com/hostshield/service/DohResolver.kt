@@ -5,7 +5,6 @@ import com.hostshield.util.DiagnosticEventStore
 import com.hostshield.util.DiagnosticEventType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.CertificatePinner
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -93,41 +92,7 @@ class DohResolver @Inject constructor(
         }
     }
 
-    // Certificate pins for DoH providers.
-    // These are SHA-256 hashes of the Subject Public Key Info (SPKI).
-    // OkHttp requires at least 2 pins per host for rotation safety.
-    // When a pin fails, OkHttp falls through to the next provider.
-    //
-    // Pin rotation: if a provider rotates certs, connections fail-safe
-    // to the next provider via our failover logic. Update pins in the
-    // next release. This is strictly better than no pinning.
-    private val certificatePinner = CertificatePinner.Builder()
-        // Cloudflare — DigiCert + Google Trust Services backup
-        .add("cloudflare-dns.com",
-            "sha256/eLbhBSJjPiGMb5eySMPmFpibkWIGxabkr3kda0ALqjw=", // DigiCert Global G2
-            "sha256/jQJTbIh0grw0/1TkHSumWb+Fs0Ggogr621gT3PvPKG0="  // Baltimore CyberTrust (backup)
-        )
-        // Google — GTS CA 1C3 + GlobalSign
-        .add("dns.google",
-            "sha256/hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=", // GTS Root R1
-            "sha256/jQJTbIh0grw0/1TkHSumWb+Fs0Ggogr621gT3PvPKG0="  // GlobalSign (backup)
-        )
-        // Quad9 — DigiCert
-        .add("dns.quad9.net",
-            "sha256/eLbhBSJjPiGMb5eySMPmFpibkWIGxabkr3kda0ALqjw=", // DigiCert Global G2
-            "sha256/RRM1dGqnDFsCJXBTHky16vi1obOlCgFFn/yOhI/y+ho="  // DigiCert ECC (backup)
-        )
-        // NextDNS — Let's Encrypt
-        .add("dns.nextdns.io",
-            "sha256/C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=", // ISRG Root X1
-            "sha256/jQJTbIh0grw0/1TkHSumWb+Fs0Ggogr621gT3PvPKG0="  // Baltimore (backup)
-        )
-        // AdGuard — DigiCert
-        .add("dns.adguard-dns.com",
-            "sha256/eLbhBSJjPiGMb5eySMPmFpibkWIGxabkr3kda0ALqjw=", // DigiCert Global G2
-            "sha256/RRM1dGqnDFsCJXBTHky16vi1obOlCgFFn/yOhI/y+ho="  // DigiCert ECC (backup)
-        )
-        .build()
+    private val certificatePinner = DohPinManifest.certificatePinner()
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(4, TimeUnit.SECONDS)
@@ -326,10 +291,17 @@ class DohResolver @Inject constructor(
             // than silently appearing as "all DoH providers failed".
             Log.e(TAG, "Cert pin failure for ${provider.name}: ${e.message}")
             recordHealth(provider, Transport.DOH, success = null, pinFailure = true)
+            val fields = mutableMapOf<String, Any>(
+                "provider" to provider.name,
+                "error" to (e.message ?: "SSLPeerUnverifiedException")
+            )
+            DohPinManifest.forProvider(provider)
+                ?.diagnosticFields()
+                ?.let { fields.putAll(it) }
             diagnosticEvents.recordBlocking(
                 DiagnosticEventType.CERT_PIN_FAILURE,
                 "DoH certificate pin validation failed",
-                mapOf("provider" to provider.name, "error" to (e.message ?: "SSLPeerUnverifiedException"))
+                fields
             )
             null
         } catch (e: Exception) {

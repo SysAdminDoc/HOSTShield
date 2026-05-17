@@ -77,7 +77,7 @@
 | **DNS-over-TLS (DoT)** | RFC 7858, TLSv1.3, SNI + hostname verification. Cloudflare, Google, Quad9, AdGuard |
 | **DNS-over-QUIC (DoQ)** | Experimental simplified engine, not a full QUIC/TLS 1.3 stack. Falls back to DoT; production defaults remain pinned DoH/DoH3/DoT |
 | **DNS-over-WireGuard** | Experimental DNS-only simplified engine, not a full WireGuard tunnel. Production defaults remain pinned DoH/DoH3/DoT |
-| **Certificate Pinning** | Fail-closed SHA-256 pin validation per provider; resolver failover continues only to pinned providers |
+| **Certificate Pinning** | Fail-closed SHA-256 pin validation per provider from a versioned local manifest with primary/backup pins and review/expiry diagnostics |
 | **Smart Latency Failover** | EMA-based latency tracking per provider, auto-selects fastest, falls back through all on failure |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through VPN tunnel to prevent bypass |
 | **TCP DNS** | Full TCP DNS support for responses >512 bytes, IPv4 + IPv6 |
