@@ -27,8 +27,8 @@ Research date: 2026-05-17
 | L019 | `app/app/src/main/java/com/hostshield/service/WireGuardProxy.kt` | Experimental DNS-over-WireGuard limitations. |
 | L020 | `app/app/src/main/java/com/hostshield/util/DnsStampParser.kt` | DNS stamp formats and relay parsing. |
 | L021 | `app/app/src/main/java/com/hostshield/service/DnsCryptRoutePlanner.kt` | DNSCrypt relay route validation and wrapping. |
-| L022 | `app/app/src/main/java/com/hostshield/data/preferences/SecureStore.kt` | EncryptedSharedPreferences, PBKDF2 PIN hashing. |
-| L023 | `app/app/src/main/java/com/hostshield/util/BackupCrypto.kt` | AES-GCM backup crypto and PBKDF2 iteration count. |
+| L022 | `app/app/src/main/java/com/hostshield/data/preferences/SecureStore.kt`; `app/app/src/main/java/com/hostshield/util/PasswordKdf.kt` | Secure store migration, Argon2id PIN hashing, and legacy PBKDF2 PIN verification. |
+| L023 | `app/app/src/main/java/com/hostshield/util/BackupCrypto.kt`; `app/app/src/main/java/com/hostshield/util/EncryptedBackup.kt` | AES-GCM backup crypto, Argon2id v2 exports, and legacy PBKDF2 import compatibility. |
 | L024 | `app/app/src/main/java/com/hostshield/data/database/HostShieldDatabase.kt` | Room entities and DB version. |
 | L025 | `app/app/src/main/java/com/hostshield/data/database/Migrations.kt` | v5-v14 migration chain. |
 | L026 | `app/app/src/main/java/com/hostshield/di/DatabaseModule.kt` | v1-v5 migration chain and no destructive fallback. |
@@ -109,6 +109,7 @@ Research date: 2026-05-17
 | E050 | RFC 9520 negative caching update | https://www.rfc-editor.org/rfc/rfc9520 | Failure caching policy. |
 | E051 | RFC 9460 SVCB/HTTPS | https://www.rfc-editor.org/rfc/rfc9460 | ECH/SVCB awareness. |
 | E052 | OWASP Password Storage Cheat Sheet | https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html | Argon2id and PBKDF2 review. |
+| E083 | Bouncy Castle `bcprov-jdk18on` 1.84 Maven Central metadata | https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.84/ | Current Android-compatible Argon2id dependency selection. |
 | E053 | NIST SP 800-38D | https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf | AES-GCM nonce uniqueness requirements. |
 | E054 | OkHttp changelog | https://github.com/square/okhttp/blob/master/CHANGELOG.md | OkHttp 5 upgrade planning. |
 | E055 | libsu repository | https://github.com/topjohnwu/libsu | Root shell dependency. |

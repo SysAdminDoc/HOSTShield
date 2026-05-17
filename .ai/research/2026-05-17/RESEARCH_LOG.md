@@ -106,3 +106,13 @@ Additional searches would likely add examples, not change the top roadmap tiers.
 - The GitHub wiki URLs listed as E040/E041 currently render as "Create new
   page" in GitHub's HTML view; the DNSCrypt website, protocol draft, and
   source repository were sufficient to support the decision record.
+
+## Implementation Follow-Up - Argon2id KDF Migration
+
+- Re-checked OWASP Password Storage guidance before implementing F015; Argon2id
+  remains the preferred modern password hashing choice, and PBKDF2-HMAC-SHA256
+  remains acceptable for legacy/FIPS-oriented compatibility.
+- Checked Maven Central metadata for Bouncy Castle `bcprov-jdk18on` and selected
+  version 1.84 for the Android-compatible lightweight Argon2id implementation.
+- The implementation keeps PBKDF2 only in legacy PIN and backup import paths;
+  new PIN records and backup exports write Argon2id metadata-bearing formats.

@@ -46,6 +46,7 @@ Important implementation facts:
 - `DoqResolver` and `WireGuardProxy` are explicitly experimental and simplified. Treat them as research-grade until replaced with audited engines.
 - Settings, diagnostics, logs, and README now share explicit maturity labels for DoQ and WireGuard DNS. Production defaults remain pinned DoH/DoH3/DoT; DoQ and WireGuard DNS stay opt-in.
 - `SecureStore` uses a local Android Keystore AES-GCM wrapper over `hostshield_secure_store_v2`. Tink is retained as a direct dependency only for one-time migration from legacy AndroidX EncryptedSharedPreferences keysets when the original Keystore master key is still present.
+- New parental PIN hashes and encrypted backup exports use Argon2id via Bouncy Castle `bcprov-jdk18on`. PBKDF2-HMAC-SHA256 remains only for legacy PIN verification and v1 encrypted backup imports.
 - Room migrations exist from v1 through v15. Public migration definitions now live in `Migrations.ALL`, including the older v1-v5 steps that used to be private inside `DatabaseModule`. Exported Room schema snapshots exist for versions 7, 8, 9, 12, 14, and 15; missing official exports are documented in `docs/database-migration-fixtures.md`.
 
 ## Product Principles
@@ -83,7 +84,8 @@ Important implementation facts:
 - Source download failures now persist `last_http_status`, `last_error`, and consecutive failure counts. Failed blocklist, allowlist, rule-sync, health-check, manual apply, VPN rebuild, and profile rebuild paths update source health; failed source updates post a local HostShield alert notification; Sources cards show last failure, HTTP status when available, and last successful update.
 - `HostShieldMigrationTest` is an instrumented migration matrix. It creates frozen SQL fixtures for every supported start version 1 through 14, migrates to current schema version 15 with `Migrations.ALL`, validates against the Room schema export, and checks sentinel data survives.
 - `ParserFuzzHarnessTest` is a deterministic JVM fuzz/property harness for malformed DNS bytes, generated DNS query roundtrips, DNS stamps, hosts/adblock imports, regex guard behavior, malformed backup payloads, and malformed source URLs.
-- `BackupCryptoTest` covers AES-GCM roundtrip, wrong-passphrase authentication failure, short payload rejection, invalid header rejection, random salt/IV/ciphertext uniqueness, legacy plaintext detection, and encrypted-import prompt/failure behavior through `BackupRestoreUtil.decodeBackupBytes`.
+- `BackupCryptoTest` covers Argon2id backup headers, AES-GCM roundtrip, wrong-passphrase authentication failure, short payload rejection, invalid header/version rejection, legacy PBKDF2 backup import, random salt/IV/ciphertext uniqueness, legacy plaintext detection, and encrypted-import prompt/failure behavior through `BackupRestoreUtil.decodeBackupBytes`.
+- `SecureStorePinKdfTest` covers new Argon2id PIN records, wrong-PIN rejection, malformed-record rejection, and legacy PBKDF2 PIN verification/rehash signaling.
 - The curated blocklist gallery now includes 51 sources and a HaGeZi pack chooser for Light/Multi-Light, Normal, Pro, Pro++, Ultimate, TIF, TIF Mini, DynDNS, NRD, and Most Abused TLDs. Gallery items can carry tier and warning metadata, and `HostsParser.parseForBlocking` preserves adblock wildcard and `$denyallow=` semantics for source rebuild paths.
 - Subscribed allowlists are first-class source-category inputs in the Home apply, VPN rebuild, profile schedule, and periodic hosts worker paths. `HostsParser.parseForAllowing` handles plain domains and adblock `@@||` exception files, stale HaGeZi allowlist URLs are repaired on seed, and Sources can run an allowlist impact analysis that shows neutralized counts and sample domains per enabled allowlist.
 - Sources can preview enabled source updates before applying them. The preview downloads sources into a temporary `BlocklistHolder`, compares candidate exact/source-wildcard keys against the active in-memory filter, and lists recent DNS queries whose verdict would change.
@@ -93,7 +95,7 @@ Important implementation facts:
 
 ## Highest-Value Next Work
 
-1. Continue security modernization: Argon2id migration path, AES-GCM backup nonce uniqueness guard, and controlled dependency refresh.
+1. Continue security modernization: AES-GCM backup nonce uniqueness guard and controlled dependency refresh.
 2. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 3. Add top-flow Compose UI coverage for onboarding, VPN controls, source/rule flows, diagnostics export, and log filtering.
 

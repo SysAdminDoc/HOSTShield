@@ -5,16 +5,13 @@ import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Log
+import com.hostshield.util.PasswordKdf
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.security.KeyStore
-import java.security.MessageDigest
-import java.security.SecureRandom
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.PBEKeySpec
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -200,7 +197,7 @@ class SecureStore @Inject constructor(
             key == KEY_KEYSET_ALIAS || key == VALUE_KEYSET_ALIAS
     }
 
-    // PBKDF2 PIN hashing
+    // PIN hashing and legacy verification
     companion object {
         private const val TAG = "SecureStore"
         private const val STORE_PREFS_NAME = "hostshield_secure_store_v2"
@@ -215,57 +212,18 @@ class SecureStore @Inject constructor(
         private const val LEGACY_NULL_VALUE = "__NULL__"
         private const val LEGACY_STRING_TYPE_ID = 0
 
-        private const val PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256"
-        private const val ITERATIONS = 210_000
-        private const val KEY_LENGTH_BITS = 256
-        private const val SALT_BYTES = 16
+        /**
+         * Hash a raw PIN with Argon2id.
+         * Returns an algorithm-tagged record that carries KDF parameters.
+         */
+        fun hashPin(rawPin: String): String = PasswordKdf.hashPin(rawPin)
 
         /**
-         * Hash a raw PIN with PBKDF2-HMAC-SHA256.
-         * Returns `"base64(salt):base64(hash)"`.
+         * Verify a raw PIN against the current Argon2id record format or the
+         * legacy PBKDF2 `"base64(salt):base64(hash)"` format.
          */
-        fun hashPin(rawPin: String): String {
-            val salt = ByteArray(SALT_BYTES).also { SecureRandom().nextBytes(it) }
-            val spec = PBEKeySpec(rawPin.toCharArray(), salt, ITERATIONS, KEY_LENGTH_BITS)
-            val hash = try {
-                SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
-                    .generateSecret(spec)
-                    .encoded
-            } finally {
-                spec.clearPassword()
-            }
-            val saltB64 = android.util.Base64.encodeToString(salt, android.util.Base64.NO_WRAP)
-            val hashB64 = android.util.Base64.encodeToString(hash, android.util.Base64.NO_WRAP)
-            return "$saltB64:$hashB64"
-        }
+        fun verifyPin(rawPin: String, stored: String): Boolean = PasswordKdf.verifyPin(rawPin, stored)
 
-        /**
-         * Verify a raw PIN against a stored `"salt:hash"` string produced by [hashPin].
-         * Constant-time comparison on decoded bytes (not Base64 strings, which can
-         * leak length differences). Returns false on any decode failure.
-         */
-        fun verifyPin(rawPin: String, stored: String): Boolean {
-            if (!stored.contains(':')) return false
-            val parts = stored.split(':', limit = 2)
-            if (parts.size != 2 || parts[0].isEmpty() || parts[1].isEmpty()) return false
-            val salt: ByteArray
-            val expected: ByteArray
-            try {
-                salt = android.util.Base64.decode(parts[0], android.util.Base64.NO_WRAP)
-                expected = android.util.Base64.decode(parts[1], android.util.Base64.NO_WRAP)
-            } catch (_: IllegalArgumentException) {
-                return false
-            }
-            if (salt.isEmpty() || expected.size * 8 != KEY_LENGTH_BITS) return false
-            val spec = PBEKeySpec(rawPin.toCharArray(), salt, ITERATIONS, KEY_LENGTH_BITS)
-            val hash = try {
-                SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
-                    .generateSecret(spec)
-                    .encoded
-            } finally {
-                spec.clearPassword()
-            }
-            return MessageDigest.isEqual(hash, expected)
-        }
+        fun needsPinRehash(stored: String): Boolean = PasswordKdf.needsPinRehash(stored)
     }
 }
