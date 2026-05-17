@@ -32,6 +32,20 @@ class BackupRestoreUtil @Inject constructor(
     private val firewallRuleDao: FirewallRuleDao,
     private val prefs: AppPreferences
 ) {
+    companion object {
+        fun decodeBackupBytes(rawBytes: ByteArray, passphrase: String? = null): String {
+            return if (BackupCrypto.isEncrypted(rawBytes)) {
+                if (passphrase.isNullOrEmpty()) {
+                    throw EncryptedBackupException("Backup is encrypted. Please provide a passphrase.")
+                }
+                val decrypted = BackupCrypto.decrypt(rawBytes, passphrase)
+                String(decrypted, Charsets.UTF_8)
+            } else {
+                String(rawBytes, Charsets.UTF_8)
+            }
+        }
+    }
+
     /**
      * Create a full JSON backup of all app data.
      */
@@ -280,15 +294,7 @@ class BackupRestoreUtil @Inject constructor(
             stream.readBytes()
         } ?: throw Exception("Cannot open input stream")
 
-        if (BackupCrypto.isEncrypted(rawBytes)) {
-            if (passphrase.isNullOrEmpty()) {
-                throw EncryptedBackupException("Backup is encrypted. Please provide a passphrase.")
-            }
-            val decrypted = BackupCrypto.decrypt(rawBytes, passphrase)
-            String(decrypted, Charsets.UTF_8)
-        } else {
-            String(rawBytes, Charsets.UTF_8)
-        }
+        decodeBackupBytes(rawBytes, passphrase)
     }
 }
 
