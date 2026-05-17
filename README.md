@@ -265,7 +265,7 @@ All actions are rate-limited (5s cooldown per action per caller) and logged to t
 | Language | Kotlin 2.1 |
 | UI | Jetpack Compose + Material 3 |
 | DI | Hilt (Dagger) |
-| Database | Room (11 entities, explicit v1-v14 migrations) |
+| Database | Room (11 entities, explicit v1-v15 migrations) |
 | Preferences | DataStore |
 | Async | Coroutines + Flow, ViewModels + StateFlow |
 | Networking | OkHttp 4 (source downloads, DoH resolver) |
@@ -280,7 +280,7 @@ All actions are rate-limited (5s cooldown per action per caller) and logged to t
 ```
 app/src/main/java/com/hostshield/
 ├── data/
-│   ├── database/      # Room DB, DAOs, converters, migrations (v1-v14)
+│   ├── database/      # Room DB, DAOs, converters, migrations (v1-v15)
 │   ├── model/         # Entities (11 tables), enums
 │   ├── preferences/   # DataStore preferences (AppPreferences)
 │   ├── repository/    # HostShieldRepository

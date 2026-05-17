@@ -10,11 +10,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * Without these, Room crashes on startup for existing users.
  *
  * Version history:
- * - v1: Initial (host_sources, user_rules, dns_logs, block_stats)
- * - v2: Added profiles table
- * - v3: Added firewall_rules table + user_rules.is_wildcard column
- * - v4: Added connection_log table + indices
- * - v5: Added dns_logs.query_type + dns_logs indices + source health columns
+ * - v1: Initial host_sources, user_rules, dns_logs
+ * - v2: Added block_stats table
+ * - v3: Added profiles table + dns_logs app columns
+ * - v4: Added firewall_rules and connection_log tables
+ * - v5: Added dns_logs.query_type/source_ip and indices
  * - v6: Added dns_logs.response_time_ms, dns_logs.upstream_server,
  *        dns_logs.cname_chain columns for per-query detail view
  * - v13: Composite indices for common query patterns
@@ -22,6 +22,89 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - v15: Added host_sources.last_http_status for source failure feedback
  */
 object Migrations {
+
+    val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS block_stats (
+                    date TEXT NOT NULL PRIMARY KEY,
+                    blocked_count INTEGER NOT NULL DEFAULT 0,
+                    allowed_count INTEGER NOT NULL DEFAULT 0,
+                    total_queries INTEGER NOT NULL DEFAULT 0
+                )
+            """)
+        }
+    }
+
+    val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS profiles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    name TEXT NOT NULL,
+                    is_active INTEGER NOT NULL DEFAULT 0,
+                    source_ids TEXT NOT NULL DEFAULT '',
+                    schedule_start TEXT NOT NULL DEFAULT '',
+                    schedule_end TEXT NOT NULL DEFAULT '',
+                    days_of_week TEXT NOT NULL DEFAULT '0,1,2,3,4,5,6'
+                )
+            """)
+            try {
+                db.execSQL("ALTER TABLE dns_logs ADD COLUMN app_package TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE dns_logs ADD COLUMN app_label TEXT NOT NULL DEFAULT ''")
+            } catch (_: Exception) {
+                // Some early builds already carried these columns.
+            }
+        }
+    }
+
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS firewall_rules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    uid INTEGER NOT NULL,
+                    package_name TEXT NOT NULL,
+                    app_label TEXT NOT NULL,
+                    wifi_allowed INTEGER NOT NULL DEFAULT 1,
+                    mobile_allowed INTEGER NOT NULL DEFAULT 1,
+                    vpn_allowed INTEGER NOT NULL DEFAULT 1,
+                    is_system INTEGER NOT NULL DEFAULT 0,
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    updated_at INTEGER NOT NULL DEFAULT 0
+                )
+            """)
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_firewall_rules_uid ON firewall_rules (uid)")
+
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS connection_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    uid INTEGER NOT NULL,
+                    package_name TEXT NOT NULL DEFAULT '',
+                    app_label TEXT NOT NULL DEFAULT '',
+                    destination TEXT NOT NULL DEFAULT '',
+                    port INTEGER NOT NULL DEFAULT 0,
+                    protocol TEXT NOT NULL DEFAULT 'TCP',
+                    action TEXT NOT NULL DEFAULT 'REJECT',
+                    interface_name TEXT NOT NULL DEFAULT '',
+                    timestamp INTEGER NOT NULL DEFAULT 0
+                )
+            """)
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_connection_log_timestamp ON connection_log (timestamp)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_connection_log_uid ON connection_log (uid)")
+        }
+    }
+
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_dns_logs_blocked_timestamp ON dns_logs (blocked, timestamp)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_connection_log_action_timestamp ON connection_log (action, timestamp)")
+            try { db.execSQL("ALTER TABLE dns_logs ADD COLUMN source_ip TEXT NOT NULL DEFAULT ''") } catch (_: Exception) { }
+            try { db.execSQL("ALTER TABLE dns_logs ADD COLUMN query_type TEXT NOT NULL DEFAULT 'A'") } catch (_: Exception) { }
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_dns_logs_hostname ON dns_logs (hostname)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_dns_logs_app_package ON dns_logs (app_package)")
+        }
+    }
 
     val MIGRATION_5_6 = object : Migration(5, 6) {
         override fun migrate(db: SupportSQLiteDatabase) {
@@ -160,5 +243,20 @@ object Migrations {
     }
 
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
-    val ALL = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
+    val ALL = arrayOf(
+        MIGRATION_1_2,
+        MIGRATION_2_3,
+        MIGRATION_3_4,
+        MIGRATION_4_5,
+        MIGRATION_5_6,
+        MIGRATION_6_7,
+        MIGRATION_7_8,
+        MIGRATION_8_9,
+        MIGRATION_9_10,
+        MIGRATION_10_11,
+        MIGRATION_11_12,
+        MIGRATION_12_13,
+        MIGRATION_13_14,
+        MIGRATION_14_15
+    )
 }
