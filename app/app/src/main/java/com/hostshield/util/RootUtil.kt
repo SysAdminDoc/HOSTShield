@@ -13,7 +13,8 @@ import javax.inject.Singleton
 
 @Singleton
 class RootUtil @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val diagnosticEvents: DiagnosticEventStore
 ) {
 
     companion object {
@@ -85,6 +86,11 @@ class RootUtil @Inject constructor(
                 ).exec()
                 if (!r.isSuccess) {
                     tmp.delete()
+                    diagnosticEvents.recordBlocking(
+                        DiagnosticEventType.ROOT_COMMAND_FAILED,
+                        "Root hosts write failed",
+                        mapOf("path" to path, "stderr" to r.err.joinToString().take(500))
+                    )
                     return@withContext Result.failure(
                         Exception("Failed to write hosts: ${r.err.joinToString()}")
                     )
@@ -97,6 +103,11 @@ class RootUtil @Inject constructor(
                 ).exec()
                 if (!r.isSuccess) {
                     tmp.delete()
+                    diagnosticEvents.recordBlocking(
+                        DiagnosticEventType.ROOT_COMMAND_FAILED,
+                        "Root hosts write failed",
+                        mapOf("path" to path, "stderr" to r.err.joinToString().take(500))
+                    )
                     return@withContext Result.failure(
                         Exception("Failed to write hosts: ${r.err.joinToString()}")
                     )
@@ -108,6 +119,11 @@ class RootUtil @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             tempFile.delete()
+            diagnosticEvents.recordBlocking(
+                DiagnosticEventType.ROOT_COMMAND_FAILED,
+                "Root hosts write threw exception",
+                mapOf("error" to (e.message ?: e.javaClass.simpleName))
+            )
             Result.failure(e)
         }
     }
@@ -150,6 +166,11 @@ class RootUtil @Inject constructor(
             flushDnsCache()
             Result.success(Unit)
         } catch (e: Exception) {
+            diagnosticEvents.recordBlocking(
+                DiagnosticEventType.ROOT_COMMAND_FAILED,
+                "Root hosts restore failed",
+                mapOf("error" to (e.message ?: e.javaClass.simpleName))
+            )
             Result.failure(e)
         }
     }

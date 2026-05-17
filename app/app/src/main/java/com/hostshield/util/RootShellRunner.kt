@@ -6,7 +6,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RootShellRunner @Inject constructor() {
+class RootShellRunner @Inject constructor(
+    private val diagnosticEvents: DiagnosticEventStore
+) {
     companion object {
         private const val TAG = "RootShellRunner"
 
@@ -24,7 +26,9 @@ class RootShellRunner @Inject constructor() {
     @Volatile private var mountMasterShell: Shell? = null
 
     fun run(commands: List<String>): Shell.Result =
-        Shell.cmd(*commands.toTypedArray()).exec()
+        Shell.cmd(*commands.toTypedArray()).exec().also {
+            recordFailureIfNeeded(it, "root_shell", commands.size)
+        }
 
     fun runIptables(commands: List<String>): Shell.Result {
         if (!shouldUseMountMaster()) return run(commands)
@@ -34,7 +38,9 @@ class RootShellRunner @Inject constructor() {
             Log.w(TAG, "Magisk mount-master shell unavailable; falling back to default root shell")
             return run(commands)
         }
-        return shell.newJob().add(*commands.toTypedArray()).exec()
+        return shell.newJob().add(*commands.toTypedArray()).exec().also {
+            recordFailureIfNeeded(it, "iptables_mount_master", commands.size)
+        }
     }
 
     fun getIptablesShellLabel(): String {
@@ -82,5 +88,18 @@ class RootShellRunner @Inject constructor() {
             Log.w(TAG, "Failed to create Magisk mount-master shell: ${e.message}")
             null
         }
+    }
+
+    private fun recordFailureIfNeeded(result: Shell.Result, context: String, commandCount: Int) {
+        if (result.isSuccess) return
+        diagnosticEvents.recordBlocking(
+            DiagnosticEventType.ROOT_COMMAND_FAILED,
+            "Root shell command failed",
+            mapOf(
+                "context" to context,
+                "command_count" to commandCount,
+                "stderr" to result.err.joinToString().take(500)
+            )
+        )
     }
 }

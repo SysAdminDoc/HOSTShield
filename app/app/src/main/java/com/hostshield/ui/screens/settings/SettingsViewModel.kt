@@ -11,6 +11,8 @@ import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.service.HostsUpdateWorker
 import com.hostshield.util.BackupRestoreUtil
 import com.hostshield.util.BatteryOptimizationUtil
+import com.hostshield.util.DiagnosticEventStore
+import com.hostshield.util.DiagnosticEventType
 import com.hostshield.util.ImportExportUtil
 import com.hostshield.util.PcapExporter
 import com.hostshield.util.RootUtil
@@ -87,6 +89,7 @@ class SettingsViewModel @Inject constructor(
     private val pcapExporter: PcapExporter,
     private val updateChecker: UpdateChecker,
     private val diagnosticExporter: com.hostshield.util.DiagnosticExporter,
+    private val diagnosticEvents: DiagnosticEventStore,
     private val firewallRuleDao: com.hostshield.data.database.FirewallRuleDao
 ) : AndroidViewModel(application) {
 
@@ -489,8 +492,18 @@ class SettingsViewModel @Inject constructor(
             } catch (e: com.hostshield.util.EncryptedBackupException) {
                 _uiState.update { it.copy(backupMessage = "ENCRYPTED:${e.message}") }
             } catch (e: javax.crypto.AEADBadTagException) {
+                diagnosticEvents.record(
+                    DiagnosticEventType.BACKUP_IMPORT_FAILED,
+                    "Encrypted backup restore failed",
+                    mapOf("reason" to "auth_tag_or_passphrase")
+                )
                 _uiState.update { it.copy(backupMessage = "Restore failed: incorrect passphrase or corrupted backup") }
             } catch (e: Exception) {
+                diagnosticEvents.record(
+                    DiagnosticEventType.BACKUP_IMPORT_FAILED,
+                    "Backup restore failed",
+                    mapOf("error" to (e.message ?: e.javaClass.simpleName))
+                )
                 _uiState.update { it.copy(backupMessage = "Restore failed: ${e.message}") }
             }
         }

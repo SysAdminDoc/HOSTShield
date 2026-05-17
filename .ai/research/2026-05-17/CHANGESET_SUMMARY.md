@@ -25,6 +25,8 @@ Research date: 2026-05-17
 - `tools/check-release-docs.ps1` - added a release consistency gate for stale version and security phrases.
 - `tools/release-provenance.ps1` - added APK SHA-256, signing fingerprint, build commit, Gradle/AGP/Kotlin version, and artifact-path provenance generation.
 - Versioned source-header comments were normalized to stable component descriptions without runtime behavior changes.
+- `DiagnosticEventStore` - added a local-only JSONL ring buffer capped at 500 events for VPN lifecycle, Private DNS conflicts, blocklist swaps, source failures, DoH pin/failover issues, watchdog/doze recovery, root command failures, and backup restore failures.
+- `DiagnosticExporter` and Settings diagnostics - changed diagnostic sharing from a single text file to a ZIP package with the text report, raw `diagnostic-events.jsonl`, and a manifest.
 
 ## Files Intentionally Not Modified
 

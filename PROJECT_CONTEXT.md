@@ -70,12 +70,19 @@ Important implementation facts:
 - `tools/release-provenance.ps1` generates release provenance under `artifacts/release-provenance/`, including APK SHA-256, signing cert fingerprint when `apksigner` is available, build commit, Gradle/AGP/Kotlin versions, and artifact path.
 - License files conflict and require maintainer decision before publication: root `LICENSE` is MIT, while `app/LICENSE` is GPL-3.0. Docs surface this conflict instead of choosing a license implicitly.
 
+## Diagnostics Notes
+
+- `DiagnosticEventStore` is a local-only JSONL ring buffer at `filesDir/diagnostics/diagnostic-events.jsonl`, capped at 500 events.
+- Current event types: `vpn_start`, `vpn_stop`, `tun_fd_invalid`, `private_dns_conflict`, `blocklist_swap`, `source_download_failed`, `cert_pin_failure`, `resolver_failover`, `doze_resume`, `root_command_failed`, and `backup_import_failed`.
+- Event producers include VPN lifecycle/heartbeat/watchdog, DoH cert pin and failover paths, blocklist update workers, manual source apply, Private DNS detection, root shell/hosts failures, and backup restore failures.
+- Settings diagnostic export now shares a ZIP package containing `hostshield-diagnostic.txt`, `diagnostic-events.jsonl`, and `manifest.json`; there is no automatic network upload.
+
 ## Highest-Value Next Work
 
-1. Build a local structured diagnostics/event log so reliability failures can be investigated without remote telemetry.
-2. Complete DNSCrypt safely by choosing an audited Android-compatible crypto/engine path before exposing any user-facing toggle.
-3. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
-4. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
+1. Add a per-resolver health card using existing DoH/DoH3 latency and failure signals.
+2. Surface failed-source feedback in notifications and Sources badges with last error/status context.
+3. Complete DNSCrypt safely by choosing an audited Android-compatible crypto/engine path before exposing any user-facing toggle.
+4. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
 5. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 
 ## Verification Commands
