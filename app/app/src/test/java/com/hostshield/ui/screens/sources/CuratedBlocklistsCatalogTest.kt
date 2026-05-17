@@ -39,6 +39,25 @@ class CuratedBlocklistsCatalogTest {
         assertTrue(byLabel.getValue("HaGeZi Most Abused TLDs").warning.contains("whole TLD"))
     }
 
+    @Test
+    fun `subscribed allowlist gallery uses current unbreak URLs`() {
+        val byLabel = readCatalog().associateBy { it.label }
+
+        val expected = mapOf(
+            "Anudeep's Whitelist" to "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt",
+            "Anudeep's Optional Whitelist" to "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt",
+            "Anudeep's Referral Sites" to "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/referral-sites.txt",
+            "HaGeZi Referral Allowlist" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt",
+            "HaGeZi Most Abused TLD Allowlist" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/spam-tlds-adblock-allow.txt"
+        )
+
+        expected.forEach { (label, url) ->
+            val item = byLabel.getValue(label)
+            assertEquals(url, item.url)
+            assertFalse("$label should explain override behavior", item.warning.isBlank())
+        }
+    }
+
     private fun readCatalog(): List<CatalogItem> {
         val file = listOf(
             File("src/main/assets/curated_blocklists.json"),

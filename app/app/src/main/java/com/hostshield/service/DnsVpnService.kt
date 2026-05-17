@@ -859,18 +859,20 @@ class DnsVpnService : VpnService() {
 
     private suspend fun rebuildBlocklist() {
         try {
-            val sources = repository.getEnabledSourcesList()
+            val blockSources = repository.getEnabledBlockSources()
+            val allowlistSources = repository.getEnabledAllowlistSources()
             val allDomains = mutableSetOf<String>()
+            val sourceAllowDomains = mutableSetOf<String>()
             val sourceWildcardBlocks = mutableSetOf<String>()
             val sourceWildcardAllows = mutableSetOf<String>()
             val failedSources = mutableListOf<SourceFailureNotice>()
-            for (source in sources) {
+            for (source in blockSources) {
                 // forceDownload=true: must get ALL domains, not just changes.
                 // Without this, 304 responses silently drop entire sources.
                 downloader.download(source, forceDownload = true).onSuccess { dl ->
                     val parsed = HostsParser.parseForBlocking(dl.content)
                     allDomains.addAll(parsed.blockDomains)
-                    allDomains.removeAll(parsed.allowDomains)
+                    sourceAllowDomains.addAll(parsed.allowDomains)
                     sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
                     sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                     repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
@@ -905,11 +907,39 @@ class DnsVpnService : VpnService() {
                     )
                 }
             }
+            for (source in allowlistSources) {
+                downloader.download(source, forceDownload = true).onSuccess { dl ->
+                    val parsed = HostsParser.parseForAllowing(dl.content)
+                    sourceAllowDomains.addAll(parsed.allowDomains)
+                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                    repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
+                }.onFailure { err ->
+                    val failures = source.consecutiveFailures + 1
+                    val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
+                    val httpStatus = err.sourceHttpStatus()
+                    repository.updateSourceHealth(
+                        source.id,
+                        health,
+                        err.message ?: "Unknown error",
+                        failures,
+                        httpStatus
+                    )
+                    failedSources += SourceFailureNotice(
+                        label = source.label,
+                        url = source.url,
+                        error = err.message ?: err.javaClass.simpleName,
+                        httpStatus = httpStatus,
+                        lastSuccessfulUpdate = source.lastUpdated,
+                        consecutiveFailures = failures,
+                    )
+                }
+            }
             sourceFailureNotifier.notifyFailures(failedSources)
             repository.getEnabledRulesByType(RuleType.BLOCK).filter { !it.isWildcard }
                 .forEach { allDomains.add(it.hostname.lowercase()) }
             repository.getEnabledRulesByType(RuleType.ALLOW).filter { !it.isWildcard }
                 .forEach { allDomains.remove(it.hostname.lowercase()) }
+            allDomains.removeAll(sourceAllowDomains)
             blocklist.updateAsync(
                 allDomains,
                 repository.getEnabledWildcards(),

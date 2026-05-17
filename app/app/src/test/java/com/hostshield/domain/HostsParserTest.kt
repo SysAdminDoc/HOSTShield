@@ -91,6 +91,31 @@ class HostsParserTest {
     }
 
     @Test
+    fun `parseForAllowing treats plain and adblock allowlists as allow domains`() {
+        val plain = HostsParser.parseForAllowing(
+            """
+                cdn.example.com
+                0.0.0.0 login.example.com
+            """.trimIndent()
+        )
+        assertTrue(plain.allowDomains.contains("cdn.example.com"))
+        assertTrue(plain.allowDomains.contains("login.example.com"))
+
+        val adblock = HostsParser.parseForAllowing(
+            """
+                [Adblock Plus]
+                @@||cashback.example^
+                @@||*.trusted.example^
+                ||blocked.example^
+            """.trimIndent()
+        )
+        assertTrue(adblock.allowDomains.contains("cashback.example"))
+        assertTrue(adblock.wildcardAllowDomains.contains("cashback.example"))
+        assertTrue(adblock.wildcardAllowDomains.contains("trusted.example"))
+        assertFalse(adblock.allowDomains.contains("blocked.example"))
+    }
+
+    @Test
     fun `lowercase normalization`() {
         val content = "0.0.0.0 ADS.Example.COM"
         val results = HostsParser.parse(content)

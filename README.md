@@ -119,7 +119,7 @@
 |---------|-------------|
 | **Curated Gallery** | 50+ categorized blocklists with tier, size, and breakage warnings for aggressive packs |
 | **Source Categories** | ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM |
-| **Allowlist Sources** | Curated allowlists (Anudeep, HaGeZi) subtracted from blocklist during updates |
+| **Allowlist Sources** | Subscribed allowlists (Anudeep, HaGeZi) override blocklist entries and can show neutralized-domain examples |
 | **Overlap Analysis** | Identify redundant domains across enabled sources to optimize subscriptions |
 | **Source Health Check** | Batch reachability test + staleness detection. Push notification for DEAD sources |
 | **Hosts Diff** | Track new/removed domains between blocklist updates |
@@ -221,7 +221,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 
 Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Add custom URL sources via Settings > Sources in hosts, domains-only, or DNS adblock syntax.
 
-**Source categories**: ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM. Allowlist sources are subtracted from the blocklist during updates.
+**Source categories**: ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM. Allowlist sources override block entries during updates, including adblock `@@||` exception lists.
 
 ### Upstream DNS
 

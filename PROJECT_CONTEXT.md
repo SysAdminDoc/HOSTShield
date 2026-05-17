@@ -84,11 +84,12 @@ Important implementation facts:
 - `HostShieldMigrationTest` is an instrumented migration matrix. It creates frozen SQL fixtures for every supported start version 1 through 14, migrates to current schema version 15 with `Migrations.ALL`, validates against the Room schema export, and checks sentinel data survives.
 - `ParserFuzzHarnessTest` is a deterministic JVM fuzz/property harness for malformed DNS bytes, generated DNS query roundtrips, DNS stamps, hosts/adblock imports, regex guard behavior, malformed backup payloads, and malformed source URLs.
 - `BackupCryptoTest` covers AES-GCM roundtrip, wrong-passphrase authentication failure, short payload rejection, invalid header rejection, random salt/IV/ciphertext uniqueness, legacy plaintext detection, and encrypted-import prompt/failure behavior through `BackupRestoreUtil.decodeBackupBytes`.
-- The curated blocklist gallery now includes 50 sources and a HaGeZi pack chooser for Light/Multi-Light, Normal, Pro, Pro++, Ultimate, TIF, TIF Mini, DynDNS, NRD, and Most Abused TLDs. Gallery items can carry tier and warning metadata, and `HostsParser.parseForBlocking` preserves adblock wildcard and `$denyallow=` semantics for source rebuild paths.
+- The curated blocklist gallery now includes 51 sources and a HaGeZi pack chooser for Light/Multi-Light, Normal, Pro, Pro++, Ultimate, TIF, TIF Mini, DynDNS, NRD, and Most Abused TLDs. Gallery items can carry tier and warning metadata, and `HostsParser.parseForBlocking` preserves adblock wildcard and `$denyallow=` semantics for source rebuild paths.
+- Subscribed allowlists are first-class source-category inputs in the Home apply, VPN rebuild, profile schedule, and periodic hosts worker paths. `HostsParser.parseForAllowing` handles plain domains and adblock `@@||` exception files, stale HaGeZi allowlist URLs are repaired on seed, and Sources can run an allowlist impact analysis that shows neutralized counts and sample domains per enabled allowlist.
 
 ## Highest-Value Next Work
 
-1. Add subscribed allowlist packs that visibly neutralize blocklist entries according to current allowlist precedence.
+1. Add source impact preview before applying source updates.
 2. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
 3. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 
