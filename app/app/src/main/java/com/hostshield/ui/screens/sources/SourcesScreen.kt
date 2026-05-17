@@ -28,6 +28,7 @@ import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
+import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -105,7 +106,32 @@ class SourcesViewModel @Inject constructor(
                 for (source in allSources) {
                     if (!source.enabled) continue
                     val result = downloader.validate(source.url)
-                    result.onSuccess { ok++ }.onFailure { fail++ }
+                    result.onSuccess { lineCount ->
+                        if (lineCount == 0) {
+                            fail++
+                            repository.updateSourceHealth(
+                                source.id,
+                                SourceHealth.ERROR,
+                                "Source returned 0 entries",
+                                source.consecutiveFailures,
+                                0
+                            )
+                        } else {
+                            ok++
+                            repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
+                        }
+                    }.onFailure { err ->
+                        fail++
+                        val failures = source.consecutiveFailures + 1
+                        val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
+                        repository.updateSourceHealth(
+                            source.id,
+                            health,
+                            err.message ?: "Unknown error",
+                            failures,
+                            err.sourceHttpStatus()
+                        )
+                    }
                 }
                 _healthCheckMessage.value = "$ok reachable, $fail unreachable"
             } catch (e: Exception) {
@@ -438,6 +464,32 @@ private fun SourceItem(source: HostSource, onToggle: (Boolean) -> Unit, onDelete
                         }
                     }
                 }
+                if (source.health == SourceHealth.ERROR || source.health == SourceHealth.DEAD) {
+                    Spacer(Modifier.height(7.dp))
+                    Row(verticalAlignment = Alignment.Top) {
+                        Icon(
+                            Icons.Filled.ReportProblem,
+                            contentDescription = null,
+                            tint = Red.copy(alpha = 0.75f),
+                            modifier = Modifier.size(13.dp).padding(top = 1.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Column {
+                            Text(
+                                sourceFailureText(source),
+                                color = Red.copy(alpha = 0.85f),
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                            Text(
+                                sourceLastSuccessText(source.lastUpdated),
+                                color = TextDim,
+                                fontSize = 10.sp,
+                                lineHeight = 14.sp
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(Modifier.width(8.dp))
@@ -572,3 +624,18 @@ private fun formatTimestamp(ms: Long): String = try {
     Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault())
         .format(DateTimeFormatter.ofPattern("MMM d, h:mm a"))
 } catch (e: Exception) { "Unknown" }
+
+private fun sourceFailureText(source: HostSource): String {
+    val status = if (source.lastHttpStatus > 0) "HTTP ${source.lastHttpStatus}" else "Network"
+    val reason = source.lastError.ifBlank { "Unknown failure" }
+    val failures = if (source.consecutiveFailures > 0) " (${source.consecutiveFailures}x)" else ""
+    return "Last failure: $status - $reason$failures"
+}
+
+private fun sourceLastSuccessText(lastUpdated: Long): String {
+    return if (lastUpdated > 0L) {
+        "Last successful update: ${formatTimestamp(lastUpdated)}"
+    } else {
+        "Last successful update: never"
+    }
+}

@@ -28,6 +28,7 @@ Research date: 2026-05-17
 - `DiagnosticEventStore` - added a local-only JSONL ring buffer capped at 500 events for VPN lifecycle, Private DNS conflicts, blocklist swaps, source failures, DoH pin/failover issues, watchdog/doze recovery, root command failures, and backup restore failures.
 - `DiagnosticExporter` and Settings diagnostics - changed diagnostic sharing from a single text file to a ZIP package with the text report, raw `diagnostic-events.jsonl`, and a manifest.
 - `DohResolver` and `DnsToolsScreen` - added a 24-hour resolver health window and DNS Tools Status card for selected provider, active transport, latency, success rate, failovers, pin failures, and EDE placeholder.
+- Failed-source feedback - added Room v15 `host_sources.last_http_status`, typed source download HTTP failures, persisted source health updates across workers/service/manual flows, a local source-failure notification helper, and Sources screen failure details showing last failure, HTTP status, and last successful update.
 
 ## Files Intentionally Not Modified
 

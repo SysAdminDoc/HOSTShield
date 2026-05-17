@@ -3,6 +3,7 @@ package com.hostshield.data.repository
 import com.hostshield.data.database.*
 import com.hostshield.data.model.*
 import com.hostshield.data.source.SourceDownloader
+import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.parser.HostsParser
 import com.hostshield.domain.parser.ParsedHost
 import com.hostshield.util.DiagnosticEventStore
@@ -53,6 +54,13 @@ class HostShieldRepository @Inject constructor(
     suspend fun updateSource(source: HostSource) = sources.updateSource(source)
     suspend fun deleteSource(source: HostSource) = sources.deleteSource(source)
     suspend fun toggleSource(id: Long, enabled: Boolean) = sources.toggleSource(id, enabled)
+    suspend fun updateSourceHealth(
+        id: Long,
+        health: SourceHealth,
+        error: String,
+        failures: Int,
+        httpStatus: Int = 0
+    ) = sourceDao.updateHealth(id, health, error, failures, httpStatus)
 
     // ── User Rules (delegated) ──────────────────────────────
     fun getAllRules(): Flow<List<UserRule>> = rules.getAllRules()
@@ -135,11 +143,12 @@ class HostShieldRepository @Inject constructor(
                         val fresh = downloader.download(source.copy(etag = "", lastModifiedOnline = ""))
                         fresh.onSuccess { f -> parsedSets.add(HostsParser.parse(f.content)) }
                     }
-                    sourceDao.updateHealth(source.id, SourceHealth.OK, "", 0)
+                    sourceDao.updateHealth(source.id, SourceHealth.OK, "", 0, 0)
                 }.onFailure { err ->
                     val failures = source.consecutiveFailures + 1
                     val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
-                    sourceDao.updateHealth(source.id, health, err.message ?: "Unknown", failures)
+                    val httpStatus = err.sourceHttpStatus()
+                    sourceDao.updateHealth(source.id, health, err.message ?: "Unknown", failures, httpStatus)
                     diagnosticEvents.record(
                         DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
                         "Source download failed during manual apply",
@@ -147,6 +156,7 @@ class HostShieldRepository @Inject constructor(
                             "source" to source.url,
                             "label" to source.label,
                             "error" to (err.message ?: err.javaClass.simpleName),
+                            "http_status" to httpStatus,
                             "failures" to failures
                         )
                     )

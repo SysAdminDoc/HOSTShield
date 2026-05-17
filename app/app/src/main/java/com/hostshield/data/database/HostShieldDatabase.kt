@@ -19,7 +19,7 @@ import com.hostshield.data.model.*
         AutomationAuditEntry::class,
         VpnStabilityEntry::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

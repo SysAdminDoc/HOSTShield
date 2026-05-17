@@ -7,9 +7,11 @@ import androidx.work.*
 import com.hostshield.data.database.ProfileDao
 import com.hostshield.data.model.BlockingProfile
 import com.hostshield.data.model.RuleType
+import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
+import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
 import dagger.assisted.Assisted
@@ -95,9 +97,20 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 val allDomains = mutableSetOf<String>()
                 for (source in sources) {
                     downloader.download(source).onSuccess { dl ->
+                        repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                         if (!dl.notModified) {
                             HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
                         }
+                    }.onFailure { err ->
+                        val failures = source.consecutiveFailures + 1
+                        val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
+                        repository.updateSourceHealth(
+                            source.id,
+                            health,
+                            err.message ?: "Unknown error",
+                            failures,
+                            err.sourceHttpStatus(),
+                        )
                     }
                 }
                 val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)

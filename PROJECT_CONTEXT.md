@@ -19,7 +19,7 @@ Primary evidence:
 ## Current Baseline
 
 - Version: `6.5.9`, versionCode `67` in `app/app/build.gradle.kts`.
-- Database: Room schema version `14` in `HostShieldDatabase.kt`.
+- Database: Room schema version `15` in `HostShieldDatabase.kt`.
 - Branch: `main`, clean before this research pass.
 - Tags observed: latest `v6.5.9`; earlier release tags include `v6.5.1`, `v6.5.0`, `v6.4.0`, `v6.3.0`, `v6.2.0`.
 - Source size: 169 Kotlin files, 151 main Kotlin files, 18 JVM test files, about 40.8K main Kotlin lines and 2.4K test lines.
@@ -77,14 +77,14 @@ Important implementation facts:
 - Event producers include VPN lifecycle/heartbeat/watchdog, DoH cert pin and failover paths, blocklist update workers, manual source apply, Private DNS detection, root shell/hosts failures, and backup restore failures.
 - Settings diagnostic export now shares a ZIP package containing `hostshield-diagnostic.txt`, `diagnostic-events.jsonl`, and `manifest.json`; there is no automatic network upload.
 - `DohResolver` now keeps an in-memory 24-hour provider health window. DNS Tools > Status shows per-resolver selected state, observed transport, latency, success rate, failovers, pin failures, and an EDE placeholder.
+- Source download failures now persist `last_http_status`, `last_error`, and consecutive failure counts. Failed blocklist, allowlist, rule-sync, health-check, manual apply, VPN rebuild, and profile rebuild paths update source health; failed source updates post a local HostShield alert notification; Sources cards show last failure, HTTP status when available, and last successful update.
 
 ## Highest-Value Next Work
 
-1. Surface failed-source feedback in notifications and Sources badges with last error/status context.
-2. Complete DNSCrypt safely by choosing an audited Android-compatible crypto/engine path before exposing any user-facing toggle.
-3. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
-4. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
-5. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
+1. Complete DNSCrypt safely by choosing an audited Android-compatible crypto/engine path before exposing any user-facing toggle.
+2. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
+3. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
+4. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 
 ## Verification Commands
 

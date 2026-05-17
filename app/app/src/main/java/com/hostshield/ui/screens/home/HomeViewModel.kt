@@ -9,10 +9,13 @@ import com.hostshield.data.database.DnsLogDao
 import com.hostshield.data.database.ConnectionLogDao
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.model.DnsLogEntry
+import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.RuleType
+import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
+import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
 import com.hostshield.service.DnsVpnService
@@ -601,9 +604,13 @@ class HomeViewModel @Inject constructor(
                             entryCount = parsed.size,
                             lastUpdated = System.currentTimeMillis(),
                             health = com.hostshield.data.model.SourceHealth.OK,
+                            lastError = "",
+                            lastHttpStatus = 0,
                             consecutiveFailures = 0
                         ))
                     } catch (_: Exception) { }
+                }.onFailure { err ->
+                    markSourceDownloadFailure(source, err)
                 }
             }
 
@@ -675,6 +682,9 @@ class HomeViewModel @Inject constructor(
                 result.onSuccess { dl ->
                     val parsed = HostsParser.parse(dl.content)
                     parsed.forEach { allDomains.add(it.hostname) }
+                    markSourceDownloadSuccess(source.id)
+                }.onFailure { err ->
+                    markSourceDownloadFailure(source, err)
                 }
             }
 
@@ -809,6 +819,26 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(snackbarMessage = msg) }
     }
 
+    private suspend fun markSourceDownloadSuccess(id: Long) {
+        try {
+            repository.updateSourceHealth(id, SourceHealth.OK, "", 0, 0)
+        } catch (_: Exception) { }
+    }
+
+    private suspend fun markSourceDownloadFailure(source: HostSource, err: Throwable) {
+        try {
+            val failures = source.consecutiveFailures + 1
+            val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
+            repository.updateSourceHealth(
+                id = source.id,
+                health = health,
+                error = err.message ?: "Unknown error",
+                failures = failures,
+                httpStatus = err.sourceHttpStatus(),
+            )
+        } catch (_: Exception) { }
+    }
+
     /** Build the in-memory blocklist from sources + user rules. */
     private suspend fun buildBlocklistHolder() {
         try {
@@ -820,6 +850,9 @@ class HomeViewModel @Inject constructor(
                 result.onSuccess { dl ->
                     val parsed = HostsParser.parse(dl.content)
                     parsed.forEach { allDomains.add(it.hostname) }
+                    markSourceDownloadSuccess(source.id)
+                }.onFailure { err ->
+                    markSourceDownloadFailure(source, err)
                 }
             }
 
