@@ -75,8 +75,8 @@
 |---------|-------------|
 | **DNS-over-HTTPS (DoH)** | RFC 8484 POST+GET. Cloudflare, Google, Quad9, NextDNS, AdGuard, Mullvad, CleanBrowsing |
 | **DNS-over-TLS (DoT)** | RFC 7858, TLSv1.3, SNI + hostname verification. Cloudflare, Google, Quad9, AdGuard |
-| **DNS-over-QUIC (DoQ)** | RFC 9250, QUIC Initial framing. AdGuard, NextDNS, Mullvad. Falls back to DoT |
-| **DNS-over-WireGuard** | Noise_IKpsk2 handshake, AES-256-GCM transport encryption. DNS-only WireGuard tunnel |
+| **DNS-over-QUIC (DoQ)** | Experimental simplified engine, not a full QUIC/TLS 1.3 stack. Falls back to DoT; production defaults remain pinned DoH/DoH3/DoT |
+| **DNS-over-WireGuard** | Experimental DNS-only simplified engine, not a full WireGuard tunnel. Production defaults remain pinned DoH/DoH3/DoT |
 | **Certificate Pinning** | Fail-closed SHA-256 pin validation per provider; resolver failover continues only to pinned providers |
 | **Smart Latency Failover** | EMA-based latency tracking per provider, auto-selects fastest, falls back through all on failure |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through VPN tunnel to prevent bypass |
@@ -296,8 +296,8 @@ app/src/main/java/com/hostshield/
 │   ├── DnsPacketBuilder.kt   # DNS wire format builder/parser
 │   ├── DohResolver.kt        # DoH with smart latency failover
 │   ├── DotResolver.kt        # DoT (RFC 7858, TLSv1.3, 4 providers)
-│   ├── DoqResolver.kt        # DoQ (RFC 9250, QUIC Initial, 3 providers)
-│   ├── WireGuardProxy.kt     # DNS-over-WireGuard (Noise_IKpsk2, AES-256-GCM)
+│   ├── DoqResolver.kt        # Experimental simplified DoQ path
+│   ├── WireGuardProxy.kt     # Experimental simplified DNS-over-WireGuard path
 │   ├── CnameCloakDetector.kt # CNAME + SVCB/HTTPS cloak detection
 │   ├── CnameCloakUpdater.kt  # Remote CNAME cloak DB fetcher (AdGuard + NextDNS)
 │   ├── DohBypassUpdater.kt   # Remote DoH bypass list fetcher

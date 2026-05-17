@@ -44,6 +44,7 @@ Important implementation facts:
 - `DnsCryptRoutePlanner` validates DNSCrypt resolver/relay role separation and builds relay prefixes, but full DNSCrypt query encryption/decryption is not exposed.
 - DNSCrypt production work is gated by `docs/decisions/0001-dnscrypt-engine.md`. The accepted direction is an audited engine extraction behind a Kotlin facade, with full `dnscrypt-proxy`/`gomobile` only as a packaging and correctness spike; native Kotlin crypto is a fallback, not the first production path.
 - `DoqResolver` and `WireGuardProxy` are explicitly experimental and simplified. Treat them as research-grade until replaced with audited engines.
+- Settings, diagnostics, logs, and README now share explicit maturity labels for DoQ and WireGuard DNS. Production defaults remain pinned DoH/DoH3/DoT; DoQ and WireGuard DNS stay opt-in.
 - `SecureStore` still uses AndroidX `EncryptedSharedPreferences` / `MasterKeys`; dependency review flags this as a migration candidate because AndroidX Security Crypto remains alpha and the API is aging.
 - Room migrations exist from v1 through v14, but exported schema snapshots only exist for versions 7, 8, 9, 12, and 14. Migration-path tests need golden databases for every supported transition.
 
@@ -82,7 +83,7 @@ Important implementation facts:
 
 ## Highest-Value Next Work
 
-1. Gate experimental DoQ and WireGuard modes so simplified engines cannot be mistaken for production-grade defaults.
+1. Add DoH pin rotation metadata with review dates, backup pins, and pin-failure diagnostics.
 2. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
 3. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
 4. Reconcile the conflicting MIT/GPL license files before publishing any new public release.

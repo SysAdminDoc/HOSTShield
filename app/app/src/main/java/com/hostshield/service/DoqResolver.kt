@@ -1,6 +1,7 @@
 package com.hostshield.service
 
 import android.util.Log
+import com.hostshield.util.ExperimentalEngineDisclosure
 import java.io.ByteArrayOutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -95,7 +96,7 @@ class DoqResolver @Inject constructor(
      * @return The raw DNS response bytes, or null on failure.
      */
     fun resolve(dns: ByteArray, provider: Provider = Provider.ADGUARD): ByteArray? {
-        Log.w(TAG, "⚠️ DoQ resolver is EXPERIMENTAL — not a full QUIC/TLS 1.3 stack. See class header for limitations.")
+        Log.w(TAG, ExperimentalEngineDisclosure.DOQ_DIAGNOSTIC)
         return try {
             resolveQuic(dns, provider)
         } catch (e: Exception) {
