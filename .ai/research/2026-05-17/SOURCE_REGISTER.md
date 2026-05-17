@@ -94,6 +94,10 @@ Research date: 2026-05-17
 | E039 | DNSCrypt block-name plugin | https://github.com/DNSCrypt/dnscrypt-proxy/blob/master/dnscrypt-proxy/plugin_block_name.go | Blocklist matching semantics for DNSCrypt engine. |
 | E040 | DNSCrypt stamp spec wiki | https://github.com/DNSCrypt/dnscrypt-proxy/wiki/DNS-Stamp-specifiers | Stamp format reference. |
 | E041 | Anonymized DNSCrypt wiki | https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Anonymized-DNSCrypt | Relay privacy model. |
+| E079 | DNSCrypt protocol draft | https://dnscrypt.github.io/dnscrypt-protocol/draft-denis-dprive-dnscrypt.html | DNSCrypt protocol, certificates, nonce, and anonymized relay requirements. |
+| E080 | Go Mobile documentation | https://go.dev/wiki/Mobile | `gomobile bind` Android AAR packaging path and limitations. |
+| E081 | libsodium ChaCha20-Poly1305 docs | https://doc.libsodium.org/secret-key_cryptography/aead/chacha20-poly1305 | Native primitive availability for fallback analysis. |
+| E082 | libsodium XChaCha20 docs | https://doc.libsodium.org/advanced/stream_ciphers/xchacha20 | XChaCha20 implementation and nonce context for fallback analysis. |
 | E042 | RFC 8484 DNS over HTTPS | https://www.rfc-editor.org/rfc/rfc8484 | DoH protocol. |
 | E043 | RFC 7858 DNS over TLS | https://www.rfc-editor.org/rfc/rfc7858 | DoT protocol. |
 | E044 | RFC 9250 DNS over QUIC | https://www.rfc-editor.org/rfc/rfc9250 | DoQ protocol. |

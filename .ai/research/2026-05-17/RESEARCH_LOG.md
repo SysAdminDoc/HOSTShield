@@ -96,3 +96,13 @@ Research reached saturation when independent source classes converged on the sam
 - Dependencies: AndroidX Security Crypto alpha, OkHttp 4.x, AGP/Kotlin/Compose cadence, and release-distribution metadata all create maintenance backlog.
 
 Additional searches would likely add examples, not change the top roadmap tiers.
+
+## Implementation Follow-Up - DNSCrypt Decision Record
+
+- Re-checked DNSCrypt project sources while completing the roadmap item:
+  `dnscrypt-proxy`, DNS stamp references, DNSCrypt protocol draft,
+  Anonymized DNSCrypt notes, Go Mobile `gomobile bind`, and libsodium
+  ChaCha20/XChaCha20 docs.
+- The GitHub wiki URLs listed as E040/E041 currently render as "Create new
+  page" in GitHub's HTML view; the DNSCrypt website, protocol draft, and
+  source repository were sufficient to support the decision record.
