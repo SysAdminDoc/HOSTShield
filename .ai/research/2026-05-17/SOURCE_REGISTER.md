@@ -78,7 +78,7 @@ Research date: 2026-05-17
 | E023 | AdGuard Hostlists Registry | https://github.com/AdguardTeam/HostlistsRegistry | Curated source metadata model. |
 | E024 | Pi-hole repository | https://github.com/pi-hole/pi-hole | Server-side DNS blocker benchmark. |
 | E025 | Pi-hole docs | https://docs.pi-hole.net/ | Gravity, allowlists, admin concepts. |
-| E026 | Hagezi DNS blocklists | https://github.com/hagezi/dns-blocklists | Tiered pack and diff pipeline opportunities. |
+| E026 | Hagezi DNS blocklists | https://github.com/hagezi/dns-blocklists | Tiered pack and diff pipeline opportunities; refreshed against upstream README and list headers on 2026-05-17 for HaGeZi pack URLs, size expectations, and warnings. |
 | E027 | OISD | https://oisd.nl/ | List format and blocklist ecosystem trend. |
 | E028 | StevenBlack hosts | https://github.com/StevenBlack/hosts | Major hosts list source. |
 | E029 | FilterLists | https://github.com/collinbarrett/FilterLists | Source directory / metadata reference. |

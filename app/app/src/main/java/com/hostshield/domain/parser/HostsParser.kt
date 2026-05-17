@@ -22,6 +22,14 @@ class ParsedHost(
 }
 
 object HostsParser {
+    data class BlockingParseResult(
+        val blockDomains: Set<String>,
+        val allowDomains: Set<String> = emptySet(),
+        val wildcardBlockDomains: Set<String> = emptySet(),
+        val wildcardAllowDomains: Set<String> = emptySet()
+    ) {
+        val entryCount: Int get() = blockDomains.size + wildcardBlockDomains.size
+    }
 
     private val HOSTS_LINE_REGEX = Regex("""^\s*(\S+)\s+(\S+)""")
     private val DOMAIN_REGEX = Regex("""^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$""")
@@ -73,6 +81,60 @@ object HostsParser {
      */
     fun parseAdblock(content: String): AdblockRuleParser.ParseResult {
         return AdblockRuleParser.parse(content)
+    }
+
+    /**
+     * Parse a downloaded source for in-memory DNS blocking.
+     *
+     * Plain hosts/domains files become exact block domains. Adblock DNS rules
+     * preserve subdomain semantics by emitting wildcard trie entries for
+     * `||domain^` and `||*.domain^` rules, plus allow wildcards for `@@||`
+     * and `$denyallow=` exceptions.
+     */
+    fun parseForBlocking(content: String): BlockingParseResult {
+        if (!isAdblockFormat(content)) {
+            return BlockingParseResult(
+                blockDomains = parseHostsFormat(content).mapTo(mutableSetOf()) { it.hostname }
+            )
+        }
+
+        val parsed = AdblockRuleParser.parse(content)
+        val blockDomains = mutableSetOf<String>()
+        val allowDomains = mutableSetOf<String>()
+        val wildcardBlockDomains = mutableSetOf<String>()
+        val wildcardAllowDomains = mutableSetOf<String>()
+
+        parsed.blockRules.forEach { rule ->
+            if (rule.isRegex || rule.dnsTypes != null || rule.domain.isBlank()) return@forEach
+
+            if (rule.matchesSubdomains || rule.isWildcard) {
+                wildcardBlockDomains.add(rule.domain)
+            } else {
+                blockDomains.add(rule.domain)
+            }
+
+            rule.denyAllowDomains.orEmpty()
+                .filter { isValidDomain(it) }
+                .forEach {
+                    allowDomains.add(it)
+                    wildcardAllowDomains.add(it)
+                }
+        }
+
+        parsed.allowRules.forEach { rule ->
+            if (rule.isRegex || rule.dnsTypes != null || rule.domain.isBlank()) return@forEach
+            allowDomains.add(rule.domain)
+            if (rule.matchesSubdomains || rule.isWildcard) {
+                wildcardAllowDomains.add(rule.domain)
+            }
+        }
+
+        return BlockingParseResult(
+            blockDomains = blockDomains,
+            allowDomains = allowDomains,
+            wildcardBlockDomains = wildcardBlockDomains,
+            wildcardAllowDomains = wildcardAllowDomains
+        )
     }
 
     /**

@@ -125,6 +125,8 @@ class HostsUpdateWorker @AssistedInject constructor(
                     val allDomains = mutableSetOf<String>()
                     // v5.0: Collect adblock-syntax allow rules from sources
                     val adblockAllowDomains = mutableSetOf<String>()
+                    val adblockWildcardBlocks = mutableSetOf<String>()
+                    val adblockWildcardAllows = mutableSetOf<String>()
 
                     // Track per-source failures so the user can see why a blocklist
                     // is stale (silent swallow used to make this look like the lists
@@ -135,14 +137,11 @@ class HostsUpdateWorker @AssistedInject constructor(
                             .onSuccess { dl ->
                                 repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                                 if (!dl.notModified) {
-                                    // v5.0: Auto-detect adblock format and extract allow rules
-                                    if (HostsParser.isAdblockFormat(dl.content)) {
-                                        val parsed = HostsParser.parseAdblock(dl.content)
-                                        allDomains.addAll(parsed.exactBlockDomains)
-                                        adblockAllowDomains.addAll(parsed.exactAllowDomains)
-                                    } else {
-                                        HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
-                                    }
+                                    val parsed = HostsParser.parseForBlocking(dl.content)
+                                    allDomains.addAll(parsed.blockDomains)
+                                    adblockAllowDomains.addAll(parsed.allowDomains)
+                                    adblockWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                                    adblockWildcardAllows.addAll(parsed.wildcardAllowDomains)
                                 }
                             }
                             .onFailure { err ->
@@ -300,12 +299,19 @@ class HostsUpdateWorker @AssistedInject constructor(
 
                     val wildcards = repository.getEnabledWildcards()
                     val regexRules = repository.getEnabledRegexRules()
-                    blocklistHolder.updateAsync(allDomains, wildcards, regexRules)
+                    val blockingDomainCount = allDomains.size + adblockWildcardBlocks.size
+                    blocklistHolder.updateAsync(
+                        allDomains,
+                        wildcards,
+                        regexRules,
+                        sourceWildcardBlocks = adblockWildcardBlocks,
+                        sourceWildcardAllows = adblockWildcardAllows
+                    )
                     diagnosticEvents.record(
                         DiagnosticEventType.BLOCKLIST_SWAP,
                         "Blocklist snapshot swapped",
                         mapOf(
-                            "domains" to allDomains.size,
+                            "domains" to blockingDomainCount,
                             "wildcards" to wildcards.size,
                             "regex_rules" to regexRules.size,
                             "source" to "hosts_update_worker"
@@ -313,7 +319,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                     )
 
                     prefs.setLastApplyTime(System.currentTimeMillis())
-                    prefs.setLastApplyCount(allDomains.size)
+                    prefs.setLastApplyCount(blockingDomainCount)
                 }
                 BlockMethod.DISABLED -> { }
             }

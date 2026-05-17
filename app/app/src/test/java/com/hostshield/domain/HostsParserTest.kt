@@ -70,6 +70,27 @@ class HostsParserTest {
     }
 
     @Test
+    fun `parseForBlocking preserves adblock wildcard and denyallow rules`() {
+        val content = """
+            [Adblock Plus]
+            ||*.actor^
+            ||*.africa^${'$'}denyallow=nation.africa|trusted.africa
+            @@||allowed.actor^
+            ||exact.example^${'$'}dnstype=A
+        """.trimIndent()
+
+        val result = HostsParser.parseForBlocking(content)
+
+        assertTrue(result.wildcardBlockDomains.contains("actor"))
+        assertTrue(result.wildcardBlockDomains.contains("africa"))
+        assertTrue(result.wildcardAllowDomains.contains("nation.africa"))
+        assertTrue(result.wildcardAllowDomains.contains("trusted.africa"))
+        assertTrue(result.wildcardAllowDomains.contains("allowed.actor"))
+        assertTrue(result.allowDomains.contains("allowed.actor"))
+        assertFalse(result.blockDomains.contains("exact.example"))
+    }
+
+    @Test
     fun `lowercase normalization`() {
         val content = "0.0.0.0 ADS.Example.COM"
         val results = HostsParser.parse(content)

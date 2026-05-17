@@ -199,7 +199,9 @@ class BlocklistHolder @Inject constructor() {
         newDomains: Set<String>,
         wildcards: List<UserRule>,
         regexRules: List<UserRule> = emptyList(),
-        ipBlocks: Set<String> = emptySet()
+        ipBlocks: Set<String> = emptySet(),
+        sourceWildcardBlocks: Set<String> = emptySet(),
+        sourceWildcardAllows: Set<String> = emptySet()
     ) {
         val newRoot = TrieNode()
         val newExactSet: MutableSet<String> = HashSet(newDomains.size + dohBypassDomains.size)
@@ -208,6 +210,14 @@ class BlocklistHolder @Inject constructor() {
             val lower = domain.lowercase()
             insertDomain(newRoot, lower, terminal = true)
             newExactSet.add(lower)
+        }
+        for (domain in sourceWildcardBlocks) {
+            val lower = domain.lowercase()
+            if (lower.isNotBlank()) insertDomain(newRoot, lower, wildcardBlock = true)
+        }
+        for (domain in sourceWildcardAllows) {
+            val lower = domain.lowercase()
+            if (lower.isNotBlank()) insertDomain(newRoot, lower, wildcardAllow = true)
         }
         // Always block DoH bypass domains (exact match)
         for (domain in dohBypassDomains) {
@@ -256,7 +266,7 @@ class BlocklistHolder @Inject constructor() {
             regexBlockRules = newRegexBlock,
             regexAllowRules = newRegexAllow,
             blockedIps = ipBlocks,
-            domainCount = newDomains.size + dohBypassDomains.size,
+            domainCount = newDomains.size + sourceWildcardBlocks.size + dohBypassDomains.size,
         )
 
         decisionCache.clear()
@@ -266,9 +276,11 @@ class BlocklistHolder @Inject constructor() {
         newDomains: Set<String>,
         wildcards: List<UserRule>,
         regexRules: List<UserRule> = emptyList(),
-        ipBlocks: Set<String> = emptySet()
+        ipBlocks: Set<String> = emptySet(),
+        sourceWildcardBlocks: Set<String> = emptySet(),
+        sourceWildcardAllows: Set<String> = emptySet()
     ) = withContext(Dispatchers.Default) {
-        update(newDomains, wildcards, regexRules, ipBlocks)
+        update(newDomains, wildcards, regexRules, ipBlocks, sourceWildcardBlocks, sourceWildcardAllows)
     }
 
     fun clear() {

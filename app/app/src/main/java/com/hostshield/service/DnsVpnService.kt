@@ -861,12 +861,18 @@ class DnsVpnService : VpnService() {
         try {
             val sources = repository.getEnabledSourcesList()
             val allDomains = mutableSetOf<String>()
+            val sourceWildcardBlocks = mutableSetOf<String>()
+            val sourceWildcardAllows = mutableSetOf<String>()
             val failedSources = mutableListOf<SourceFailureNotice>()
             for (source in sources) {
                 // forceDownload=true: must get ALL domains, not just changes.
                 // Without this, 304 responses silently drop entire sources.
                 downloader.download(source, forceDownload = true).onSuccess { dl ->
-                    HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
+                    val parsed = HostsParser.parseForBlocking(dl.content)
+                    allDomains.addAll(parsed.blockDomains)
+                    allDomains.removeAll(parsed.allowDomains)
+                    sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                     repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                 }.onFailure { err ->
                     val failures = source.consecutiveFailures + 1
@@ -904,11 +910,17 @@ class DnsVpnService : VpnService() {
                 .forEach { allDomains.add(it.hostname.lowercase()) }
             repository.getEnabledRulesByType(RuleType.ALLOW).filter { !it.isWildcard }
                 .forEach { allDomains.remove(it.hostname.lowercase()) }
-            blocklist.updateAsync(allDomains, repository.getEnabledWildcards())
+            blocklist.updateAsync(
+                allDomains,
+                repository.getEnabledWildcards(),
+                sourceWildcardBlocks = sourceWildcardBlocks,
+                sourceWildcardAllows = sourceWildcardAllows
+            )
+            val blockingDomainCount = allDomains.size + sourceWildcardBlocks.size
             recordEvent(
                 DiagnosticEventType.BLOCKLIST_SWAP,
                 "Blocklist snapshot swapped",
-                mapOf("domains" to allDomains.size, "source" to "vpn_rebuild")
+                mapOf("domains" to blockingDomainCount, "source" to "vpn_rebuild")
             )
         } catch (e: Exception) { Log.w(TAG, "Blocklist rebuild failed: ${e.message}") }
     }

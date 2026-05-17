@@ -83,7 +83,7 @@ Current module baseline: v6.5.9, versionCode 67.
 ## Configuration
 
 ### Blocklist Sources
-Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Add custom URL sources via Settings → Sources in standard hosts file format.
+Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Add custom URL sources via Settings → Sources in hosts, domains-only, or DNS adblock syntax.
 
 ### Automation API
 Broadcast intents for Tasker/MacroDroid (requires signature permission or ADB grant):

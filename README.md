@@ -117,7 +117,7 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Curated Gallery** | 70+ categorized blocklists (Ads, Trackers, Malware, Adult, Social, Crypto, Allowlist) |
+| **Curated Gallery** | 50+ categorized blocklists with tier, size, and breakage warnings for aggressive packs |
 | **Source Categories** | ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM |
 | **Allowlist Sources** | Curated allowlists (Anudeep, HaGeZi) subtracted from blocklist during updates |
 | **Overlap Analysis** | Identify redundant domains across enabled sources to optimize subscriptions |
@@ -219,7 +219,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 
 ### Blocklist Sources
 
-Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Add custom URL sources via Settings > Sources in standard hosts file format.
+Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Add custom URL sources via Settings > Sources in hosts, domains-only, or DNS adblock syntax.
 
 **Source categories**: ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM. Allowlist sources are subtracted from the blocklist during updates.
 
@@ -355,7 +355,7 @@ Entirely local — no traffic goes to a remote server. The VPN tunnel intercepts
 CNAME cloaking detection (including SVCB/HTTPS records), serve-stale DNS cache (RFC 8767), DoH with certificate pinning and smart latency failover, per-app iptables firewall, live query streaming, 7-day trend charts, query anomaly detection, offline GeoIP, tracker SDK scanning, DNS leak test, automation API, and a modern Material 3 Compose UI.
 
 **How is this different from RethinkDNS?**
-HostShield focuses on hosts-based blocking with a curated gallery of 70+ blocklists. It has a dual-mode architecture (VPN + root) while RethinkDNS is VPN-only. HostShield includes an iptables-based per-app firewall for rooted devices, tracker SDK scanning, and hosts file diffing.
+HostShield focuses on local DNS blocking with a curated gallery of 50+ blocklists. It has a dual-mode architecture (VPN + root) while RethinkDNS is VPN-only. HostShield includes an iptables-based per-app firewall for rooted devices, tracker SDK scanning, and hosts file diffing.
 
 **Does it work with other VPNs?**
 In VPN mode: no — Android only allows one VPN at a time. In root mode: yes — iptables rules work alongside any VPN.
