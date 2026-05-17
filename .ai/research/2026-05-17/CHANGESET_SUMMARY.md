@@ -29,6 +29,7 @@ Research date: 2026-05-17
 - `DiagnosticExporter` and Settings diagnostics - changed diagnostic sharing from a single text file to a ZIP package with the text report, raw `diagnostic-events.jsonl`, and a manifest.
 - `DohResolver` and `DnsToolsScreen` - added a 24-hour resolver health window and DNS Tools Status card for selected provider, active transport, latency, success rate, failovers, pin failures, and EDE placeholder.
 - Failed-source feedback - added Room v15 `host_sources.last_http_status`, typed source download HTTP failures, persisted source health updates across workers/service/manual flows, a local source-failure notification helper, and Sources screen failure details showing last failure, HTTP status, and last successful update.
+- `docs/decisions/0001-dnscrypt-engine.md` - added the DNSCrypt engine decision record. The chosen direction is an audited engine extraction behind a Kotlin facade; full `dnscrypt-proxy` via `gomobile` is a packaging/correctness spike, and native Kotlin crypto is deferred until audited primitives and the required test corpus exist.
 
 ## Files Intentionally Not Modified
 
