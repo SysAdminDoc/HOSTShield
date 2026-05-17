@@ -5,6 +5,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.hostshield.data.model.*
 
+const val HOST_SHIELD_DATABASE_VERSION = 15
+
 @Database(
     entities = [
         HostSource::class,
@@ -19,7 +21,7 @@ import com.hostshield.data.model.*
         AutomationAuditEntry::class,
         VpnStabilityEntry::class
     ],
-    version = 15,
+    version = HOST_SHIELD_DATABASE_VERSION,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

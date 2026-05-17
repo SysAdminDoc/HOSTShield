@@ -42,7 +42,7 @@ $requiredPatterns = @{
         "405 tracker SDK signatures",
         "ipapi.co",
         "Kotlin 2.1",
-        "v1-v14"
+        "v1-v15"
     )
     "app/README.md" = @(
         "fail-closed",

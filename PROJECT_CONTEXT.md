@@ -46,7 +46,7 @@ Important implementation facts:
 - `DoqResolver` and `WireGuardProxy` are explicitly experimental and simplified. Treat them as research-grade until replaced with audited engines.
 - Settings, diagnostics, logs, and README now share explicit maturity labels for DoQ and WireGuard DNS. Production defaults remain pinned DoH/DoH3/DoT; DoQ and WireGuard DNS stay opt-in.
 - `SecureStore` still uses AndroidX `EncryptedSharedPreferences` / `MasterKeys`; dependency review flags this as a migration candidate because AndroidX Security Crypto remains alpha and the API is aging.
-- Room migrations exist from v1 through v14, but exported schema snapshots only exist for versions 7, 8, 9, 12, and 14. Migration-path tests need golden databases for every supported transition.
+- Room migrations exist from v1 through v15. Public migration definitions now live in `Migrations.ALL`, including the older v1-v5 steps that used to be private inside `DatabaseModule`. Exported Room schema snapshots exist for versions 7, 8, 9, 12, 14, and 15; missing official exports are documented in `docs/database-migration-fixtures.md`.
 
 ## Product Principles
 
@@ -67,7 +67,7 @@ Important implementation facts:
 
 ## Release Truth Notes
 
-- Public docs now track the v6.5.9 source truth for fail-closed DoH pinning, 405 tracker SDK signatures, ipapi.co GeoIP fallback, Kotlin 2.1, and Room v1-v14 migrations.
+- Public docs now track the v6.5.9 source truth for fail-closed DoH pinning, 405 tracker SDK signatures, ipapi.co GeoIP fallback, Kotlin 2.1, and Room v1-v15 migrations.
 - `tools/check-release-docs.ps1` is the release-doc consistency gate for stale version/security phrases.
 - `tools/release-provenance.ps1` generates release provenance under `artifacts/release-provenance/`, including APK SHA-256, signing cert fingerprint when `apksigner` is available, build commit, Gradle/AGP/Kotlin versions, and artifact path.
 - License files conflict and require maintainer decision before publication: root `LICENSE` is MIT, while `app/LICENSE` is GPL-3.0. Docs surface this conflict instead of choosing a license implicitly.
@@ -81,12 +81,14 @@ Important implementation facts:
 - `DohResolver` now keeps an in-memory 24-hour provider health window. DNS Tools > Status shows per-resolver selected state, observed transport, latency, success rate, failovers, pin failures, and an EDE placeholder.
 - DoH provider pins now live in `DohPinManifest` with manifest version, issued date, primary/backup labels, review dates, expiry dates, diagnostic summary lines, and pin-failure event fields. The OkHttp path remains fail-closed.
 - Source download failures now persist `last_http_status`, `last_error`, and consecutive failure counts. Failed blocklist, allowlist, rule-sync, health-check, manual apply, VPN rebuild, and profile rebuild paths update source health; failed source updates post a local HostShield alert notification; Sources cards show last failure, HTTP status when available, and last successful update.
+- `HostShieldMigrationTest` is an instrumented migration matrix. It creates frozen SQL fixtures for every supported start version 1 through 14, migrates to current schema version 15 with `Migrations.ALL`, validates against the Room schema export, and checks sentinel data survives.
 
 ## Highest-Value Next Work
 
-1. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
-2. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
-3. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
+1. Add parser fuzz/property coverage around DNS packet parsing, stamps, blocklist parsing, source updates, and encrypted backup import.
+2. Add focused backup crypto regression tests for wrong passphrase, short payload rejection, IV uniqueness, and failure messaging.
+3. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
+4. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 
 ## Verification Commands
 
