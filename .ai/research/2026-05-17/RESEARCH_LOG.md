@@ -116,3 +116,11 @@ Additional searches would likely add examples, not change the top roadmap tiers.
   version 1.84 for the Android-compatible lightweight Argon2id implementation.
 - The implementation keeps PBKDF2 only in legacy PIN and backup import paths;
   new PIN records and backup exports write Argon2id metadata-bearing formats.
+
+## Implementation Follow-Up - AES-GCM Nonce Guard
+
+- Re-used NIST SP 800-38D as the source for the AES-GCM nonce-uniqueness
+  requirement.
+- Added an export-time backup nonce ledger instead of a user-visible setting:
+  v2 backup key-id is represented by Argon2id params plus salt, then paired
+  with the IV and tracked as a bounded SHA-256 fingerprint set.

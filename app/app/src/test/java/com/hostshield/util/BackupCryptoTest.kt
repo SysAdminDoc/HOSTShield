@@ -131,6 +131,25 @@ class BackupCryptoTest {
     }
 
     @Test
+    fun `nonce ledger rejects duplicate backup key iv tuple`() {
+        val salt = ByteArray(SALT_BYTES) { (it + 1).toByte() }
+        val iv = ByteArray(IV_BYTES) { (it + 17).toByte() }
+
+        BackupNonceLedger.clearForTest()
+        try {
+            BackupNonceLedger.rememberArgon2idExport(PasswordKdf.DEFAULT_ARGON2ID_PARAMS, salt, iv)
+            try {
+                BackupNonceLedger.rememberArgon2idExport(PasswordKdf.DEFAULT_ARGON2ID_PARAMS, salt, iv)
+                fail("Duplicate backup key/IV tuple should be rejected")
+            } catch (e: IllegalStateException) {
+                assertEquals("Duplicate AES-GCM backup key/IV tuple generated; refusing export", e.message)
+            }
+        } finally {
+            BackupNonceLedger.clearForTest()
+        }
+    }
+
+    @Test
     fun `legacy plaintext backup is detected and decoded as plaintext`() {
         val json = """{"app":"HostShield","backup_version":1}"""
         val bytes = json.toByteArray(Charsets.UTF_8)

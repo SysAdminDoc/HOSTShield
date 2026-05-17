@@ -28,7 +28,7 @@ Research date: 2026-05-17
 | L020 | `app/app/src/main/java/com/hostshield/util/DnsStampParser.kt` | DNS stamp formats and relay parsing. |
 | L021 | `app/app/src/main/java/com/hostshield/service/DnsCryptRoutePlanner.kt` | DNSCrypt relay route validation and wrapping. |
 | L022 | `app/app/src/main/java/com/hostshield/data/preferences/SecureStore.kt`; `app/app/src/main/java/com/hostshield/util/PasswordKdf.kt` | Secure store migration, Argon2id PIN hashing, and legacy PBKDF2 PIN verification. |
-| L023 | `app/app/src/main/java/com/hostshield/util/BackupCrypto.kt`; `app/app/src/main/java/com/hostshield/util/EncryptedBackup.kt` | AES-GCM backup crypto, Argon2id v2 exports, and legacy PBKDF2 import compatibility. |
+| L023 | `app/app/src/main/java/com/hostshield/util/BackupCrypto.kt`; `app/app/src/main/java/com/hostshield/util/BackupNonceLedger.kt`; `app/app/src/main/java/com/hostshield/util/EncryptedBackup.kt` | AES-GCM backup crypto, Argon2id v2 exports, nonce tuple guarding, and legacy PBKDF2 import compatibility. |
 | L024 | `app/app/src/main/java/com/hostshield/data/database/HostShieldDatabase.kt` | Room entities and DB version. |
 | L025 | `app/app/src/main/java/com/hostshield/data/database/Migrations.kt` | v5-v14 migration chain. |
 | L026 | `app/app/src/main/java/com/hostshield/di/DatabaseModule.kt` | v1-v5 migration chain and no destructive fallback. |

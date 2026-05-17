@@ -10,6 +10,7 @@ Strengths verified in source:
 - DoH/DoT responses are bounded before parser handoff.
 - New backup encryption uses AES-256-GCM with Argon2id-derived keys in `BackupCrypto.kt`; PBKDF2-HMAC-SHA256 remains for v1 backup imports.
 - New PIN hashing uses Argon2id records through `PasswordKdf`; PBKDF2-HMAC-SHA256 remains for legacy PIN verification and upgrade.
+- Backup exports guard AES-GCM key/IV reuse with `BackupNonceLedger`, which tracks recent Argon2id parameter/salt/IV tuples and refuses duplicate generated exports.
 - `data_extraction_rules.xml` excludes both legacy and v2 secure-store prefs from device transfer.
 - `AndroidManifest.xml` sets `usesCleartextTraffic="false"`.
 - Automation receiver is protected by a signature permission.
@@ -51,12 +52,11 @@ High-risk areas:
 
 1. Add a `./gradlew dependencyUpdates` equivalent or Gradle version-catalog review script that produces a markdown dependency report.
 2. Validate local security store and KDF migration on a device seeded with pre-v6.6 encrypted WebDAV, WireGuard, parental PIN, and encrypted backup values.
-3. Add backup IV collision defense: store recent backup key-id/IV tuples or assert uniqueness per exported backup stream.
-4. Add DoH pin manifest tests: current pin set, backup pin, expiry/rotation metadata, fail-closed behavior, and user-visible diagnostics.
-5. Gate DNSCrypt, DoQ, and WireGuard user exposure behind explicit engine maturity states until audited or replaced.
-6. Add parser fuzz harnesses for DNS packets, DNS stamps, hosts/adblock syntax, backup import, and blocklist update files.
-7. Add Room golden migration tests for every v1->v14 transition before changing schema again.
-8. Add release provenance: APK SHA-256, signing cert fingerprint, reproducible-build metadata, and GitHub release asset verification.
+3. Add DoH pin manifest tests: current pin set, backup pin, expiry/rotation metadata, fail-closed behavior, and user-visible diagnostics.
+4. Gate DNSCrypt, DoQ, and WireGuard user exposure behind explicit engine maturity states until audited or replaced.
+5. Add parser fuzz harnesses for DNS packets, DNS stamps, hosts/adblock syntax, backup import, and blocklist update files.
+6. Add Room golden migration tests for every v1->v14 transition before changing schema again.
+7. Add release provenance: APK SHA-256, signing cert fingerprint, reproducible-build metadata, and GitHub release asset verification.
 
 ## Advisories And Watchlist
 
