@@ -57,6 +57,23 @@ class DohResolver @Inject constructor(
         val negotiatedProtocol: String
     )
 
+    data class ResolverHealthSnapshot(
+        val provider: Provider,
+        val selected: Boolean,
+        val activeTransport: String,
+        val latencyMs: Long?,
+        val doh3LatencyMs: Long?,
+        val attempts: Int,
+        val successes: Int,
+        val failures: Int,
+        val failovers: Int,
+        val pinFailures: Int,
+        val edeCount: Int = 0
+    ) {
+        val successRatePercent: Int?
+            get() = if (attempts == 0) null else ((successes * 100.0) / attempts).toInt()
+    }
+
     enum class Provider(val url: String, val hostname: String) {
         CLOUDFLARE("https://cloudflare-dns.com/dns-query", "cloudflare-dns.com"),
         GOOGLE("https://dns.google/dns-query", "dns.google"),
@@ -132,6 +149,18 @@ class DohResolver @Inject constructor(
     private val latencyEma = java.util.concurrent.ConcurrentHashMap<Provider, Long>()
     private val EMA_ALPHA = 0.3 // Weight for new samples (higher = more responsive)
 
+    private data class ResolverHealthEvent(
+        val timestampMs: Long,
+        val provider: Provider,
+        val transport: Transport,
+        val success: Boolean?,
+        val failover: Boolean = false,
+        val pinFailure: Boolean = false
+    )
+
+    private val healthEvents = java.util.concurrent.ConcurrentLinkedQueue<ResolverHealthEvent>()
+    private val healthWindowMs = 24 * 60 * 60 * 1000L
+
     /**
      * Resolve a DNS query via DoH with automatic failover.
      *
@@ -152,6 +181,7 @@ class DohResolver @Inject constructor(
 
         doh3Resolver.resolve(dnsQuery, Doh3Resolver.Provider.fromDohProvider(preferredProvider))?.let { doh3 ->
             updateLatency(doh3.provider.dohProvider, doh3.latencyMs)
+            recordHealth(preferredProvider, Transport.DOH3, success = true)
             return@withContext DohResponse(
                 response = doh3.response,
                 provider = doh3.provider.dohProvider,
@@ -163,6 +193,7 @@ class DohResolver @Inject constructor(
         val result = doResolve(dnsQuery, preferredProvider, client)
         if (result != null) {
             consecutiveFailures[preferredProvider]?.set(0)
+            recordHealth(preferredProvider, Transport.DOH, success = true)
             return@withContext DohResponse(
                 response = result,
                 provider = preferredProvider,
@@ -171,6 +202,7 @@ class DohResolver @Inject constructor(
             )
         }
         recordFailure(preferredProvider)
+        recordHealth(preferredProvider, Transport.DOH, success = false)
 
         Log.w(TAG, "${preferredProvider.name} failed, trying failover...")
         val orderedFallbacks = synchronized(failoverOrder) { failoverOrder.toList() }
@@ -181,6 +213,7 @@ class DohResolver @Inject constructor(
             if (fbResult != null) {
                 consecutiveFailures[fallback]?.set(0)
                 Log.i(TAG, "Failover to ${fallback.name} succeeded")
+                recordHealth(fallback, Transport.DOH, success = true, failover = true)
                 diagnosticEvents.recordBlocking(
                     DiagnosticEventType.RESOLVER_FAILOVER,
                     "DoH resolver failover succeeded",
@@ -198,6 +231,7 @@ class DohResolver @Inject constructor(
                 )
             }
             recordFailure(fallback)
+            recordHealth(fallback, Transport.DOH, success = false)
         }
 
         // Fail closed — never downgrade to unpinned resolution
@@ -291,6 +325,7 @@ class DohResolver @Inject constructor(
             // rotation that breaks pinning is investigable from `logcat` rather
             // than silently appearing as "all DoH providers failed".
             Log.e(TAG, "Cert pin failure for ${provider.name}: ${e.message}")
+            recordHealth(provider, Transport.DOH, success = null, pinFailure = true)
             diagnosticEvents.recordBlocking(
                 DiagnosticEventType.CERT_PIN_FAILURE,
                 "DoH certificate pin validation failed",
@@ -310,6 +345,35 @@ class DohResolver @Inject constructor(
         latencyEma[provider] = ema
     }
 
+    private fun recordHealth(
+        provider: Provider,
+        transport: Transport,
+        success: Boolean?,
+        failover: Boolean = false,
+        pinFailure: Boolean = false
+    ) {
+        healthEvents.add(
+            ResolverHealthEvent(
+                timestampMs = System.currentTimeMillis(),
+                provider = provider,
+                transport = transport,
+                success = success,
+                failover = failover,
+                pinFailure = pinFailure
+            )
+        )
+        pruneHealthEvents()
+    }
+
+    private fun pruneHealthEvents(now: Long = System.currentTimeMillis()) {
+        val cutoff = now - healthWindowMs
+        while (true) {
+            val head = healthEvents.peek() ?: return
+            if (head.timestampMs >= cutoff) return
+            healthEvents.poll()
+        }
+    }
+
     /**
      * Get the fastest provider based on measured latency.
      * Returns null if no latency data has been collected yet.
@@ -321,5 +385,40 @@ class DohResolver @Inject constructor(
     /** Get latency stats for all providers (for display in DNS Tools). */
     fun getLatencyStats(): Map<String, Long> {
         return latencyEma.map { (provider, ema) -> provider.name to ema }.toMap()
+    }
+
+    fun getHealthSnapshot(
+        selectedProvider: Provider,
+        doh3LatencyStats: Map<String, Long> = emptyMap()
+    ): List<ResolverHealthSnapshot> {
+        pruneHealthEvents()
+        val events = healthEvents.toList()
+        return Provider.entries.map { provider ->
+            val providerEvents = events.filter { it.provider == provider }
+            val attempts = providerEvents.count { it.success != null }
+            val successes = providerEvents.count { it.success == true }
+            val failures = providerEvents.count { it.success == false }
+            val failovers = providerEvents.count { it.failover }
+            val pinFailures = providerEvents.count { it.pinFailure }
+            val doh3Latency = doh3LatencyStats[provider.name]
+            val latency = latencyEma[provider] ?: doh3Latency
+            val activeTransport = when {
+                doh3Latency != null -> Transport.DOH3.name
+                latency != null -> Transport.DOH.name
+                else -> "not observed"
+            }
+            ResolverHealthSnapshot(
+                provider = provider,
+                selected = provider == selectedProvider,
+                activeTransport = activeTransport,
+                latencyMs = latency,
+                doh3LatencyMs = doh3Latency,
+                attempts = attempts,
+                successes = successes,
+                failures = failures,
+                failovers = failovers,
+                pinFailures = pinFailures
+            )
+        }
     }
 }
