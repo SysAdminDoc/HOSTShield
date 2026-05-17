@@ -1,12 +1,14 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-3.0.0-blue)
-![License](https://img.shields.io/badge/license-GPL--3.0-green)
-![Platform](https://img.shields.io/badge/platform-Android%207+-3DDC84?logo=android&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?logo=kotlin&logoColor=white)
+![Version](https://img.shields.io/badge/version-6.5.9-blue)
+![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
+![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, DNS response caching, DoH with certificate pinning, and a professional dark-themed UI.
+> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, offline GeoIP, and a professional AMOLED dark UI.
+
+Current module baseline: v6.5.9, versionCode 67.
 
 ## Quick Start
 
@@ -21,12 +23,12 @@
 |---------|-------------|
 | **DNS Blocking** | Trie-based O(m) domain lookup with 200K+ domains from curated blocklists |
 | **CNAME Cloaking Detection** | Inspects CNAME chains in DNS responses — catches first-party tracking that bypasses other blockers |
-| **DNS Response Cache** | 2000-entry LRU cache with TTL-aware expiration — 60-70% cache hit rate reduces latency |
+| **DNS Response Cache** | 2000-entry LRU cache with serve-stale, negative caching, SERVFAIL caching, and prefetch |
 | **VPN Mode** | Local DNS filtering via Android VPN API — no root required, per-app stats |
-| **Root Mode** | Direct `/etc/hosts` modification + iptables firewall — zero battery overhead |
+| **Root Mode** | iptables DNS redirection and per-app firewall support for rooted devices |
 | **Per-App Firewall** | Block Wi-Fi, mobile data, or VPN per-app with iptables (root) |
-| **DoH (DNS-over-HTTPS)** | Cloudflare, Google, Quad9, NextDNS, AdGuard — with SHA-256 certificate pinning |
-| **DoH Bypass Prevention** | Blocks 53+ known DoH provider domains + wildcard patterns to prevent apps bypassing DNS filtering |
+| **DoH (DNS-over-HTTPS)** | Cloudflare, Google, Quad9, NextDNS, AdGuard, Mullvad, CleanBrowsing — with fail-closed SHA-256 certificate pinning |
+| **DoH Bypass Prevention** | Blocks 65+ known DoH provider domains + wildcard patterns to prevent apps bypassing DNS filtering |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through the VPN tunnel |
 | **TCP DNS Handling** | Full TCP DNS support for responses >512 bytes |
 | **IPv6 Support** | Full IPv6 DNS processing + UID attribution via `/proc/net/tcp6` |
@@ -34,7 +36,9 @@
 | **Blocking Profiles** | Switch between profile sets on schedule |
 | **Live Query Stream** | Real-time DNS log feed with zero-latency SharedFlow |
 | **7-Day Trend Charts** | Blocked vs. total queries line chart, hourly bar chart, daily history |
-| **Per-Query Detail View** | Query type, response time, upstream server, CNAME chain, resolved IPs |
+| **Per-Query Detail View** | Query type, response time, upstream server, CNAME chain, resolved IPs, GeoIP |
+| **Tracker SDK Scanner** | Exodus-style APK dex scanning for 405 tracker SDK signatures |
+| **Online GeoIP Fallback** | ipapi.co over HTTPS for city-level detail when offline GeoIP is not enough |
 | **Diagnostic Export** | One-tap shareable report with device info, config, logs, network state |
 | **AdAway Import** | Import hosts files, sources, and rules from AdAway backups |
 | **Remote DoH Updates** | Supplementary DoH bypass domains fetched from GitHub without app updates |
@@ -64,12 +68,16 @@
 
 ## Build
 
-```bash
-# Prerequisites: JDK 17, Android SDK 34
+```powershell
+# Prerequisites: JDK 17, Android SDK 35
 
 ./gradlew assembleFullDebug     # Full flavor (root features)
 ./gradlew assemblePlayDebug     # Play Store flavor
 ./gradlew testFullDebugUnitTest # Run unit tests
+
+# From the repository root before release:
+# powershell -ExecutionPolicy Bypass -File .\tools\check-release-docs.ps1
+# powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 ```
 
 ## Configuration
@@ -115,4 +123,4 @@ Issues and PRs welcome. Run `./gradlew testFullDebugUnitTest` before submitting.
 
 ## License
 
-GPL-3.0
+Release licensing needs maintainer reconciliation before publication: the root `LICENSE` is MIT, while `app/LICENSE` is GPL-3.0.

@@ -9,7 +9,7 @@ import android.content.Intent
 import android.widget.RemoteViews
 import com.hostshield.R
 
-// HostShield v3.2.0 -- Enhanced Homescreen Widget
+// Homescreen toggle widget provider
 
 class HostShieldWidgetProvider : AppWidgetProvider() {
 

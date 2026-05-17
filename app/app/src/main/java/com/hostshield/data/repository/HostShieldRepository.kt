@@ -13,7 +13,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v6.2.0 — Repository (Facade)
+// Repository facade for domain, database, and preference operations
 //
 // Backward-compatible facade over domain-specific repositories.
 // New code should inject the specific repository it needs:

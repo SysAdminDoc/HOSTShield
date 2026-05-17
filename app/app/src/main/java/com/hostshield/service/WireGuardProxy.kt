@@ -15,7 +15,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v6.2 — WireGuard DNS Proxy (Roadmap #51)
+// WireGuard DNS proxy
 //
 // ⚠️ EXPERIMENTAL — Simplified WireGuard, not a full tunnel implementation.
 //

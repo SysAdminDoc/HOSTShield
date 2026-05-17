@@ -21,7 +21,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
-// HostShield v1.6.0 — Profile Scheduler
+// Profile scheduler worker
 // Runs every 15 minutes to check if a scheduled profile should be activated/deactivated.
 
 @HiltWorker

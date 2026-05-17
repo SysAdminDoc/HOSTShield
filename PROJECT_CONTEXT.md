@@ -1,7 +1,7 @@
 # HostShield Project Context
 
 Last refreshed: 2026-05-17
-Repo state used: `main` at `9494e0b` / tag `v6.5.9`
+Repo state used: `main` after roadmap research refresh; source baseline remains tag `v6.5.9`
 
 ## Identity
 
@@ -63,13 +63,20 @@ Important implementation facts:
 - Codex memory only covers the `v6.5.1` signed release and adb reinstall path; it is useful for release work, not current architecture.
 - Root `.gitignore` ignores `CLAUDE.md`, `*.keystore`, `*.apk`, app build outputs, and `/com/`.
 
+## Release Truth Notes
+
+- Public docs now track the v6.5.9 source truth for fail-closed DoH pinning, 405 tracker SDK signatures, ipapi.co GeoIP fallback, Kotlin 2.1, and Room v1-v14 migrations.
+- `tools/check-release-docs.ps1` is the release-doc consistency gate for stale version/security phrases.
+- `tools/release-provenance.ps1` generates release provenance under `artifacts/release-provenance/`, including APK SHA-256, signing cert fingerprint when `apksigner` is available, build commit, Gradle/AGP/Kotlin versions, and artifact path.
+- License files conflict and require maintainer decision before publication: root `LICENSE` is MIT, while `app/LICENSE` is GPL-3.0. Docs surface this conflict instead of choosing a license implicitly.
+
 ## Highest-Value Next Work
 
-1. Complete DNSCrypt safely by choosing an audited Android-compatible crypto/engine path before exposing any user-facing toggle.
-2. Build a local structured diagnostics/event log so reliability failures can be investigated without remote telemetry.
+1. Build a local structured diagnostics/event log so reliability failures can be investigated without remote telemetry.
+2. Complete DNSCrypt safely by choosing an audited Android-compatible crypto/engine path before exposing any user-facing toggle.
 3. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
 4. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
-5. Fix doc drift: README still contains stale wording around DoH fallback, tracker count, and GeoIP fallback.
+5. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 
 ## Verification Commands
 
@@ -80,6 +87,10 @@ cd C:\Users\--\repos\HostShield\app
 .\gradlew.bat :app:testFullDebugUnitTest
 .\gradlew.bat :app:compileFullDebugKotlin
 .\gradlew.bat :app:assembleFullRelease
+
+cd C:\Users\--\repos\HostShield
+powershell -ExecutionPolicy Bypass -File .\tools\check-release-docs.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 ```
 
 Release signing path from prior verified memory:

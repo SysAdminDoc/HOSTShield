@@ -1,4 +1,4 @@
-// HostShield v1.6.0
+// HostShield Android build configuration
 // Top-level build file
 
 plugins {

@@ -14,13 +14,17 @@ Baseline: v6.5.9, versionCode 67, commit `9494e0b`
 
 Research artifacts for this roadmap live in `.ai/research/2026-05-17/`.
 
+Release governance note: licensing files need maintainer reconciliation before
+publication. The root `LICENSE` is MIT, while `app/LICENSE` is GPL-3.0; public
+docs now surface the conflict instead of asserting one license as canonical.
+
 ## Now - v6.6
 
 ### Documentation And Release Truth
 
-- [ ] **Repair public docs drift.** Update README and related docs so security claims match current source truth: DoH is fail-closed with no unpinned fallback, tracker SDK scanner has 405 signatures, online GeoIP fallback uses ipapi.co over HTTPS, and v6.5.9 is the active baseline. Add a small release-doc consistency check that greps version strings and known security phrases before release. Evidence: `README.md`, `DohResolver.kt`, `TrackerSignatureDb.kt`, `GeoIpLookup.kt`, `CHANGELOG.md`. Sources: L003, L004, L015, L027, L028.
-- [ ] **Normalize stale source-header comments without changing behavior.** Several file headers still say v1.6.0/v2.x/v3.x and the root `app/build.gradle.kts` comment says v1.6.0. Replace versioned header comments with stable component descriptions so future agents do not treat comments as version truth. Sources: L008, L009, L013, L018, L019.
-- [ ] **Add release provenance metadata.** Generate APK SHA-256, signing cert fingerprint, build commit, Gradle/AGP/Kotlin versions, and artifact path into release notes and an optional `checksums.txt`. Sources: L011, E073, E074.
+- [x] **Repair public docs drift.** Update README and related docs so security claims match current source truth: DoH is fail-closed with no unpinned fallback, tracker SDK scanner has 405 signatures, online GeoIP fallback uses ipapi.co over HTTPS, and v6.5.9 is the active baseline. Add a small release-doc consistency check that greps version strings and known security phrases before release. Evidence: `README.md`, `DohResolver.kt`, `TrackerSignatureDb.kt`, `GeoIpLookup.kt`, `CHANGELOG.md`. Sources: L003, L004, L015, L027, L028.
+- [x] **Normalize stale source-header comments without changing behavior.** Several file headers still say v1.6.0/v2.x/v3.x and the root `app/build.gradle.kts` comment says v1.6.0. Replace versioned header comments with stable component descriptions so future agents do not treat comments as version truth. Sources: L008, L009, L013, L018, L019.
+- [x] **Add release provenance metadata.** Generate APK SHA-256, signing cert fingerprint, build commit, Gradle/AGP/Kotlin versions, and artifact path into release notes and an optional `checksums.txt`. Sources: L011, E073, E074.
 
 ### Diagnostics And Reliability
 
@@ -152,4 +156,3 @@ Primary external evidence:
 - E052-E066 security and dependency references.
 - E067-E075 datasets and distribution references.
 - E076-E078 hardened Android and VPN coexistence references.
-

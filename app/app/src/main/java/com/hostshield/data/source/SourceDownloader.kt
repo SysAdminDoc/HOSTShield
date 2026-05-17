@@ -10,7 +10,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v1.6.0 — Source Downloader
+// Blocklist source downloader
 // ══════════════════════════════════════════════════════════════
 
 data class DownloadResult(

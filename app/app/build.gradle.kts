@@ -1,4 +1,4 @@
-// HostShield v6.5.9
+// HostShield Android application module
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")

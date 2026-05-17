@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v4.0.0 -- GeoIP + ASN Lookup
+// GeoIP and ASN lookup helper
 // Uses ipapi.co (free HTTPS, no key, ~1000 req/day) with in-memory cache.
 // Rate limit enforcement: tracks requests per minute window + exponential backoff on 429.
 

@@ -12,7 +12,7 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 
-// HostShield v2.0.0 - Log Cleanup Worker
+// Log cleanup worker
 // Cleans dns_logs and connection_log tables based on retention settings.
 // DNS logs: user-configurable (default 7 days)
 // Connection logs: 3 days (shorter — these are higher volume from iptables)

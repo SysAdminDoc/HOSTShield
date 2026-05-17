@@ -14,7 +14,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
-// HostShield v3.4.0 -- Scheduled Blocking Worker
+// Scheduled blocking worker
 // Checks every 10 minutes if blocking should be auto-enabled/disabled
 // based on the user's time schedule.
 //

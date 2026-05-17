@@ -11,7 +11,7 @@ import android.net.NetworkCapabilities
 import android.os.PowerManager
 import android.util.Log
 
-// HostShield v3.8.0 -- Context-Aware Firewall State Provider
+// Context-aware firewall state receiver
 // Tracks screen state, foreground app, and network metered status.
 // Used by DnsVpnService to enforce context-dependent blocking rules.
 

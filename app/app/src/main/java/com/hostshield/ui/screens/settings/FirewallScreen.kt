@@ -43,7 +43,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// HostShield v1.6.0 - Per-App Firewall (DNS + Network)
+// Per-app firewall screen
 //
 // Two layers:
 // 1. DNS Firewall: NXDOMAIN all queries for blocked apps (VPN + root mode)

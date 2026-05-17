@@ -2,7 +2,7 @@ package com.hostshield.data.model
 
 import androidx.room.*
 
-// HostShield v1.6.0 - Data Models
+// Room data models
 
 enum class SourceCategory {
     ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM

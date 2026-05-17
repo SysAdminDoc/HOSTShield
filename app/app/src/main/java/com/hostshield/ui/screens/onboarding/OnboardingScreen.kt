@@ -38,7 +38,7 @@ import com.hostshield.data.model.BlockMethod
 import com.hostshield.ui.theme.*
 import com.hostshield.util.PrivateDnsDetector
 
-// HostShield v6.1 - Premium Onboarding (6-screen progressive flow, Roadmap #32)
+// Onboarding flow screen
 
 /**
  * Identifier for the DNS choice made on the onboarding DNS page. The actual

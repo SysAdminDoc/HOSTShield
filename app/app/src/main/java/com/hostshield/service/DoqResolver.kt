@@ -10,7 +10,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v6.2 — DNS-over-QUIC (DoQ) Resolver (Roadmap #45)
+// DNS-over-QUIC resolver
 //
 // ⚠️ EXPERIMENTAL — Simplified implementation, not a full QUIC stack.
 //

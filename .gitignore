@@ -1,6 +1,7 @@
 app/app/build/
 app/.gradle/
 app/local.properties
+artifacts/
 *.keystore
 *.jks
 *.apk

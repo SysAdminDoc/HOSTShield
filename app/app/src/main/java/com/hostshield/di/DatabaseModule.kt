@@ -14,7 +14,7 @@ import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
-// HostShield v4.0.0 - Database & Network DI Module
+// Database and network dependency injection module
 
 @Module
 @InstallIn(SingletonComponent::class)

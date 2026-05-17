@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v1.6.0 -- GitHub Release Update Checker
+// GitHub release update checker
 
 @Singleton
 class UpdateChecker @Inject constructor() {

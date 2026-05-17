@@ -16,7 +16,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v4.1.0 — Import / Export
+// Import and export utilities
 // ══════════════════════════════════════════════════════════════
 
 data class ImportResult(

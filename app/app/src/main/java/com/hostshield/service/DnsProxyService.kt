@@ -34,7 +34,7 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
-// HostShield v6.0.0 - DNS Proxy Service (Tri-Mode)
+// DNS proxy mode service
 //
 // Lightweight local DNS proxy that runs as a foreground service on
 // 127.0.0.1:5353. The user points Private DNS or per-app DNS settings

@@ -9,7 +9,7 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v6.2.0 — Root Utilities
+// Root utility helpers
 
 @Singleton
 class RootUtil @Inject constructor(

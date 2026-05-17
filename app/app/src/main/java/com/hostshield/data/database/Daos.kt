@@ -8,7 +8,7 @@ import com.hostshield.data.model.TrackerScanCacheEntry
 import com.hostshield.data.model.VpnStabilityEntry
 import kotlinx.coroutines.flow.Flow
 
-// HostShield v1.6.0 - Data Access Objects
+// Room data access objects
 
 @Dao
 interface HostSourceDao {

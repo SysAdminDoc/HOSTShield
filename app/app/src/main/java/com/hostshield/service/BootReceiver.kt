@@ -11,7 +11,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
-// HostShield v1.6.0 -- Boot Receiver
+// Boot receiver
 //
 // On BOOT_COMPLETED:
 // 1. Reschedule workers (auto-update, health check, log cleanup, profiles)

@@ -15,7 +15,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-// HostShield v3.3.0 -- Automatic Backup Worker
+// Automatic backup worker
 // Creates JSON backup to app-private storage on configurable interval.
 // Keeps last 5 backups, auto-deletes older ones.
 

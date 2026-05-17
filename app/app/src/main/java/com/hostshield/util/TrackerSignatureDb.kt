@@ -12,7 +12,7 @@ import java.util.zip.ZipFile
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v4.0.0 -- Exodus-style Tracker SDK Detection
+// Exodus-style tracker SDK signature database
 // Scans installed APK dex files for known tracker library class signatures.
 // Results are cached in Room DB, invalidated on app version change.
 // Signature database: 400+ trackers sourced from ETIP / Exodus Privacy.

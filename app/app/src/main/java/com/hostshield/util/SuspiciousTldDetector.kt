@@ -3,7 +3,7 @@ package com.hostshield.util
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v3.4.0 -- Suspicious TLD Detector
+// Suspicious TLD detector
 // Flags queries to TLDs commonly associated with malware, phishing, or abuse.
 
 @Singleton
