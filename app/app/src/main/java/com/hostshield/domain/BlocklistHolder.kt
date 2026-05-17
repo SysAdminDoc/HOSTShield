@@ -54,6 +54,7 @@ class BlocklistHolder @Inject constructor() {
         val regexAllowRules: List<Regex>,
         val blockedIps: Set<String>,
         val domainCount: Int,
+        val sourceWildcardBlockDomains: Set<String>,
     ) {
         companion object {
             val EMPTY = Snapshot(
@@ -64,6 +65,7 @@ class BlocklistHolder @Inject constructor() {
                 regexAllowRules = emptyList(),
                 blockedIps = emptySet(),
                 domainCount = 0,
+                sourceWildcardBlockDomains = emptySet(),
             )
         }
     }
@@ -211,9 +213,13 @@ class BlocklistHolder @Inject constructor() {
             insertDomain(newRoot, lower, terminal = true)
             newExactSet.add(lower)
         }
-        for (domain in sourceWildcardBlocks) {
-            val lower = domain.lowercase()
-            if (lower.isNotBlank()) insertDomain(newRoot, lower, wildcardBlock = true)
+        val normalizedSourceWildcardBlocks = sourceWildcardBlocks
+            .map { it.lowercase() }
+            .filter { it.isNotBlank() }
+            .toSet()
+
+        for (domain in normalizedSourceWildcardBlocks) {
+            insertDomain(newRoot, domain, wildcardBlock = true)
         }
         for (domain in sourceWildcardAllows) {
             val lower = domain.lowercase()
@@ -266,7 +272,8 @@ class BlocklistHolder @Inject constructor() {
             regexBlockRules = newRegexBlock,
             regexAllowRules = newRegexAllow,
             blockedIps = ipBlocks,
-            domainCount = newDomains.size + sourceWildcardBlocks.size + dohBypassDomains.size,
+            domainCount = newDomains.size + normalizedSourceWildcardBlocks.size + dohBypassDomains.size,
+            sourceWildcardBlockDomains = normalizedSourceWildcardBlocks,
         )
 
         decisionCache.clear()
@@ -290,6 +297,18 @@ class BlocklistHolder @Inject constructor() {
 
     fun getBlockedCount(): Int = snapshot.domainCount
 
+    fun exportBlockKeysForPreview(): Set<String> {
+        val current = snapshot
+        val keys = HashSet<String>(current.exactBlockSet.size + current.sourceWildcardBlockDomains.size)
+        current.exactBlockSet.forEach { domain ->
+            if (domain !in dohBypassDomains) keys.add(domain)
+        }
+        current.sourceWildcardBlockDomains.forEach { domain ->
+            keys.add("*.$domain")
+        }
+        return keys
+    }
+
     @Synchronized
     fun addDomain(hostname: String) {
         val h = hostname.lowercase()
@@ -311,6 +330,7 @@ class BlocklistHolder @Inject constructor() {
             regexAllowRules = current.regexAllowRules,
             blockedIps = current.blockedIps,
             domainCount = current.domainCount + 1,
+            sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
         )
         decisionCache.remove(h)
     }
@@ -337,6 +357,7 @@ class BlocklistHolder @Inject constructor() {
             regexAllowRules = current.regexAllowRules,
             blockedIps = current.blockedIps,
             domainCount = (current.domainCount - 1).coerceAtLeast(0),
+            sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
         )
         decisionCache.remove(h)
     }

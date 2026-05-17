@@ -23,12 +23,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.HostSource
+import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.sourceHttpStatus
+import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
@@ -47,10 +50,30 @@ data class AllowlistImpact(
     val examples: List<String>
 )
 
+data class SourceImpactPreview(
+    val addedCount: Int,
+    val removedCount: Int,
+    val currentEntryCount: Int,
+    val previewEntryCount: Int,
+    val sourceCount: Int,
+    val failedSourceCount: Int,
+    val changedQueries: List<SourceImpactQueryChange>
+)
+
+data class SourceImpactQueryChange(
+    val hostname: String,
+    val appLabel: String,
+    val appPackage: String,
+    val queryCount: Int,
+    val currentBlocked: Boolean,
+    val previewBlocked: Boolean
+)
+
 @HiltViewModel
 class SourcesViewModel @Inject constructor(
     private val repository: HostShieldRepository,
-    private val downloader: SourceDownloader
+    private val downloader: SourceDownloader,
+    private val blocklistHolder: BlocklistHolder
 ) : ViewModel() {
     val sources: StateFlow<List<HostSource>> = repository.getAllSources()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -71,6 +94,12 @@ class SourcesViewModel @Inject constructor(
     val isAnalyzingAllowlists: StateFlow<Boolean> = _isAnalyzingAllowlists.asStateFlow()
     private val _allowlistImpacts = MutableStateFlow<Map<Long, AllowlistImpact>>(emptyMap())
     val allowlistImpacts: StateFlow<Map<Long, AllowlistImpact>> = _allowlistImpacts.asStateFlow()
+    private val _sourceImpactMessage = MutableStateFlow<String?>(null)
+    val sourceImpactMessage: StateFlow<String?> = _sourceImpactMessage.asStateFlow()
+    private val _isPreviewingSourceImpact = MutableStateFlow(false)
+    val isPreviewingSourceImpact: StateFlow<Boolean> = _isPreviewingSourceImpact.asStateFlow()
+    private val _sourceImpactPreview = MutableStateFlow<SourceImpactPreview?>(null)
+    val sourceImpactPreview: StateFlow<SourceImpactPreview?> = _sourceImpactPreview.asStateFlow()
 
     init {
         // Track when sources have emitted their first real value
@@ -214,6 +243,92 @@ class SourcesViewModel @Inject constructor(
         }
     }
 
+    fun previewSourceImpact() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            _isPreviewingSourceImpact.value = true
+            _sourceImpactMessage.value = "Previewing source updates..."
+            try {
+                val enabledSources = sources.value.filter { it.enabled }
+                val blockSources = enabledSources.filter { it.category != SourceCategory.ALLOWLIST }
+                val allowlistSources = enabledSources.filter { it.category == SourceCategory.ALLOWLIST }
+                val sourceCount = blockSources.size + allowlistSources.size
+
+                val candidateDomains = mutableSetOf<String>()
+                val sourceAllowDomains = mutableSetOf<String>()
+                val sourceWildcardBlocks = mutableSetOf<String>()
+                val sourceWildcardAllows = mutableSetOf<String>()
+                var failedSources = 0
+
+                for (source in blockSources) {
+                    downloader.download(source, forceDownload = true).onSuccess { dl ->
+                        val parsed = HostsParser.parseForBlocking(dl.content)
+                        candidateDomains.addAll(parsed.blockDomains)
+                        sourceAllowDomains.addAll(parsed.allowDomains)
+                        sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                        sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                    }.onFailure {
+                        failedSources++
+                    }
+                }
+                for (source in allowlistSources) {
+                    downloader.download(source, forceDownload = true).onSuccess { dl ->
+                        val parsed = HostsParser.parseForAllowing(dl.content)
+                        sourceAllowDomains.addAll(parsed.allowDomains)
+                        sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                    }.onFailure {
+                        failedSources++
+                    }
+                }
+
+                repository.getEnabledRulesByType(RuleType.BLOCK)
+                    .filter { !it.isWildcard && !it.isRegex }
+                    .forEach { rule -> candidateDomains.add(normalizePreviewHostname(rule.hostname)) }
+
+                repository.getEnabledRulesByType(RuleType.ALLOW)
+                    .filter { !it.isWildcard && !it.isRegex }
+                    .forEach { rule -> candidateDomains.remove(normalizePreviewHostname(rule.hostname)) }
+
+                candidateDomains.removeAll(sourceAllowDomains)
+
+                val previewHolder = BlocklistHolder()
+                previewHolder.update(
+                    newDomains = candidateDomains,
+                    wildcards = repository.getEnabledWildcards(),
+                    regexRules = repository.getEnabledRegexRules(),
+                    sourceWildcardBlocks = sourceWildcardBlocks,
+                    sourceWildcardAllows = sourceWildcardAllows
+                )
+
+                val currentKeys = blocklistHolder.exportBlockKeysForPreview()
+                val previewKeys = buildPreviewKeys(candidateDomains, sourceWildcardBlocks)
+                val added = (previewKeys - currentKeys).size
+                val removed = (currentKeys - previewKeys).size
+                val recentLogs = repository.getRecentLogs(500).first()
+
+                _sourceImpactPreview.value = SourceImpactPreview(
+                    addedCount = added,
+                    removedCount = removed,
+                    currentEntryCount = currentKeys.size,
+                    previewEntryCount = previewKeys.size,
+                    sourceCount = sourceCount,
+                    failedSourceCount = failedSources,
+                    changedQueries = findChangedRecentQueries(recentLogs, blocklistHolder, previewHolder)
+                )
+
+                _sourceImpactMessage.value = when {
+                    sourceCount == 0 -> "No enabled sources; preview uses current user rules only."
+                    failedSources > 0 -> "Previewed ${sourceCount - failedSources}/$sourceCount enabled sources; $failedSources failed."
+                    else -> "Previewed $sourceCount enabled sources without applying changes."
+                }
+            } catch (e: Exception) {
+                _error.value = "Source impact preview failed: ${e.message}"
+                _sourceImpactMessage.value = null
+            } finally {
+                _isPreviewingSourceImpact.value = false
+            }
+        }
+    }
+
     private fun findNeutralizedDomains(
         allowDomains: Set<String>,
         wildcardAllowDomains: Set<String>,
@@ -237,7 +352,65 @@ class SourcesViewModel @Inject constructor(
 
     private fun matchesDomainOrSubdomain(domain: String, base: String): Boolean =
         domain == base || domain.endsWith(".$base")
+
+    private fun buildPreviewKeys(
+        exactBlocks: Set<String>,
+        sourceWildcardBlocks: Set<String>
+    ): Set<String> {
+        val keys = HashSet<String>(exactBlocks.size + sourceWildcardBlocks.size)
+        exactBlocks.forEach { domain ->
+            normalizePreviewHostname(domain).takeIf { it.isNotBlank() }?.let(keys::add)
+        }
+        sourceWildcardBlocks.forEach { domain ->
+            normalizePreviewHostname(domain).takeIf { it.isNotBlank() }?.let { keys.add("*.$it") }
+        }
+        return keys
+    }
+
+    private fun findChangedRecentQueries(
+        logs: List<DnsLogEntry>,
+        currentHolder: BlocklistHolder,
+        previewHolder: BlocklistHolder
+    ): List<SourceImpactQueryChange> {
+        val recent = linkedMapOf<String, RecentQueryBucket>()
+        logs.forEach { log ->
+            val hostname = normalizePreviewHostname(log.hostname)
+            if (hostname.isBlank()) return@forEach
+            val bucket = recent.getOrPut(hostname) {
+                RecentQueryBucket(appLabel = log.appLabel, appPackage = log.appPackage)
+            }
+            bucket.queryCount++
+            if (bucket.appLabel.isBlank() && log.appLabel.isNotBlank()) bucket.appLabel = log.appLabel
+            if (bucket.appPackage.isBlank() && log.appPackage.isNotBlank()) bucket.appPackage = log.appPackage
+        }
+
+        return recent.mapNotNull { (hostname, bucket) ->
+            val currentBlocked = currentHolder.isBlocked(hostname)
+            val previewBlocked = previewHolder.isBlocked(hostname)
+            if (currentBlocked == previewBlocked) {
+                null
+            } else {
+                SourceImpactQueryChange(
+                    hostname = hostname,
+                    appLabel = bucket.appLabel,
+                    appPackage = bucket.appPackage,
+                    queryCount = bucket.queryCount,
+                    currentBlocked = currentBlocked,
+                    previewBlocked = previewBlocked
+                )
+            }
+        }.take(8)
+    }
+
+    private fun normalizePreviewHostname(hostname: String): String =
+        hostname.trim().lowercase().removeSuffix(".")
 }
+
+private data class RecentQueryBucket(
+    var appLabel: String,
+    var appPackage: String,
+    var queryCount: Int = 0
+)
 
 @Composable
 fun SourcesScreen(
@@ -247,8 +420,11 @@ fun SourcesScreen(
     val sources by viewModel.sources.collectAsStateWithLifecycle()
     val healthMsg by viewModel.healthCheckMessage.collectAsStateWithLifecycle()
     val allowlistMsg by viewModel.allowlistImpactMessage.collectAsStateWithLifecycle()
+    val sourceImpactMsg by viewModel.sourceImpactMessage.collectAsStateWithLifecycle()
+    val sourceImpactPreview by viewModel.sourceImpactPreview.collectAsStateWithLifecycle()
     val isChecking by viewModel.isCheckingHealth.collectAsStateWithLifecycle()
     val isAnalyzingAllowlists by viewModel.isAnalyzingAllowlists.collectAsStateWithLifecycle()
+    val isPreviewingSourceImpact by viewModel.isPreviewingSourceImpact.collectAsStateWithLifecycle()
     val allowlistImpacts by viewModel.allowlistImpacts.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -332,6 +508,14 @@ fun SourcesScreen(
                             )
                         }
                         IconButton(
+                            onClick = { viewModel.previewSourceImpact() },
+                            enabled = !isPreviewingSourceImpact,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            if (isPreviewingSourceImpact) CircularProgressIndicator(Modifier.size(14.dp), color = Blue, strokeWidth = 2.dp)
+                            else Icon(Icons.Filled.Visibility, "Preview source impact", tint = TextDim, modifier = Modifier.size(18.dp))
+                        }
+                        IconButton(
                             onClick = { viewModel.checkAllSourceHealth() },
                             enabled = !isChecking,
                             modifier = Modifier.size(32.dp)
@@ -380,6 +564,14 @@ fun SourcesScreen(
                 allowlistMsg?.let { msg ->
                     Spacer(Modifier.height(4.dp))
                     Text(msg, color = Green.copy(alpha = 0.85f), fontSize = 11.sp)
+                }
+                sourceImpactMsg?.let { msg ->
+                    Spacer(Modifier.height(4.dp))
+                    Text(msg, color = Blue.copy(alpha = 0.9f), fontSize = 11.sp)
+                }
+                sourceImpactPreview?.let { preview ->
+                    Spacer(Modifier.height(8.dp))
+                    SourceImpactPreviewCard(preview)
                 }
                 Spacer(Modifier.height(8.dp))
 
@@ -484,6 +676,130 @@ fun SourcesScreen(
         )
     }
 }
+
+@Composable
+private fun SourceImpactPreviewCard(preview: SourceImpactPreview) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = Surface2,
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Visibility, null, tint = Blue, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Source update preview", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Active ${NumberFormat.getNumberInstance().format(preview.currentEntryCount)} -> preview ${NumberFormat.getNumberInstance().format(preview.previewEntryCount)} entries from ${preview.sourceCount} sources.",
+                        color = TextDim,
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp
+                    )
+                }
+                if (preview.failedSourceCount > 0) {
+                    Text(
+                        "${preview.failedSourceCount} failed",
+                        color = Red.copy(alpha = 0.85f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                PreviewStat(
+                    label = "Added",
+                    value = "+${NumberFormat.getNumberInstance().format(preview.addedCount)}",
+                    color = Green,
+                    modifier = Modifier.weight(1f)
+                )
+                PreviewStat(
+                    label = "Removed",
+                    value = "-${NumberFormat.getNumberInstance().format(preview.removedCount)}",
+                    color = Red,
+                    modifier = Modifier.weight(1f)
+                )
+                PreviewStat(
+                    label = "Preview total",
+                    value = NumberFormat.getNumberInstance().format(preview.previewEntryCount),
+                    color = Blue,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (preview.changedQueries.isEmpty()) {
+                Text(
+                    "No recent DNS queries would change verdict.",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp
+                )
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        "Recent verdict changes",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    preview.changedQueries.forEach { change ->
+                        SourceImpactQueryChangeRow(change)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreviewStat(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
+    Surface(shape = RoundedCornerShape(8.dp), color = Surface3, modifier = modifier) {
+        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp)) {
+            Text(value, color = color, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+            Text(label, color = TextDim, fontSize = 9.sp, lineHeight = 12.sp)
+        }
+    }
+}
+
+@Composable
+private fun SourceImpactQueryChangeRow(change: SourceImpactQueryChange) {
+    val appText = change.appLabel.ifBlank { change.appPackage }
+    val directionColor = if (change.previewBlocked) Red else Green
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(top = 5.dp)
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(directionColor.copy(alpha = 0.75f))
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(change.hostname, color = TextPrimary, fontSize = 11.sp, lineHeight = 15.sp, maxLines = 2)
+            if (appText.isNotBlank()) {
+                Text(
+                    "$appText - ${change.queryCount} recent ${if (change.queryCount == 1) "query" else "queries"}",
+                    color = TextDim,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp,
+                    maxLines = 1
+                )
+            }
+        }
+        Text(
+            "${verdictLabel(change.currentBlocked)} -> ${verdictLabel(change.previewBlocked)}",
+            color = directionColor,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+private fun verdictLabel(blocked: Boolean): String = if (blocked) "Blocked" else "Allowed"
 
 @Composable
 private fun SourceItem(

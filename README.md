@@ -122,6 +122,7 @@
 | **Allowlist Sources** | Subscribed allowlists (Anudeep, HaGeZi) override blocklist entries and can show neutralized-domain examples |
 | **Overlap Analysis** | Identify redundant domains across enabled sources to optimize subscriptions |
 | **Source Health Check** | Batch reachability test + staleness detection. Push notification for DEAD sources |
+| **Source Impact Preview** | Preview enabled source updates before applying them, including added/removed entry counts and recent DNS queries whose verdict would change |
 | **Hosts Diff** | Track new/removed domains between blocklist updates |
 | **Remote Rule Sync** | Subscribe to remote rule lists that auto-sync during periodic updates |
 | **CNAME Cloak Database** | Auto-updated from AdGuard cname-trackers + NextDNS cname-cloaking-blocklist |
