@@ -41,14 +41,14 @@ $requiredPatterns = @{
         "fail-closed",
         "405 tracker SDK signatures",
         "ipapi.co",
-        "Kotlin 2.1",
+        "Kotlin 2.3",
         "v1-v15"
     )
     "app/README.md" = @(
         "fail-closed",
         "405 tracker SDK signatures",
         "ipapi.co",
-        "Android SDK 35",
+        "Android SDK 36",
         "v$versionName"
     )
     "app/CHANGELOG.md" = @(
@@ -71,6 +71,8 @@ $forbiddenPatterns = @(
     "Android 7+",
     "Kotlin-1.9",
     "Kotlin 2.0",
+    "Kotlin 2.1",
+    "Android SDK 35",
     "v1-v12"
 )
 

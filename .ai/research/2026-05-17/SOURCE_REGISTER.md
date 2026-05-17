@@ -124,6 +124,7 @@ Research date: 2026-05-17
 | E064 | Lottie Android repository | https://github.com/airbnb/lottie-android | Animation dependency. |
 | E065 | ZXing repository | https://github.com/zxing/zxing | QR dependency. |
 | E066 | MaxMind GeoIP2 Java repository | https://github.com/maxmind/GeoIP2-java | Offline GeoIP dependency. |
+| E084 | Dependency refresh metadata report | `.ai/research/2026-05-17/DEPENDENCY_REFRESH_REPORT.md` | Current metadata URLs, applied dependency versions, held upgrades, and verification notes. |
 | E067 | Exodus Privacy reports | https://reports.exodus-privacy.eu.org/ | Tracker signature ecosystem. |
 | E068 | Exodus Privacy exodus repository | https://github.com/Exodus-Privacy/exodus | Tracker database and scanner reference. |
 | E069 | DuckDuckGo Tracker Radar | https://github.com/duckduckgo/tracker-radar | Tracker domain dataset opportunity. |

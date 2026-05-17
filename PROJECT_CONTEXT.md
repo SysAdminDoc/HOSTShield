@@ -69,7 +69,8 @@ Important implementation facts:
 
 ## Release Truth Notes
 
-- Public docs now track the v6.5.9 source truth for fail-closed DoH pinning, 405 tracker SDK signatures, ipapi.co GeoIP fallback, Kotlin 2.1, and Room v1-v15 migrations.
+- Public docs now track the v6.5.9 source truth for fail-closed DoH pinning, 405 tracker SDK signatures, ipapi.co GeoIP fallback, Kotlin 2.3, Android SDK 36 compile / targetSdk 35, and Room v1-v15 migrations.
+- The dependency baseline is now Gradle 9.5.1, AGP 9.2.1 with built-in Kotlin support, Kotlin Compose plugin 2.3.21, KSP 2.3.8, compileSdk 36, targetSdk 35, Compose BOM 2026.05.00, Room 2.8.4, Hilt 2.59.2, OkHttp 5.3.2, and MaxMind GeoIP2 5.1.0. See `.ai/research/2026-05-17/DEPENDENCY_REFRESH_REPORT.md`.
 - `tools/check-release-docs.ps1` is the release-doc consistency gate for stale version/security phrases.
 - `tools/release-provenance.ps1` generates release provenance under `artifacts/release-provenance/`, including APK SHA-256, signing cert fingerprint when `apksigner` is available, build commit, Gradle/AGP/Kotlin versions, and artifact path.
 - License files conflict and require maintainer decision before publication: root `LICENSE` is MIT, while `app/LICENSE` is GPL-3.0. Docs surface this conflict instead of choosing a license implicitly.
@@ -96,7 +97,7 @@ Important implementation facts:
 
 ## Highest-Value Next Work
 
-1. Continue security modernization: controlled dependency refresh.
+1. Continue modernization cleanup from the dependency refresh: Hilt `hiltViewModel` import migration, Kotlin annotation target warnings, OkHttp 5 non-null response-body cleanup, MaxMind accessor deprecation cleanup, and AGP 9 source-set DSL cleanup.
 2. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 3. Add top-flow Compose UI coverage for onboarding, VPN controls, source/rule flows, diagnostics export, and log filtering.
 

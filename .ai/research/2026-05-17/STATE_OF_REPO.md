@@ -34,8 +34,8 @@ Baseline: `main` at `9494e0b` / tag `v6.5.9`
 Evidence: `app/app/build.gradle.kts`, `app/build.gradle.kts`, `app/settings.gradle.kts`, `gradle.properties`, `.github/workflows/release.yml`.
 
 - App version: `6.5.9`, versionCode `67`.
-- Android Gradle Plugin: `8.7.3`.
-- Kotlin plugin: `2.1.0`.
+- Android Gradle Plugin: `9.2.1` after the dependency refresh batch.
+- Kotlin Compose plugin: `2.3.21` after the dependency refresh batch; AGP 9 built-in Kotlin support replaced the standalone Android Kotlin plugin.
 - compileSdk/targetSdk: `35`.
 - minSdk: `26`.
 - Java/Kotlin target: `17`.
