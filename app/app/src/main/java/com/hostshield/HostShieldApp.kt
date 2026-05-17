@@ -34,7 +34,7 @@ class HostShieldApp : Application(), Configuration.Provider {
         appScope.launch { cnameCloakUpdater.loadCached() }
         appScope.launch { offlineGeoIp.initialize() }
 
-        // v6.2: Migrate plaintext secrets to EncryptedSharedPreferences (Roadmap #30)
+        // v6.2+: Migrate plaintext/legacy secrets into SecureStore.
         appScope.launch {
             securityPreferences.migratePlaintextSecrets()
             syncPreferences.migratePlaintextSecrets()

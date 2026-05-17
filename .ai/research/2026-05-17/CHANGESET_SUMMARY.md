@@ -41,6 +41,7 @@ Research date: 2026-05-17
 - TalkBack semantics pass - added shared accessibility modifiers and applied headings, state descriptions, disabled action semantics, toggle/filter/tab/radio labels, destructive labels, and live progress announcements across Home, Sources, Logs, Rules, Apps, Settings, DNS Tools, Firewall, onboarding, and related settings sub-screens.
 - Dynamic type pass - replaced fixed onboarding button heights with minimum heights, loosened source card and DNS log row wrapping, added line-height tolerance to warning banners, and widened/wrapped firewall table headers to reduce clipping at larger Android font scales.
 - High-contrast AMOLED theme - added a persisted Settings toggle, high-contrast palette switching in `HostShieldTheme`, shared chart/log-feed color tokens, high-contrast Glance/RemoteViews widget colors, and `ThemeContrastTest` coverage for pure-black surfaces and contrast ratios.
+- AndroidX Security Crypto replacement - replaced `EncryptedSharedPreferences`/`MasterKeys` runtime storage with `SecureStoreCrypto`, a local Android Keystore AES-GCM wrapper over `hostshield_secure_store_v2`; added a Tink-backed legacy reader to migrate existing encrypted preference values, excluded the v2 store from device transfer, and added `SecureStoreCryptoTest`.
 
 ## Files Intentionally Not Modified
 
@@ -57,3 +58,4 @@ No `CONTINUE_FROM_HERE.md` was created because the hard completion criteria were
 - `git diff --check` completed with only expected Windows CRLF warnings.
 - `.\gradlew.bat :app:testFullDebugUnitTest` passed from `app/` with JDK/Android SDK environment set.
 - High-contrast batch verification also ran `.\app\gradlew.bat -p app --no-parallel :app:compileFullDebugKotlin`, `.\app\gradlew.bat -p app --no-parallel :app:testFullDebugUnitTest --tests com.hostshield.ui.theme.ThemeContrastTest`, full `.\app\gradlew.bat -p app --no-parallel :app:testFullDebugUnitTest`, `tools/check-release-docs.ps1`, and `git diff --check`.
+- Secure-store batch verification included `.\app\gradlew.bat -p app --no-parallel :app:compileFullDebugKotlin`, focused `.\app\gradlew.bat -p app --no-parallel :app:testFullDebugUnitTest --tests com.hostshield.data.preferences.SecureStoreCryptoTest`, full `.\app\gradlew.bat -p app --no-parallel :app:testFullDebugUnitTest`, `:app:dependencyInsight --dependency security-crypto --configuration fullDebugRuntimeClasspath` showing no matching dependency, `tools/check-release-docs.ps1`, and `git diff --check`.

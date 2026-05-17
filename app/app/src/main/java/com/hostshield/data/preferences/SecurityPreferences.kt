@@ -60,7 +60,7 @@ class SecurityPreferences @Inject constructor(
 
     /**
      * Run once (e.g. at app start) to migrate any plaintext secrets from
-     * DataStore into EncryptedSharedPreferences.
+     * DataStore into SecureStore.
      */
     suspend fun migratePlaintextSecrets() {
         migrateIfNeeded(Keys.WIREGUARD_PRIVATE_KEY, SEC_WG_PRIVATE_KEY)

@@ -141,7 +141,7 @@ class ParentalControlManager @Inject constructor(
     // ── PIN Management ───────────────────────────────────────────
 
     /**
-     * Set a new 4-digit PIN. Stores PBKDF2 hash in EncryptedSharedPreferences.
+     * Set a new 4-digit PIN. Stores the PBKDF2 hash in SecureStore.
      * @return true if PIN was valid and stored.
      */
     suspend fun setPin(pin: String): Boolean {

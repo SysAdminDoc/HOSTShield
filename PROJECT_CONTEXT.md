@@ -45,7 +45,7 @@ Important implementation facts:
 - DNSCrypt production work is gated by `docs/decisions/0001-dnscrypt-engine.md`. The accepted direction is an audited engine extraction behind a Kotlin facade, with full `dnscrypt-proxy`/`gomobile` only as a packaging and correctness spike; native Kotlin crypto is a fallback, not the first production path.
 - `DoqResolver` and `WireGuardProxy` are explicitly experimental and simplified. Treat them as research-grade until replaced with audited engines.
 - Settings, diagnostics, logs, and README now share explicit maturity labels for DoQ and WireGuard DNS. Production defaults remain pinned DoH/DoH3/DoT; DoQ and WireGuard DNS stay opt-in.
-- `SecureStore` still uses AndroidX `EncryptedSharedPreferences` / `MasterKeys`; dependency review flags this as a migration candidate because AndroidX Security Crypto remains alpha and the API is aging.
+- `SecureStore` uses a local Android Keystore AES-GCM wrapper over `hostshield_secure_store_v2`. Tink is retained as a direct dependency only for one-time migration from legacy AndroidX EncryptedSharedPreferences keysets when the original Keystore master key is still present.
 - Room migrations exist from v1 through v15. Public migration definitions now live in `Migrations.ALL`, including the older v1-v5 steps that used to be private inside `DatabaseModule`. Exported Room schema snapshots exist for versions 7, 8, 9, 12, 14, and 15; missing official exports are documented in `docs/database-migration-fixtures.md`.
 
 ## Product Principles
@@ -93,7 +93,7 @@ Important implementation facts:
 
 ## Highest-Value Next Work
 
-1. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
+1. Continue security modernization: Argon2id migration path, AES-GCM backup nonce uniqueness guard, and controlled dependency refresh.
 2. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 3. Add top-flow Compose UI coverage for onboarding, VPN controls, source/rule flows, diagnostics export, and log filtering.
 
