@@ -82,13 +82,13 @@ Important implementation facts:
 - DoH provider pins now live in `DohPinManifest` with manifest version, issued date, primary/backup labels, review dates, expiry dates, diagnostic summary lines, and pin-failure event fields. The OkHttp path remains fail-closed.
 - Source download failures now persist `last_http_status`, `last_error`, and consecutive failure counts. Failed blocklist, allowlist, rule-sync, health-check, manual apply, VPN rebuild, and profile rebuild paths update source health; failed source updates post a local HostShield alert notification; Sources cards show last failure, HTTP status when available, and last successful update.
 - `HostShieldMigrationTest` is an instrumented migration matrix. It creates frozen SQL fixtures for every supported start version 1 through 14, migrates to current schema version 15 with `Migrations.ALL`, validates against the Room schema export, and checks sentinel data survives.
+- `ParserFuzzHarnessTest` is a deterministic JVM fuzz/property harness for malformed DNS bytes, generated DNS query roundtrips, DNS stamps, hosts/adblock imports, regex guard behavior, malformed backup payloads, and malformed source URLs.
 
 ## Highest-Value Next Work
 
-1. Add parser fuzz/property coverage around DNS packet parsing, stamps, blocklist parsing, source updates, and encrypted backup import.
-2. Add focused backup crypto regression tests for wrong passphrase, short payload rejection, IV uniqueness, and failure messaging.
-3. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
-4. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
+1. Add focused backup crypto regression tests for wrong passphrase, short payload rejection, IV uniqueness, legacy plaintext detection, and failure messaging.
+2. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
+3. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 
 ## Verification Commands
 

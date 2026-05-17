@@ -41,7 +41,7 @@ docs now surface the conflict instead of asserting one license as canonical.
 ### Test Hardening
 
 - [x] **Room migration golden test matrix.** Create frozen DB fixtures for every supported version path and test v1->v14 upgrades without destructive fallback. Fill missing schema exports or document why older versions cannot be reconstructed. Sources: L024, L025, L026, E010.
-- [ ] **DNS and import parser fuzz harness.** Add fuzz/property tests for DNS packet parsing/building, DNS stamps, hosts/adblock syntax, regex guards, backup import, and malformed source updates. Sources: L014, L020, L023, L031, E042-E051.
+- [x] **DNS and import parser fuzz harness.** Add fuzz/property tests for DNS packet parsing/building, DNS stamps, hosts/adblock syntax, regex guards, backup import, and malformed source updates. Sources: L014, L020, L023, L031, E042-E051.
 - [ ] **Backup crypto regression tests.** Cover wrong-passphrase behavior, short payload rejection, random IV uniqueness sampling, legacy plaintext auto-detection, and encrypted import failure messaging. Sources: L023, E052, E053.
 
 ### Blocklist And Dataset Quality
