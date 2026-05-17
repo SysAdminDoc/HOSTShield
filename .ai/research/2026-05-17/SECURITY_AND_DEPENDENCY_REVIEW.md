@@ -8,8 +8,8 @@ Strengths verified in source:
 
 - DoH is fail-closed and refuses unpinned downgrade in `DohResolver.kt`.
 - DoH/DoT responses are bounded before parser handoff.
-- Backup encryption uses AES-256-GCM with 600K PBKDF2-HMAC-SHA256 iterations in `BackupCrypto.kt`.
-- PIN hashing uses PBKDF2-HMAC-SHA256 and constant-time decoded-byte compare in `SecureStore.kt`.
+- New backup encryption uses AES-256-GCM with Argon2id-derived keys in `BackupCrypto.kt`; PBKDF2-HMAC-SHA256 remains for v1 backup imports.
+- New PIN hashing uses Argon2id records through `PasswordKdf`; PBKDF2-HMAC-SHA256 remains for legacy PIN verification and upgrade.
 - `data_extraction_rules.xml` excludes both legacy and v2 secure-store prefs from device transfer.
 - `AndroidManifest.xml` sets `usesCleartextTraffic="false"`.
 - Automation receiver is protected by a signature permission.
@@ -39,6 +39,7 @@ High-risk areas:
 | Cronet embedded | 143.7445.0 | Large embedded network surface; keep version refresh in dependency audit. |
 | libsu | 6.0.0 | Current release observed; root behavior still needs device validation. |
 | Tink Android | 1.21.0 | Direct dependency for legacy secure-pref migration only; new secure writes use local Android Keystore AES-GCM wrapper. |
+| Bouncy Castle bcprov-jdk18on | 1.84 | Lightweight Argon2id implementation for new PIN hashes and backup KDF records. |
 | Vico | 2.0.1 | UI dependency; test chart API on upgrade. |
 | Lottie | 6.6.2 | UI dependency; low security criticality. |
 | Glance | 1.1.1 | Widget dependency; update with Compose stack. |
@@ -49,7 +50,7 @@ High-risk areas:
 ## Immediate Hardening Recommendations
 
 1. Add a `./gradlew dependencyUpdates` equivalent or Gradle version-catalog review script that produces a markdown dependency report.
-2. Validate local security store migration on a device seeded with pre-v6.6 encrypted WebDAV, WireGuard, and parental PIN values.
+2. Validate local security store and KDF migration on a device seeded with pre-v6.6 encrypted WebDAV, WireGuard, parental PIN, and encrypted backup values.
 3. Add backup IV collision defense: store recent backup key-id/IV tuples or assert uniqueness per exported backup stream.
 4. Add DoH pin manifest tests: current pin set, backup pin, expiry/rotation metadata, fail-closed behavior, and user-visible diagnostics.
 5. Gate DNSCrypt, DoQ, and WireGuard user exposure behind explicit engine maturity states until audited or replaced.

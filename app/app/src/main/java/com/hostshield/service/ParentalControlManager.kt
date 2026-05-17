@@ -141,20 +141,20 @@ class ParentalControlManager @Inject constructor(
     // ── PIN Management ───────────────────────────────────────────
 
     /**
-     * Set a new 4-digit PIN. Stores the PBKDF2 hash in SecureStore.
+     * Set a new 4-digit PIN. Stores the Argon2id hash in SecureStore.
      * @return true if PIN was valid and stored.
      */
     suspend fun setPin(pin: String): Boolean {
         if (!isValidPin(pin)) return false
         prefs.setParentalPinHash(SecureStore.hashPin(pin))
-        Log.d(TAG, "PIN updated (PBKDF2)")
+        Log.d(TAG, "PIN updated (Argon2id)")
         return true
     }
 
     /**
      * Verify a PIN against the stored hash.
      * Supports both legacy SHA-256 (hex string without ':') and
-     * new PBKDF2 ("salt:hash") formats for seamless migration.
+     * PBKDF2 ("salt:hash") formats for seamless migration.
      * Returns false if no PIN is set — callers MUST gate with [isPinSet] first.
      * (Returning true on no-PIN previously allowed bypass of every PIN-gated action.)
      */
@@ -176,17 +176,22 @@ class ParentalControlManager @Inject constructor(
         val storedHash = prefs.parentalPinHash.first()
         if (storedHash.isEmpty()) return PinResult.NoPin
 
-        val match = if (storedHash.contains(':')) {
-            SecureStore.verifyPin(pin, storedHash)
+        val match = if (storedHash.contains(':') || storedHash.startsWith("argon2id${'$'}")) {
+            val verified = SecureStore.verifyPin(pin, storedHash)
+            if (verified && SecureStore.needsPinRehash(storedHash)) {
+                prefs.setParentalPinHash(SecureStore.hashPin(pin))
+                Log.d(TAG, "PIN hash upgraded from PBKDF2 to Argon2id")
+            }
+            verified
         } else {
-            // Legacy SHA-256 format — verify then upgrade to PBKDF2
+            // Legacy SHA-256 format — verify then upgrade to Argon2id.
             val legacyMatch = MessageDigest.isEqual(
                 hashPin(pin).toByteArray(),
                 storedHash.toByteArray()
             )
             if (legacyMatch) {
                 prefs.setParentalPinHash(SecureStore.hashPin(pin))
-                Log.d(TAG, "PIN hash upgraded from SHA-256 to PBKDF2")
+                Log.d(TAG, "PIN hash upgraded from SHA-256 to Argon2id")
             }
             legacyMatch
         }

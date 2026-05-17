@@ -61,7 +61,7 @@ docs now surface the conflict instead of asserting one license as canonical.
 ### Security And Dependency Modernization
 
 - [x] **Replace AndroidX Security Crypto alpha dependency.** Design and implement migration from `EncryptedSharedPreferences` / `MasterKeys` to a maintained local secret-store path using Android Keystore and an auditable encryption wrapper. Must migrate existing secrets without data loss. Sources: L022, E009.
-- [ ] **Argon2id migration path.** Add Argon2id for new PIN/backup KDF material if Android-compatible dependency choice is acceptable; keep backward verification for PBKDF2 records. Sources: L022, L023, E052.
+- [x] **Argon2id migration path.** Add Argon2id for new PIN/backup KDF material if Android-compatible dependency choice is acceptable; keep backward verification for PBKDF2 records. Sources: L022, L023, E052, E083.
 - [ ] **AES-GCM nonce uniqueness guard.** Add backup-level nonce/key tracking or export-time assertion so repeated IV under a key is impossible within the app's generated backup stream. Sources: L023, E053.
 - [ ] **Dependency refresh wave.** Evaluate AGP, Kotlin, Compose BOM, Room, WorkManager, Hilt, OkHttp 5, Cronet, Vico, Lottie, Glance, ZXing, and MaxMind upgrades in one controlled branch with unit tests and a debug install smoke. Sources: L008, E008-E014, E054-E066.
 
@@ -140,8 +140,8 @@ Core local evidence:
 - L019 `WireGuardProxy.kt`
 - L020 `DnsStampParser.kt`
 - L021 `DnsCryptRoutePlanner.kt`
-- L022 `SecureStore.kt`
-- L023 `BackupCrypto.kt`
+- L022 `SecureStore.kt`, `PasswordKdf.kt`
+- L023 `BackupCrypto.kt`, `EncryptedBackup.kt`
 - L024-L026 Room database and migrations
 - L027 `TrackerSignatureDb.kt`
 - L028 `GeoIpLookup.kt`
@@ -153,6 +153,6 @@ Primary external evidence:
 - E015-E036 direct competitors and adjacent DNS/firewall projects.
 - E037-E041 DNSCrypt implementation references.
 - E042-E051 DNS standards.
-- E052-E066 security and dependency references.
+- E052-E066 and E083 security and dependency references.
 - E067-E075 datasets and distribution references.
 - E076-E078 hardened Android and VPN coexistence references.

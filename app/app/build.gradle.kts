@@ -165,6 +165,8 @@ dependencies {
     // EncryptedSharedPreferences keysets; new secret writes use Android Keystore
     // directly through SecureStore.
     implementation("com.google.crypto.tink:tink-android:1.21.0")
+    // Lightweight Argon2id implementation for new PIN and backup KDF records.
+    implementation("org.bouncycastle:bcprov-jdk18on:1.84")
 
     // Custom Tabs (captive portal login)
     implementation("androidx.browser:browser:1.8.0")
