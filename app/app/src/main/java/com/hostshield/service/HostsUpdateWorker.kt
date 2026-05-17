@@ -5,9 +5,12 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.model.RuleType
+import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.data.source.SourceDownloadException
 import com.hostshield.data.source.SourceDownloader
+import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
 import com.hostshield.util.DiagnosticEventStore
@@ -33,12 +36,14 @@ class HostsUpdateWorker @AssistedInject constructor(
     private val dohBypassUpdater: DohBypassUpdater,
     private val cnameCloakUpdater: CnameCloakUpdater,
     private val httpClient: OkHttpClient,
-    private val diagnosticEvents: DiagnosticEventStore
+    private val diagnosticEvents: DiagnosticEventStore,
+    private val sourceFailureNotifier: SourceFailureNotifier
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
         const val WORK_NAME = "hostshield_update"
         const val TAG = "hosts_update"
+        private const val DEAD_FAILURE_THRESHOLD = 5
 
         fun schedule(context: Context, intervalHours: Int, wifiOnly: Boolean) {
             val constraints = Constraints.Builder()
@@ -124,10 +129,11 @@ class HostsUpdateWorker @AssistedInject constructor(
                     // Track per-source failures so the user can see why a blocklist
                     // is stale (silent swallow used to make this look like the lists
                     // were fresh when they were actually 404'ing for weeks).
-                    val failedSources = mutableListOf<String>()
+                    val failedSources = mutableListOf<SourceFailureNotice>()
                     for (source in blockSources) {
                         downloader.download(source)
                             .onSuccess { dl ->
+                                repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                                 if (!dl.notModified) {
                                     // v5.0: Auto-detect adblock format and extract allow rules
                                     if (HostsParser.isAdblockFormat(dl.content)) {
@@ -140,12 +146,34 @@ class HostsUpdateWorker @AssistedInject constructor(
                                 }
                             }
                             .onFailure { err ->
-                                failedSources += source.url
+                                val failures = source.consecutiveFailures + 1
+                                val health = if (failures >= DEAD_FAILURE_THRESHOLD) SourceHealth.DEAD else SourceHealth.ERROR
+                                val httpStatus = err.sourceHttpStatus()
+                                repository.updateSourceHealth(
+                                    source.id,
+                                    health,
+                                    err.message ?: "Unknown error",
+                                    failures,
+                                    httpStatus
+                                )
+                                failedSources += SourceFailureNotice(
+                                    label = source.label,
+                                    url = source.url,
+                                    error = err.message ?: err.javaClass.simpleName,
+                                    httpStatus = httpStatus,
+                                    lastSuccessfulUpdate = source.lastUpdated,
+                                    consecutiveFailures = failures,
+                                )
                                 Log.w(TAG, "Block source download failed: ${source.url} — ${err.message}")
                                 diagnosticEvents.record(
                                     DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
                                     "Block source download failed",
-                                    mapOf("source" to source.url, "error" to (err.message ?: err.javaClass.simpleName))
+                                    mapOf(
+                                        "source" to source.url,
+                                        "error" to (err.message ?: err.javaClass.simpleName),
+                                        "http_status" to httpStatus,
+                                        "failures" to failures
+                                    )
                                 )
                             }
                     }
@@ -156,17 +184,40 @@ class HostsUpdateWorker @AssistedInject constructor(
                     for (source in allowlistSources) {
                         downloader.download(source)
                             .onSuccess { dl ->
+                                repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                                 if (!dl.notModified) {
                                     HostsParser.parse(dl.content).forEach { sourceAllowDomains.add(it.hostname) }
                                 }
                             }
                             .onFailure { err ->
-                                failedSources += source.url
+                                val failures = source.consecutiveFailures + 1
+                                val health = if (failures >= DEAD_FAILURE_THRESHOLD) SourceHealth.DEAD else SourceHealth.ERROR
+                                val httpStatus = err.sourceHttpStatus()
+                                repository.updateSourceHealth(
+                                    source.id,
+                                    health,
+                                    err.message ?: "Unknown error",
+                                    failures,
+                                    httpStatus
+                                )
+                                failedSources += SourceFailureNotice(
+                                    label = source.label,
+                                    url = source.url,
+                                    error = err.message ?: err.javaClass.simpleName,
+                                    httpStatus = httpStatus,
+                                    lastSuccessfulUpdate = source.lastUpdated,
+                                    consecutiveFailures = failures,
+                                )
                                 Log.w(TAG, "Allowlist source download failed: ${source.url} — ${err.message}")
                                 diagnosticEvents.record(
                                     DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
                                     "Allowlist source download failed",
-                                    mapOf("source" to source.url, "error" to (err.message ?: err.javaClass.simpleName))
+                                    mapOf(
+                                        "source" to source.url,
+                                        "error" to (err.message ?: err.javaClass.simpleName),
+                                        "http_status" to httpStatus,
+                                        "failures" to failures
+                                    )
                                 )
                             }
                     }
@@ -204,21 +255,39 @@ class HostsUpdateWorker @AssistedInject constructor(
                                     prefs.setSyncUrlHash(url, hash)
 
                                     HostsParser.parse(content).forEach { allDomains.add(it.hostname) }
+                                } else {
+                                    throw SourceDownloadException(
+                                        "HTTP ${response.code}: ${response.message}",
+                                        response.code
+                                    )
                                 }
                             }
                         } catch (e: Exception) {
-                            failedSources += url
+                            val httpStatus = e.sourceHttpStatus()
+                            failedSources += SourceFailureNotice(
+                                label = url.substringAfter("://").take(48).ifBlank { "Rule sync URL" },
+                                url = url,
+                                error = e.message ?: e.javaClass.simpleName,
+                                httpStatus = httpStatus,
+                                lastSuccessfulUpdate = 0L,
+                                consecutiveFailures = 1,
+                            )
                             Log.w(TAG, "Sync URL fetch failed: $url — ${e.message}")
                             diagnosticEvents.record(
                                 DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
                                 "Rule sync URL fetch failed",
-                                mapOf("source" to url, "error" to (e.message ?: e.javaClass.simpleName))
+                                mapOf(
+                                    "source" to url,
+                                    "error" to (e.message ?: e.javaClass.simpleName),
+                                    "http_status" to httpStatus
+                                )
                             )
                         }
                     }
                     if (failedSources.isNotEmpty()) {
                         Log.w(TAG, "Blocklist refresh completed with ${failedSources.size} failed source(s): " +
-                            failedSources.joinToString(", "))
+                            failedSources.joinToString(", ") { it.url })
+                        sourceFailureNotifier.notifyFailures(failedSources)
                     }
 
                     val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)

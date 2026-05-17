@@ -19,6 +19,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *        dns_logs.cname_chain columns for per-query detail view
  * - v13: Composite indices for common query patterns
  * - v14: Added index on host_sources.category
+ * - v15: Added host_sources.last_http_status for source failure feedback
  */
 object Migrations {
 
@@ -151,6 +152,13 @@ object Migrations {
         }
     }
 
+    // v6.5.10: Persist the latest HTTP response code for failed source downloads
+    val MIGRATION_14_15 = object : Migration(14, 15) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE host_sources ADD COLUMN last_http_status INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
-    val ALL = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+    val ALL = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
 }

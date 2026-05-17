@@ -42,6 +42,7 @@ data class HostSource(
     @ColumnInfo(name = "size_bytes") val sizeBytes: Long = 0L,
     @ColumnInfo(name = "health") val health: SourceHealth = SourceHealth.UNKNOWN,
     @ColumnInfo(name = "last_error") val lastError: String = "",
+    @ColumnInfo(name = "last_http_status", defaultValue = "0") val lastHttpStatus: Int = 0,
     @ColumnInfo(name = "consecutive_failures") val consecutiveFailures: Int = 0,
     @ColumnInfo(name = "prev_entry_count") val prevEntryCount: Int = 0, // entry count before last update
     @ColumnInfo(name = "domains_added") val domainsAdded: Int = 0,     // new domains in last update

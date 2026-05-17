@@ -21,6 +21,22 @@ data class DownloadResult(
     val notModified: Boolean = false
 )
 
+class SourceDownloadException(
+    message: String,
+    val httpStatus: Int = 0,
+    cause: Throwable? = null
+) : Exception(message, cause)
+
+fun Throwable.sourceHttpStatus(): Int {
+    if (this is SourceDownloadException) return httpStatus
+    return Regex("""\bHTTP\s+(\d{3})\b""")
+        .find(message.orEmpty())
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.toIntOrNull()
+        ?: 0
+}
+
 @Singleton
 class SourceDownloader @Inject constructor() {
 
@@ -64,7 +80,7 @@ class SourceDownloader @Inject constructor() {
                     }
                     else -> {
                         val msg = "HTTP ${response.code}: ${response.message}"
-                        Result.failure(Exception(msg))
+                        Result.failure(SourceDownloadException(msg, response.code))
                     }
                 }
             }
@@ -80,6 +96,12 @@ class SourceDownloader @Inject constructor() {
         try {
             val request = Request.Builder().url(url).build()
             val body = client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw SourceDownloadException(
+                        "HTTP ${response.code}: ${response.message}",
+                        response.code
+                    )
+                }
                 response.body?.string() ?: ""
             }
 

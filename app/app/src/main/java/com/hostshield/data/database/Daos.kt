@@ -51,8 +51,8 @@ interface HostSourceDao {
     @Query("UPDATE host_sources SET entry_count = :count, last_updated = :timestamp, etag = :etag, size_bytes = :size WHERE id = :id")
     suspend fun updateSourceMeta(id: Long, count: Int, timestamp: Long, etag: String, size: Long)
 
-    @Query("UPDATE host_sources SET health = :health, last_error = :error, consecutive_failures = :failures WHERE id = :id")
-    suspend fun updateHealth(id: Long, health: SourceHealth, error: String, failures: Int)
+    @Query("UPDATE host_sources SET health = :health, last_error = :error, last_http_status = :httpStatus, consecutive_failures = :failures WHERE id = :id")
+    suspend fun updateHealth(id: Long, health: SourceHealth, error: String, failures: Int, httpStatus: Int = 0)
 
     @Query("UPDATE host_sources SET prev_entry_count = :prevCount, domains_added = :added, domains_removed = :removed WHERE id = :id")
     suspend fun updateChangelog(id: Long, prevCount: Int, added: Int, removed: Int)

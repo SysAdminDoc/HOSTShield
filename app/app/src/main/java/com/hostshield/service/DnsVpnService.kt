@@ -29,9 +29,11 @@ import com.hostshield.data.database.DnsLogDao
 import com.hostshield.data.model.BlockStats
 import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.RuleType
+import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
+import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
 import com.hostshield.util.Android16VpnRecoveryDetector
@@ -236,6 +238,7 @@ class DnsVpnService : VpnService() {
     @Inject lateinit var doqResolver: DoqResolver
     @Inject lateinit var wireGuardProxy: WireGuardProxy
     @Inject lateinit var diagnosticEvents: DiagnosticEventStore
+    @Inject lateinit var sourceFailureNotifier: SourceFailureNotifier
 
     private var vpnInterface: ParcelFileDescriptor? = null
     @Volatile private var isRunning = false
@@ -858,19 +861,45 @@ class DnsVpnService : VpnService() {
         try {
             val sources = repository.getEnabledSourcesList()
             val allDomains = mutableSetOf<String>()
+            val failedSources = mutableListOf<SourceFailureNotice>()
             for (source in sources) {
                 // forceDownload=true: must get ALL domains, not just changes.
                 // Without this, 304 responses silently drop entire sources.
                 downloader.download(source, forceDownload = true).onSuccess { dl ->
                     HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
+                    repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                 }.onFailure { err ->
+                    val failures = source.consecutiveFailures + 1
+                    val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
+                    val httpStatus = err.sourceHttpStatus()
+                    repository.updateSourceHealth(
+                        source.id,
+                        health,
+                        err.message ?: "Unknown error",
+                        failures,
+                        httpStatus
+                    )
+                    failedSources += SourceFailureNotice(
+                        label = source.label,
+                        url = source.url,
+                        error = err.message ?: err.javaClass.simpleName,
+                        httpStatus = httpStatus,
+                        lastSuccessfulUpdate = source.lastUpdated,
+                        consecutiveFailures = failures,
+                    )
                     recordEvent(
                         DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
                         "Source download failed during VPN blocklist rebuild",
-                        mapOf("source" to source.url, "error" to (err.message ?: err.javaClass.simpleName))
+                        mapOf(
+                            "source" to source.url,
+                            "error" to (err.message ?: err.javaClass.simpleName),
+                            "http_status" to httpStatus,
+                            "failures" to failures
+                        )
                     )
                 }
             }
+            sourceFailureNotifier.notifyFailures(failedSources)
             repository.getEnabledRulesByType(RuleType.BLOCK).filter { !it.isWildcard }
                 .forEach { allDomains.add(it.hostname.lowercase()) }
             repository.getEnabledRulesByType(RuleType.ALLOW).filter { !it.isWildcard }
