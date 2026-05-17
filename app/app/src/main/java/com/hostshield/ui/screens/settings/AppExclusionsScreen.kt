@@ -24,6 +24,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -77,11 +79,19 @@ fun AppExclusionsScreen(viewModel: AppExclusionsViewModel = hiltViewModel(), onB
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
             Column(modifier = Modifier.weight(1f)) {
-                Text("App Exclusions", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                Text(
+                    "App Exclusions",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
+                    modifier = Modifier.accessibilityHeading()
+                )
                 Text("${excluded.size} apps excluded", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
             }
-            IconButton(onClick = { viewModel.toggleShowSystem() }) {
-                Icon(if (showSystem) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, "Toggle system", tint = if (showSystem) Teal else TextDim)
+            IconButton(
+                onClick = { viewModel.toggleShowSystem() },
+                modifier = Modifier.accessibilityToggle("Show system apps", showSystem)
+            ) {
+                Icon(if (showSystem) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, if (showSystem) "Hide system apps" else "Show system apps", tint = if (showSystem) Teal else TextDim)
             }
         }
 
@@ -106,6 +116,7 @@ fun AppExclusionsScreen(viewModel: AppExclusionsViewModel = hiltViewModel(), onB
                     }
                     Switch(
                         checked = isExcluded, onCheckedChange = { viewModel.toggleApp(app.packageName) },
+                        modifier = Modifier.accessibilityToggle("Exclude ${app.label} from blocking", isExcluded),
                         colors = SwitchDefaults.colors(checkedThumbColor = Peach, checkedTrackColor = Peach.copy(alpha = 0.25f), uncheckedThumbColor = TextDim, uncheckedTrackColor = Surface3)
                     )
                 }

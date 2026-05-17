@@ -27,6 +27,8 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.service.NetworkStatsTracker
 import com.hostshield.service.NetworkStatsTracker.AppNetStats
 import com.hostshield.service.formatBytes
+import com.hostshield.ui.accessibility.accessibilityAction
+import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -65,9 +67,16 @@ fun NetworkStatsScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
-            Text("Network Stats", style = MaterialTheme.typography.titleLarge, color = TextPrimary,
-                modifier = Modifier.weight(1f))
-            IconButton(onClick = { viewModel.refresh() }) {
+            Text(
+                "Network Stats",
+                style = MaterialTheme.typography.titleLarge,
+                color = TextPrimary,
+                modifier = Modifier.weight(1f).accessibilityHeading()
+            )
+            IconButton(
+                onClick = { viewModel.refresh() },
+                modifier = Modifier.accessibilityAction("Refresh network stats")
+            ) {
                 Icon(Icons.Filled.Refresh, "Refresh", tint = Teal)
             }
         }

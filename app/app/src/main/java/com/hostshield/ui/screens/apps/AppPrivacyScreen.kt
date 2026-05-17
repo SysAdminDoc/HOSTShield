@@ -23,6 +23,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.hostshield.ui.accessibility.accessibilityAction
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.AppPrivacyScorer
@@ -75,17 +78,29 @@ fun AppPrivacyScreen(
         ) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
             Column(modifier = Modifier.weight(1f)) {
-                Text("App Privacy Report", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                Text(
+                    "App Privacy Report",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
+                    modifier = Modifier.accessibilityHeading()
+                )
                 Text("Privacy grade for each app based on DNS behavior", color = TextDim, fontSize = 11.sp)
             }
-            IconButton(onClick = { viewModel.loadReports() }, enabled = !state.isLoading) {
+            IconButton(
+                onClick = { viewModel.loadReports() },
+                enabled = !state.isLoading,
+                modifier = Modifier.accessibilityAction("Refresh app privacy reports", !state.isLoading)
+            ) {
                 Icon(Icons.Filled.Refresh, "Refresh", tint = Teal)
             }
         }
 
         if (state.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Teal)
+                CircularProgressIndicator(
+                    color = Teal,
+                    modifier = Modifier.accessibilityLiveRegion("Loading app privacy reports")
+                )
             }
             return
         }
@@ -176,10 +191,18 @@ private fun AppReportCard(report: AppPrivacyScorer.AppReport) {
                     Text("${report.totalQueries} queries, ${report.blockedQueries} blocked (${(report.blockRate * 100).toInt()}%)",
                         color = TextDim, fontSize = 10.sp)
                 }
-                IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(28.dp)) {
+                IconButton(
+                    onClick = { expanded = !expanded },
+                    modifier = Modifier.size(28.dp).accessibilityAction(
+                        if (expanded) "Collapse privacy report for ${report.appLabel.ifEmpty { report.packageName }}"
+                        else "Expand privacy report for ${report.appLabel.ifEmpty { report.packageName }}"
+                    )
+                ) {
                     Icon(
                         if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        null, tint = TextDim, modifier = Modifier.size(18.dp)
+                        if (expanded) "Collapse report" else "Expand report",
+                        tint = TextDim,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

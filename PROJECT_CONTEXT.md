@@ -87,10 +87,11 @@ Important implementation facts:
 - The curated blocklist gallery now includes 51 sources and a HaGeZi pack chooser for Light/Multi-Light, Normal, Pro, Pro++, Ultimate, TIF, TIF Mini, DynDNS, NRD, and Most Abused TLDs. Gallery items can carry tier and warning metadata, and `HostsParser.parseForBlocking` preserves adblock wildcard and `$denyallow=` semantics for source rebuild paths.
 - Subscribed allowlists are first-class source-category inputs in the Home apply, VPN rebuild, profile schedule, and periodic hosts worker paths. `HostsParser.parseForAllowing` handles plain domains and adblock `@@||` exception files, stale HaGeZi allowlist URLs are repaired on seed, and Sources can run an allowlist impact analysis that shows neutralized counts and sample domains per enabled allowlist.
 - Sources can preview enabled source updates before applying them. The preview downloads sources into a temporary `BlocklistHolder`, compares candidate exact/source-wildcard keys against the active in-memory filter, and lists recent DNS queries whose verdict would change.
+- Primary Compose screens now have a shared accessibility semantics helper and a TalkBack pass over headings, icon-only actions, stateful switches/filters/tabs/radio choices, destructive controls, disabled actions, and loading/progress announcements.
 
 ## Highest-Value Next Work
 
-1. Run the TalkBack semantics pass across primary screens and icon-only controls.
+1. Run the dynamic type pass across onboarding, settings, source cards, log rows, and warning banners.
 2. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
 3. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 

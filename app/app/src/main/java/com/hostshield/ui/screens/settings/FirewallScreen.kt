@@ -36,6 +36,10 @@ import com.hostshield.data.model.FirewallRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.service.IptablesManager
 import com.hostshield.service.NflogReader
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilityLiveRegion
+import com.hostshield.ui.accessibility.accessibilitySelection
+import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -272,7 +276,12 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text("Firewall", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                Text(
+                    "Firewall",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
+                    modifier = Modifier.accessibilityHeading()
+                )
                 Text(
                     when (tab) {
                         FirewallTab.DNS -> "${blocked.size} DNS-blocked"
@@ -283,10 +292,14 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
                     color = when (tab) { FirewallTab.DNS -> Red; FirewallTab.NETWORK -> if (iptablesActive) Teal else TextDim; FirewallTab.CONTEXT -> Mauve }
                 )
             }
-            IconButton(onClick = { viewModel.toggleShowSystem() }) {
+            IconButton(
+                onClick = { viewModel.toggleShowSystem() },
+                modifier = Modifier.accessibilityToggle("Show system apps", showSystem)
+            ) {
                 Icon(
                     if (showSystem) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                    "System apps", tint = if (showSystem) Teal else TextDim
+                    if (showSystem) "Hide system apps" else "Show system apps",
+                    tint = if (showSystem) Teal else TextDim
                 )
             }
         }
@@ -315,7 +328,11 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Teal, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(
+                    color = Teal,
+                    modifier = Modifier.size(24.dp).accessibilityLiveRegion("Loading firewall apps"),
+                    strokeWidth = 2.dp
+                )
             }
         }
 
@@ -427,6 +444,7 @@ private fun DnsFirewallTab(
                 }
                 Switch(
                     checked = isBlocked, onCheckedChange = { viewModel.toggleDnsBlock(app.packageName) },
+                    modifier = Modifier.accessibilityToggle("${app.label} DNS block", isBlocked),
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Red, checkedTrackColor = Red.copy(alpha = 0.25f),
                         uncheckedThumbColor = TextDim, uncheckedTrackColor = Surface3
@@ -539,7 +557,11 @@ private fun NetworkFirewallTab(
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Blue)
         ) {
             if (isDiagnosing) {
-                CircularProgressIndicator(Modifier.size(12.dp), color = Blue, strokeWidth = 1.5.dp)
+                CircularProgressIndicator(
+                    Modifier.size(12.dp).accessibilityLiveRegion("Running firewall diagnostic"),
+                    color = Blue,
+                    strokeWidth = 1.5.dp
+                )
             } else {
                 Icon(Icons.Filled.BugReport, null, modifier = Modifier.size(14.dp))
             }
@@ -603,7 +625,11 @@ private fun NetworkFirewallTab(
 
     if (isSyncing) {
         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Teal, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            CircularProgressIndicator(
+                color = Teal,
+                modifier = Modifier.size(24.dp).accessibilityLiveRegion("Syncing firewall rules"),
+                strokeWidth = 2.dp
+            )
         }
     }
 
@@ -631,11 +657,11 @@ private fun NetworkFirewallTab(
                 // WiFi toggle
                 IconButton(
                     onClick = { viewModel.toggleWifi(rule.uid, !rule.wifiAllowed) },
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(40.dp).accessibilityToggle("${rule.appLabel} WiFi access", rule.wifiAllowed)
                 ) {
                     Icon(
                         Icons.Filled.Wifi,
-                        "WiFi",
+                        if (rule.wifiAllowed) "WiFi allowed" else "WiFi blocked",
                         tint = if (rule.wifiAllowed) Green else Red,
                         modifier = Modifier.size(18.dp)
                     )
@@ -644,11 +670,11 @@ private fun NetworkFirewallTab(
                 // Mobile data toggle
                 IconButton(
                     onClick = { viewModel.toggleMobile(rule.uid, !rule.mobileAllowed) },
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(40.dp).accessibilityToggle("${rule.appLabel} mobile data access", rule.mobileAllowed)
                 ) {
                     Icon(
                         Icons.Filled.SignalCellularAlt,
-                        "Mobile",
+                        if (rule.mobileAllowed) "Mobile data allowed" else "Mobile data blocked",
                         tint = if (rule.mobileAllowed) Green else Red,
                         modifier = Modifier.size(18.dp)
                     )
@@ -727,11 +753,11 @@ private fun ContextFirewallTab(
                 // Screen Off toggle
                 IconButton(
                     onClick = { viewModel.toggleBlockScreenOff(rule.uid, !rule.blockScreenOff) },
-                    modifier = Modifier.size(38.dp)
+                    modifier = Modifier.size(38.dp).accessibilityToggle("${rule.appLabel} screen-off blocking", rule.blockScreenOff)
                 ) {
                     Icon(
                         if (rule.blockScreenOff) Icons.Filled.DarkMode else Icons.Filled.LightMode,
-                        "Screen off",
+                        if (rule.blockScreenOff) "Screen-off blocking on" else "Screen-off blocking off",
                         tint = if (rule.blockScreenOff) Mauve else Surface4,
                         modifier = Modifier.size(16.dp)
                     )
@@ -740,11 +766,11 @@ private fun ContextFirewallTab(
                 // Background toggle
                 IconButton(
                     onClick = { viewModel.toggleBlockBackground(rule.uid, !rule.blockBackground) },
-                    modifier = Modifier.size(38.dp)
+                    modifier = Modifier.size(38.dp).accessibilityToggle("${rule.appLabel} background blocking", rule.blockBackground)
                 ) {
                     Icon(
                         if (rule.blockBackground) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                        "Background",
+                        if (rule.blockBackground) "Background blocking on" else "Background blocking off",
                         tint = if (rule.blockBackground) Mauve else Surface4,
                         modifier = Modifier.size(16.dp)
                     )
@@ -753,11 +779,11 @@ private fun ContextFirewallTab(
                 // Metered toggle
                 IconButton(
                     onClick = { viewModel.toggleBlockMetered(rule.uid, !rule.blockMetered) },
-                    modifier = Modifier.size(38.dp)
+                    modifier = Modifier.size(38.dp).accessibilityToggle("${rule.appLabel} metered-network blocking", rule.blockMetered)
                 ) {
                     Icon(
                         if (rule.blockMetered) Icons.Filled.MoneyOff else Icons.Filled.AttachMoney,
-                        "Metered",
+                        if (rule.blockMetered) "Metered-network blocking on" else "Metered-network blocking off",
                         tint = if (rule.blockMetered) Mauve else Surface4,
                         modifier = Modifier.size(16.dp)
                     )
@@ -775,7 +801,8 @@ private fun TabPill(label: String, selected: Boolean, accent: Color, onClick: ()
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(10.dp),
-        color = if (selected) accent.copy(alpha = 0.15f) else Surface2
+        color = if (selected) accent.copy(alpha = 0.15f) else Surface2,
+        modifier = Modifier.accessibilitySelection("$label firewall tab", selected)
     ) {
         Text(
             label,
@@ -791,7 +818,8 @@ private fun FilterChipSmall(label: String, selected: Boolean, onClick: () -> Uni
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
-        color = if (selected) Red.copy(alpha = 0.12f) else Surface2
+        color = if (selected) Red.copy(alpha = 0.12f) else Surface2,
+        modifier = Modifier.accessibilitySelection("$label firewall filter", selected)
     ) {
         Text(
             label,

@@ -17,8 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,6 +28,10 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilityLiveRegion
+import com.hostshield.ui.accessibility.accessibilitySelection
+import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -104,7 +106,12 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Rules", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+                        Text(
+                            "Rules",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = TextPrimary,
+                            modifier = Modifier.accessibilityHeading()
+                        )
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "Create exact, wildcard, regex, allow, and redirect rules.",
@@ -193,7 +200,10 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
                 clipboardMessage = null
             }
             Surface(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 90.dp, start = 20.dp, end = 20.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 90.dp, start = 20.dp, end = 20.dp)
+                    .accessibilityLiveRegion(msg),
                 shape = RoundedCornerShape(10.dp),
                 color = Surface2
             ) {
@@ -232,7 +242,7 @@ private fun TypeChip(type: RuleType?, label: String, selected: Boolean, onClick:
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
         color = if (selected) color.copy(alpha = 0.12f) else Surface2,
-        modifier = Modifier.semantics { stateDescription = if (selected) "Selected" else "Not selected" }
+        modifier = Modifier.accessibilitySelection("$label rule filter", selected)
     ) {
         Text(label, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = if (selected) color else TextDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
@@ -283,6 +293,7 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
             Spacer(Modifier.width(4.dp))
             Switch(
                 checked = rule.enabled, onCheckedChange = onToggle,
+                modifier = Modifier.accessibilityToggle("Enable ${rule.hostname} rule", rule.enabled),
                 colors = SwitchDefaults.colors(checkedThumbColor = color, checkedTrackColor = color.copy(alpha = 0.25f), uncheckedThumbColor = TextDim, uncheckedTrackColor = Surface3)
             )
         }
@@ -332,7 +343,7 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
                             } else null
                         },
                         colors = CheckboxDefaults.colors(checkedColor = Mauve, uncheckedColor = TextDim, checkmarkColor = Color.Black),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp).accessibilityToggle("Regex pattern", isRegex)
                     )
                     Spacer(Modifier.width(8.dp))
                     Text("Regex pattern", color = if (isRegex) Mauve else TextDim, fontSize = 12.sp)

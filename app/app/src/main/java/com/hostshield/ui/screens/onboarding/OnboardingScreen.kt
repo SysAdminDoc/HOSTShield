@@ -630,6 +630,11 @@ private fun DnsConfigPage(
                         .clip(RoundedCornerShape(12.dp))
                         .border(1.dp, borderColor, RoundedCornerShape(12.dp))
                         .background(if (isSelected) Teal.copy(alpha = 0.08f) else Color.Transparent)
+                        .semantics(mergeDescendants = true) {
+                            role = Role.RadioButton
+                            contentDescription = "${option.name}. ${option.desc}"
+                            stateDescription = if (isSelected) "Selected" else "Not selected"
+                        }
                         .clickable { onSelectDns(option.id) }
                         .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically

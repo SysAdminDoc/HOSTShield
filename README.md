@@ -165,6 +165,7 @@
 | **App Shortcuts** | Long-press launcher: Toggle, Refresh Lists, Open Logs |
 | **Deep Links** | `hostshield://logs`, `hostshield://stats`, etc. |
 | **Onboarding Wizard** | Private DNS conflict detection, VPN permission, battery optimization |
+| **TalkBack Semantics** | Primary screens expose headings, stateful toggles/filters, disabled action states, destructive labels, and progress announcements |
 
 ### Content Filtering & Parental Controls
 

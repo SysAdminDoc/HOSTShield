@@ -27,6 +27,9 @@ import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.service.ContentCategory
 import com.hostshield.service.ParentalControlManager
 import com.hostshield.service.ParentalControlManager.AgeProfile
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilitySelection
+import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -167,7 +170,12 @@ fun ParentalControlScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
-            Text("Parental Controls", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+            Text(
+                "Parental Controls",
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary,
+                modifier = Modifier.accessibilityHeading()
+            )
         }
 
         // Enable toggle
@@ -193,6 +201,7 @@ fun ParentalControlScreen(
                 }
                 Switch(
                     checked = enabled, onCheckedChange = { viewModel.setEnabled(it) },
+                    modifier = Modifier.accessibilityToggle("Parental controls", enabled),
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Peach, checkedTrackColor = Peach.copy(alpha = 0.25f),
                         uncheckedThumbColor = TextDim, uncheckedTrackColor = Surface3,
@@ -205,7 +214,13 @@ fun ParentalControlScreen(
             // Age profile selector
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Age Profile", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Age Profile",
+                        color = TextPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.accessibilityHeading()
+                    )
                     Spacer(Modifier.height(10.dp))
                     AgeProfile.entries.forEach { profile ->
                         val selected = profile == currentProfile
@@ -214,7 +229,7 @@ fun ParentalControlScreen(
                             onClick = { viewModel.setProfile(profile.name) },
                             shape = RoundedCornerShape(10.dp),
                             color = if (selected) Peach.copy(alpha = 0.08f) else Color.Transparent,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().accessibilitySelection("${profile.label} age profile", selected),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -223,6 +238,7 @@ fun ParentalControlScreen(
                                 RadioButton(
                                     selected = selected,
                                     onClick = { viewModel.setProfile(profile.name) },
+                                    modifier = Modifier.accessibilitySelection("${profile.label} age profile", selected),
                                     colors = RadioButtonDefaults.colors(selectedColor = Peach, unselectedColor = TextDim),
                                 )
                                 Spacer(Modifier.width(8.dp))
