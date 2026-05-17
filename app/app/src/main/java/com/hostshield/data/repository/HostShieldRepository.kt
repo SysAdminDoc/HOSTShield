@@ -5,6 +5,8 @@ import com.hostshield.data.model.*
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.domain.parser.HostsParser
 import com.hostshield.domain.parser.ParsedHost
+import com.hostshield.util.DiagnosticEventStore
+import com.hostshield.util.DiagnosticEventType
 import com.hostshield.util.RootUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -36,7 +38,8 @@ class HostShieldRepository @Inject constructor(
     val sources: SourceRepository,
     val rules: RuleRepository,
     val logs: DnsLogRepository,
-    val profiles: ProfileRepository
+    val profiles: ProfileRepository,
+    private val diagnosticEvents: DiagnosticEventStore
 ) {
     // ── Sources (delegated) ─────────────────────────────────
     fun getAllSources(): Flow<List<HostSource>> = sources.getAllSources()
@@ -137,6 +140,16 @@ class HostShieldRepository @Inject constructor(
                     val failures = source.consecutiveFailures + 1
                     val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
                     sourceDao.updateHealth(source.id, health, err.message ?: "Unknown", failures)
+                    diagnosticEvents.record(
+                        DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
+                        "Source download failed during manual apply",
+                        mapOf(
+                            "source" to source.url,
+                            "label" to source.label,
+                            "error" to (err.message ?: err.javaClass.simpleName),
+                            "failures" to failures
+                        )
+                    )
                     onProgress("Failed: ${source.label} — ${err.message}")
                 }
             }

@@ -357,8 +357,8 @@ fun SettingsScreen(
         // Diagnostics & Export
         SettingsSection("Diagnostics & Export", Icons.Filled.BugReport, Yellow) {
             SettingsRow(
-                "Generate diagnostic report",
-                "Device info, config, logs, network state",
+                "Generate diagnostic package",
+                "Device info, config, logs, event log ZIP",
                 Icons.Filled.Description
             ) { viewModel.generateDiagnosticReport() }
             Spacer(Modifier.height(4.dp))

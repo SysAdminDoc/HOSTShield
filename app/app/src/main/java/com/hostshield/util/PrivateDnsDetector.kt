@@ -18,7 +18,8 @@ import javax.inject.Singleton
 
 @Singleton
 class PrivateDnsDetector @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val diagnosticEvents: DiagnosticEventStore
 ) {
     enum class PrivateDnsMode {
         /** Private DNS is off -- VPN DNS filtering works correctly. */
@@ -37,6 +38,8 @@ class PrivateDnsDetector @Inject constructor(
         val bypassesVpn: Boolean = mode != PrivateDnsMode.OFF && mode != PrivateDnsMode.UNKNOWN
     )
 
+    @Volatile private var lastConflictKey: String? = null
+
     /**
      * Check current Private DNS configuration.
      * Returns UNKNOWN on Android < 9 (Private DNS didn't exist).
@@ -51,7 +54,7 @@ class PrivateDnsDetector @Inject constructor(
             val mode = Settings.Global.getString(resolver, "private_dns_mode") ?: ""
             val hostname = Settings.Global.getString(resolver, "private_dns_specifier") ?: ""
 
-            when (mode.lowercase()) {
+            val status = when (mode.lowercase()) {
                 "off" -> PrivateDnsStatus(PrivateDnsMode.OFF)
                 "opportunistic" -> PrivateDnsStatus(PrivateDnsMode.AUTOMATIC)
                 "hostname" -> PrivateDnsStatus(PrivateDnsMode.STRICT, hostname)
@@ -61,8 +64,27 @@ class PrivateDnsDetector @Inject constructor(
                     else PrivateDnsStatus(PrivateDnsMode.UNKNOWN)
                 }
             }
+            recordConflictIfNeeded(status)
+            status
         } catch (_: Exception) {
             PrivateDnsStatus(PrivateDnsMode.UNKNOWN)
         }
+    }
+
+    private fun recordConflictIfNeeded(status: PrivateDnsStatus) {
+        if (!status.bypassesVpn) {
+            lastConflictKey = null
+            return
+        }
+
+        val key = "${status.mode}:${status.hostname}"
+        if (lastConflictKey == key) return
+        lastConflictKey = key
+
+        diagnosticEvents.recordBlocking(
+            DiagnosticEventType.PRIVATE_DNS_CONFLICT,
+            "Android Private DNS may bypass VPN DNS filtering",
+            mapOf("mode" to status.mode.name, "hostname" to status.hostname)
+        )
     }
 }

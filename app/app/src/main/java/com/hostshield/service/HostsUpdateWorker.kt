@@ -10,6 +10,8 @@ import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
+import com.hostshield.util.DiagnosticEventStore
+import com.hostshield.util.DiagnosticEventType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
@@ -30,7 +32,8 @@ class HostsUpdateWorker @AssistedInject constructor(
     private val blocklistHolder: BlocklistHolder,
     private val dohBypassUpdater: DohBypassUpdater,
     private val cnameCloakUpdater: CnameCloakUpdater,
-    private val httpClient: OkHttpClient
+    private val httpClient: OkHttpClient,
+    private val diagnosticEvents: DiagnosticEventStore
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -139,6 +142,11 @@ class HostsUpdateWorker @AssistedInject constructor(
                             .onFailure { err ->
                                 failedSources += source.url
                                 Log.w(TAG, "Block source download failed: ${source.url} — ${err.message}")
+                                diagnosticEvents.record(
+                                    DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
+                                    "Block source download failed",
+                                    mapOf("source" to source.url, "error" to (err.message ?: err.javaClass.simpleName))
+                                )
                             }
                     }
 
@@ -155,6 +163,11 @@ class HostsUpdateWorker @AssistedInject constructor(
                             .onFailure { err ->
                                 failedSources += source.url
                                 Log.w(TAG, "Allowlist source download failed: ${source.url} — ${err.message}")
+                                diagnosticEvents.record(
+                                    DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
+                                    "Allowlist source download failed",
+                                    mapOf("source" to source.url, "error" to (err.message ?: err.javaClass.simpleName))
+                                )
                             }
                     }
 
@@ -196,6 +209,11 @@ class HostsUpdateWorker @AssistedInject constructor(
                         } catch (e: Exception) {
                             failedSources += url
                             Log.w(TAG, "Sync URL fetch failed: $url — ${e.message}")
+                            diagnosticEvents.record(
+                                DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
+                                "Rule sync URL fetch failed",
+                                mapOf("source" to url, "error" to (e.message ?: e.javaClass.simpleName))
+                            )
                         }
                     }
                     if (failedSources.isNotEmpty()) {
@@ -214,6 +232,16 @@ class HostsUpdateWorker @AssistedInject constructor(
                     val wildcards = repository.getEnabledWildcards()
                     val regexRules = repository.getEnabledRegexRules()
                     blocklistHolder.updateAsync(allDomains, wildcards, regexRules)
+                    diagnosticEvents.record(
+                        DiagnosticEventType.BLOCKLIST_SWAP,
+                        "Blocklist snapshot swapped",
+                        mapOf(
+                            "domains" to allDomains.size,
+                            "wildcards" to wildcards.size,
+                            "regex_rules" to regexRules.size,
+                            "source" to "hosts_update_worker"
+                        )
+                    )
 
                     prefs.setLastApplyTime(System.currentTimeMillis())
                     prefs.setLastApplyCount(allDomains.size)

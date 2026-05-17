@@ -16,9 +16,13 @@ import com.hostshield.util.PrivateDnsDetector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,7 +44,8 @@ class DiagnosticExporter @Inject constructor(
     private val iptablesManager: IptablesManager,
     private val dnsLogDao: DnsLogDao,
     private val connectionLogDao: ConnectionLogDao,
-    private val privateDnsDetector: PrivateDnsDetector
+    private val privateDnsDetector: PrivateDnsDetector,
+    private val diagnosticEventStore: DiagnosticEventStore
 ) {
     companion object {
         private const val TAG = "DiagExport"
@@ -175,6 +180,31 @@ class DiagnosticExporter @Inject constructor(
         }
         sb.appendLine()
 
+        // -- Local Diagnostic Events --
+        sb.appendLine("-- Diagnostic Events (last 50) -----------------------")
+        try {
+            val events = diagnosticEventStore.readRecent(50)
+            if (events.isEmpty()) {
+                sb.appendLine("(no diagnostic events)")
+            } else {
+                val sdf = SimpleDateFormat("HH:mm:ss", Locale.US)
+                for (event in events) {
+                    val time = sdf.format(Date(event.timestampMs))
+                    val fields = event.fields.entries.joinToString(", ") { "${it.key}=${it.value}" }
+                    val suffix = when {
+                        event.message.isNotBlank() && fields.isNotBlank() -> " -- ${event.message} ($fields)"
+                        event.message.isNotBlank() -> " -- ${event.message}"
+                        fields.isNotBlank() -> " -- $fields"
+                        else -> ""
+                    }
+                    sb.appendLine("  $time [${event.type}]$suffix")
+                }
+            }
+        } catch (e: Exception) {
+            sb.appendLine("Diagnostic event read error: ${e.message}")
+        }
+        sb.appendLine()
+
         sb.appendLine("── End of Report ───────────────────────────────────")
 
         // Write to file
@@ -187,25 +217,65 @@ class DiagnosticExporter @Inject constructor(
     }
 
     /**
+     * Generate a ZIP package containing the text report and raw event JSONL.
+     */
+    suspend fun generateZip(context: Context): File = withContext(Dispatchers.IO) {
+        val report = generate(context)
+        val eventsJsonl = diagnosticEventStore.readJsonlSnapshot()
+        val dir = File(context.cacheDir, "diagnostics")
+        dir.mkdirs()
+
+        val zip = File(dir, "hostshield-diag-${System.currentTimeMillis()}.zip")
+        ZipOutputStream(FileOutputStream(zip)).use { zos ->
+            zos.addFileEntry("hostshield-diagnostic.txt", report)
+            zos.addTextEntry("diagnostic-events.jsonl", eventsJsonl)
+            zos.addTextEntry(
+                "manifest.json",
+                JSONObject()
+                    .put("generated_at_ms", System.currentTimeMillis())
+                    .put("app_version", BuildConfig.VERSION_NAME)
+                    .put("version_code", BuildConfig.VERSION_CODE)
+                    .put("event_count", eventsJsonl.lineSequence().filter { it.isNotBlank() }.count())
+                    .toString(2)
+            )
+        }
+
+        Log.i(TAG, "Diagnostic package: ${zip.absolutePath} (${zip.length()} bytes)")
+        zip
+    }
+
+    /**
      * Generate and share via Android share sheet.
      */
     suspend fun generateAndShare(context: Context) {
         try {
-            val file = generate(context)
+            val file = generateZip(context)
             val uri = FileProvider.getUriForFile(
                 context, "${context.packageName}.fileprovider", file
             )
             val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
+                type = "application/zip"
                 putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, "HostShield Diagnostic Report")
+                putExtra(Intent.EXTRA_SUBJECT, "HostShield Diagnostic Package")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(Intent.createChooser(intent, "Share Diagnostic Report")
+            context.startActivity(Intent.createChooser(intent, "Share Diagnostic Package")
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (e: Exception) {
             Log.e(TAG, "Share failed: ${e.message}", e)
         }
+    }
+
+    private fun ZipOutputStream.addFileEntry(entryName: String, file: File) {
+        putNextEntry(ZipEntry(entryName))
+        file.inputStream().use { it.copyTo(this) }
+        closeEntry()
+    }
+
+    private fun ZipOutputStream.addTextEntry(entryName: String, content: String) {
+        putNextEntry(ZipEntry(entryName))
+        write(content.toByteArray(Charsets.UTF_8))
+        closeEntry()
     }
 }

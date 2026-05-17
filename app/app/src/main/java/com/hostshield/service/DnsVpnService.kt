@@ -35,6 +35,8 @@ import com.hostshield.data.source.SourceDownloader
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
 import com.hostshield.util.Android16VpnRecoveryDetector
+import com.hostshield.util.DiagnosticEventStore
+import com.hostshield.util.DiagnosticEventType
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -233,6 +235,7 @@ class DnsVpnService : VpnService() {
     @Inject lateinit var dotResolver: DotResolver
     @Inject lateinit var doqResolver: DoqResolver
     @Inject lateinit var wireGuardProxy: WireGuardProxy
+    @Inject lateinit var diagnosticEvents: DiagnosticEventStore
 
     private var vpnInterface: ParcelFileDescriptor? = null
     @Volatile private var isRunning = false
@@ -349,6 +352,11 @@ class DnsVpnService : VpnService() {
                                 "source" to "watchdog",
                                 "action" to "restart"
                             ))
+                            recordEvent(
+                                DiagnosticEventType.DOZE_RESUME,
+                                "Watchdog resumed VPN after service was not running",
+                                mapOf("source" to "watchdog")
+                            )
                             startVpn()
                         }
                     }
@@ -360,6 +368,11 @@ class DnsVpnService : VpnService() {
                             val vfd = vpnInterface?.fileDescriptor
                             if (vfd == null || !vfd.valid()) {
                                 Log.w(TAG, "Watchdog: TUN fd invalid — restarting VPN")
+                                recordEvent(
+                                    DiagnosticEventType.TUN_FD_INVALID,
+                                    "Watchdog detected invalid TUN fd",
+                                    mapOf("source" to "watchdog")
+                                )
                                 restartVpn()
                                 return@launch
                             }
@@ -678,12 +691,39 @@ class DnsVpnService : VpnService() {
                 "trap=${dnsTrapEnabled && !dnsOnlyMode} (${DNS_TRAP_IPS.size}+${DOH_BYPASS_IPS.size} IPs), " +
                 "dnsOnly=$dnsOnlyMode, " +
                 "excluded=${excludedApps.size}, firewalled=${if (dnsOnlyMode) "off(dns-only)" else "${blockedApps.size}"}")
+            recordEvent(
+                DiagnosticEventType.VPN_START,
+                "VPN started",
+                mapOf(
+                    "domains" to blocklist.domainCount,
+                    "doh" to if (useDoH) dohProvider.name else "off",
+                    "dot" to if (useDoT) dotProvider.name else "off",
+                    "doq" to if (useDoQ) doqProvider.name else "off",
+                    "wireguard" to useWireGuard,
+                    "dns_only" to dnsOnlyMode,
+                    "vdns4" to "$vdns4Primary/$vdns4Secondary"
+                )
+            )
         } catch (e: Exception) {
             Log.e(TAG, "VPN start failed: ${e.message}", e); stopVpn()
         }
     }
 
     private fun stopVpn() {
+        val wasRunning = isRunning
+        if (wasRunning) {
+            diagnosticEvents.recordBlocking(
+                DiagnosticEventType.VPN_STOP,
+                "VPN stopped",
+                mapOf(
+                    "uptime_ms" to if (vpnStartTime > 0) System.currentTimeMillis() - vpnStartTime else 0L,
+                    "blocked" to blockedCount.get(),
+                    "allowed" to allowedCount.get(),
+                    "dropped" to droppedQueries.get(),
+                    "fd_errors" to fdErrorCount.get()
+                )
+            )
+        }
         captivePortalHandler.unregister()
         isRunning = false
         // Signal the Os.poll() loop to exit by writing to the shutdown pipe
@@ -823,6 +863,12 @@ class DnsVpnService : VpnService() {
                 // Without this, 304 responses silently drop entire sources.
                 downloader.download(source, forceDownload = true).onSuccess { dl ->
                     HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
+                }.onFailure { err ->
+                    recordEvent(
+                        DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
+                        "Source download failed during VPN blocklist rebuild",
+                        mapOf("source" to source.url, "error" to (err.message ?: err.javaClass.simpleName))
+                    )
                 }
             }
             repository.getEnabledRulesByType(RuleType.BLOCK).filter { !it.isWildcard }
@@ -830,6 +876,11 @@ class DnsVpnService : VpnService() {
             repository.getEnabledRulesByType(RuleType.ALLOW).filter { !it.isWildcard }
                 .forEach { allDomains.remove(it.hostname.lowercase()) }
             blocklist.updateAsync(allDomains, repository.getEnabledWildcards())
+            recordEvent(
+                DiagnosticEventType.BLOCKLIST_SWAP,
+                "Blocklist snapshot swapped",
+                mapOf("domains" to allDomains.size, "source" to "vpn_rebuild")
+            )
         } catch (e: Exception) { Log.w(TAG, "Blocklist rebuild failed: ${e.message}") }
     }
 
@@ -2319,8 +2370,21 @@ class DnsVpnService : VpnService() {
                 "uptime_ms" to (System.currentTimeMillis() - vpnStartTime),
                 "action" to "restart"
             ))
+            recordEvent(
+                DiagnosticEventType.TUN_FD_INVALID,
+                "Tunnel heartbeat detected invalid TUN fd",
+                mapOf("uptime_ms" to (System.currentTimeMillis() - vpnStartTime))
+            )
             serviceScope.launch { restartVpn() }
         }
+    }
+
+    private fun recordEvent(
+        type: DiagnosticEventType,
+        message: String = "",
+        fields: Map<String, Any?> = emptyMap()
+    ) {
+        diagnosticEvents.recordAsync(serviceScope, type, message, fields)
     }
 
     private fun logStructuredVpnEvent(event: String, fields: Map<String, Any?> = emptyMap()) {

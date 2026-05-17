@@ -28,7 +28,7 @@ docs now surface the conflict instead of asserting one license as canonical.
 
 ### Diagnostics And Reliability
 
-- [ ] **Structured local event log.** Add a ring-buffered local event store for `vpn_start`, `vpn_stop`, `tun_fd_invalid`, `private_dns_conflict`, `blocklist_swap`, `source_download_failed`, `cert_pin_failure`, `resolver_failover`, `doze_resume`, `root_command_failed`, and `backup_import_failed`. Export as a diagnostics ZIP from Settings. No network upload. Sources: L013, L015, L018, L019, E003, E004.
+- [x] **Structured local event log.** Add a ring-buffered local event store for `vpn_start`, `vpn_stop`, `tun_fd_invalid`, `private_dns_conflict`, `blocklist_swap`, `source_download_failed`, `cert_pin_failure`, `resolver_failover`, `doze_resume`, `root_command_failed`, and `backup_import_failed`. Export as a diagnostics ZIP from Settings. No network upload. Sources: L013, L015, L018, L019, E003, E004.
 - [ ] **Per-resolver health card.** Use existing DoH/DoH3 latency/failure signals to show 24-hour latency, success rate, fallback count, pin failures, EDE count once implemented, and selected provider/transport. Sources: L015, L016, E020, E021.
 - [ ] **Failed-source feedback.** Surface failed blocklist/allowlist downloads in the notification channel and as a Sources screen badge with last failure, HTTP status, and last successful update. Sources: L029, L014, E015, E026.
 

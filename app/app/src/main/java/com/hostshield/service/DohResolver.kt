@@ -1,6 +1,8 @@
 package com.hostshield.service
 
 import android.util.Log
+import com.hostshield.util.DiagnosticEventStore
+import com.hostshield.util.DiagnosticEventType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.CertificatePinner
@@ -26,7 +28,8 @@ import javax.inject.Singleton
 
 @Singleton
 class DohResolver @Inject constructor(
-    private val doh3Resolver: Doh3Resolver
+    private val doh3Resolver: Doh3Resolver,
+    private val diagnosticEvents: DiagnosticEventStore
 ) {
 
     companion object {
@@ -178,6 +181,15 @@ class DohResolver @Inject constructor(
             if (fbResult != null) {
                 consecutiveFailures[fallback]?.set(0)
                 Log.i(TAG, "Failover to ${fallback.name} succeeded")
+                diagnosticEvents.recordBlocking(
+                    DiagnosticEventType.RESOLVER_FAILOVER,
+                    "DoH resolver failover succeeded",
+                    mapOf(
+                        "from" to preferredProvider.name,
+                        "to" to fallback.name,
+                        "transport" to Transport.DOH.name
+                    )
+                )
                 return@withContext DohResponse(
                     response = fbResult,
                     provider = fallback,
@@ -279,6 +291,11 @@ class DohResolver @Inject constructor(
             // rotation that breaks pinning is investigable from `logcat` rather
             // than silently appearing as "all DoH providers failed".
             Log.e(TAG, "Cert pin failure for ${provider.name}: ${e.message}")
+            diagnosticEvents.recordBlocking(
+                DiagnosticEventType.CERT_PIN_FAILURE,
+                "DoH certificate pin validation failed",
+                mapOf("provider" to provider.name, "error" to (e.message ?: "SSLPeerUnverifiedException"))
+            )
             null
         } catch (e: Exception) {
             Log.d(TAG, "${provider.name} error: ${e.javaClass.simpleName}: ${e.message}")
