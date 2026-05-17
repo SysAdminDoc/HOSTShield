@@ -6,7 +6,7 @@
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, offline GeoIP, and a professional AMOLED dark UI.
+> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, offline GeoIP, and a professional AMOLED dark UI with an optional high-contrast mode.
 
 Current module baseline: v6.5.9, versionCode 67.
 
@@ -43,6 +43,7 @@ Current module baseline: v6.5.9, versionCode 67.
 | **AdAway Import** | Import hosts files, sources, and rules from AdAway backups |
 | **Remote DoH Updates** | Supplementary DoH bypass domains fetched from GitHub without app updates |
 | **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
+| **High-Contrast AMOLED** | Settings toggle for pure-black surfaces, brighter text, stronger semantic colors, chart contrast, and high-contrast widgets |
 
 ## How It Works
 

@@ -49,6 +49,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hostshield.data.model.DnsLogEntry
+import com.hostshield.ui.theme.Green
+import com.hostshield.ui.theme.Red
+import com.hostshield.ui.theme.Teal
+import com.hostshield.ui.theme.TextDim
+import com.hostshield.ui.theme.TextSecondary
 
 /**
  * Animated real-time DNS log feed (Roadmap #31).
@@ -56,16 +61,6 @@ import com.hostshield.data.model.DnsLogEntry
  * Provides smooth entry/exit animations for live DNS query entries,
  * including slide-in, fade, and pulsing status dots for blocked queries.
  */
-
-// ── Color Palette ────────────────────────────────────────────────
-
-private val Teal = Color(0xFF94E2D5)
-private val Red = Color(0xFFF38BA8)
-private val Green = Color(0xFFA6E3A1)
-private val TextSecondary = Color(0xFFBAC2DE)
-private val TextDim = Color(0xFF6C7086)
-private val SurfaceDark = Color(0xFF1E1E2E)
-private val BlockedBg = Color(0x0AF38BA8) // 4% red
 
 // ── Main Feed ────────────────────────────────────────────────────
 

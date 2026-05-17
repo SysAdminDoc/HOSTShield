@@ -169,7 +169,8 @@ class MainActivity : ComponentActivity() {
         handleShortcutIntent(intent)
 
         setContent {
-            HostShieldTheme {
+            val highContrastAmoled by prefs.highContrastAmoled.collectAsState(initial = false)
+            HostShieldTheme(highContrastAmoled = highContrastAmoled) {
                 val isFirstLaunch by prefs.isFirstLaunch.collectAsState(initial = true)
                 var isRootAvailable by remember { mutableStateOf<Boolean?>(null) }
 

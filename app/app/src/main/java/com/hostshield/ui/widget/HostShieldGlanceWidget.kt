@@ -35,12 +35,12 @@ import com.hostshield.MainActivity
 
 // ---------- Colors ----------
 
-private val DarkBackground = ColorProvider(Color(0xFF1E1E2E))
-private val SurfaceColor = ColorProvider(Color(0xFF313244))
-private val TealAccent = ColorProvider(Color(0xFF94E2D5))
-private val TextPrimary = ColorProvider(Color(0xFFCDD6F4))
-private val TextSecondary = ColorProvider(Color(0xFFA6ADC8))
-private val InactiveRed = ColorProvider(Color(0xFFF38BA8))
+private val DarkBackground = ColorProvider(Color(0xFF000000))
+private val SurfaceColor = ColorProvider(Color(0xFF171D26))
+private val TealAccent = ColorProvider(Color(0xFF7FFFEA))
+private val TextPrimary = ColorProvider(Color(0xFFFFFFFF))
+private val TextSecondary = ColorProvider(Color(0xFFD9E2F2))
+private val InactiveRed = ColorProvider(Color(0xFFFF7AA8))
 
 // ---------- Preference keys ----------
 

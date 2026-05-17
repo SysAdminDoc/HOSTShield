@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,21 +48,22 @@ import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.component.LineComponent
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import com.hostshield.ui.theme.Blue
+import com.hostshield.ui.theme.Flamingo
+import com.hostshield.ui.theme.Green
+import com.hostshield.ui.theme.LocalHighContrastAmoled
+import com.hostshield.ui.theme.Mauve
+import com.hostshield.ui.theme.Peach
+import com.hostshield.ui.theme.Red
+import com.hostshield.ui.theme.Sky
+import com.hostshield.ui.theme.Surface3
+import com.hostshield.ui.theme.Teal
+import com.hostshield.ui.theme.TextPrimary
+import com.hostshield.ui.theme.TextSecondary
+import com.hostshield.ui.theme.Yellow
 
-// HostShield brand colors (Catppuccin Mocha palette)
-private val Teal = Color(0xFF94E2D5)
-private val TealTransparent = Color(0x0094E2D5)
-private val Mauve = Color(0xFFCBA6F7)
-private val Green = Color(0xFFA6E3A1)
-private val Yellow = Color(0xFFF9E2AF)
-private val Red = Color(0xFFF38BA8)
-private val Blue = Color(0xFF89B4FA)
-private val Peach = Color(0xFFFAB387)
-private val Pink = Color(0xFFF5C2E7)
-private val Lavender = Color(0xFFB4BEFE)
-private val Surface0 = Color(0xFF313244)
-private val TextColor = Color(0xFFCDD6F4)
-private val SubText = Color(0xFFA6ADC8)
+private val queryTypeColors: List<Color>
+    get() = listOf(Teal, Mauve, Blue, Peach, Flamingo, Green, Yellow, Sky, Red)
 
 // -- 1. HourlyBlockedChart --
 
@@ -101,19 +103,21 @@ fun HourlyBlockedChart(
         )
     )
 
-    CartesianChartHost(
-        chart = rememberCartesianChart(
-            rememberLineCartesianLayer(lineProvider = lineProvider),
-            startAxis = VerticalAxis.rememberStart(),
-            bottomAxis = HorizontalAxis.rememberBottom(
-                valueFormatter = hourFormatter,
+    key(LocalHighContrastAmoled.current) {
+        CartesianChartHost(
+            chart = rememberCartesianChart(
+                rememberLineCartesianLayer(lineProvider = lineProvider),
+                startAxis = VerticalAxis.rememberStart(),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    valueFormatter = hourFormatter,
+                ),
             ),
-        ),
-        modelProducer = modelProducer,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(200.dp),
-    )
+            modelProducer = modelProducer,
+            modifier = modifier
+                .fillMaxWidth()
+                .height(200.dp),
+        )
+    }
 }
 
 // -- 2. DailyTrendChart --
@@ -153,27 +157,27 @@ fun DailyTrendChart(
         ),
     )
 
-    CartesianChartHost(
-        chart = rememberCartesianChart(
-            rememberColumnCartesianLayer(
-                columnProvider = columnProvider,
-                mergeMode = { ColumnCartesianLayer.MergeMode.Stacked },
+    key(LocalHighContrastAmoled.current) {
+        CartesianChartHost(
+            chart = rememberCartesianChart(
+                rememberColumnCartesianLayer(
+                    columnProvider = columnProvider,
+                    mergeMode = { ColumnCartesianLayer.MergeMode.Stacked },
+                ),
+                startAxis = VerticalAxis.rememberStart(),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    valueFormatter = dayFormatter,
+                ),
             ),
-            startAxis = VerticalAxis.rememberStart(),
-            bottomAxis = HorizontalAxis.rememberBottom(
-                valueFormatter = dayFormatter,
-            ),
-        ),
-        modelProducer = modelProducer,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(200.dp),
-    )
+            modelProducer = modelProducer,
+            modifier = modifier
+                .fillMaxWidth()
+                .height(200.dp),
+        )
+    }
 }
 
 // -- 3. QueryTypeDistribution --
-
-private val queryTypeColors = listOf(Teal, Mauve, Blue, Peach, Pink, Green, Yellow, Lavender, Red)
 
 @Composable
 fun QueryTypeDistribution(
@@ -235,7 +239,7 @@ fun QueryTypeDistribution(
                     Text(
                         text = "$label $pct%",
                         style = MaterialTheme.typography.labelSmall,
-                        color = SubText,
+                        color = TextSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -301,22 +305,24 @@ fun LatencyHistogram(
         ),
     )
 
-    CartesianChartHost(
-        chart = rememberCartesianChart(
-            rememberColumnCartesianLayer(
-                columnProvider = columnProvider,
-                mergeMode = { ColumnCartesianLayer.MergeMode.Stacked },
+    key(LocalHighContrastAmoled.current) {
+        CartesianChartHost(
+            chart = rememberCartesianChart(
+                rememberColumnCartesianLayer(
+                    columnProvider = columnProvider,
+                    mergeMode = { ColumnCartesianLayer.MergeMode.Stacked },
+                ),
+                startAxis = VerticalAxis.rememberStart(),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    valueFormatter = bucketFormatter,
+                ),
             ),
-            startAxis = VerticalAxis.rememberStart(),
-            bottomAxis = HorizontalAxis.rememberBottom(
-                valueFormatter = bucketFormatter,
-            ),
-        ),
-        modelProducer = modelProducer,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(200.dp),
-    )
+            modelProducer = modelProducer,
+            modifier = modifier
+                .fillMaxWidth()
+                .height(200.dp),
+        )
+    }
 }
 
 // -- 5. TopDomainsChart --
@@ -343,7 +349,7 @@ fun TopDomainsChart(
                 Text(
                     text = domain,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextColor,
+                    color = TextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.width(120.dp),
@@ -357,7 +363,7 @@ fun TopDomainsChart(
                             .height(18.dp),
                     ) {
                         drawRoundRect(
-                            color = Surface0,
+                            color = Surface3,
                             size = Size(size.width, size.height),
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f),
                         )
@@ -374,7 +380,7 @@ fun TopDomainsChart(
                 Text(
                     text = count.toString(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = SubText,
+                    color = TextSecondary,
                 )
             }
         }

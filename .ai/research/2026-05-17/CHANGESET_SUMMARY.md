@@ -40,6 +40,7 @@ Research date: 2026-05-17
 - Source impact preview - added a Sources-screen preview action that downloads enabled sources into a temporary blocklist snapshot, shows added/removed effective entries versus the active in-memory filter, and lists recent DNS queries whose block/allow verdict would change before applying updates.
 - TalkBack semantics pass - added shared accessibility modifiers and applied headings, state descriptions, disabled action semantics, toggle/filter/tab/radio labels, destructive labels, and live progress announcements across Home, Sources, Logs, Rules, Apps, Settings, DNS Tools, Firewall, onboarding, and related settings sub-screens.
 - Dynamic type pass - replaced fixed onboarding button heights with minimum heights, loosened source card and DNS log row wrapping, added line-height tolerance to warning banners, and widened/wrapped firewall table headers to reduce clipping at larger Android font scales.
+- High-contrast AMOLED theme - added a persisted Settings toggle, high-contrast palette switching in `HostShieldTheme`, shared chart/log-feed color tokens, high-contrast Glance/RemoteViews widget colors, and `ThemeContrastTest` coverage for pure-black surfaces and contrast ratios.
 
 ## Files Intentionally Not Modified
 
@@ -53,5 +54,6 @@ No `CONTINUE_FROM_HERE.md` was created because the hard completion criteria were
 
 ## Verification
 
-- `git diff --check` completed with only the expected Windows CRLF warning for `ROADMAP.md`.
+- `git diff --check` completed with only expected Windows CRLF warnings.
 - `.\gradlew.bat :app:testFullDebugUnitTest` passed from `app/` with JDK/Android SDK environment set.
+- High-contrast batch verification also ran `.\app\gradlew.bat -p app --no-parallel :app:compileFullDebugKotlin`, `.\app\gradlew.bat -p app --no-parallel :app:testFullDebugUnitTest --tests com.hostshield.ui.theme.ThemeContrastTest`, full `.\app\gradlew.bat -p app --no-parallel :app:testFullDebugUnitTest`, `tools/check-release-docs.ps1`, and `git diff --check`.
