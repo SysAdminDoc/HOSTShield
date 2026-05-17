@@ -7,7 +7,7 @@
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, DoH with certificate pinning, offline GeoIP, and a professional AMOLED dark UI.
+> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, DoH with certificate pinning, offline GeoIP, and a professional AMOLED dark UI with an optional high-contrast AMOLED mode.
 
 ---
 
@@ -157,6 +157,7 @@
 | Feature | Description |
 |---------|-------------|
 | **AMOLED Dark Theme** | Material 3 dark UI optimized for OLED displays |
+| **High-Contrast AMOLED Mode** | Optional pure-black palette with brighter text, semantic colors, chart colors, warning states, and widget surfaces |
 | **6 Accent Colors** | Teal, Blue, Purple, Green, Pink, Peach |
 | **31+ Screens** | Home, Sources, Rules, Stats, Settings, Logs, Apps, AppPrivacy, AppLogs, Firewall, ConnectionLog, DnsTools, NetworkStats, OverlapAnalysis, DnsLeakTest, RuleTest, HostsEditor, HostsDiff, AppExclusions, Onboarding, BlocklistGallery, AutomationAudit, ContentFilter, ParentalControls, DnsBenchmark, WebDavSync, CrashReports, QrConfig, TlsFingerprints |
 | **Home Dashboard** | Shield status, live query rate, cache hit rate, latency sparkline, top queried apps, category toggles, search history chips |
@@ -324,7 +325,7 @@ app/src/main/java/com/hostshield/
 │   ├── screens/       # 31+ screens (Home, Logs, Stats, Settings, Firewall, ...)
 │   ├── components/    # Vico charts, Lottie animations, animated log feed
 │   ├── widget/        # Glance widgets (toggle + stats)
-│   └── theme/         # Material 3 theme + accent colors
+│   └── theme/         # Material 3 theme, high-contrast AMOLED palette, accent colors
 └── util/
     ├── OfflineGeoIp.kt        # MaxMind GeoLite2 offline lookups
     ├── GeoIpLookup.kt         # ipapi.co online GeoIP fallback

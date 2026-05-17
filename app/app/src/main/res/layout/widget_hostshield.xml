@@ -13,7 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="HS"
-        android:textColor="#94E2D5"
+        android:textColor="#7FFFEA"
         android:textSize="28sp"
         android:textStyle="bold" />
 
@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:text="Protected"
-        android:textColor="#94E2D5"
+        android:textColor="#7FFFEA"
         android:textSize="14sp"
         android:textStyle="bold" />
 
@@ -32,7 +32,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text=""
-        android:textColor="#9399B2"
+        android:textColor="#D9E2F2"
         android:textSize="10sp" />
 
     <TextView
@@ -41,7 +41,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:text=""
-        android:textColor="#9399B2"
+        android:textColor="#D9E2F2"
         android:textSize="12sp" />
 
     <TextView
@@ -49,7 +49,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text=""
-        android:textColor="#F38BA8"
+        android:textColor="#FF7AA8"
         android:textSize="11sp"
         android:textStyle="bold" />
 
@@ -59,7 +59,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="1dp"
         android:text=""
-        android:textColor="#585B70"
+        android:textColor="#AAB6C8"
         android:textSize="9sp" />
 
     <LinearLayout
@@ -77,7 +77,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Enable"
-            android:textColor="#CDD6F4"
+            android:textColor="#FFFFFF"
             android:textSize="12sp"
             android:textStyle="bold" />
     </LinearLayout>

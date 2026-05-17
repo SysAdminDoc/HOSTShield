@@ -17,6 +17,7 @@ class UiPreferences @Inject constructor(
 
     internal object Keys {
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
+        val HIGH_CONTRAST_AMOLED = booleanPreferencesKey("high_contrast_amoled")
         val SHOW_NOTIFICATION = booleanPreferencesKey("show_notification")
         val PINNED_DOMAINS = stringPreferencesKey("pinned_domains")
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
@@ -24,6 +25,9 @@ class UiPreferences @Inject constructor(
 
     val accentColor: Flow<String> = ds.data.map { it[Keys.ACCENT_COLOR] ?: "teal" }
     suspend fun setAccentColor(color: String) = ds.edit { it[Keys.ACCENT_COLOR] = color }
+
+    val highContrastAmoled: Flow<Boolean> = ds.data.map { it[Keys.HIGH_CONTRAST_AMOLED] ?: false }
+    suspend fun setHighContrastAmoled(enabled: Boolean) = ds.edit { it[Keys.HIGH_CONTRAST_AMOLED] = enabled }
 
     val showNotification: Flow<Boolean> = ds.data.map { it[Keys.SHOW_NOTIFICATION] ?: true }
     suspend fun setShowNotification(show: Boolean) = ds.edit { it[Keys.SHOW_NOTIFICATION] = show }

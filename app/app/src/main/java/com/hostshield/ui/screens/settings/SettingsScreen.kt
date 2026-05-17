@@ -410,27 +410,18 @@ fun SettingsScreen(
             }
         }
 
-        // About
-        SettingsSection("About", Icons.Filled.Info, TextSecondary) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+        // Appearance
+        SettingsSection("Appearance", Icons.Filled.Visibility, Mauve) {
+            SettingsToggle(
+                "High-contrast AMOLED",
+                "Pure-black surfaces, brighter text, and stronger warning states",
+                Icons.Filled.Visibility,
+                state.highContrastAmoled
             ) {
-                Text("Version", color = TextSecondary, fontSize = 13.sp)
-                Text(BuildConfig.VERSION_NAME, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            }
-            if (state.isRootAvailable) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Root", color = TextSecondary, fontSize = 13.sp)
-                    Text("Available", color = Green, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                }
+                viewModel.setHighContrastAmoled(it)
             }
 
-            // Accent color picker
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             Text("Accent color", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -467,6 +458,26 @@ fun SettingsScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+
+        // About
+        SettingsSection("About", Icons.Filled.Info, TextSecondary) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Version", color = TextSecondary, fontSize = 13.sp)
+                Text(BuildConfig.VERSION_NAME, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            }
+            if (state.isRootAvailable) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Root", color = TextSecondary, fontSize = 13.sp)
+                    Text("Available", color = Green, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 }
             }
 

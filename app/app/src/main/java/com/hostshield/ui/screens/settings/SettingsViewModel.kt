@@ -63,6 +63,7 @@ data class SettingsUiState(
     val updateHtmlUrl: String = "",
     val updateMessage: String? = null,
     val accentColor: String = "teal",
+    val highContrastAmoled: Boolean = false,
     val scheduleEnabled: Boolean = false,
     val scheduleStart: String = "22:00",
     val scheduleEnd: String = "07:00",
@@ -185,14 +186,16 @@ class SettingsViewModel @Inject constructor(
             combine(
                 prefs.showNotification,
                 prefs.accentColor,
+                prefs.highContrastAmoled,
                 prefs.blockedApps
-            ) { notification, accent, apps ->
-                UiPrefs(notification, accent, apps.size)
+            ) { notification, accent, highContrast, apps ->
+                UiPrefs(notification, accent, highContrast, apps.size)
             }.collect { p ->
                 _uiState.update {
                     it.copy(
                         showNotification = p.showNotification,
                         accentColor = p.accentColor,
+                        highContrastAmoled = p.highContrastAmoled,
                         firewalledApps = p.firewalledApps
                     )
                 }
@@ -271,7 +274,12 @@ class SettingsViewModel @Inject constructor(
     private data class IpRedirectPrefs(val ipv4: String, val ipv6: String, val includeIpv6: Boolean, val localWebserver: Boolean)
     private data class UpdatePrefs(val autoUpdate: Boolean, val intervalHours: Int, val wifiOnly: Boolean)
     private data class DnsPrefs(val logging: Boolean, val retentionDays: Int, val dohEnabled: Boolean, val dohProvider: String, val dnsTrap: Boolean, val blockResponse: String, val customUpstream: String)
-    private data class UiPrefs(val showNotification: Boolean, val accentColor: String, val firewalledApps: Int)
+    private data class UiPrefs(
+        val showNotification: Boolean,
+        val accentColor: String,
+        val highContrastAmoled: Boolean,
+        val firewalledApps: Int
+    )
     private data class SchedulePrefs(val enabled: Boolean, val start: String, val end: String, val mode: String)
     private data class DotDoqPrefs(val dotEnabled: Boolean, val dotProvider: String, val doqEnabled: Boolean, val doqProvider: String)
     private data class WireGuardPrefs(val enabled: Boolean, val endpoint: String, val dnsIp: String)
@@ -350,6 +358,7 @@ class SettingsViewModel @Inject constructor(
     fun setLogRetention(days: Int) { viewModelScope.launch { prefs.setLogRetentionDays(days) } }
     fun setBlockResponseType(type: String) { viewModelScope.launch { prefs.setBlockResponseType(type) } }
     fun setAccentColor(color: String) { viewModelScope.launch { prefs.setAccentColor(color) } }
+    fun setHighContrastAmoled(enabled: Boolean) { viewModelScope.launch { prefs.setHighContrastAmoled(enabled) } }
 
     fun setScheduleEnabled(v: Boolean) {
         viewModelScope.launch {

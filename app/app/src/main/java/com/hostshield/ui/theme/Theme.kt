@@ -4,7 +4,12 @@ import android.app.Activity
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
@@ -15,60 +20,188 @@ import androidx.core.view.WindowCompat
 
 // Material 3 AMOLED theme
 
-// Core palette
-val Black = Color(0xFF000000)
-val Surface0 = Color(0xFF08080D)
-val Surface1 = Color(0xFF0F0F17)
-val Surface2 = Color(0xFF161621)
-val Surface3 = Color(0xFF1E1E2E)
-val Surface4 = Color(0xFF262638)
+internal data class HostShieldPalette(
+    val black: Color,
+    val surface0: Color,
+    val surface1: Color,
+    val surface2: Color,
+    val surface3: Color,
+    val surface4: Color,
+    val teal: Color,
+    val tealBright: Color,
+    val tealDim: Color,
+    val tealGlow: Color,
+    val mauve: Color,
+    val mauveDim: Color,
+    val green: Color,
+    val red: Color,
+    val yellow: Color,
+    val blue: Color,
+    val peach: Color,
+    val flamingo: Color,
+    val sky: Color,
+    val textPrimary: Color,
+    val textSecondary: Color,
+    val textDim: Color
+)
+
+internal val StandardHostShieldPalette = HostShieldPalette(
+    black = Color(0xFF000000),
+    surface0 = Color(0xFF08080D),
+    surface1 = Color(0xFF0F0F17),
+    surface2 = Color(0xFF161621),
+    surface3 = Color(0xFF1E1E2E),
+    surface4 = Color(0xFF262638),
+    teal = Color(0xFF94E2D5),
+    tealBright = Color(0xFFB4F5E8),
+    tealDim = Color(0xFF5BA89D),
+    tealGlow = Color(0xFF00D4AA),
+    mauve = Color(0xFFCBA6F7),
+    mauveDim = Color(0xFF9B78C4),
+    green = Color(0xFFA6E3A1),
+    red = Color(0xFFF38BA8),
+    yellow = Color(0xFFF9E2AF),
+    blue = Color(0xFF89B4FA),
+    peach = Color(0xFFFAB387),
+    flamingo = Color(0xFFF2CDCD),
+    sky = Color(0xFF89DCEB),
+    textPrimary = Color(0xFFE2E8F8),
+    textSecondary = Color(0xFF8B92A8),
+    textDim = Color(0xFF4A4E62)
+)
+
+internal val HighContrastAmoledPalette = HostShieldPalette(
+    black = Color(0xFF000000),
+    surface0 = Color(0xFF000000),
+    surface1 = Color(0xFF050505),
+    surface2 = Color(0xFF0C0F14),
+    surface3 = Color(0xFF171D26),
+    surface4 = Color(0xFF27313D),
+    teal = Color(0xFF7FFFEA),
+    tealBright = Color(0xFFC8FFF6),
+    tealDim = Color(0xFF5DE6D6),
+    tealGlow = Color(0xFF00F5D4),
+    mauve = Color(0xFFDDB8FF),
+    mauveDim = Color(0xFFC093F2),
+    green = Color(0xFFB8FFB0),
+    red = Color(0xFFFF7AA8),
+    yellow = Color(0xFFFFE27A),
+    blue = Color(0xFF9ED0FF),
+    peach = Color(0xFFFFC08A),
+    flamingo = Color(0xFFFFD7E8),
+    sky = Color(0xFF99EEFF),
+    textPrimary = Color(0xFFFFFFFF),
+    textSecondary = Color(0xFFD9E2F2),
+    textDim = Color(0xFFAAB6C8)
+)
+
+// Core palette. These names are used throughout the UI; the active palette is
+// switched by HostShieldTheme so existing screens inherit the selected variant.
+var Black by mutableStateOf(StandardHostShieldPalette.black)
+    private set
+var Surface0 by mutableStateOf(StandardHostShieldPalette.surface0)
+    private set
+var Surface1 by mutableStateOf(StandardHostShieldPalette.surface1)
+    private set
+var Surface2 by mutableStateOf(StandardHostShieldPalette.surface2)
+    private set
+var Surface3 by mutableStateOf(StandardHostShieldPalette.surface3)
+    private set
+var Surface4 by mutableStateOf(StandardHostShieldPalette.surface4)
+    private set
 
 // Accent colors
-val Teal = Color(0xFF94E2D5)
-val TealBright = Color(0xFFB4F5E8)
-val TealDim = Color(0xFF5BA89D)
-val TealGlow = Color(0xFF00D4AA)
-val Mauve = Color(0xFFCBA6F7)
-val MauveDim = Color(0xFF9B78C4)
-val Green = Color(0xFFA6E3A1)
-val Red = Color(0xFFF38BA8)
-val Yellow = Color(0xFFF9E2AF)
-val Blue = Color(0xFF89B4FA)
-val Peach = Color(0xFFFAB387)
-val Flamingo = Color(0xFFF2CDCD)
-val Sky = Color(0xFF89DCEB)
+var Teal by mutableStateOf(StandardHostShieldPalette.teal)
+    private set
+var TealBright by mutableStateOf(StandardHostShieldPalette.tealBright)
+    private set
+var TealDim by mutableStateOf(StandardHostShieldPalette.tealDim)
+    private set
+var TealGlow by mutableStateOf(StandardHostShieldPalette.tealGlow)
+    private set
+var Mauve by mutableStateOf(StandardHostShieldPalette.mauve)
+    private set
+var MauveDim by mutableStateOf(StandardHostShieldPalette.mauveDim)
+    private set
+var Green by mutableStateOf(StandardHostShieldPalette.green)
+    private set
+var Red by mutableStateOf(StandardHostShieldPalette.red)
+    private set
+var Yellow by mutableStateOf(StandardHostShieldPalette.yellow)
+    private set
+var Blue by mutableStateOf(StandardHostShieldPalette.blue)
+    private set
+var Peach by mutableStateOf(StandardHostShieldPalette.peach)
+    private set
+var Flamingo by mutableStateOf(StandardHostShieldPalette.flamingo)
+    private set
+var Sky by mutableStateOf(StandardHostShieldPalette.sky)
+    private set
 
 // Text hierarchy
-val TextPrimary = Color(0xFFE2E8F8)
-val TextSecondary = Color(0xFF8B92A8)
-val TextDim = Color(0xFF4A4E62)
+var TextPrimary by mutableStateOf(StandardHostShieldPalette.textPrimary)
+    private set
+var TextSecondary by mutableStateOf(StandardHostShieldPalette.textSecondary)
+    private set
+var TextDim by mutableStateOf(StandardHostShieldPalette.textDim)
+    private set
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Teal,
-    onPrimary = Black,
-    primaryContainer = TealDim.copy(alpha = 0.15f),
-    onPrimaryContainer = Teal,
-    secondary = Mauve,
-    onSecondary = Black,
-    secondaryContainer = MauveDim.copy(alpha = 0.15f),
-    onSecondaryContainer = Mauve,
-    tertiary = Peach,
-    onTertiary = Black,
-    error = Red,
-    onError = Black,
-    errorContainer = Red.copy(alpha = 0.15f),
-    onErrorContainer = Red,
-    background = Black,
-    onBackground = TextPrimary,
-    surface = Surface0,
-    onSurface = TextPrimary,
-    surfaceVariant = Surface2,
-    onSurfaceVariant = TextSecondary,
-    outline = Surface3,
-    outlineVariant = Surface2,
-    inverseSurface = TextPrimary,
-    inverseOnSurface = Black,
-    surfaceTint = Teal
+val LocalHighContrastAmoled = staticCompositionLocalOf { false }
+
+internal fun hostShieldPalette(highContrastAmoled: Boolean): HostShieldPalette =
+    if (highContrastAmoled) HighContrastAmoledPalette else StandardHostShieldPalette
+
+private fun applyHostShieldPalette(palette: HostShieldPalette) {
+    Black = palette.black
+    Surface0 = palette.surface0
+    Surface1 = palette.surface1
+    Surface2 = palette.surface2
+    Surface3 = palette.surface3
+    Surface4 = palette.surface4
+    Teal = palette.teal
+    TealBright = palette.tealBright
+    TealDim = palette.tealDim
+    TealGlow = palette.tealGlow
+    Mauve = palette.mauve
+    MauveDim = palette.mauveDim
+    Green = palette.green
+    Red = palette.red
+    Yellow = palette.yellow
+    Blue = palette.blue
+    Peach = palette.peach
+    Flamingo = palette.flamingo
+    Sky = palette.sky
+    TextPrimary = palette.textPrimary
+    TextSecondary = palette.textSecondary
+    TextDim = palette.textDim
+}
+
+internal fun hostShieldColorScheme(palette: HostShieldPalette) = darkColorScheme(
+    primary = palette.teal,
+    onPrimary = palette.black,
+    primaryContainer = palette.tealDim.copy(alpha = if (palette == HighContrastAmoledPalette) 0.28f else 0.15f),
+    onPrimaryContainer = palette.teal,
+    secondary = palette.mauve,
+    onSecondary = palette.black,
+    secondaryContainer = palette.mauveDim.copy(alpha = if (palette == HighContrastAmoledPalette) 0.28f else 0.15f),
+    onSecondaryContainer = palette.mauve,
+    tertiary = palette.peach,
+    onTertiary = palette.black,
+    error = palette.red,
+    onError = palette.black,
+    errorContainer = palette.red.copy(alpha = if (palette == HighContrastAmoledPalette) 0.28f else 0.15f),
+    onErrorContainer = palette.red,
+    background = palette.black,
+    onBackground = palette.textPrimary,
+    surface = palette.surface0,
+    onSurface = palette.textPrimary,
+    surfaceVariant = palette.surface2,
+    onSurfaceVariant = palette.textSecondary,
+    outline = palette.surface4,
+    outlineVariant = palette.surface3,
+    inverseSurface = palette.textPrimary,
+    inverseOnSurface = palette.black,
+    surfaceTint = palette.teal
 )
 
 val HostShieldTypography = Typography(
@@ -102,7 +235,14 @@ private val HostShieldShapes = Shapes(
 )
 
 @Composable
-fun HostShieldTheme(content: @Composable () -> Unit) {
+fun HostShieldTheme(
+    highContrastAmoled: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    val palette = hostShieldPalette(highContrastAmoled)
+    SideEffect {
+        applyHostShieldPalette(palette)
+    }
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -119,10 +259,12 @@ fun HostShieldTheme(content: @Composable () -> Unit) {
         }
     }
 
-    MaterialTheme(
-        colorScheme = DarkColorScheme,
-        typography = HostShieldTypography,
-        shapes = HostShieldShapes,
-        content = content
-    )
+    CompositionLocalProvider(LocalHighContrastAmoled provides highContrastAmoled) {
+        MaterialTheme(
+            colorScheme = hostShieldColorScheme(palette),
+            typography = HostShieldTypography,
+            shapes = HostShieldShapes,
+            content = content
+        )
+    }
 }

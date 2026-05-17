@@ -86,8 +86,8 @@ class HostShieldWidgetProvider : AppWidgetProvider() {
             )
 
             // Color tinting
-            val tealColor = android.graphics.Color.parseColor("#94E2D5")
-            val dimColor = android.graphics.Color.parseColor("#585B70")
+            val tealColor = android.graphics.Color.parseColor("#7FFFEA")
+            val dimColor = android.graphics.Color.parseColor("#AAB6C8")
             val activeColor = if (isEnabled) tealColor else dimColor
             views.setTextColor(R.id.widget_status, activeColor)
             views.setTextColor(R.id.widget_shield, activeColor)

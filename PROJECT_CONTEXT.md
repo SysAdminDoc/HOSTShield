@@ -89,12 +89,13 @@ Important implementation facts:
 - Sources can preview enabled source updates before applying them. The preview downloads sources into a temporary `BlocklistHolder`, compares candidate exact/source-wildcard keys against the active in-memory filter, and lists recent DNS queries whose verdict would change.
 - Primary Compose screens now have a shared accessibility semantics helper and a TalkBack pass over headings, icon-only actions, stateful switches/filters/tabs/radio choices, destructive controls, disabled actions, and loading/progress announcements.
 - The first dynamic type pass replaced fixed onboarding button heights with minimum heights, let source/log dense rows wrap key text and metadata, made warning banner copy line-height tolerant, and loosened firewall column headers for larger font scales.
+- `HostShieldTheme` now supports a persisted high-contrast AMOLED variant via `UiPreferences.highContrastAmoled`. The theme switches the shared Compose color tokens, Material color scheme, chart color sources, and widget colors to pure-black surfaces with brighter text and semantic warning/error/accent colors; `ThemeContrastTest` guards contrast ratios.
 
 ## Highest-Value Next Work
 
-1. Add a high-contrast AMOLED theme variant and verify it across dashboards, lists, dialogs, charts, widgets, and warning/error states.
-2. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
-3. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
+1. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
+2. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
+3. Add top-flow Compose UI coverage for onboarding, VPN controls, source/rule flows, diagnostics export, and log filtering.
 
 ## Verification Commands
 

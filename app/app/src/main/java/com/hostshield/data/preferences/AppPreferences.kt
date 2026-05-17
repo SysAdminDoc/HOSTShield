@@ -135,6 +135,10 @@ class AppPreferences @Inject constructor(
     val accentColor: Flow<String> get() = ui.accentColor
     suspend fun setAccentColor(color: String) = ui.setAccentColor(color)
 
+    // ── High Contrast AMOLED ─────────────────────────────────
+    val highContrastAmoled: Flow<Boolean> get() = ui.highContrastAmoled
+    suspend fun setHighContrastAmoled(enabled: Boolean) = ui.setHighContrastAmoled(enabled)
+
     // ── Auto Backup ──────────────────────────────────────────
     val autoBackupEnabled: Flow<Boolean> get() = sync.autoBackupEnabled
     suspend fun setAutoBackupEnabled(enabled: Boolean) = sync.setAutoBackupEnabled(enabled)
