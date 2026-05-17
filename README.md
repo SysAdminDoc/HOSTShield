@@ -166,6 +166,7 @@
 | **Deep Links** | `hostshield://logs`, `hostshield://stats`, etc. |
 | **Onboarding Wizard** | Private DNS conflict detection, VPN permission, battery optimization |
 | **TalkBack Semantics** | Primary screens expose headings, stateful toggles/filters, disabled action states, destructive labels, and progress announcements |
+| **Dynamic Type Safety** | Dense onboarding, settings, source, log, firewall, and warning surfaces avoid fixed-height clipping under larger system font scales |
 
 ### Content Filtering & Parental Controls
 

@@ -670,7 +670,7 @@ private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> 
                     .background(stripColor)
             )
 
-            @OptIn(ExperimentalFoundationApi::class)
+            @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -698,20 +698,24 @@ private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> 
                             entry.hostname,
                             color = hostColor,
                             fontSize = 12.sp,
+                            lineHeight = 16.sp,
                             fontWeight = if (blocked) FontWeight.SemiBold else FontWeight.Medium,
                             fontFamily = FontFamily.Monospace,
-                            maxLines = 1,
+                            maxLines = 2,
                             textDecoration = if (blocked) TextDecoration.LineThrough else TextDecoration.None
                         )
                         Spacer(Modifier.height(2.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
                             if (entry.appLabel.isNotEmpty()) {
-                                Text(entry.appLabel, color = TextDim, fontSize = 10.sp)
+                                Text(entry.appLabel, color = TextDim, fontSize = 10.sp, lineHeight = 13.sp)
                             }
                             if (entry.hitCount > 1) {
-                                Text("${entry.hitCount}x", color = TextDim, fontSize = 10.sp)
+                                Text("${entry.hitCount}x", color = TextDim, fontSize = 10.sp, lineHeight = 13.sp)
                             }
-                            Text(formatTime(entry.latestTimestamp), color = TextDim, fontSize = 10.sp)
+                            Text(formatTime(entry.latestTimestamp), color = TextDim, fontSize = 10.sp, lineHeight = 13.sp)
                         }
                     }
 

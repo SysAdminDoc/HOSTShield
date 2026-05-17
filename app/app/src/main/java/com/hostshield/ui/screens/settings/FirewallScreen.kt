@@ -608,10 +608,10 @@ private fun NetworkFirewallTab(
     // Column headers
     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Text("App", modifier = Modifier.weight(1f), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        Text("WiFi", modifier = Modifier.width(48.dp), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        Text("Data", modifier = Modifier.width(48.dp), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text("WiFi", modifier = Modifier.widthIn(min = 48.dp), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2, lineHeight = 12.sp)
+        Text("Data", modifier = Modifier.widthIn(min = 48.dp), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2, lineHeight = 12.sp)
     }
 
     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Surface3)
@@ -715,12 +715,12 @@ private fun ContextFirewallTab(
     // Column headers
     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Text("App", modifier = Modifier.weight(1f), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        Text("Scrn Off", modifier = Modifier.width(46.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        Text("Bkgnd", modifier = Modifier.width(46.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        Text("Metered", modifier = Modifier.width(46.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text("Screen off", modifier = Modifier.widthIn(min = 48.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2, lineHeight = 11.sp)
+        Text("Background", modifier = Modifier.widthIn(min = 48.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2, lineHeight = 11.sp)
+        Text("Metered", modifier = Modifier.widthIn(min = 48.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2, lineHeight = 11.sp)
     }
 
     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Surface3)

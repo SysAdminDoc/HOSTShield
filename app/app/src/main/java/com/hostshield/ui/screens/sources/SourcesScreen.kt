@@ -831,6 +831,7 @@ private fun SourceImpactQueryChangeRow(change: SourceImpactQueryChange) {
 private fun verdictLabel(blocked: Boolean): String = if (blocked) "Blocked" else "Allowed"
 
 @Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 private fun SourceItem(
     source: HostSource,
     allowlistImpact: AllowlistImpact?,
@@ -849,7 +850,10 @@ private fun SourceItem(
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         color = TextPrimary,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        lineHeight = 18.sp,
+                        maxLines = 2,
+                        modifier = Modifier.weight(1f)
                     )
                     if (source.isBuiltin) {
                         Spacer(Modifier.width(8.dp))
@@ -882,45 +886,54 @@ private fun SourceItem(
                 }
                 if (source.description.isNotEmpty()) {
                     Spacer(Modifier.height(2.dp))
-                    Text(source.description, style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 2, lineHeight = 16.sp)
+                    Text(source.description, style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 3, lineHeight = 16.sp)
                 }
                 Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     if (source.entryCount > 0) {
-                        Box(
-                            modifier = Modifier
-                                .size(5.dp)
-                                .clip(CircleShape)
-                                .background(Teal.copy(alpha = 0.6f))
-                        )
-                        Spacer(Modifier.width(5.dp))
-                        Text(
-                            "${NumberFormat.getNumberInstance().format(source.entryCount)} entries",
-                            style = MaterialTheme.typography.labelSmall, color = Teal.copy(alpha = 0.8f)
-                        )
-                        Spacer(Modifier.width(12.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(5.dp)
+                                    .clip(CircleShape)
+                                    .background(Teal.copy(alpha = 0.6f))
+                            )
+                            Spacer(Modifier.width(5.dp))
+                            Text(
+                                "${NumberFormat.getNumberInstance().format(source.entryCount)} entries",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Teal.copy(alpha = 0.8f),
+                                lineHeight = 14.sp
+                            )
+                        }
                     }
                     if (source.lastUpdated > 0) {
                         Text(
                             formatTimestamp(source.lastUpdated),
-                            style = MaterialTheme.typography.labelSmall, color = TextDim
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextDim,
+                            lineHeight = 14.sp
                         )
                     }
                     if (source.domainsAdded > 0 || source.domainsRemoved > 0) {
-                        Spacer(Modifier.width(8.dp))
                         if (source.domainsAdded > 0) {
                             Text(
                                 "+${source.domainsAdded}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Green.copy(alpha = 0.8f)
+                                color = Green.copy(alpha = 0.8f),
+                                lineHeight = 14.sp
                             )
                         }
                         if (source.domainsRemoved > 0) {
-                            Spacer(Modifier.width(4.dp))
                             Text(
                                 "-${source.domainsRemoved}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Red.copy(alpha = 0.7f)
+                                color = Red.copy(alpha = 0.7f),
+                                lineHeight = 14.sp
                             )
                         }
                     }
