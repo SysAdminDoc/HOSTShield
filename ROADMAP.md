@@ -35,7 +35,7 @@ docs now surface the conflict instead of asserting one license as canonical.
 ### Protocol Safety
 
 - [x] **DNSCrypt engine decision record.** Before a user-facing DNSCrypt toggle, write a short design record comparing: native Android/Kotlin implementation, Go `dnscrypt-proxy` component via gomobile, and audited library extraction. The decision must cover provider public key validation, client public key generation, XSalsa20/Poly1305 or supported primitive equivalence, Anonymized DNSCrypt relay wrapping, replay/nonces, timeout/failover, and test corpus. Sources: L020, L021, E037, E038, E039, E040, E041.
-- [ ] **Gate experimental DoQ and WireGuard modes.** Add explicit UI/state labels and diagnostics that say current DoQ and WireGuard implementations are experimental simplified engines. Keep production defaults on pinned DoH/DoH3/DoT until audited engines land. Sources: L018, L019, E044, E045.
+- [x] **Gate experimental DoQ and WireGuard modes.** Add explicit UI/state labels and diagnostics that say current DoQ and WireGuard implementations are experimental simplified engines. Keep production defaults on pinned DoH/DoH3/DoT until audited engines land. Sources: L018, L019, E044, E045.
 - [ ] **DoH pin rotation manifest.** Move provider pin metadata into a versioned local manifest with primary/backup pins, expiry/review date, and diagnostics for pin failures. Keep fail-closed behavior. Sources: L015, E042, E054.
 
 ### Test Hardening

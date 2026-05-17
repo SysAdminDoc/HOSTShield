@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hostshield.util.ExperimentalEngineDisclosure
 import com.hostshield.ui.theme.*
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -61,18 +62,22 @@ fun DnsSettingsSection(
             DotProviderSelector(dotProvider) { onDotProviderChange(it) }
         }
         Spacer(Modifier.height(8.dp))
-        SettingsToggle("DNS-over-QUIC", "QUIC-encrypted DNS (RFC 9250)", Icons.Filled.Bolt, doqEnabled) {
+        SettingsToggle("DNS-over-QUIC (experimental)", ExperimentalEngineDisclosure.DOQ_UI, Icons.Filled.Bolt, doqEnabled) {
             onDoqEnabledChange(it)
         }
         if (doqEnabled) {
             Spacer(Modifier.height(6.dp))
+            ExperimentalEngineNote(ExperimentalEngineDisclosure.DOQ_LABEL)
+            Spacer(Modifier.height(6.dp))
             DoqProviderSelector(doqProvider) { onDoqProviderChange(it) }
         }
         Spacer(Modifier.height(8.dp))
-        SettingsToggle("WireGuard DNS", "Tunnel DNS through WireGuard VPN", Icons.Filled.VpnKey, wireGuardEnabled) {
+        SettingsToggle("WireGuard DNS (experimental)", ExperimentalEngineDisclosure.WIREGUARD_UI, Icons.Filled.VpnKey, wireGuardEnabled) {
             onWireGuardEnabledChange(it)
         }
         if (wireGuardEnabled) {
+            Spacer(Modifier.height(6.dp))
+            ExperimentalEngineNote(ExperimentalEngineDisclosure.WIREGUARD_LABEL)
             Spacer(Modifier.height(6.dp))
             var wgEndpoint by remember { mutableStateOf(wireGuardEndpoint) }
             LaunchedEffect(wireGuardEndpoint) { wgEndpoint = wireGuardEndpoint }
@@ -201,5 +206,22 @@ fun DnsSettingsSection(
                 Text("Clear DNS cache", color = TextPrimary, fontSize = 13.sp)
             }
         }
+    }
+}
+
+@Composable
+private fun ExperimentalEngineNote(text: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Icon(Icons.Filled.Warning, null, tint = Yellow, modifier = Modifier.size(14.dp).padding(top = 1.dp))
+        Spacer(Modifier.width(7.dp))
+        Text(
+            text,
+            color = Yellow,
+            fontSize = 11.sp,
+            lineHeight = 15.sp
+        )
     }
 }

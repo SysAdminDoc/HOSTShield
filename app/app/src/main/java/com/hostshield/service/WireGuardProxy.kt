@@ -1,6 +1,7 @@
 package com.hostshield.service
 
 import android.util.Log
+import com.hostshield.util.ExperimentalEngineDisclosure
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.DatagramPacket
@@ -198,7 +199,7 @@ class WireGuardProxy @Inject constructor() {
      * @return Raw DNS response bytes, or null on failure.
      */
     suspend fun resolveDns(dns: ByteArray): ByteArray? = withContext(Dispatchers.IO) {
-        Log.w(TAG, "⚠️ WireGuard proxy is EXPERIMENTAL — simplified Noise_IKpsk2. See class header for limitations.")
+        Log.w(TAG, ExperimentalEngineDisclosure.WIREGUARD_DIAGNOSTIC)
         val sess = session
         if (sess == null || !isConnected) {
             Log.w(TAG, "WireGuard tunnel not connected")
