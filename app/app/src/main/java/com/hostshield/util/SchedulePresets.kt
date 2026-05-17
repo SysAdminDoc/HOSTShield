@@ -5,7 +5,7 @@ import com.hostshield.data.model.BlockingProfile
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v1.7.0 — Named Schedule Presets (Roadmap #35)
+// Named schedule presets
 // Pre-built schedule templates for common blocking profiles:
 // Focus, Sleep, Family, Work, Kids modes.
 

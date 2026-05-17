@@ -63,7 +63,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// HostShield v1.6.0
+// HostShield Android entry activity
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

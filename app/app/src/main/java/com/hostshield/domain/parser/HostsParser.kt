@@ -3,7 +3,7 @@ package com.hostshield.domain.parser
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 
-// HostShield v5.0.0 - Multi-format parser (hosts, domains-only, adblock-syntax)
+// Multi-format parser for hosts, domains-only, and adblock syntax
 
 /**
  * A single parsed host entry. Equality is defined on [hostname] only — the IP

@@ -8,7 +8,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
 
-// HostShield v6.0 — Threat Intelligence Feed Update Worker
+// Threat intelligence feed update worker
 //
 // Runs daily via WorkManager to refresh threat intelligence feeds.
 // Downloads malicious IP ranges and domains from curated sources

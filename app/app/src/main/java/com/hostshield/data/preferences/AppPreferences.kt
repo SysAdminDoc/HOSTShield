@@ -8,7 +8,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v6.2.0 — App Preferences (Facade)
+// DataStore preferences facade
 //
 // Backward-compatible facade over domain-specific preference managers.
 // New code should inject the specific manager it needs:

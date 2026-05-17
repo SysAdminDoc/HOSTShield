@@ -19,11 +19,18 @@ Research date: 2026-05-17
 
 - `ROADMAP.md` - replaced stale v6.4/v6.5 roadmap with a v6.5.9 source-keyed plan grounded in this research run.
 
+## Roadmap Implementation Update
+
+- `README.md` and `app/README.md` - repaired v6.5.9 documentation drift for DoH fail-closed pinning, 405 tracker SDK signatures, ipapi.co GeoIP fallback, Kotlin 2.1, Android SDK 35, and Room v1-v14 migration wording. Public docs now also surface the unresolved root/app license-file conflict instead of asserting one canonical license.
+- `tools/check-release-docs.ps1` - added a release consistency gate for stale version and security phrases.
+- `tools/release-provenance.ps1` - added APK SHA-256, signing fingerprint, build commit, Gradle/AGP/Kotlin version, and artifact-path provenance generation.
+- Versioned source-header comments were normalized to stable component descriptions without runtime behavior changes.
+
 ## Files Intentionally Not Modified
 
 - `AGENTS.md` and `CLAUDE.md` - both are ignored by Git in this repo. They were read and reconciled, but the durable tracked pointer is now `PROJECT_CONTEXT.md`.
-- `README.md` and `CHANGELOG.md` - drift was documented and prioritized instead of mixing implementation/doc repair into the research commit.
-- Source code - no runtime behavior was changed in this planning pass.
+- `CHANGELOG.md` - already carried the v6.5.9 source truth for this batch.
+- Runtime source behavior - only versioned header comments were changed in Kotlin/build files.
 
 ## Continuation File
 

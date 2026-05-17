@@ -27,7 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.hostshield.ui.theme.*
 
-// HostShield v1.6.0 — Premium Home Dashboard
+// Home dashboard screen
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable

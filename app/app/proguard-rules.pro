@@ -1,4 +1,4 @@
-# HostShield v3.8.0 - ProGuard / R8 Rules
+# HostShield Android shrinker rules
 
 # ── Room ──────────────────────────────────────────────────────
 -keep class * extends androidx.room.RoomDatabase

@@ -1,9 +1,9 @@
 # HostShield
 
 ![Version](https://img.shields.io/badge/version-6.5.9-blue)
-![License](https://img.shields.io/badge/license-GPL--3.0-green)
+![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white)
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
@@ -77,7 +77,7 @@
 | **DNS-over-TLS (DoT)** | RFC 7858, TLSv1.3, SNI + hostname verification. Cloudflare, Google, Quad9, AdGuard |
 | **DNS-over-QUIC (DoQ)** | RFC 9250, QUIC Initial framing. AdGuard, NextDNS, Mullvad. Falls back to DoT |
 | **DNS-over-WireGuard** | Noise_IKpsk2 handshake, AES-256-GCM transport encryption. DNS-only WireGuard tunnel |
-| **Certificate Pinning** | SHA-256 pin validation per provider, unpinned fallback as last resort |
+| **Certificate Pinning** | Fail-closed SHA-256 pin validation per provider; resolver failover continues only to pinned providers |
 | **Smart Latency Failover** | EMA-based latency tracking per provider, auto-selects fastest, falls back through all on failure |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through VPN tunnel to prevent bypass |
 | **TCP DNS** | Full TCP DNS support for responses >512 bytes, IPv4 + IPv6 |
@@ -97,7 +97,7 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Tracker SDK Scanner** | Exodus-style APK dex scanning for ~60 tracker SDK signatures. Room-cached, 7-day TTL, invalidated on app version change |
+| **Tracker SDK Scanner** | Exodus-style APK dex scanning for 405 tracker SDK signatures. Room-cached, 7-day TTL, invalidated on app version change |
 | **App Privacy Report** | A-F grade per app based on tracker SDK count, permissions, and DNS behavior |
 | **Privacy Score** | 0-100 protection rating based on current configuration (blocklists, DoH, firewall) |
 | **Suspicious TLD Detection** | Flags queries to high-abuse TLDs (.tk, .xyz, .onion, etc.) |
@@ -109,7 +109,7 @@
 | Feature | Description |
 |---------|-------------|
 | **Offline GeoIP** | MaxMind GeoLite2 Country + ASN databases (~14MB). Unlimited, zero-latency, no rate limits |
-| **Online GeoIP Fallback** | ip-api.com for city-level detail (rate-limited, 40 req/min with exponential backoff) |
+| **Online GeoIP Fallback** | ipapi.co over HTTPS for city-level detail, client-side rate-limited below the free-tier cap with exponential backoff |
 | **Country Flags** | Emoji flag display next to resolved IPs in DNS logs |
 | **ASN Lookup** | ISP/organization identification for every connection |
 
@@ -190,19 +190,23 @@
 
 ## Build
 
-```bash
+```powershell
 # Prerequisites: JDK 17, Android SDK 35
-cd app
+cd C:\Users\--\repos\HostShield
 
 # Full flavor — GitHub/F-Droid release (root features, QUERY_ALL_PACKAGES)
-./gradlew assembleFullRelease    # Signed release
-./gradlew assembleFullDebug      # Debug build
+.\app\gradlew.bat -p app :app:assembleFullRelease    # Signed release
+.\app\gradlew.bat -p app :app:assembleFullDebug      # Debug build
 
 # Play Store flavor (limited app visibility, no QUERY_ALL_PACKAGES)
-./gradlew assemblePlayDebug
+.\app\gradlew.bat -p app :app:assemblePlayDebug
 
 # Tests
-./gradlew testFullDebugUnitTest
+.\app\gradlew.bat -p app :app:testFullDebugUnitTest
+
+# Release doc/provenance checks
+powershell -ExecutionPolicy Bypass -File .\tools\check-release-docs.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 ```
 
 **Signing**: Set env vars `KEYSTORE_FILE`, `STORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` or falls back to debug keystore.
@@ -258,10 +262,10 @@ All actions are rate-limited (5s cooldown per action per caller) and logged to t
 
 | Component | Technology |
 |-----------|-----------|
-| Language | Kotlin 2.0 |
+| Language | Kotlin 2.1 |
 | UI | Jetpack Compose + Material 3 |
 | DI | Hilt (Dagger) |
-| Database | Room (11 tables, 12 migrations) |
+| Database | Room (11 entities, explicit v1-v14 migrations) |
 | Preferences | DataStore |
 | Async | Coroutines + Flow, ViewModels + StateFlow |
 | Networking | OkHttp 4 (source downloads, DoH resolver) |
@@ -276,7 +280,7 @@ All actions are rate-limited (5s cooldown per action per caller) and logged to t
 ```
 app/src/main/java/com/hostshield/
 ├── data/
-│   ├── database/      # Room DB, DAOs, converters, migrations (v1-v12)
+│   ├── database/      # Room DB, DAOs, converters, migrations (v1-v14)
 │   ├── model/         # Entities (11 tables), enums
 │   ├── preferences/   # DataStore preferences (AppPreferences)
 │   ├── repository/    # HostShieldRepository
@@ -320,7 +324,7 @@ app/src/main/java/com/hostshield/
 │   └── theme/         # Material 3 theme + accent colors
 └── util/
     ├── OfflineGeoIp.kt        # MaxMind GeoLite2 offline lookups
-    ├── GeoIpLookup.kt         # ip-api.com online lookups (legacy)
+    ├── GeoIpLookup.kt         # ipapi.co online GeoIP fallback
     ├── TrackerSignatureDb.kt   # Exodus-style APK tracker scanner
     ├── TlsFingerprinter.kt    # JA3/JA4 TLS ClientHello fingerprinting
     ├── AppPrivacyScorer.kt     # Per-app A-F privacy grades
@@ -357,7 +361,7 @@ HostShield focuses on hosts-based blocking with a curated gallery of 70+ blockli
 In VPN mode: no — Android only allows one VPN at a time. In root mode: yes — iptables rules work alongside any VPN.
 
 **Does it send data to any server?**
-No. All DNS filtering happens locally on-device. The only network requests are: downloading blocklist sources (user-configured URLs), DoH queries to the user-selected DNS provider, GeoIP database updates (MaxMind), and optional remote DoH bypass / CNAME cloak list updates from GitHub.
+No. All DNS filtering happens locally on-device. The only network requests are: downloading blocklist sources (user-configured URLs), DoH queries to the user-selected DNS provider, GeoIP database updates (MaxMind), optional city-level GeoIP fallback through ipapi.co, and optional remote DoH bypass / CNAME cloak list updates from GitHub.
 
 **What about battery life?**
 VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Root mode: ~0% additional battery (iptables operates at kernel level). The DNS cache (60-70% hit rate) and serve-stale reduce upstream queries significantly.
@@ -409,4 +413,4 @@ The `gradlew` script lives in the `app/` directory, not the repo root.
 
 ## License
 
-[GPL-3.0](LICENSE)
+Release licensing needs maintainer reconciliation before publication: the root [LICENSE](LICENSE) is MIT, while [app/LICENSE](app/LICENSE) is GPL-3.0.

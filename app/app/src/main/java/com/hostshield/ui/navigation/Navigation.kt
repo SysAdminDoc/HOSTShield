@@ -7,7 +7,7 @@ import androidx.compose.material.icons.automirrored.outlined.Rule
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
-// HostShield v1.6.0 - Navigation
+// Compose navigation graph
 
 sealed class Screen(
     val route: String,

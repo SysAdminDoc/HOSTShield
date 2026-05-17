@@ -51,7 +51,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import javax.inject.Inject
 import java.util.concurrent.atomic.AtomicLong
 
-// HostShield v4.0.0 - VPN DNS Blocking Service
+// VPN DNS blocking service
 //
 // Architecture: DNS-only interception (DNS66-style TEST-NET routing)
 //

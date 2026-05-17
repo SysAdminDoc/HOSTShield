@@ -18,7 +18,7 @@ import okhttp3.OkHttpClient
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
-// HostShield v4.0.0 -- Auto-Update Worker
+// Blocklist update worker
 
 @HiltWorker
 class HostsUpdateWorker @AssistedInject constructor(

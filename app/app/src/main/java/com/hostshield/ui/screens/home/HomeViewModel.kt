@@ -36,7 +36,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// HostShield v1.6.0
+// Home screen view model
 
 data class HomeUiState(
     val isEnabled: Boolean = false,

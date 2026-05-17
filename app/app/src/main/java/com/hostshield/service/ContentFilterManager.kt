@@ -6,7 +6,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v6.1.0 — Content Filtering Categories (Roadmap #40)
+// Content filtering category manager
 //
 // Toggleable content categories with curated domain lists.
 // Users enable/disable categories; blocked domains are resolved

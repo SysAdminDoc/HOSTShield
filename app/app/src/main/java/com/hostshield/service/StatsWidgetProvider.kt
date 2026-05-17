@@ -9,7 +9,7 @@ import android.content.Intent
 import android.widget.RemoteViews
 import com.hostshield.R
 
-// HostShield v3.5.0 -- Stats Widget
+// Stats widget provider
 
 class StatsWidgetProvider : AppWidgetProvider() {
 

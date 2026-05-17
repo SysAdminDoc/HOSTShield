@@ -14,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v2.1.0 — DNS-over-HTTPS Resolver
+// DNS-over-HTTPS resolver
 //
 // Features:
 // - RFC 8484 POST and GET wire format

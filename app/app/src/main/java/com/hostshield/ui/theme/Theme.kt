@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 
-// HostShield v1.6.0 — Premium AMOLED Theme
+// Material 3 AMOLED theme
 
 // Core palette
 val Black = Color(0xFF000000)

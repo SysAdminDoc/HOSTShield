@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v5.0.0 -- Trie-optimized blocklist holder with hash set fast path
+// Trie-optimized blocklist holder with hash set fast path
 // and filter decision LRU cache.
 //
 // Uses a reversed-label domain trie for O(m) lookups where m = label count.

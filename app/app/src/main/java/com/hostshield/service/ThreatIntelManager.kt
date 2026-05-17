@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v6.0 — Threat Intelligence Feed Engine
+// Threat intelligence feed engine
 //
 // Downloads and indexes malicious IPs (CIDR prefixes) and domains from
 // curated threat intelligence feeds:

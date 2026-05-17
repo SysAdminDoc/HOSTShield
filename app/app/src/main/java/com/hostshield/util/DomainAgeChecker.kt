@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v3.5.0 -- Domain Age Checker
+// Domain age checker
 // Checks RDAP/whois data to flag newly registered domains.
 // Newly registered domains (<30 days) are common in phishing/DGA attacks.
 

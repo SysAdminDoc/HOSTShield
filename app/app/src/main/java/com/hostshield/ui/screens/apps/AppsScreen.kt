@@ -43,7 +43,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// HostShield v1.6.0 — Apps View
+// Apps screen
 
 @HiltViewModel
 class AppsViewModel @Inject constructor(

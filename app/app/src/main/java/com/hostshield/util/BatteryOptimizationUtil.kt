@@ -10,7 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v1.6.0 - Battery Optimization Utility
+// Battery optimization helper
 //
 // VPN services are frequently killed by Android battery optimization,
 // especially on OEM skins (MIUI, EMUI, OneUI, ColorOS). This utility:

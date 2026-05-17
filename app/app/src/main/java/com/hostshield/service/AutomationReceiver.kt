@@ -16,7 +16,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
-// HostShield v4.0.0 - Hardened Automation Intent API
+// Hardened automation intent API receiver
 //
 // Security:
 // - Verifies caller identity before executing any action

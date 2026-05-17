@@ -52,7 +52,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
-// HostShield v1.6.0 — DNS Log
+// DNS log screen
 
 data class DedupedLogEntry(
     val hostname: String,

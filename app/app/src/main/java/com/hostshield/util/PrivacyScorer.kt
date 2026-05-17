@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v3.4.0 -- Privacy Score Calculator
+// Privacy score calculator
 // Rates device protection 0-100 based on current configuration.
 
 @Singleton

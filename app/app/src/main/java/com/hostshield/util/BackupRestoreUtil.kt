@@ -14,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v1.6.0 — Full Backup / Restore
+// Backup and restore utilities
 // ══════════════════════════════════════════════════════════════
 
 data class BackupResult(

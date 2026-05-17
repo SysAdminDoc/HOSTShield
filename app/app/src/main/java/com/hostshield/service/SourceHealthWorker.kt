@@ -14,7 +14,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
 
-// HostShield v4.3.0 - Source Health Monitor with notifications
+// Source health monitor worker
 
 @HiltWorker
 class SourceHealthWorker @AssistedInject constructor(

@@ -7,7 +7,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// HostShield v1.6.0 - Private DNS Detector
+// Private DNS detector
 //
 // Android 9+ Private DNS (DNS-over-TLS on port 853) bypasses local VPN
 // DNS interception entirely. When enabled, DNS queries go directly to

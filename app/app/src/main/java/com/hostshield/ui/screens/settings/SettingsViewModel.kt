@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 // ══════════════════════════════════════════════════════════════
-// HostShield v1.6.0 — Settings ViewModel
+// Settings view model
 // ══════════════════════════════════════════════════════════════
 
 data class SettingsUiState(
