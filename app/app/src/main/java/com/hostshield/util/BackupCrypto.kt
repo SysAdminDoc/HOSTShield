@@ -40,6 +40,7 @@ class BackupCrypto private constructor() {
         fun encrypt(plaintext: ByteArray, passphrase: String): ByteArray {
             val salt = PasswordKdf.randomBytes(SALT_LENGTH)
             val iv = PasswordKdf.randomBytes(IV_LENGTH)
+            BackupNonceLedger.rememberArgon2idExport(ARGON2ID_PARAMS, salt, iv)
 
             val key = deriveArgon2idKey(passphrase, salt, ARGON2ID_PARAMS)
 
