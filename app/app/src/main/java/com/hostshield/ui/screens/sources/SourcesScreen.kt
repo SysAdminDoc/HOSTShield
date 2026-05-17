@@ -33,6 +33,10 @@ import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
+import com.hostshield.ui.accessibility.accessibilityAction
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilityLiveRegion
+import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -445,7 +449,9 @@ fun SourcesScreen(
             ) {
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .accessibilityLiveRegion("Loading configured sources"),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(Icons.Filled.CloudDownload, null, tint = Teal, modifier = Modifier.size(32.dp))
@@ -492,7 +498,12 @@ fun SourcesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Sources", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+                    Text(
+                        "Sources",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = TextPrimary,
+                        modifier = Modifier.accessibilityHeading()
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
@@ -510,25 +521,43 @@ fun SourcesScreen(
                         IconButton(
                             onClick = { viewModel.previewSourceImpact() },
                             enabled = !isPreviewingSourceImpact,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier
+                                .size(32.dp)
+                                .accessibilityAction("Preview source update impact", !isPreviewingSourceImpact)
                         ) {
-                            if (isPreviewingSourceImpact) CircularProgressIndicator(Modifier.size(14.dp), color = Blue, strokeWidth = 2.dp)
+                            if (isPreviewingSourceImpact) CircularProgressIndicator(
+                                Modifier.size(14.dp).accessibilityLiveRegion("Previewing source impact"),
+                                color = Blue,
+                                strokeWidth = 2.dp
+                            )
                             else Icon(Icons.Filled.Visibility, "Preview source impact", tint = TextDim, modifier = Modifier.size(18.dp))
                         }
                         IconButton(
                             onClick = { viewModel.checkAllSourceHealth() },
                             enabled = !isChecking,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier
+                                .size(32.dp)
+                                .accessibilityAction("Run source health check", !isChecking)
                         ) {
-                            if (isChecking) CircularProgressIndicator(Modifier.size(14.dp), color = Teal, strokeWidth = 2.dp)
+                            if (isChecking) CircularProgressIndicator(
+                                Modifier.size(14.dp).accessibilityLiveRegion("Checking source health"),
+                                color = Teal,
+                                strokeWidth = 2.dp
+                            )
                             else Icon(Icons.Filled.HealthAndSafety, "Health check", tint = TextDim, modifier = Modifier.size(18.dp))
                         }
                         IconButton(
                             onClick = { viewModel.analyzeAllowlistImpact() },
                             enabled = !isAnalyzingAllowlists,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier
+                                .size(32.dp)
+                                .accessibilityAction("Analyze allowlist impact", !isAnalyzingAllowlists)
                         ) {
-                            if (isAnalyzingAllowlists) CircularProgressIndicator(Modifier.size(14.dp), color = Green, strokeWidth = 2.dp)
+                            if (isAnalyzingAllowlists) CircularProgressIndicator(
+                                Modifier.size(14.dp).accessibilityLiveRegion("Analyzing allowlist impact"),
+                                color = Green,
+                                strokeWidth = 2.dp
+                            )
                             else Icon(Icons.Filled.CheckCircle, "Analyze allowlist impact", tint = TextDim, modifier = Modifier.size(18.dp))
                         }
                         Surface(
@@ -962,6 +991,7 @@ private fun SourceItem(
             Switch(
                 checked = source.enabled,
                 onCheckedChange = onToggle,
+                modifier = Modifier.accessibilityToggle("${source.label} source", source.enabled),
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Teal,
                     checkedTrackColor = Teal.copy(alpha = 0.25f),

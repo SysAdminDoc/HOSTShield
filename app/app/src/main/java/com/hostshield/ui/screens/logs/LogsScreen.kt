@@ -38,6 +38,11 @@ import com.hostshield.data.model.UserRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
+import com.hostshield.ui.accessibility.accessibilityAction
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilityLiveRegion
+import com.hostshield.ui.accessibility.accessibilitySelection
+import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -338,7 +343,12 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                     }
                 }
                 Column {
-                    Text("DNS Logs", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+                    Text(
+                        "DNS Logs",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = TextPrimary,
+                        modifier = Modifier.accessibilityHeading()
+                    )
                     Text(
                         "$totalDomains domains \u2022 $blockedCount blocked \u2022 ${logs.size} queries",
                         color = TextSecondary, fontSize = 12.sp
@@ -348,16 +358,17 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             IconButton(onClick = {
                 multiSelectMode = !multiSelectMode
                 if (!multiSelectMode) selectedHostnames = emptySet()
-            }) {
+            }, modifier = Modifier.accessibilityToggle("DNS log multi-select mode", multiSelectMode)) {
                 Icon(
                     if (multiSelectMode) Icons.Filled.Close else Icons.Filled.Checklist,
-                    "Multi-select",
+                    if (multiSelectMode) "Exit multi-select" else "Enter multi-select",
                     tint = if (multiSelectMode) Teal else TextDim
                 )
             }
             IconButton(
                 onClick = { showClearLogsDialog = true },
-                enabled = logs.isNotEmpty()
+                enabled = logs.isNotEmpty(),
+                modifier = Modifier.accessibilityAction("Clear DNS logs", logs.isNotEmpty())
             ) {
                 Icon(
                     Icons.Filled.DeleteSweep,
@@ -394,7 +405,11 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Teal, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(
+                    color = Teal,
+                    modifier = Modifier.size(24.dp).accessibilityLiveRegion("Loading DNS logs"),
+                    strokeWidth = 2.dp
+                )
             }
         }
 
@@ -524,7 +539,12 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                                     uncheckedColor = TextDim,
                                     checkmarkColor = Color.Black
                                 ),
-                                modifier = Modifier.size(28.dp)
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .accessibilityToggle(
+                                        "Select ${entry.hostname}",
+                                        entry.hostname in selectedHostnames
+                                    )
                             )
                             Spacer(Modifier.width(4.dp))
                         }
@@ -587,7 +607,8 @@ private fun LogFilter(label: String, selected: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
-        color = if (selected) Teal.copy(alpha = 0.12f) else Surface2
+        color = if (selected) Teal.copy(alpha = 0.12f) else Surface2,
+        modifier = Modifier.accessibilitySelection("$label DNS log filter", selected)
     ) {
         Text(
             label,
@@ -627,6 +648,9 @@ private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> 
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
+            .accessibilityAction(
+                "${entry.hostname}, ${if (blocked) "blocked" else "allowed"}, ${entry.hitCount} recent ${if (entry.hitCount == 1) "query" else "queries"}"
+            )
             .background(
                 Brush.horizontalGradient(
                     colors = if (blocked)
@@ -812,7 +836,13 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
                 modifier = Modifier.size(22.dp)
             )
             Spacer(Modifier.width(10.dp))
-            Text("Query Details", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
+            Text(
+                "Query Details",
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                modifier = Modifier.weight(1f).accessibilityHeading()
+            )
             IconButton(onClick = onTogglePin, modifier = Modifier.size(32.dp)) {
                 Icon(
                     if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,

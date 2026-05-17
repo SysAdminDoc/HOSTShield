@@ -23,8 +23,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -43,7 +47,11 @@ import kotlin.math.sin
 fun BrandHeader() {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            heading()
+            contentDescription = "HostShield"
+        }
     ) {
         Icon(Icons.Filled.Shield, null, tint = Teal, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(8.dp))
@@ -114,6 +122,7 @@ fun ShieldOrb(
                     isEnabled -> "Active"
                     else -> "Inactive"
                 }
+                if (isApplying) disabled()
             }
             .clickable(enabled = !isApplying, role = Role.Button) { onToggle() }
     ) {
@@ -281,7 +290,15 @@ fun StatusLabel(isEnabled: Boolean, isApplying: Boolean) {
         style = MaterialTheme.typography.titleMedium,
         color = color,
         fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.sp
+        letterSpacing = 0.sp,
+        modifier = Modifier.semantics {
+            liveRegion = LiveRegionMode.Polite
+            stateDescription = when {
+                isApplying -> "Applying"
+                isEnabled -> "Active"
+                else -> "Inactive"
+            }
+        }
     )
 }
 
@@ -371,11 +388,13 @@ fun ModeChip(
         modifier = Modifier
             .border(1.dp, borderColor, RoundedCornerShape(10.dp))
             .semantics {
+                contentDescription = "$label mode"
                 stateDescription = when {
                     !enabled -> "Unavailable"
                     selected -> "Selected"
                     else -> "Not selected"
                 }
+                if (!enabled) disabled()
             }
     ) {
         Row(
@@ -412,6 +431,7 @@ fun ActionRow(
             .semantics {
                 contentDescription = "$label. $subtitle"
                 stateDescription = if (enabled) "Available" else "Unavailable"
+                if (!enabled) disabled()
             }
             .background(if (enabled) Color.Transparent else Color.Transparent)
             .padding(vertical = 8.dp, horizontal = 4.dp),

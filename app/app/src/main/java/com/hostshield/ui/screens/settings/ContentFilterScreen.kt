@@ -24,6 +24,8 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.service.ContentCategory
 import com.hostshield.service.ContentFilterManager
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -78,7 +80,12 @@ fun ContentFilterScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
-            Text("Content Filtering", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+            Text(
+                "Content Filtering",
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary,
+                modifier = Modifier.accessibilityHeading()
+            )
         }
 
         // Summary card
@@ -199,6 +206,7 @@ private fun CategoryCard(
             }
             Switch(
                 checked = enabled, onCheckedChange = onToggle,
+                modifier = Modifier.accessibilityToggle("${category.displayName} content filter", enabled),
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = color,
                     checkedTrackColor = color.copy(alpha = 0.25f),

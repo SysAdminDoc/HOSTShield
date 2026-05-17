@@ -38,6 +38,7 @@ Research date: 2026-05-17
 - Hagezi pack chooser - expanded `curated_blocklists.json` to 51 sources with HaGeZi Light/Multi-Light, Normal, Pro, Pro++, Ultimate, TIF, TIF Mini, DynDNS, NRD, and Most Abused TLDs, added tier/breakage warnings to the gallery UI, and preserved adblock wildcard plus `$denyallow=` semantics during source blocklist rebuilds.
 - Subscribed allowlist packs - refreshed Anudeep and HaGeZi unbreak allowlists, repaired stale HaGeZi builtin URLs, added `HostsParser.parseForAllowing` for plain and adblock `@@||` allowlist files, kept allowlist precedence in Home/VPN/profile/worker rebuild paths, and added Sources UI allowlist impact analysis with neutralized counts and sample domains.
 - Source impact preview - added a Sources-screen preview action that downloads enabled sources into a temporary blocklist snapshot, shows added/removed effective entries versus the active in-memory filter, and lists recent DNS queries whose block/allow verdict would change before applying updates.
+- TalkBack semantics pass - added shared accessibility modifiers and applied headings, state descriptions, disabled action semantics, toggle/filter/tab/radio labels, destructive labels, and live progress announcements across Home, Sources, Logs, Rules, Apps, Settings, DNS Tools, Firewall, onboarding, and related settings sub-screens.
 
 ## Files Intentionally Not Modified
 

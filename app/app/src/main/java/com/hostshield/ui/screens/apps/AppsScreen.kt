@@ -34,6 +34,8 @@ import com.hostshield.data.model.UserRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
+import com.hostshield.ui.accessibility.accessibilityAction
+import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.util.RootUtil
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -138,7 +140,9 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
                 Text(
                     if (selectedApp != null) apps.find { it.appPackage == selectedApp }?.appLabel ?: selectedApp ?: ""
                     else "App Activity",
-                    style = MaterialTheme.typography.headlineMedium, color = TextPrimary
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = TextPrimary,
+                    modifier = Modifier.accessibilityHeading()
                 )
                 if (selectedApp == null) {
                     Text("${apps.size} apps tracked", color = TextSecondary, fontSize = 12.sp)
@@ -236,7 +240,12 @@ private fun AppListItem(app: AppQueryStat, onClick: () -> Unit) {
 
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.clickable(onClick = onClick).padding(14.dp),
+            modifier = Modifier
+                .accessibilityAction(
+                    "${app.appLabel.ifEmpty { app.appPackage }}. ${app.totalQueries} queries, ${app.blockedQueries} blocked. Open app DNS activity."
+                )
+                .clickable(onClick = onClick)
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // App icon placeholder
@@ -305,7 +314,15 @@ private fun DomainItem(domain: AppDomainStat, onBlock: () -> Unit) {
                     .background(if (domain.blocked) Red else Green.copy(alpha = 0.5f))
             )
 
-            Column(modifier = Modifier.weight(1f).clickable { expanded = !expanded }.padding(10.dp)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .accessibilityAction(
+                        "${domain.hostname}, ${if (domain.blocked) "blocked" else "allowed"}, ${domain.cnt} recent ${if (domain.cnt == 1) "query" else "queries"}"
+                    )
+                    .clickable { expanded = !expanded }
+                    .padding(10.dp)
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (domain.blocked) {
                         Icon(Icons.Filled.Block, "Blocked", tint = Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))

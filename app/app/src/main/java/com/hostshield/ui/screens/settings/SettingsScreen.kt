@@ -37,6 +37,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.hostshield.BuildConfig
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 
@@ -113,7 +115,12 @@ fun SettingsScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text("Settings", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+        Text(
+            "Settings",
+            style = MaterialTheme.typography.headlineMedium,
+            color = TextPrimary,
+            modifier = Modifier.accessibilityHeading()
+        )
         Text(
             "Tune protection, DNS routing, backups, diagnostics, and sharing.",
             color = TextSecondary,
@@ -651,7 +658,13 @@ internal fun SettingsSection(
                     Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
                 }
                 Spacer(Modifier.width(10.dp))
-                Text(title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text(
+                    title,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    modifier = Modifier.accessibilityHeading()
+                )
             }
             Spacer(Modifier.height(14.dp))
             content()
@@ -673,6 +686,7 @@ internal fun SettingsToggle(
             .clip(RoundedCornerShape(8.dp))
             .semantics(mergeDescendants = true) {
                 role = Role.Switch
+                contentDescription = "$title. $subtitle"
                 stateDescription = if (checked) "On" else "Off"
             }
             .clickable(role = Role.Switch) { onCheckedChange(!checked) }
@@ -707,6 +721,10 @@ internal fun SettingsRow(
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(8.dp))
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = "$title. $subtitle"
+            }
             .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -834,7 +852,7 @@ internal fun BlockResponseSelector(current: String, onSelect: (String) -> Unit) 
                 onClick = { onSelect(key) },
                 shape = RoundedCornerShape(8.dp),
                 color = if (selected) Blue.copy(alpha = 0.12f) else Surface2,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().accessibilitySelection("$label block response type", selected)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -847,7 +865,7 @@ internal fun BlockResponseSelector(current: String, onSelect: (String) -> Unit) 
                             selectedColor = Blue,
                             unselectedColor = TextDim
                         ),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp).accessibilitySelection("$label block response type", selected)
                     )
                     Spacer(Modifier.width(8.dp))
                     Column {

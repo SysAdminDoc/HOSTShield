@@ -13,6 +13,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hostshield.ui.accessibility.accessibilityAction
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilityLiveRegion
+import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.theme.*
 import com.hostshield.util.PrivacyScorer
 
@@ -98,7 +102,7 @@ fun HomeStatsSection(
                 ) {
                     CircularProgressIndicator(
                         progress = { privacyScore / 100f },
-                        modifier = Modifier.size(44.dp),
+                        modifier = Modifier.size(44.dp).accessibilityLiveRegion("Privacy score $privacyScore out of 100"),
                         color = scoreColor,
                         trackColor = Surface3,
                         strokeWidth = 4.dp
@@ -137,7 +141,14 @@ fun HomeStatsSection(
         Spacer(Modifier.height(10.dp))
         GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
             Column(modifier = Modifier.padding(14.dp)) {
-                Text("Source Categories", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
+                Text(
+                    "Source Categories",
+                    color = TextDim,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.sp,
+                    modifier = Modifier.accessibilityHeading()
+                )
                 Spacer(Modifier.height(8.dp))
                 val catColors = mapOf(
                     "ADS" to Teal, "TRACKERS" to Blue, "MALWARE" to Red,
@@ -157,7 +168,11 @@ fun HomeStatsSection(
                         Surface(
                             onClick = { onToggleCategory(cat, !allEnabled) },
                             shape = RoundedCornerShape(8.dp),
-                            color = if (allEnabled) color.copy(alpha = 0.12f) else Surface2
+                            color = if (allEnabled) color.copy(alpha = 0.12f) else Surface2,
+                            modifier = Modifier.accessibilitySelection(
+                                "${cat.lowercase().replaceFirstChar { it.uppercase() }} source category, $enabled of $total enabled",
+                                allEnabled
+                            )
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -183,11 +198,19 @@ fun HomeStatsSection(
         Spacer(Modifier.height(10.dp))
         GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
             Column(modifier = Modifier.padding(14.dp)) {
-                Text("Top Querying Apps", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
+                Text(
+                    "Top Querying Apps",
+                    color = TextDim,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.sp,
+                    modifier = Modifier.accessibilityHeading()
+                )
                 Spacer(Modifier.height(8.dp))
                 topApps.forEachIndexed { idx, (pkg, label, count) ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                            .accessibilityAction("${label.ifBlank { "Unknown" }} made $count DNS queries")
                             .clickable { if (pkg.isNotBlank()) onNavigateToAppLogs(pkg) },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -205,4 +228,3 @@ fun HomeStatsSection(
         }
     }
 }
-

@@ -30,6 +30,11 @@ import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.service.Doh3Resolver
 import com.hostshield.service.DohResolver
+import com.hostshield.ui.accessibility.accessibilityAction
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilityLiveRegion
+import com.hostshield.ui.accessibility.accessibilitySelection
+import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.theme.*
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -365,9 +370,16 @@ fun DnsToolsScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
             }
-            Text("DNS Tools", style = MaterialTheme.typography.titleLarge, color = TextPrimary,
-                modifier = Modifier.weight(1f))
-            IconButton(onClick = { viewModel.refreshStatus() }) {
+            Text(
+                "DNS Tools",
+                style = MaterialTheme.typography.titleLarge,
+                color = TextPrimary,
+                modifier = Modifier.weight(1f).accessibilityHeading()
+            )
+            IconButton(
+                onClick = { viewModel.refreshStatus() },
+                modifier = Modifier.accessibilityAction("Refresh DNS status")
+            ) {
                 Icon(Icons.Filled.Refresh, "Refresh", tint = Teal)
             }
         }
@@ -405,7 +417,11 @@ private fun LookupTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
             leadingIcon = { Icon(Icons.Filled.Dns, null, tint = TextDim) },
             trailingIcon = {
                 if (state.isLookingUp) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Teal, strokeWidth = 2.dp)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp).accessibilityLiveRegion("Looking up DNS result"),
+                        color = Teal,
+                        strokeWidth = 2.dp
+                    )
                 } else {
                     IconButton(onClick = { viewModel.performLookup() }) {
                         Icon(Icons.AutoMirrored.Filled.Send, "Lookup", tint = Teal)
@@ -632,6 +648,7 @@ private fun ConfigTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
                     Switch(
                         checked = state.dohEnabled,
                         onCheckedChange = { viewModel.toggleDoh(it) },
+                        modifier = Modifier.accessibilityToggle("Encrypted DNS", state.dohEnabled),
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Teal, checkedTrackColor = Teal.copy(alpha = 0.25f),
                             uncheckedThumbColor = TextDim, uncheckedTrackColor = Surface3
@@ -707,6 +724,7 @@ private fun ConfigTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
                         RadioButton(
                             selected = state.dohProvider == key,
                             onClick = { viewModel.setDohProvider(key) },
+                            modifier = Modifier.accessibilitySelection("$label DoH provider", state.dohProvider == key),
                             colors = RadioButtonDefaults.colors(selectedColor = Teal, unselectedColor = TextDim)
                         )
                         Spacer(Modifier.width(8.dp))
@@ -753,7 +771,11 @@ private fun DiagTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         if (state.isBatchRunning) {
-                            CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
+                            CircularProgressIndicator(
+                                Modifier.size(14.dp).accessibilityLiveRegion("Running batch DNS test"),
+                                color = Color.Black,
+                                strokeWidth = 2.dp
+                            )
                             Spacer(Modifier.width(6.dp))
                             Text("${state.batchProgress}/${state.batchTotal}", fontSize = 12.sp)
                         } else {
@@ -824,8 +846,14 @@ private fun DiagTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Blue)
                     ) { Text("Traceroute", fontSize = 12.sp) }
                     if (state.isPinging) {
-                        CircularProgressIndicator(Modifier.size(18.dp).align(Alignment.CenterVertically),
-                            color = Peach, strokeWidth = 2.dp)
+                        CircularProgressIndicator(
+                            Modifier
+                                .size(18.dp)
+                                .align(Alignment.CenterVertically)
+                                .accessibilityLiveRegion("Running network diagnostic"),
+                            color = Peach,
+                            strokeWidth = 2.dp
+                        )
                     }
                 }
                 if (state.pingResult.isNotBlank()) {
@@ -855,8 +883,14 @@ private fun GlassInfoCard(title: String, content: @Composable ColumnScope.() -> 
         color = Surface2
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(title, color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                letterSpacing = 0.sp)
+            Text(
+                title,
+                color = TextDim,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.sp,
+                modifier = Modifier.accessibilityHeading()
+            )
             Spacer(Modifier.height(8.dp))
             content()
         }
@@ -867,7 +901,8 @@ private fun GlassInfoCard(title: String, content: @Composable ColumnScope.() -> 
 private fun TabPill(label: String, selected: Boolean, accent: Color, onClick: () -> Unit) {
     Surface(
         onClick = onClick, shape = RoundedCornerShape(10.dp),
-        color = if (selected) accent.copy(alpha = 0.15f) else Surface2
+        color = if (selected) accent.copy(alpha = 0.15f) else Surface2,
+        modifier = Modifier.accessibilitySelection("$label DNS tools tab", selected)
     ) {
         Text(label, modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
             color = if (selected) accent else TextDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)

@@ -52,7 +52,7 @@ docs now surface the conflict instead of asserting one license as canonical.
 
 ### Accessibility
 
-- [ ] **TalkBack semantics pass.** Audit all primary screens and icon-only controls for useful `contentDescription`, `stateDescription`, headings, disabled states, destructive action labels, and progress announcements. Sources: L003, L031, E011.
+- [x] **TalkBack semantics pass.** Audit all primary screens and icon-only controls for useful `contentDescription`, `stateDescription`, headings, disabled states, destructive action labels, and progress announcements. Sources: L003, L031, E011.
 - [ ] **Dynamic type pass.** Replace fixed-size text in dense surfaces where it can clip under font scaling. Prioritize onboarding, settings, source cards, log rows, and warning banners. Sources: L031, E011.
 - [ ] **High-contrast dark theme.** Add a high-contrast AMOLED variant and verify it across dashboard, lists, dialogs, charts, widgets, and warning/error states. Sources: L031, E011, E014.
 

@@ -25,6 +25,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.theme.*
 
 // Home dashboard screen
@@ -127,7 +129,9 @@ fun HomeScreen(
                 text = state.progressMessage,
                 color = TextSecondary,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 6.dp),
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .accessibilityLiveRegion(state.progressMessage),
                 textAlign = TextAlign.Center
             )
         }
@@ -192,7 +196,7 @@ fun HomeScreen(
                 style = MaterialTheme.typography.titleSmall,
                 color = TextSecondary,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 10.dp)
+                modifier = Modifier.padding(bottom = 10.dp).accessibilityHeading()
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -277,7 +281,8 @@ fun HomeScreen(
                                 "Live DNS Activity",
                                 style = MaterialTheme.typography.titleSmall,
                                 color = TextPrimary,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.accessibilityHeading()
                             )
                         }
                         Surface(
@@ -358,7 +363,7 @@ fun HomeScreen(
                 style = MaterialTheme.typography.titleSmall,
                 color = TextSecondary,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 2.dp)
+                modifier = Modifier.padding(bottom = 2.dp).accessibilityHeading()
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -430,7 +435,8 @@ fun HomeScreen(
                             "Blocking Mode",
                             style = MaterialTheme.typography.titleSmall,
                             color = TextPrimary,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.accessibilityHeading()
                         )
                     }
                     Spacer(Modifier.height(12.dp))
@@ -495,7 +501,8 @@ fun HomeScreen(
                             "Quick Actions",
                             style = MaterialTheme.typography.titleSmall,
                             color = TextPrimary,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.accessibilityHeading()
                         )
                     }
                     Spacer(Modifier.height(12.dp))
