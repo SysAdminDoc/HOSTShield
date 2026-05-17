@@ -590,18 +590,23 @@ class HomeViewModel @Inject constructor(
 
             val sources = repository.getEnabledSourcesList()
             val allDomains = mutableSetOf<String>()
+            val sourceWildcardBlocks = mutableSetOf<String>()
+            val sourceWildcardAllows = mutableSetOf<String>()
 
             for ((index, source) in sources.withIndex()) {
                 _uiState.update {
                     it.copy(progressMessage = "Downloading ${source.label} (${index + 1}/${sources.size})...")
                 }
                 downloader.download(source, forceDownload = true).onSuccess { dl ->
-                    val parsed = HostsParser.parse(dl.content)
-                    parsed.forEach { allDomains.add(it.hostname) }
+                    val parsed = HostsParser.parseForBlocking(dl.content)
+                    allDomains.addAll(parsed.blockDomains)
+                    allDomains.removeAll(parsed.allowDomains)
+                    sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                     // Update source meta for health tracking
                     try {
                         repository.updateSource(source.copy(
-                            entryCount = parsed.size,
+                            entryCount = parsed.entryCount,
                             lastUpdated = System.currentTimeMillis(),
                             health = com.hostshield.data.model.SourceHealth.OK,
                             lastError = "",
@@ -620,9 +625,14 @@ class HomeViewModel @Inject constructor(
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             val wildcards = repository.getEnabledWildcards()
-            blocklistHolder.updateAsync(allDomains, wildcards)
+            blocklistHolder.updateAsync(
+                allDomains,
+                wildcards,
+                sourceWildcardBlocks = sourceWildcardBlocks,
+                sourceWildcardAllows = sourceWildcardAllows
+            )
 
-            val count = allDomains.size
+            val count = allDomains.size + sourceWildcardBlocks.size
             if (count == 0 && sources.isNotEmpty()) {
                 _uiState.update {
                     it.copy(isApplying = false,
@@ -672,6 +682,8 @@ class HomeViewModel @Inject constructor(
         try {
             val sources = repository.getEnabledSourcesList()
             val allDomains = mutableSetOf<String>()
+            val sourceWildcardBlocks = mutableSetOf<String>()
+            val sourceWildcardAllows = mutableSetOf<String>()
             val totalSources = sources.size
 
             for ((index, source) in sources.withIndex()) {
@@ -680,8 +692,11 @@ class HomeViewModel @Inject constructor(
                 }
                 val result = downloader.download(source, forceDownload = true)
                 result.onSuccess { dl ->
-                    val parsed = HostsParser.parse(dl.content)
-                    parsed.forEach { allDomains.add(it.hostname) }
+                    val parsed = HostsParser.parseForBlocking(dl.content)
+                    allDomains.addAll(parsed.blockDomains)
+                    allDomains.removeAll(parsed.allowDomains)
+                    sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                     markSourceDownloadSuccess(source.id)
                 }.onFailure { err ->
                     markSourceDownloadFailure(source, err)
@@ -693,10 +708,16 @@ class HomeViewModel @Inject constructor(
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             val wildcards = repository.getEnabledWildcards()
-            blocklistHolder.updateAsync(allDomains, wildcards)
+            blocklistHolder.updateAsync(
+                allDomains,
+                wildcards,
+                sourceWildcardBlocks = sourceWildcardBlocks,
+                sourceWildcardAllows = sourceWildcardAllows
+            )
 
+            val count = allDomains.size + sourceWildcardBlocks.size
             _uiState.update {
-                it.copy(progressMessage = "Starting VPN (${allDomains.size} domains)...")
+                it.copy(progressMessage = "Starting VPN ($count domains)...")
             }
 
             val intent = Intent(getApplication(), DnsVpnService::class.java).apply {
@@ -707,15 +728,15 @@ class HomeViewModel @Inject constructor(
             prefs.setEnabled(true)
             prefs.setBlockMethod(BlockMethod.VPN)
             prefs.setLastApplyTime(System.currentTimeMillis())
-            prefs.setLastApplyCount(allDomains.size)
-            HostShieldWidgetProvider.updateWidget(getApplication(), true, allDomains.size)
-            showSnackbar("VPN active \u2014 ${allDomains.size} domains blocked")
+            prefs.setLastApplyCount(count)
+            HostShieldWidgetProvider.updateWidget(getApplication(), true, count)
+            showSnackbar("VPN active \u2014 $count domains blocked")
 
             _uiState.update {
                 it.copy(
                     isEnabled = true, isApplying = false,
                     activeMethod = BlockMethod.VPN,
-                    totalDomainsBlocked = allDomains.size, progressMessage = ""
+                    totalDomainsBlocked = count, progressMessage = ""
                 )
             }
         } catch (e: Exception) {
@@ -844,12 +865,17 @@ class HomeViewModel @Inject constructor(
         try {
             val sources = repository.getEnabledSourcesList()
             val allDomains = mutableSetOf<String>()
+            val sourceWildcardBlocks = mutableSetOf<String>()
+            val sourceWildcardAllows = mutableSetOf<String>()
 
             for (source in sources) {
                 val result = downloader.download(source, forceDownload = true)
                 result.onSuccess { dl ->
-                    val parsed = HostsParser.parse(dl.content)
-                    parsed.forEach { allDomains.add(it.hostname) }
+                    val parsed = HostsParser.parseForBlocking(dl.content)
+                    allDomains.addAll(parsed.blockDomains)
+                    allDomains.removeAll(parsed.allowDomains)
+                    sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                     markSourceDownloadSuccess(source.id)
                 }.onFailure { err ->
                     markSourceDownloadFailure(source, err)
@@ -861,9 +887,15 @@ class HomeViewModel @Inject constructor(
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             val wildcards = repository.getEnabledWildcards()
-            blocklistHolder.updateAsync(allDomains, wildcards)
+            blocklistHolder.updateAsync(
+                allDomains,
+                wildcards,
+                sourceWildcardBlocks = sourceWildcardBlocks,
+                sourceWildcardAllows = sourceWildcardAllows
+            )
 
-            if (allDomains.isEmpty() && sources.isNotEmpty()) {
+            val count = allDomains.size + sourceWildcardBlocks.size
+            if (count == 0 && sources.isNotEmpty()) {
                 android.util.Log.w("HomeViewModel", "Blocklist build produced 0 domains from ${sources.size} sources")
                 _uiState.update { it.copy(errorMessage = "Warning: blocklist is empty. Check your internet connection.") }
             }

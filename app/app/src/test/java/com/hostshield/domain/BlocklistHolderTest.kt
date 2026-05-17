@@ -80,6 +80,21 @@ class BlocklistHolderTest {
     }
 
     @Test
+    fun `source wildcard allow overrides source wildcard block`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            sourceWildcardBlocks = setOf("actor"),
+            sourceWildcardAllows = setOf("trusted.actor")
+        )
+
+        assertTrue(holder.isBlocked("bad.actor"))
+        assertTrue(holder.isBlocked("deep.bad.actor"))
+        assertFalse(holder.isBlocked("trusted.actor"))
+        assertFalse(holder.isBlocked("cdn.trusted.actor"))
+    }
+
+    @Test
     fun `addDomain increments count and blocks`() {
         holder.update(setOf("initial.com"), emptyList())
         val before = holder.domainCount

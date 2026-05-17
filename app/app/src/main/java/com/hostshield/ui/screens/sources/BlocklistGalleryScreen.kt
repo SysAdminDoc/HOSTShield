@@ -5,9 +5,11 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -45,7 +47,9 @@ data class CuratedList(
     val description: String,
     val entries: String,
     val recommended: Boolean,
-    val category: SourceCategory
+    val category: SourceCategory,
+    val warning: String? = null,
+    val tier: String? = null
 )
 
 data class GalleryState(
@@ -85,7 +89,9 @@ class BlocklistGalleryViewModel @Inject constructor(
                         description = item.getString("description"),
                         entries = item.getString("entries"),
                         recommended = item.optBoolean("recommended", false),
-                        category = category
+                        category = category,
+                        warning = item.optString("warning").ifBlank { null },
+                        tier = item.optString("tier").ifBlank { null }
                     ))
                 }
                 lists[category] = catLists
@@ -147,7 +153,8 @@ fun BlocklistGalleryScreen(
 
         // Category chips
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             FilterChip(
@@ -163,6 +170,23 @@ fun BlocklistGalleryScreen(
                     enabled = true, selected = selectedCategory == null
                 )
             )
+            SourceCategory.entries.filter { state.lists.containsKey(it) }.forEach { category ->
+                FilterChip(
+                    selected = selectedCategory == category,
+                    onClick = { selectedCategory = category },
+                    label = { Text(category.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 11.sp) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = galleryCategoryColor(category).copy(alpha = 0.15f),
+                        selectedLabelColor = galleryCategoryColor(category)
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        borderColor = Surface3,
+                        selectedBorderColor = galleryCategoryColor(category).copy(alpha = 0.3f),
+                        enabled = true,
+                        selected = selectedCategory == category
+                    )
+                )
+            }
         }
 
         // Snackbar-style message
@@ -244,7 +268,33 @@ private fun GalleryListItem(
                 Spacer(Modifier.height(2.dp))
                 Text(list.description, color = TextSecondary, fontSize = 11.sp, lineHeight = 15.sp)
                 Spacer(Modifier.height(4.dp))
-                Text(list.entries + " entries", color = TextDim, fontSize = 10.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(list.entries + " entries", color = TextDim, fontSize = 10.sp)
+                    list.tier?.let { tier ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(galleryCategoryColor(list.category).copy(alpha = 0.1f))
+                                .padding(horizontal = 5.dp, vertical = 1.dp)
+                        ) {
+                            Text(tier, color = galleryCategoryColor(list.category), fontSize = 8.sp, letterSpacing = 0.sp)
+                        }
+                    }
+                }
+                list.warning?.let { warning ->
+                    Spacer(Modifier.height(5.dp))
+                    Row(verticalAlignment = Alignment.Top) {
+                        Icon(Icons.Filled.Warning, null, tint = Yellow, modifier = Modifier.size(13.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text(
+                            warning,
+                            color = Yellow,
+                            fontSize = 10.sp,
+                            lineHeight = 13.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.width(8.dp))

@@ -95,11 +95,17 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 // root mode (RootDnsLogger) and VPN mode (DnsVpnService).
                 val sources = repository.getEnabledSourcesList()
                 val allDomains = mutableSetOf<String>()
+                val sourceWildcardBlocks = mutableSetOf<String>()
+                val sourceWildcardAllows = mutableSetOf<String>()
                 for (source in sources) {
                     downloader.download(source).onSuccess { dl ->
                         repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                         if (!dl.notModified) {
-                            HostsParser.parse(dl.content).forEach { allDomains.add(it.hostname) }
+                            val parsed = HostsParser.parseForBlocking(dl.content)
+                            allDomains.addAll(parsed.blockDomains)
+                            allDomains.removeAll(parsed.allowDomains)
+                            sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                            sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                         }
                     }.onFailure { err ->
                         val failures = source.consecutiveFailures + 1
@@ -117,10 +123,16 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
                 val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
                 allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-                blocklistHolder.updateAsync(allDomains, repository.getEnabledWildcards())
+                blocklistHolder.updateAsync(
+                    allDomains,
+                    repository.getEnabledWildcards(),
+                    sourceWildcardBlocks = sourceWildcardBlocks,
+                    sourceWildcardAllows = sourceWildcardAllows
+                )
+                val blockingDomainCount = allDomains.size + sourceWildcardBlocks.size
 
                 prefs.setLastApplyTime(System.currentTimeMillis())
-                prefs.setLastApplyCount(allDomains.size)
+                prefs.setLastApplyCount(blockingDomainCount)
 
                 // Apply iptables firewall if enabled and auto-apply is on
                 val fwEnabled = prefs.networkFirewallEnabled.first()
