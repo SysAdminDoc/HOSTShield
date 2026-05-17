@@ -27,6 +27,7 @@ Research date: 2026-05-17
 - Versioned source-header comments were normalized to stable component descriptions without runtime behavior changes.
 - `DiagnosticEventStore` - added a local-only JSONL ring buffer capped at 500 events for VPN lifecycle, Private DNS conflicts, blocklist swaps, source failures, DoH pin/failover issues, watchdog/doze recovery, root command failures, and backup restore failures.
 - `DiagnosticExporter` and Settings diagnostics - changed diagnostic sharing from a single text file to a ZIP package with the text report, raw `diagnostic-events.jsonl`, and a manifest.
+- `DohResolver` and `DnsToolsScreen` - added a 24-hour resolver health window and DNS Tools Status card for selected provider, active transport, latency, success rate, failovers, pin failures, and EDE placeholder.
 
 ## Files Intentionally Not Modified
 

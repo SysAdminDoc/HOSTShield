@@ -28,6 +28,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.domain.BlocklistHolder
+import com.hostshield.service.Doh3Resolver
+import com.hostshield.service.DohResolver
 import com.hostshield.ui.theme.*
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -60,7 +62,8 @@ data class DnsToolsState(
     val isBatchRunning: Boolean = false,
     val batchProgress: Int = 0,
     val batchTotal: Int = 0,
-    val ruleSyncUrls: String = ""
+    val ruleSyncUrls: String = "",
+    val resolverHealth: List<ResolverHealthUi> = emptyList()
 )
 
 data class LookupResult(
@@ -77,12 +80,29 @@ data class CacheEntry(
     val ttl: String
 )
 
+data class ResolverHealthUi(
+    val provider: String,
+    val selected: Boolean,
+    val activeTransport: String,
+    val latencyMs: Long?,
+    val doh3LatencyMs: Long?,
+    val attempts: Int,
+    val successes: Int,
+    val failures: Int,
+    val successRatePercent: Int?,
+    val failovers: Int,
+    val pinFailures: Int,
+    val edeCount: Int
+)
+
 enum class DnsToolsTab { LOOKUP, STATUS, CONFIG, DIAG }
 
 @HiltViewModel
 class DnsToolsViewModel @Inject constructor(
     private val prefs: AppPreferences,
-    private val blocklist: BlocklistHolder
+    private val blocklist: BlocklistHolder,
+    private val dohResolver: DohResolver,
+    private val doh3Resolver: Doh3Resolver
 ) : ViewModel() {
     private val _state = MutableStateFlow(DnsToolsState())
     val state = _state.asStateFlow()
@@ -161,6 +181,26 @@ class DnsToolsViewModel @Inject constructor(
                 Shell.cmd("settings get global private_dns_specifier").exec().out.firstOrNull()?.trim() ?: ""
             } catch (_: Exception) { "" }
 
+            val selectedProvider = DohResolver.Provider.fromId(prefs.dohProvider.first())
+            val doh3Latency = doh3Resolver.getLatencyStats()
+            val resolverHealth = dohResolver.getHealthSnapshot(selectedProvider, doh3Latency)
+                .map { health ->
+                    ResolverHealthUi(
+                        provider = health.provider.name,
+                        selected = health.selected,
+                        activeTransport = health.activeTransport,
+                        latencyMs = health.latencyMs,
+                        doh3LatencyMs = health.doh3LatencyMs,
+                        attempts = health.attempts,
+                        successes = health.successes,
+                        failures = health.failures,
+                        successRatePercent = health.successRatePercent,
+                        failovers = health.failovers,
+                        pinFailures = health.pinFailures,
+                        edeCount = health.edeCount
+                    )
+                }
+
             val resolverStats = try {
                 val r = Shell.cmd("dumpsys dnsresolver 2>/dev/null | head -30").exec()
                 r.out.joinToString("\n")
@@ -195,7 +235,8 @@ class DnsToolsViewModel @Inject constructor(
                     privateDnsProvider = privateDnsProvider,
                     resolverStats = resolverStats,
                     blocklistSize = blocklist.getBlockedCount(),
-                    cacheEntries = cache
+                    cacheEntries = cache,
+                    resolverHealth = resolverHealth
                 )
             }
         }
@@ -479,6 +520,21 @@ private fun StatusTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
             }
         }
 
+        item {
+            GlassInfoCard("Resolver Health (24h)") {
+                if (state.resolverHealth.isEmpty()) {
+                    Text("No resolver health data yet", color = TextDim, fontSize = 12.sp)
+                } else {
+                    state.resolverHealth.forEachIndexed { index, resolver ->
+                        ResolverHealthRow(resolver)
+                        if (index != state.resolverHealth.lastIndex) {
+                            HorizontalDivider(color = Surface3.copy(alpha = 0.6f), thickness = 1.dp)
+                        }
+                    }
+                }
+            }
+        }
+
         // Blocklist stats
         item {
             GlassInfoCard("Blocklist") {
@@ -511,6 +567,51 @@ private fun StatusTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ResolverHealthRow(resolver: ResolverHealthUi) {
+    val statusColor = when {
+        resolver.attempts == 0 -> TextDim
+        (resolver.successRatePercent ?: 0) >= 95 && resolver.pinFailures == 0 -> Green
+        (resolver.successRatePercent ?: 0) >= 80 && resolver.pinFailures == 0 -> Yellow
+        else -> Red
+    }
+    val latencyText = resolver.latencyMs?.let { "${it}ms" } ?: "no latency"
+    val successText = resolver.successRatePercent?.let {
+        "$it% (${resolver.successes}/${resolver.attempts})"
+    } ?: "no samples"
+
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(statusColor))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                resolver.provider.lowercase().replaceFirstChar { it.uppercase() },
+                color = TextPrimary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
+            )
+            if (resolver.selected) {
+                Icon(Icons.Filled.CheckCircle, "Selected resolver", tint = Teal, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+            }
+            Text(latencyText, color = statusColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+        }
+        Spacer(Modifier.height(3.dp))
+        Text(
+            "Transport ${resolver.activeTransport} | Success $successText | EDE ${resolver.edeCount}",
+            color = TextDim,
+            fontSize = 10.sp
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            "Fallbacks ${resolver.failovers} | Pin failures ${resolver.pinFailures} | Failures ${resolver.failures}",
+            color = TextDim,
+            fontSize = 10.sp
+        )
     }
 }
 

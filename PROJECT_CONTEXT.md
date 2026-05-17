@@ -76,13 +76,14 @@ Important implementation facts:
 - Current event types: `vpn_start`, `vpn_stop`, `tun_fd_invalid`, `private_dns_conflict`, `blocklist_swap`, `source_download_failed`, `cert_pin_failure`, `resolver_failover`, `doze_resume`, `root_command_failed`, and `backup_import_failed`.
 - Event producers include VPN lifecycle/heartbeat/watchdog, DoH cert pin and failover paths, blocklist update workers, manual source apply, Private DNS detection, root shell/hosts failures, and backup restore failures.
 - Settings diagnostic export now shares a ZIP package containing `hostshield-diagnostic.txt`, `diagnostic-events.jsonl`, and `manifest.json`; there is no automatic network upload.
+- `DohResolver` now keeps an in-memory 24-hour provider health window. DNS Tools > Status shows per-resolver selected state, observed transport, latency, success rate, failovers, pin failures, and an EDE placeholder.
 
 ## Highest-Value Next Work
 
-1. Add a per-resolver health card using existing DoH/DoH3 latency and failure signals.
-2. Surface failed-source feedback in notifications and Sources badges with last error/status context.
-3. Complete DNSCrypt safely by choosing an audited Android-compatible crypto/engine path before exposing any user-facing toggle.
-4. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
+1. Surface failed-source feedback in notifications and Sources badges with last error/status context.
+2. Complete DNSCrypt safely by choosing an audited Android-compatible crypto/engine path before exposing any user-facing toggle.
+3. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
+4. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
 5. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 
 ## Verification Commands
