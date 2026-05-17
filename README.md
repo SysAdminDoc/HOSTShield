@@ -195,7 +195,7 @@
 ## Build
 
 ```powershell
-# Prerequisites: JDK 17, Android SDK 35
+# Prerequisites: JDK 17+, Android SDK 36
 cd C:\Users\--\repos\HostShield
 
 # Full flavor — GitHub/F-Droid release (root features, QUERY_ALL_PACKAGES)
@@ -266,16 +266,16 @@ All actions are rate-limited (5s cooldown per action per caller) and logged to t
 
 | Component | Technology |
 |-----------|-----------|
-| Language | Kotlin 2.1 |
+| Language | Kotlin 2.3 |
 | UI | Jetpack Compose + Material 3 |
 | DI | Hilt (Dagger) |
 | Database | Room (11 entities, explicit v1-v15 migrations) |
 | Preferences | DataStore |
 | Async | Coroutines + Flow, ViewModels + StateFlow |
-| Networking | OkHttp 4 (source downloads, DoH resolver) |
+| Networking | OkHttp 5 (source downloads, DoH resolver) |
 | Root | libsu (topjohnwu) |
 | GeoIP | MaxMind GeoIP2 (GeoLite2-Country + ASN) |
-| Build | Gradle KTS, KSP, Android SDK 35, minSdk 26 |
+| Build | Gradle KTS, KSP, Android SDK 36 compile / targetSdk 35, minSdk 26 |
 
 ---
 

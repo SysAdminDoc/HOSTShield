@@ -148,23 +148,30 @@ class SettingsViewModel @Inject constructor(
 
         // ── DNS / Logging preferences ─────────────────────────
         viewModelScope.launch {
-            combine(
+            val dnsBasePrefs = combine(
                 prefs.dnsLogging,
                 prefs.logRetentionDays,
                 prefs.dohEnabled,
-                prefs.dohProvider,
+                prefs.dohProvider
+            ) { logging, retentionDays, dohEnabled, dohProvider ->
+                DnsBasePrefs(logging, retentionDays, dohEnabled, dohProvider)
+            }
+            val dnsResponsePrefs = combine(
                 prefs.dnsTrapEnabled,
                 prefs.blockResponseType,
                 prefs.customUpstreamDns
-            ) { values ->
+            ) { dnsTrap, blockResponse, customUpstream ->
+                DnsResponsePrefs(dnsTrap, blockResponse, customUpstream)
+            }
+            combine(dnsBasePrefs, dnsResponsePrefs) { base, response ->
                 DnsPrefs(
-                    logging = values[0] as Boolean,
-                    retentionDays = values[1] as Int,
-                    dohEnabled = values[2] as Boolean,
-                    dohProvider = values[3] as String,
-                    dnsTrap = values[4] as Boolean,
-                    blockResponse = values[5] as String,
-                    customUpstream = values[6] as String
+                    logging = base.logging,
+                    retentionDays = base.retentionDays,
+                    dohEnabled = base.dohEnabled,
+                    dohProvider = base.dohProvider,
+                    dnsTrap = response.dnsTrap,
+                    blockResponse = response.blockResponse,
+                    customUpstream = response.customUpstream
                 )
             }.collect { p ->
                 _uiState.update {
@@ -273,6 +280,8 @@ class SettingsViewModel @Inject constructor(
     // ── Combined preference data holders ──────────────────────
     private data class IpRedirectPrefs(val ipv4: String, val ipv6: String, val includeIpv6: Boolean, val localWebserver: Boolean)
     private data class UpdatePrefs(val autoUpdate: Boolean, val intervalHours: Int, val wifiOnly: Boolean)
+    private data class DnsBasePrefs(val logging: Boolean, val retentionDays: Int, val dohEnabled: Boolean, val dohProvider: String)
+    private data class DnsResponsePrefs(val dnsTrap: Boolean, val blockResponse: String, val customUpstream: String)
     private data class DnsPrefs(val logging: Boolean, val retentionDays: Int, val dohEnabled: Boolean, val dohProvider: String, val dnsTrap: Boolean, val blockResponse: String, val customUpstream: String)
     private data class UiPrefs(
         val showNotification: Boolean,

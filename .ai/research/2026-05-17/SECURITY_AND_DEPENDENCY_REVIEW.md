@@ -30,27 +30,28 @@ High-risk areas:
 
 | Area | Current | Review |
 |---|---|---|
-| AGP | 8.7.3 | Stable but behind current release cadence; plan a controlled refresh. |
-| Kotlin | 2.1.0 | Good Compose-era baseline; watch 2.2+ compatibility before upgrade. |
-| Compose BOM | 2024.12.01 | Behind current 2025/2026 BOM cadence. |
-| Room | 2.6.1 | Mature but update candidate after migration tests are in place. |
-| WorkManager | 2.10.0 | Modern; keep aligned with Android foreground/background behavior. |
-| Hilt | 2.53.1 | Update candidate after KSP/Kotlin compatibility check. |
-| OkHttp | 4.12.0 | Stable but OkHttp 5.x is current per changelog; evaluate after DoH pin tests. |
+| Gradle | 9.5.1 | Updated wrapper and wrapper jar/scripts in the dependency refresh batch. |
+| AGP | 9.2.1 | Updated; AGP 9 built-in Kotlin support means `org.jetbrains.kotlin.android` is no longer applied. |
+| Kotlin Compose plugin | 2.3.21 | Updated with KSP 2.3.8; Kotlin 2.3 warnings are tracked for cleanup. |
+| Compose BOM | 2026.05.00 | Updated. |
+| Room | 2.8.4 | Updated runtime, KTX, compiler, and testing together. |
+| WorkManager | 2.11.2 | Updated. |
+| Hilt | 2.59.2 | Updated with AndroidX Hilt 1.3.0. |
+| OkHttp | 5.3.2 | Updated; compile warnings identify non-null `ResponseBody` cleanup sites. |
 | Cronet embedded | 143.7445.0 | Large embedded network surface; keep version refresh in dependency audit. |
 | libsu | 6.0.0 | Current release observed; root behavior still needs device validation. |
 | Tink Android | 1.21.0 | Direct dependency for legacy secure-pref migration only; new secure writes use local Android Keystore AES-GCM wrapper. |
 | Bouncy Castle bcprov-jdk18on | 1.84 | Lightweight Argon2id implementation for new PIN hashes and backup KDF records. |
-| Vico | 2.0.1 | UI dependency; test chart API on upgrade. |
-| Lottie | 6.6.2 | UI dependency; low security criticality. |
+| Vico | 2.5.0 | Updated within 2.x; Vico 3.1.0 was rejected for this batch due package/API moves. |
+| Lottie | 6.7.1 | Updated. |
 | Glance | 1.1.1 | Widget dependency; update with Compose stack. |
-| ZXing | 3.5.3 | QR dependency; watch CVE feed but low exposure. |
-| MaxMind GeoIP2 | 4.2.1 | Offline lookup dependency; update with tests. |
-| org.json | 20240303 test only | Test-only. |
+| ZXing | 3.5.4 | Updated. |
+| MaxMind GeoIP2 | 5.1.0 | Updated; accessor deprecations need follow-up cleanup. |
+| org.json | 20240303 test only | Held; no newer stable metadata checked in this batch. |
 
 ## Immediate Hardening Recommendations
 
-1. Add a `./gradlew dependencyUpdates` equivalent or Gradle version-catalog review script that produces a markdown dependency report.
+1. Keep `.ai/research/2026-05-17/DEPENDENCY_REFRESH_REPORT.md` current or replace it with a scripted `./gradlew dependencyUpdates` equivalent.
 2. Validate local security store and KDF migration on a device seeded with pre-v6.6 encrypted WebDAV, WireGuard, parental PIN, and encrypted backup values.
 3. Add DoH pin manifest tests: current pin set, backup pin, expiry/rotation metadata, fail-closed behavior, and user-visible diagnostics.
 4. Gate DNSCrypt, DoQ, and WireGuard user exposure behind explicit engine maturity states until audited or replaced.
