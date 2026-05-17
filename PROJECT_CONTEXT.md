@@ -83,10 +83,11 @@ Important implementation facts:
 - Source download failures now persist `last_http_status`, `last_error`, and consecutive failure counts. Failed blocklist, allowlist, rule-sync, health-check, manual apply, VPN rebuild, and profile rebuild paths update source health; failed source updates post a local HostShield alert notification; Sources cards show last failure, HTTP status when available, and last successful update.
 - `HostShieldMigrationTest` is an instrumented migration matrix. It creates frozen SQL fixtures for every supported start version 1 through 14, migrates to current schema version 15 with `Migrations.ALL`, validates against the Room schema export, and checks sentinel data survives.
 - `ParserFuzzHarnessTest` is a deterministic JVM fuzz/property harness for malformed DNS bytes, generated DNS query roundtrips, DNS stamps, hosts/adblock imports, regex guard behavior, malformed backup payloads, and malformed source URLs.
+- `BackupCryptoTest` covers AES-GCM roundtrip, wrong-passphrase authentication failure, short payload rejection, invalid header rejection, random salt/IV/ciphertext uniqueness, legacy plaintext detection, and encrypted-import prompt/failure behavior through `BackupRestoreUtil.decodeBackupBytes`.
 
 ## Highest-Value Next Work
 
-1. Add focused backup crypto regression tests for wrong passphrase, short payload rejection, IV uniqueness, legacy plaintext detection, and failure messaging.
+1. Add curated Hagezi pack chooser with breakage warnings and size expectations.
 2. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
 3. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 

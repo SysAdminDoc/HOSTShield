@@ -34,6 +34,7 @@ Research date: 2026-05-17
 - DoH pin rotation manifest - moved built-in provider SPKI pins into `DohPinManifest` with manifest version, issued date, primary/backup labels, review dates, expiry dates, diagnostic summary lines, and pin-failure event fields while keeping OkHttp fail-closed certificate pinning.
 - Room migration golden test matrix - moved v1-v5 migrations from private DI fields into public `Migrations.ALL`, added a current database version constant, wired Room schema JSONs into androidTest assets, added `HostShieldMigrationTest` with frozen SQL fixtures for start versions 1 through 14, and documented unreconstructable missing official schema exports in `docs/database-migration-fixtures.md`.
 - Parser fuzz harness - added deterministic malformed-input/property coverage for DNS packet parsing/building, DNS stamps, hosts/adblock imports, regex guard behavior, malformed backup payloads, and malformed source URLs; hardened `DnsPacketParser.skipDnsName` to reject truncated compression pointers.
+- Backup crypto regression coverage - extracted `BackupRestoreUtil.decodeBackupBytes` for pure import decoding tests and added coverage for AES-GCM roundtrip, wrong-passphrase authentication failure, short payload/header rejection, salt/IV/ciphertext uniqueness, legacy plaintext decoding, and encrypted-import prompt messaging.
 
 ## Files Intentionally Not Modified
 
