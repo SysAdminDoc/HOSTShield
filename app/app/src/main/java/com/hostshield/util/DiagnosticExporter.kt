@@ -11,6 +11,7 @@ import com.hostshield.data.database.ConnectionLogDao
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.service.DnsCache
+import com.hostshield.service.DohPinManifest
 import com.hostshield.service.IptablesManager
 import com.hostshield.util.PrivateDnsDetector
 import kotlinx.coroutines.Dispatchers
@@ -105,6 +106,11 @@ class DiagnosticExporter @Inject constructor(
         } catch (e: Exception) {
             sb.appendLine("Error reading prefs: ${e.message}")
         }
+        sb.appendLine()
+
+        // -- DoH Pin Manifest --
+        sb.appendLine("-- DoH Pin Manifest -------------------------------")
+        DohPinManifest.diagnosticSummaryLines().forEach { sb.appendLine(it) }
         sb.appendLine()
 
         // ── Blocklist ──
@@ -245,6 +251,8 @@ class DiagnosticExporter @Inject constructor(
                     .put("app_version", BuildConfig.VERSION_NAME)
                     .put("version_code", BuildConfig.VERSION_CODE)
                     .put("event_count", eventsJsonl.lineSequence().filter { it.isNotBlank() }.count())
+                    .put("doh_pin_manifest_version", DohPinManifest.VERSION)
+                    .put("doh_pin_manifest_issued_on", DohPinManifest.ISSUED_ON)
                     .toString(2)
             )
         }

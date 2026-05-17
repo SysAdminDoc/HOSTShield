@@ -31,6 +31,7 @@ Research date: 2026-05-17
 - Failed-source feedback - added Room v15 `host_sources.last_http_status`, typed source download HTTP failures, persisted source health updates across workers/service/manual flows, a local source-failure notification helper, and Sources screen failure details showing last failure, HTTP status, and last successful update.
 - `docs/decisions/0001-dnscrypt-engine.md` - added the DNSCrypt engine decision record. The chosen direction is an audited engine extraction behind a Kotlin facade; full `dnscrypt-proxy` via `gomobile` is a packaging/correctness spike, and native Kotlin crypto is deferred until audited primitives and the required test corpus exist.
 - Experimental resolver gating - added shared maturity labels for DoQ and WireGuard DNS in Settings, diagnostics, runtime logs, and README. Production DNS defaults remain pinned DoH/DoH3/DoT, with DoQ and WireGuard DNS opt-in only.
+- DoH pin rotation manifest - moved built-in provider SPKI pins into `DohPinManifest` with manifest version, issued date, primary/backup labels, review dates, expiry dates, diagnostic summary lines, and pin-failure event fields while keeping OkHttp fail-closed certificate pinning.
 
 ## Files Intentionally Not Modified
 

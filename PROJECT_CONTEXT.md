@@ -39,7 +39,7 @@ Important implementation facts:
 
 - `DnsVpnService` is the central VPN service. It routes DNS through a TUN interface, traps common public DNS endpoints, blocks known DoH bypass endpoints, supports IPv4/IPv6 packet classification, and dispatches encrypted upstream DNS in priority order.
 - `BlocklistHolder` uses an exact-match hash set, reversed-label trie, wildcard allow/block handling, capped regex rules, and an LRU filter-decision cache. Production rebuilds use async snapshot replacement.
-- `DohResolver` is fail-closed. It uses certificate pinning, bounded DNS response reads, DoH3-first resolution through `Doh3Resolver`, and pinned OkHttp DoH fallback.
+- `DohResolver` is fail-closed. It uses `DohPinManifest` for versioned provider SPKI pins, bounded DNS response reads, DoH3-first resolution through `Doh3Resolver`, and pinned OkHttp DoH fallback.
 - `DnsStampParser` supports current DNS stamp property width, DNSCrypt provider public keys, DoQ, ODoH target/relay, and Anonymized DNSCrypt relay stamp types.
 - `DnsCryptRoutePlanner` validates DNSCrypt resolver/relay role separation and builds relay prefixes, but full DNSCrypt query encryption/decryption is not exposed.
 - DNSCrypt production work is gated by `docs/decisions/0001-dnscrypt-engine.md`. The accepted direction is an audited engine extraction behind a Kotlin facade, with full `dnscrypt-proxy`/`gomobile` only as a packaging and correctness spike; native Kotlin crypto is a fallback, not the first production path.
@@ -79,14 +79,14 @@ Important implementation facts:
 - Event producers include VPN lifecycle/heartbeat/watchdog, DoH cert pin and failover paths, blocklist update workers, manual source apply, Private DNS detection, root shell/hosts failures, and backup restore failures.
 - Settings diagnostic export now shares a ZIP package containing `hostshield-diagnostic.txt`, `diagnostic-events.jsonl`, and `manifest.json`; there is no automatic network upload.
 - `DohResolver` now keeps an in-memory 24-hour provider health window. DNS Tools > Status shows per-resolver selected state, observed transport, latency, success rate, failovers, pin failures, and an EDE placeholder.
+- DoH provider pins now live in `DohPinManifest` with manifest version, issued date, primary/backup labels, review dates, expiry dates, diagnostic summary lines, and pin-failure event fields. The OkHttp path remains fail-closed.
 - Source download failures now persist `last_http_status`, `last_error`, and consecutive failure counts. Failed blocklist, allowlist, rule-sync, health-check, manual apply, VPN rebuild, and profile rebuild paths update source health; failed source updates post a local HostShield alert notification; Sources cards show last failure, HTTP status when available, and last successful update.
 
 ## Highest-Value Next Work
 
-1. Add DoH pin rotation metadata with review dates, backup pins, and pin-failure diagnostics.
-2. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
-3. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
-4. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
+1. Add migration and parser fuzz coverage around Room, DNS packet parsing, stamps, blocklist parsing, and encrypted backup import.
+2. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
+3. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 
 ## Verification Commands
 
