@@ -4,7 +4,7 @@
     WireGuard keys, and credentials to Google Drive.
 
     Device transfer: include user-visible state (DataStore prefs, Room DB),
-    BUT exclude Android Keystore-wrapped EncryptedSharedPreferences.
+    BUT exclude Android Keystore-wrapped secure-store files.
     Their value ciphertexts are tied to the source device's hardware-backed
     master key — copying them to a new device produces unrecoverable bytes
     and locks the user out of WireGuard / WebDAV / parental PIN until they
@@ -19,5 +19,7 @@
         <include domain="database" path="." />
         <exclude domain="sharedpref" path="hostshield_secure_prefs.xml" />
         <exclude domain="sharedpref" path="hostshield_secure_prefs" />
+        <exclude domain="sharedpref" path="hostshield_secure_store_v2.xml" />
+        <exclude domain="sharedpref" path="hostshield_secure_store_v2" />
     </device-transfer>
 </data-extraction-rules>

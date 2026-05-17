@@ -161,8 +161,10 @@ dependencies {
     // DataStore for preferences
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // AndroidX Security — EncryptedSharedPreferences (Roadmap #30)
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    // Tink is retained only for one-time migration from legacy AndroidX
+    // EncryptedSharedPreferences keysets; new secret writes use Android Keystore
+    // directly through SecureStore.
+    implementation("com.google.crypto.tink:tink-android:1.21.0")
 
     // Custom Tabs (captive portal login)
     implementation("androidx.browser:browser:1.8.0")
