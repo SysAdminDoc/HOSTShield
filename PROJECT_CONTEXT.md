@@ -88,10 +88,11 @@ Important implementation facts:
 - Subscribed allowlists are first-class source-category inputs in the Home apply, VPN rebuild, profile schedule, and periodic hosts worker paths. `HostsParser.parseForAllowing` handles plain domains and adblock `@@||` exception files, stale HaGeZi allowlist URLs are repaired on seed, and Sources can run an allowlist impact analysis that shows neutralized counts and sample domains per enabled allowlist.
 - Sources can preview enabled source updates before applying them. The preview downloads sources into a temporary `BlocklistHolder`, compares candidate exact/source-wildcard keys against the active in-memory filter, and lists recent DNS queries whose verdict would change.
 - Primary Compose screens now have a shared accessibility semantics helper and a TalkBack pass over headings, icon-only actions, stateful switches/filters/tabs/radio choices, destructive controls, disabled actions, and loading/progress announcements.
+- The first dynamic type pass replaced fixed onboarding button heights with minimum heights, let source/log dense rows wrap key text and metadata, made warning banner copy line-height tolerant, and loosened firewall column headers for larger font scales.
 
 ## Highest-Value Next Work
 
-1. Run the dynamic type pass across onboarding, settings, source cards, log rows, and warning banners.
+1. Add a high-contrast AMOLED theme variant and verify it across dashboards, lists, dialogs, charts, widgets, and warning/error states.
 2. Modernize dependency posture: AndroidX Security replacement, OkHttp 5 evaluation, Compose/AGP/Kotlin refresh, and release metadata/reproducibility.
 3. Reconcile the conflicting MIT/GPL license files before publishing any new public release.
 

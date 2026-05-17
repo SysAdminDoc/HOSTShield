@@ -96,14 +96,15 @@ fun HomeWarningsSection(
                         "Private DNS Active",
                         color = Yellow,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         "Tap to open Network settings and set Private DNS to \"Off\"",
                         color = Yellow.copy(alpha = 0.8f),
                         fontSize = 11.sp,
-                        lineHeight = 15.sp
+                        lineHeight = 16.sp
                     )
                 }
                 IconButton(
@@ -147,14 +148,15 @@ fun HomeWarningsSection(
                         "Battery Optimization",
                         color = Peach,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         "Tap to allow HostShield to run in the background",
                         color = Peach.copy(alpha = 0.8f),
                         fontSize = 11.sp,
-                        lineHeight = 15.sp
+                        lineHeight = 16.sp
                     )
                 }
                 IconButton(
@@ -194,7 +196,8 @@ fun HomeWarningsSection(
                             advisory.title,
                             color = Red,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
@@ -205,7 +208,7 @@ fun HomeWarningsSection(
                             },
                             color = Red.copy(alpha = 0.82f),
                             fontSize = 11.sp,
-                            lineHeight = 15.sp
+                            lineHeight = 16.sp
                         )
                     }
                     IconButton(
@@ -234,7 +237,7 @@ fun HomeWarningsSection(
                         ) {
                             Icon(Icons.Filled.RestartAlt, null, tint = Red, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Restart device", color = Red, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Restart device", color = Red, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -267,14 +270,15 @@ fun HomeWarningsSection(
                         "Private Space Detected",
                         color = Red,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         warning,
                         color = Red.copy(alpha = 0.8f),
                         fontSize = 11.sp,
-                        lineHeight = 15.sp
+                        lineHeight = 16.sp
                     )
                 }
                 IconButton(
@@ -295,12 +299,12 @@ fun HomeWarningsSection(
             color = Peach.copy(alpha = 0.08f),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
         ) {
-            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
                 Icon(Icons.AutoMirrored.Filled.TrendingUp, null, tint = Peach, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("High Query Rate", color = Peach, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                    Text(warning, color = Peach.copy(alpha = 0.8f), fontSize = 11.sp, lineHeight = 15.sp)
+                    Text("High Query Rate", color = Peach, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp)
+                    Text(warning, color = Peach.copy(alpha = 0.8f), fontSize = 11.sp, lineHeight = 16.sp)
                 }
             }
         }
@@ -314,10 +318,10 @@ fun HomeWarningsSection(
             color = Red.copy(alpha = 0.08f),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
         ) {
-            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
                 Icon(Icons.Filled.Warning, null, tint = Red, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("$droppedQueries queries dropped (log buffer full)", color = Red, fontSize = 11.sp)
+                Text("$droppedQueries queries dropped (log buffer full)", color = Red, fontSize = 11.sp, lineHeight = 16.sp)
             }
         }
     }

@@ -220,7 +220,7 @@ private fun WelcomePage(onNext: () -> Unit) {
             onClick = onNext,
             colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
             shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.fillMaxWidth().height(54.dp)
+            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)
         ) {
             Text("Get started", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         }
@@ -271,7 +271,7 @@ private fun MethodPage(
             onClick = onNext,
             colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
             shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.fillMaxWidth().height(54.dp)
+            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)
         ) {
             Text("Continue", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         }
@@ -433,7 +433,7 @@ private fun PrivateDnsWarningPage(
             onClick = onNext,
             colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = Color.Black),
             shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.fillMaxWidth().height(54.dp)
+            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)
         ) {
             Text("I understand, continue", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         }
@@ -546,7 +546,7 @@ private fun FeaturesOverviewPage(onNext: () -> Unit) {
 
         Button(
             onClick = onNext,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Teal),
             shape = RoundedCornerShape(8.dp)
         ) {
@@ -669,7 +669,7 @@ private fun DnsConfigPage(
 
         Button(
             onClick = onNext,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Teal),
             shape = RoundedCornerShape(8.dp)
         ) {
@@ -802,7 +802,7 @@ private fun ReadyPage(
             enabled = !isActivating,
             colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
             shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.fillMaxWidth().height(54.dp)
+            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)
         ) {
             if (isActivating) {
                 CircularProgressIndicator(
