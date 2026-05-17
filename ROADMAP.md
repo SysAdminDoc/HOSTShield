@@ -47,7 +47,7 @@ docs now surface the conflict instead of asserting one license as canonical.
 ### Blocklist And Dataset Quality
 
 - [x] **Hagezi pack chooser.** Add curated Hagezi Light, Multi-Light, Normal, Pro, Pro++, Ultimate, TIF, TIF-Mini, DynDNS, NRD, and Most-Abused-TLDs packs with clear breakage warnings and expected size. Sources: L029, E026.
-- [ ] **Subscribed allowlist packs.** Add first-class subscribed allowlists that override block entries according to current allowlist precedence. Include Hagezi/Anudeep-style unbreak lists and show which blocked domains they neutralize. Sources: L014, L029, E024, E025, E026.
+- [x] **Subscribed allowlist packs.** Add first-class subscribed allowlists that override block entries according to current allowlist precedence. Include Hagezi/Anudeep-style unbreak lists and show which blocked domains they neutralize. Sources: L014, L029, E024, E025, E026.
 - [ ] **Source impact preview.** Before applying source updates, show added/removed domain counts and recently queried domains that would change verdict. Sources: L014, L029, E020, E026.
 
 ### Accessibility

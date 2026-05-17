@@ -93,18 +93,40 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 // Rebuild in-memory blocklist — the running DNS proxy reads from
                 // BlocklistHolder, so this takes effect immediately for both
                 // root mode (RootDnsLogger) and VPN mode (DnsVpnService).
-                val sources = repository.getEnabledSourcesList()
+                val blockSources = repository.getEnabledBlockSources()
+                val allowlistSources = repository.getEnabledAllowlistSources()
                 val allDomains = mutableSetOf<String>()
+                val sourceAllowDomains = mutableSetOf<String>()
                 val sourceWildcardBlocks = mutableSetOf<String>()
                 val sourceWildcardAllows = mutableSetOf<String>()
-                for (source in sources) {
+                for (source in blockSources) {
                     downloader.download(source).onSuccess { dl ->
                         repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                         if (!dl.notModified) {
                             val parsed = HostsParser.parseForBlocking(dl.content)
                             allDomains.addAll(parsed.blockDomains)
-                            allDomains.removeAll(parsed.allowDomains)
+                            sourceAllowDomains.addAll(parsed.allowDomains)
                             sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                            sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                        }
+                    }.onFailure { err ->
+                        val failures = source.consecutiveFailures + 1
+                        val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
+                        repository.updateSourceHealth(
+                            source.id,
+                            health,
+                            err.message ?: "Unknown error",
+                            failures,
+                            err.sourceHttpStatus(),
+                        )
+                    }
+                }
+                for (source in allowlistSources) {
+                    downloader.download(source).onSuccess { dl ->
+                        repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
+                        if (!dl.notModified) {
+                            val parsed = HostsParser.parseForAllowing(dl.content)
+                            sourceAllowDomains.addAll(parsed.allowDomains)
                             sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                         }
                     }.onFailure { err ->
@@ -123,6 +145,7 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
                 val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
                 allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
+                allDomains.removeAll(sourceAllowDomains)
                 blocklistHolder.updateAsync(
                     allDomains,
                     repository.getEnabledWildcards(),

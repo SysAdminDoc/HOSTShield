@@ -29,6 +29,7 @@ import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.sourceHttpStatus
+import com.hostshield.domain.parser.HostsParser
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -40,6 +41,11 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+
+data class AllowlistImpact(
+    val neutralizedCount: Int,
+    val examples: List<String>
+)
 
 @HiltViewModel
 class SourcesViewModel @Inject constructor(
@@ -59,6 +65,12 @@ class SourcesViewModel @Inject constructor(
     val healthCheckMessage: StateFlow<String?> = _healthCheckMessage.asStateFlow()
     private val _isCheckingHealth = MutableStateFlow(false)
     val isCheckingHealth: StateFlow<Boolean> = _isCheckingHealth.asStateFlow()
+    private val _allowlistImpactMessage = MutableStateFlow<String?>(null)
+    val allowlistImpactMessage: StateFlow<String?> = _allowlistImpactMessage.asStateFlow()
+    private val _isAnalyzingAllowlists = MutableStateFlow(false)
+    val isAnalyzingAllowlists: StateFlow<Boolean> = _isAnalyzingAllowlists.asStateFlow()
+    private val _allowlistImpacts = MutableStateFlow<Map<Long, AllowlistImpact>>(emptyMap())
+    val allowlistImpacts: StateFlow<Map<Long, AllowlistImpact>> = _allowlistImpacts.asStateFlow()
 
     init {
         // Track when sources have emitted their first real value
@@ -142,6 +154,89 @@ class SourcesViewModel @Inject constructor(
             }
         }
     }
+
+    fun analyzeAllowlistImpact() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            _isAnalyzingAllowlists.value = true
+            _allowlistImpactMessage.value = "Analyzing allowlist overrides..."
+            try {
+                val enabledSources = sources.value.filter { it.enabled }
+                val blockSources = enabledSources.filter { it.category != SourceCategory.ALLOWLIST }
+                val allowlistSources = enabledSources.filter { it.category == SourceCategory.ALLOWLIST }
+                if (allowlistSources.isEmpty()) {
+                    _allowlistImpacts.value = emptyMap()
+                    _allowlistImpactMessage.value = "No enabled allowlist sources."
+                    return@launch
+                }
+                if (blockSources.isEmpty()) {
+                    _allowlistImpacts.value = allowlistSources.associate { it.id to AllowlistImpact(0, emptyList()) }
+                    _allowlistImpactMessage.value = "No enabled block sources to compare."
+                    return@launch
+                }
+
+                val exactBlocks = mutableSetOf<String>()
+                val wildcardBlocks = mutableSetOf<String>()
+                for (source in blockSources) {
+                    downloader.download(source, forceDownload = true).onSuccess { dl ->
+                        val parsed = HostsParser.parseForBlocking(dl.content)
+                        exactBlocks.addAll(parsed.blockDomains)
+                        wildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                    }
+                }
+
+                val impacts = mutableMapOf<Long, AllowlistImpact>()
+                for (source in allowlistSources) {
+                    downloader.download(source, forceDownload = true).onSuccess { dl ->
+                        val parsed = HostsParser.parseForAllowing(dl.content)
+                        val neutralized = findNeutralizedDomains(
+                            parsed.allowDomains,
+                            parsed.wildcardAllowDomains,
+                            exactBlocks,
+                            wildcardBlocks
+                        )
+                        impacts[source.id] = AllowlistImpact(
+                            neutralizedCount = neutralized.size,
+                            examples = neutralized.take(6)
+                        )
+                    }.onFailure {
+                        impacts[source.id] = AllowlistImpact(0, emptyList())
+                    }
+                }
+                _allowlistImpacts.value = impacts
+                val total = impacts.values.sumOf { it.neutralizedCount }
+                _allowlistImpactMessage.value = "$total blocked domains neutralized by enabled allowlists"
+            } catch (e: Exception) {
+                _error.value = "Allowlist analysis failed: ${e.message}"
+                _allowlistImpactMessage.value = null
+            } finally {
+                _isAnalyzingAllowlists.value = false
+            }
+        }
+    }
+
+    private fun findNeutralizedDomains(
+        allowDomains: Set<String>,
+        wildcardAllowDomains: Set<String>,
+        exactBlocks: Set<String>,
+        wildcardBlocks: Set<String>
+    ): List<String> {
+        val neutralized = linkedSetOf<String>()
+        val candidates = allowDomains + wildcardAllowDomains
+        candidates.sorted().forEach { domain ->
+            if (domain in exactBlocks || wildcardBlocks.any { matchesDomainOrSubdomain(domain, it) }) {
+                neutralized.add(domain)
+            }
+        }
+        exactBlocks.sorted().forEach { blocked ->
+            if (wildcardAllowDomains.any { matchesDomainOrSubdomain(blocked, it) }) {
+                neutralized.add(blocked)
+            }
+        }
+        return neutralized.toList()
+    }
+
+    private fun matchesDomainOrSubdomain(domain: String, base: String): Boolean =
+        domain == base || domain.endsWith(".$base")
 }
 
 @Composable
@@ -151,7 +246,10 @@ fun SourcesScreen(
 ) {
     val sources by viewModel.sources.collectAsStateWithLifecycle()
     val healthMsg by viewModel.healthCheckMessage.collectAsStateWithLifecycle()
+    val allowlistMsg by viewModel.allowlistImpactMessage.collectAsStateWithLifecycle()
     val isChecking by viewModel.isCheckingHealth.collectAsStateWithLifecycle()
+    val isAnalyzingAllowlists by viewModel.isAnalyzingAllowlists.collectAsStateWithLifecycle()
+    val allowlistImpacts by viewModel.allowlistImpacts.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
@@ -241,6 +339,14 @@ fun SourcesScreen(
                             if (isChecking) CircularProgressIndicator(Modifier.size(14.dp), color = Teal, strokeWidth = 2.dp)
                             else Icon(Icons.Filled.HealthAndSafety, "Health check", tint = TextDim, modifier = Modifier.size(18.dp))
                         }
+                        IconButton(
+                            onClick = { viewModel.analyzeAllowlistImpact() },
+                            enabled = !isAnalyzingAllowlists,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            if (isAnalyzingAllowlists) CircularProgressIndicator(Modifier.size(14.dp), color = Green, strokeWidth = 2.dp)
+                            else Icon(Icons.Filled.CheckCircle, "Analyze allowlist impact", tint = TextDim, modifier = Modifier.size(18.dp))
+                        }
                         Surface(
                             onClick = onNavigateToGallery,
                             shape = RoundedCornerShape(8.dp),
@@ -270,6 +376,10 @@ fun SourcesScreen(
                 healthMsg?.let { msg ->
                     Spacer(Modifier.height(4.dp))
                     Text(msg, color = TextDim, fontSize = 11.sp)
+                }
+                allowlistMsg?.let { msg ->
+                    Spacer(Modifier.height(4.dp))
+                    Text(msg, color = Green.copy(alpha = 0.85f), fontSize = 11.sp)
                 }
                 Spacer(Modifier.height(8.dp))
 
@@ -343,6 +453,7 @@ fun SourcesScreen(
                 items(items, key = { it.id }) { source ->
                     SourceItem(
                         source = source,
+                        allowlistImpact = allowlistImpacts[source.id],
                         onToggle = { viewModel.toggleSource(source.id, it) },
                         onDelete = { pendingDeleteSource = source }
                     )
@@ -375,7 +486,12 @@ fun SourcesScreen(
 }
 
 @Composable
-private fun SourceItem(source: HostSource, onToggle: (Boolean) -> Unit, onDelete: () -> Unit) {
+private fun SourceItem(
+    source: HostSource,
+    allowlistImpact: AllowlistImpact?,
+    onToggle: (Boolean) -> Unit,
+    onDelete: () -> Unit
+) {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -487,6 +603,33 @@ private fun SourceItem(source: HostSource, onToggle: (Boolean) -> Unit, onDelete
                                 fontSize = 10.sp,
                                 lineHeight = 14.sp
                             )
+                        }
+                    }
+                }
+                if (source.category == SourceCategory.ALLOWLIST) {
+                    val neutralized = allowlistImpact?.neutralizedCount ?: source.domainsRemoved
+                    if (neutralized > 0) {
+                        Spacer(Modifier.height(7.dp))
+                        Row(verticalAlignment = Alignment.Top) {
+                            Icon(Icons.Filled.CheckCircle, null, tint = Green, modifier = Modifier.size(13.dp).padding(top = 1.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Column {
+                                Text(
+                                    "Neutralizes ${NumberFormat.getNumberInstance().format(neutralized)} blocked domains",
+                                    color = Green.copy(alpha = 0.9f),
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp
+                                )
+                                allowlistImpact?.examples?.takeIf { it.isNotEmpty() }?.let { examples ->
+                                    Text(
+                                        examples.joinToString(", "),
+                                        color = TextDim,
+                                        fontSize = 10.sp,
+                                        lineHeight = 14.sp,
+                                        maxLines = 2
+                                    )
+                                }
+                            }
                         }
                     }
                 }

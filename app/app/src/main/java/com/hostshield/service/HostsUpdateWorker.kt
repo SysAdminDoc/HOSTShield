@@ -185,7 +185,28 @@ class HostsUpdateWorker @AssistedInject constructor(
                             .onSuccess { dl ->
                                 repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                                 if (!dl.notModified) {
-                                    HostsParser.parse(dl.content).forEach { sourceAllowDomains.add(it.hostname) }
+                                    val parsed = HostsParser.parseForAllowing(dl.content)
+                                    val neutralized = findNeutralizedAllowDomains(
+                                        parsed.allowDomains,
+                                        parsed.wildcardAllowDomains,
+                                        allDomains,
+                                        adblockWildcardBlocks
+                                    )
+                                    sourceAllowDomains.addAll(parsed.allowDomains)
+                                    adblockWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                                    repository.updateSource(
+                                        source.copy(
+                                            entryCount = parsed.entryCount,
+                                            lastUpdated = System.currentTimeMillis(),
+                                            health = SourceHealth.OK,
+                                            lastError = "",
+                                            lastHttpStatus = 0,
+                                            consecutiveFailures = 0,
+                                            prevEntryCount = source.entryCount,
+                                            domainsAdded = 0,
+                                            domainsRemoved = neutralized.size
+                                        )
+                                    )
                                 }
                             }
                             .onFailure { err ->
@@ -327,6 +348,20 @@ class HostsUpdateWorker @AssistedInject constructor(
             Result.success()
         } catch (e: Exception) {
             if (runAttemptCount < 5) Result.retry() else Result.failure()
+        }
+    }
+
+    private fun findNeutralizedAllowDomains(
+        allowDomains: Set<String>,
+        wildcardAllowDomains: Set<String>,
+        blockDomains: Set<String>,
+        wildcardBlockDomains: Set<String>
+    ): Set<String> {
+        val candidates = allowDomains + wildcardAllowDomains
+        return candidates.filterTo(mutableSetOf()) { candidate ->
+            candidate in blockDomains || wildcardBlockDomains.any { wildcard ->
+                candidate == wildcard || candidate.endsWith(".$wildcard")
+            }
         }
     }
 }

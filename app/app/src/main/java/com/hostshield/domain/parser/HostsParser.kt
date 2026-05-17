@@ -31,6 +31,13 @@ object HostsParser {
         val entryCount: Int get() = blockDomains.size + wildcardBlockDomains.size
     }
 
+    data class AllowlistParseResult(
+        val allowDomains: Set<String>,
+        val wildcardAllowDomains: Set<String> = emptySet()
+    ) {
+        val entryCount: Int get() = allowDomains.size + wildcardAllowDomains.size
+    }
+
     private val HOSTS_LINE_REGEX = Regex("""^\s*(\S+)\s+(\S+)""")
     private val DOMAIN_REGEX = Regex("""^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$""")
     private val LOCALHOST_ENTRIES = setOf(
@@ -134,6 +141,27 @@ object HostsParser {
             allowDomains = allowDomains,
             wildcardBlockDomains = wildcardBlockDomains,
             wildcardAllowDomains = wildcardAllowDomains
+        )
+    }
+
+    /**
+     * Parse a subscribed allowlist source.
+     *
+     * Plain hosts/domains files are interpreted as allow domains. Adblock
+     * allowlists use `@@||domain^` exception rules, which are preserved as
+     * wildcard allows so they override matching source wildcard blocks.
+     */
+    fun parseForAllowing(content: String): AllowlistParseResult {
+        if (!isAdblockFormat(content)) {
+            return AllowlistParseResult(
+                allowDomains = parseHostsFormat(content).mapTo(mutableSetOf()) { it.hostname }
+            )
+        }
+
+        val parsed = parseForBlocking(content)
+        return AllowlistParseResult(
+            allowDomains = parsed.allowDomains,
+            wildcardAllowDomains = parsed.wildcardAllowDomains
         )
     }
 

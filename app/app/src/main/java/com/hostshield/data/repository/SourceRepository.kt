@@ -26,6 +26,7 @@ class SourceRepository @Inject constructor(
 
     suspend fun seedDefaultSources() {
         val existing = sourceDao.getAllSourcesList()
+        repairKnownSourceUrls(existing)
         if (existing.isNotEmpty()) return
 
         val defaults = listOf(
@@ -92,7 +93,7 @@ class SourceRepository @Inject constructor(
             HostSource(
                 url = "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt",
                 label = "Anudeep's Whitelist",
-                description = "Curated allowlist preventing common false positives. ~400 domains.",
+                description = "Curated allowlist preventing common false positives. ~191 domains.",
                 category = SourceCategory.ALLOWLIST,
                 isBuiltin = true,
                 enabled = false
@@ -100,15 +101,15 @@ class SourceRepository @Inject constructor(
             HostSource(
                 url = "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt",
                 label = "Anudeep's Optional Whitelist",
-                description = "Extended allowlist including CDNs, analytics safe domains. ~100 domains.",
+                description = "Extended allowlist including service-specific domains. ~144 domains.",
                 category = SourceCategory.ALLOWLIST,
                 isBuiltin = true,
                 enabled = false
             ),
             HostSource(
-                url = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist.txt",
-                label = "HaGeZi Whitelist",
-                description = "Referral allowlist preventing breakage from aggressive blocklists.",
+                url = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt",
+                label = "HaGeZi Referral Allowlist",
+                description = "Adblock-syntax referral and native tracker unbreak list for aggressive HaGeZi packs. ~1.6k entries.",
                 category = SourceCategory.ALLOWLIST,
                 isBuiltin = true,
                 enabled = false
@@ -116,5 +117,29 @@ class SourceRepository @Inject constructor(
         )
 
         sourceDao.insertAll(defaults)
+    }
+
+    private suspend fun repairKnownSourceUrls(existing: List<HostSource>) {
+        val replacements = mapOf(
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist.txt" to
+                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt",
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist-referral.txt" to
+                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt"
+        )
+        existing.forEach { source ->
+            val replacement = replacements[source.url] ?: return@forEach
+            sourceDao.update(
+                source.copy(
+                    url = replacement,
+                    label = "HaGeZi Referral Allowlist",
+                    description = "Adblock-syntax referral and native tracker unbreak list for aggressive HaGeZi packs. ~1.6k entries.",
+                    category = SourceCategory.ALLOWLIST,
+                    health = SourceHealth.UNKNOWN,
+                    lastError = "",
+                    lastHttpStatus = 0,
+                    consecutiveFailures = 0
+                )
+            )
+        }
     }
 }
