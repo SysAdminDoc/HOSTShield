@@ -378,8 +378,8 @@ class HostShieldMigrationTest {
                 columns += "block_metered INTEGER NOT NULL"
             }
             if (version >= 10) {
-                columns += "blocked_countries TEXT NOT NULL"
-                columns += "lan_allowed INTEGER NOT NULL"
+                columns += "blocked_countries TEXT NOT NULL DEFAULT ''"
+                columns += "lan_allowed INTEGER NOT NULL DEFAULT 1"
             }
             db.execSQL("CREATE TABLE firewall_rules (${columns.joinToString(", ")})")
             db.execSQL("CREATE UNIQUE INDEX index_firewall_rules_uid ON firewall_rules (uid)")
@@ -402,21 +402,18 @@ class HostShieldMigrationTest {
                 CREATE TABLE connection_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                     uid INTEGER NOT NULL,
-                    package_name TEXT NOT NULL DEFAULT '',
-                    app_label TEXT NOT NULL DEFAULT '',
-                    destination TEXT NOT NULL DEFAULT '',
-                    port INTEGER NOT NULL DEFAULT 0,
-                    protocol TEXT NOT NULL DEFAULT 'TCP',
-                    action TEXT NOT NULL DEFAULT 'REJECT',
-                    interface_name TEXT NOT NULL DEFAULT '',
-                    timestamp INTEGER NOT NULL DEFAULT 0
+                    package_name TEXT NOT NULL,
+                    app_label TEXT NOT NULL,
+                    destination TEXT NOT NULL,
+                    port INTEGER NOT NULL,
+                    protocol TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    interface_name TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL
                 )
             """)
             db.execSQL("CREATE INDEX index_connection_log_timestamp ON connection_log (timestamp)")
             db.execSQL("CREATE INDEX index_connection_log_uid ON connection_log (uid)")
-            if (version >= 5) {
-                db.execSQL("CREATE INDEX index_connection_log_action_timestamp ON connection_log (action, timestamp)")
-            }
             db.execSQL("INSERT INTO connection_log (uid, package_name, app_label, destination, port, protocol, action, interface_name, timestamp) VALUES (12345, 'com.fixture.app', 'Fixture App', '203.0.113.10', 443, 'TCP', 'REJECT', 'wlan0', 1800000000000)")
         }
 

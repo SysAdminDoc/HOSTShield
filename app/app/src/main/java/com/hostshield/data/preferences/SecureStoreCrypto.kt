@@ -1,7 +1,6 @@
 package com.hostshield.data.preferences
 
 import java.nio.charset.StandardCharsets
-import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
@@ -22,14 +21,14 @@ internal object SecureStoreCrypto {
     fun encryptString(
         keyName: String,
         value: String,
-        secretKey: SecretKey,
-        random: SecureRandom = SecureRandom()
+        secretKey: SecretKey
     ): String {
-        val iv = ByteArray(IV_BYTES).also(random::nextBytes)
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, GCMParameterSpec(GCM_TAG_BITS, iv))
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
         cipher.updateAAD(aad(keyName))
         val ciphertext = cipher.doFinal(value.toByteArray(StandardCharsets.UTF_8))
+        val iv = cipher.iv
+        require(iv.size == IV_BYTES) { "Unexpected secure-store IV length" }
         return listOf(
             VERSION,
             Base64.getEncoder().encodeToString(iv),

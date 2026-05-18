@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,6 +42,7 @@ import com.hostshield.service.HostsUpdateWorker
 import com.hostshield.service.LogCleanupWorker
 import com.hostshield.service.ProfileScheduleWorker
 import com.hostshield.service.SourceHealthWorker
+import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.navigation.Screen
 import com.hostshield.ui.navigation.SubScreen
 import com.hostshield.ui.navigation.bottomNavScreens
@@ -307,6 +309,7 @@ private fun HostShieldMainApp(activity: MainActivity) {
                                         restoreState = true
                                     }
                                 },
+                                modifier = Modifier.testTag(HostShieldTestTags.Nav.route(screen.route)),
                                 icon = {
                                     Icon(
                                         imageVector = if (selected) screen.selectedIcon else screen.unselectedIcon,

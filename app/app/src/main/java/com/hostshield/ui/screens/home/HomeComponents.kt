@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.theme.*
 import java.text.NumberFormat
 import kotlin.math.cos
@@ -110,6 +112,7 @@ fun ShieldOrb(
         modifier = Modifier
             .size(totalSizeDp)
             .scale(orbScale)
+            .testTag(HostShieldTestTags.Home.ShieldOrb)
             .semantics(mergeDescendants = true) {
                 role = Role.Button
                 contentDescription = when {

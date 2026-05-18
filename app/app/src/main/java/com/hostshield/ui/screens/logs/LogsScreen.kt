@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -43,6 +44,7 @@ import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
+import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -470,7 +472,10 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             value = query, onValueChange = { viewModel.setSearch(it) },
             placeholder = { Text("Search domains, apps...", color = TextDim) },
             leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextDim) },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .testTag(HostShieldTestTags.Logs.SearchField),
             singleLine = true, shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Teal, unfocusedBorderColor = Surface3,

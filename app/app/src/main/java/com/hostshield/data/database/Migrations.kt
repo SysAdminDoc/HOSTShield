@@ -80,14 +80,14 @@ object Migrations {
                 CREATE TABLE IF NOT EXISTS connection_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                     uid INTEGER NOT NULL,
-                    package_name TEXT NOT NULL DEFAULT '',
-                    app_label TEXT NOT NULL DEFAULT '',
-                    destination TEXT NOT NULL DEFAULT '',
-                    port INTEGER NOT NULL DEFAULT 0,
-                    protocol TEXT NOT NULL DEFAULT 'TCP',
-                    action TEXT NOT NULL DEFAULT 'REJECT',
-                    interface_name TEXT NOT NULL DEFAULT '',
-                    timestamp INTEGER NOT NULL DEFAULT 0
+                    package_name TEXT NOT NULL,
+                    app_label TEXT NOT NULL,
+                    destination TEXT NOT NULL,
+                    port INTEGER NOT NULL,
+                    protocol TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    interface_name TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL
                 )
             """)
             db.execSQL("CREATE INDEX IF NOT EXISTS index_connection_log_timestamp ON connection_log (timestamp)")
@@ -98,7 +98,6 @@ object Migrations {
     val MIGRATION_4_5 = object : Migration(4, 5) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("CREATE INDEX IF NOT EXISTS index_dns_logs_blocked_timestamp ON dns_logs (blocked, timestamp)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_connection_log_action_timestamp ON connection_log (action, timestamp)")
             try { db.execSQL("ALTER TABLE dns_logs ADD COLUMN source_ip TEXT NOT NULL DEFAULT ''") } catch (_: Exception) { }
             try { db.execSQL("ALTER TABLE dns_logs ADD COLUMN query_type TEXT NOT NULL DEFAULT 'A'") } catch (_: Exception) { }
             db.execSQL("CREATE INDEX IF NOT EXISTS index_dns_logs_hostname ON dns_logs (hostname)")

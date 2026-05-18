@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -30,6 +31,7 @@ import com.hostshield.service.ParentalControlManager.AgeProfile
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
+import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -201,7 +203,9 @@ fun ParentalControlScreen(
                 }
                 Switch(
                     checked = enabled, onCheckedChange = { viewModel.setEnabled(it) },
-                    modifier = Modifier.accessibilityToggle("Parental controls", enabled),
+                    modifier = Modifier
+                        .testTag(HostShieldTestTags.Parental.EnableToggle)
+                        .accessibilityToggle("Parental controls", enabled),
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Peach, checkedTrackColor = Peach.copy(alpha = 0.25f),
                         uncheckedThumbColor = TextDim, uncheckedTrackColor = Surface3,
@@ -283,7 +287,9 @@ fun ParentalControlScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(HostShieldTestTags.Parental.PinField),
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Yellow, unfocusedBorderColor = Surface3,
@@ -300,6 +306,7 @@ fun ParentalControlScreen(
                             enabled = pinInput.length == 4,
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Yellow),
+                            modifier = Modifier.testTag(HostShieldTestTags.Parental.SetPinButton),
                         ) {
                             Text("Set PIN", fontSize = 12.sp)
                         }
@@ -412,7 +419,9 @@ fun ParentalControlScreen(
                                 else -> {}
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(HostShieldTestTags.Parental.DialogPinField),
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Yellow, unfocusedBorderColor = Surface3,
@@ -430,6 +439,7 @@ fun ParentalControlScreen(
                         }
                     },
                     enabled = dialogPin.length == 4 && !locked,
+                    modifier = Modifier.testTag(HostShieldTestTags.Parental.DialogConfirmButton),
                 ) {
                     Text("Confirm", color = Yellow)
                 }

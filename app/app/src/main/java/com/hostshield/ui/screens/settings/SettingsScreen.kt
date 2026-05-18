@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -39,6 +40,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.hostshield.BuildConfig
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilitySelection
+import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 
@@ -659,7 +661,7 @@ internal fun SettingsSection(
     color: Color,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    GlassCard(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(modifier = Modifier.fillMaxWidth().testTag(HostShieldTestTags.Settings.section(title))) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -695,6 +697,7 @@ internal fun SettingsToggle(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
+            .testTag(HostShieldTestTags.Settings.toggle(title))
             .semantics(mergeDescendants = true) {
                 role = Role.Switch
                 contentDescription = "$title. $subtitle"
@@ -732,6 +735,7 @@ internal fun SettingsRow(
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(8.dp))
+            .testTag(HostShieldTestTags.Settings.row(title))
             .semantics(mergeDescendants = true) {
                 role = Role.Button
                 contentDescription = "$title. $subtitle"
