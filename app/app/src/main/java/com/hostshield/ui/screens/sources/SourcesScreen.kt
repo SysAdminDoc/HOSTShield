@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +38,7 @@ import com.hostshield.ui.accessibility.accessibilityAction
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilityToggle
+import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -579,6 +581,7 @@ fun SourcesScreen(
                             contentColor = Teal,
                             modifier = Modifier
                                 .size(40.dp)
+                                .testTag(HostShieldTestTags.Sources.AddButton)
                         ) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Icon(Icons.Filled.Add, "Add source", modifier = Modifier.size(20.dp))
@@ -1050,7 +1053,9 @@ private fun AddSourceDialog(
                 OutlinedTextField(
                     value = label, onValueChange = { label = it },
                     label = { Text("Source name") }, singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(HostShieldTestTags.Sources.NameField),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Teal, unfocusedBorderColor = Surface3,
@@ -1064,7 +1069,9 @@ private fun AddSourceDialog(
                     supportingText = if (url.isNotBlank() && !urlValid) {
                         { Text("Use a complete http:// or https:// URL.", color = Red, fontSize = 11.sp) }
                     } else null,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(HostShieldTestTags.Sources.UrlField),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Teal, unfocusedBorderColor = Surface3,
@@ -1102,7 +1109,8 @@ private fun AddSourceDialog(
         confirmButton = {
             TextButton(
                 onClick = { if (canSubmit) onAdd(url.trim(), label.trim(), category) },
-                enabled = canSubmit
+                enabled = canSubmit,
+                modifier = Modifier.testTag(HostShieldTestTags.Sources.ConfirmAddButton)
             ) { Text("Add source", color = Teal, fontWeight = FontWeight.SemiBold) }
         },
         dismissButton = {

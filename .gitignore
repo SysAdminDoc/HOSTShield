@@ -8,3 +8,4 @@ artifacts/
 *.apk
 /com/
 CLAUDE.md
+app/build/

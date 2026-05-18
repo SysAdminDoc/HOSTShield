@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +33,7 @@ import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
+import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -141,6 +143,7 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
                             contentColor = Teal,
                             modifier = Modifier
                                 .size(40.dp)
+                                .testTag(HostShieldTestTags.Rules.AddButton)
                         ) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Icon(Icons.Filled.Add, "Add rule", modifier = Modifier.size(20.dp))
@@ -328,7 +331,11 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
                     },
                     label = { Text(if (isRegex) "Regex pattern" else "Hostname") },
                     placeholder = { Text(if (isRegex) ".*\\.ad[sv]?\\." else "*.example.com", color = TextDim) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors(),
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(HostShieldTestTags.Rules.HostnameField),
+                    colors = fieldColors(),
                     isError = regexError != null
                 )
                 if (regexError != null) {
@@ -361,7 +368,8 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
                         onAdd(hostname, type, redirectIp, if (isRegex) "REGEX:$comment" else comment)
                     }
                 },
-                enabled = hostname.isNotBlank() && regexError == null
+                enabled = hostname.isNotBlank() && regexError == null,
+                modifier = Modifier.testTag(HostShieldTestTags.Rules.ConfirmAddButton)
             ) { Text("Add rule", color = Teal) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) } }
