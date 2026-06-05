@@ -138,7 +138,6 @@ api-2-0.spot.im
 api3.siftscience.com
 api64.ipify.org
 api-js.mixpanel.com
-api-partner.spotify.com
 api-visitor-analytics.intercom.com
 app.adjust.com
 app.adjust.io
