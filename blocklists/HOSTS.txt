@@ -473,7 +473,6 @@
 0.0.0.0 id5-sync.com
 0.0.0.0 idsync.anm.co.uk
 0.0.0.0 idsync.rlcdn.com
-0.0.0.0 iguazu.doordash.com
 0.0.0.0 image2.pubmatic.com
 0.0.0.0 img-prod-cms-rt-microsoft-com.akamaized.net
 0.0.0.0 ims-na1.adobelogin.com
