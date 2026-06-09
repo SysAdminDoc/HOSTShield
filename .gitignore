@@ -9,3 +9,7 @@ artifacts/
 /com/
 CLAUDE.md
 app/build/
+
+# Markdown files local-only (except README)
+*.md
+!README.md
