@@ -25,15 +25,11 @@ class ThreatIntelWorker @AssistedInject constructor(
         const val WORK_NAME = "threat_intel_update"
         const val TAG = "threat_intel"
 
-        fun schedule(context: Context) {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-
+        fun schedule(context: Context, wifiOnly: Boolean) {
             val request = PeriodicWorkRequestBuilder<ThreatIntelWorker>(
                 24, TimeUnit.HOURS
             )
-                .setConstraints(constraints)
+                .setConstraints(syncNetworkConstraints(wifiOnly))
                 .addTag(TAG)
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,
@@ -45,11 +41,11 @@ class ThreatIntelWorker @AssistedInject constructor(
             WorkManager.getInstance(context)
                 .enqueueUniquePeriodicWork(
                     WORK_NAME,
-                    ExistingPeriodicWorkPolicy.KEEP,
+                    ExistingPeriodicWorkPolicy.UPDATE,
                     request
                 )
 
-            Log.i(TAG, "Threat intel daily update scheduled")
+            Log.i(TAG, "Threat intel daily update scheduled; wifiOnly=$wifiOnly")
         }
     }
 

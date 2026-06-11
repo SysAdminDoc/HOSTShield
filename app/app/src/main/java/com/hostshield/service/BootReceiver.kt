@@ -42,14 +42,14 @@ class BootReceiver : BroadcastReceiver() {
                 val networkFwEnabled = prefs.networkFirewallEnabled.first()
                 val autoApplyFw = prefs.autoApplyFirewall.first()
                 val connLogEnabled = prefs.connectionLogEnabled.first()
+                val wifiOnly = prefs.wifiOnly.first()
 
                 // Reschedule all workers
                 if (autoUpdate) {
                     val interval = prefs.updateIntervalHours.first()
-                    val wifiOnly = prefs.wifiOnly.first()
                     HostsUpdateWorker.schedule(context, interval, wifiOnly)
                 }
-                SourceHealthWorker.schedule(context)
+                SourceHealthWorker.schedule(context, wifiOnly)
                 LogCleanupWorker.schedule(context)
                 ProfileScheduleWorker.schedule(context)
 

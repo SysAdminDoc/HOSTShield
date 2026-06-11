@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
@@ -163,7 +164,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        SourceHealthWorker.schedule(this)
+        lifecycleScope.launch(Dispatchers.IO) {
+            SourceHealthWorker.schedule(this@MainActivity, prefs.wifiOnly.first())
+        }
         LogCleanupWorker.schedule(this)
         ProfileScheduleWorker.schedule(this)
 

@@ -46,16 +46,10 @@ class HostsUpdateWorker @AssistedInject constructor(
         private const val DEAD_FAILURE_THRESHOLD = 5
 
         fun schedule(context: Context, intervalHours: Int, wifiOnly: Boolean) {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(
-                    if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED
-                )
-                .build()
-
             val request = PeriodicWorkRequestBuilder<HostsUpdateWorker>(
                 intervalHours.toLong(), TimeUnit.HOURS
             )
-                .setConstraints(constraints)
+                .setConstraints(syncNetworkConstraints(wifiOnly))
                 .addTag(TAG)
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,

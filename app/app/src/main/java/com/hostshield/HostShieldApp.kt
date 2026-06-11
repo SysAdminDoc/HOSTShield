@@ -14,6 +14,7 @@ import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -41,8 +42,13 @@ class HostShieldApp : Application(), Configuration.Provider {
         }
 
         // v6.0: Schedule daily threat intelligence feed updates
-        try { ThreatIntelWorker.schedule(this) }
-        catch (e: Exception) { android.util.Log.w("HostShieldApp", "WorkManager scheduling failed: ${e.message}") }
+        appScope.launch {
+            try {
+                ThreatIntelWorker.schedule(this@HostShieldApp, syncPreferences.wifiOnly.first())
+            } catch (e: Exception) {
+                android.util.Log.w("HostShieldApp", "WorkManager scheduling failed: ${e.message}")
+            }
+        }
 
         // v6.3: Schedule weekly automatic backups (Task #54)
         try { AutoBackupWorker.schedule(this, 7) }

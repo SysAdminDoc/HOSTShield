@@ -27,15 +27,11 @@ class SourceHealthWorker @AssistedInject constructor(
         private const val STALE_THRESHOLD_MS = 7L * 24 * 60 * 60 * 1000 // 7 days
         private const val DEAD_FAILURE_THRESHOLD = 5
 
-        fun schedule(context: Context) {
+        fun schedule(context: Context, wifiOnly: Boolean) {
             val request = PeriodicWorkRequestBuilder<SourceHealthWorker>(
                 12, TimeUnit.HOURS
             )
-                .setConstraints(
-                    Constraints.Builder()
-                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .build()
-                )
+                .setConstraints(syncNetworkConstraints(wifiOnly))
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,
                     WorkRequest.MIN_BACKOFF_MILLIS,
@@ -46,7 +42,7 @@ class SourceHealthWorker @AssistedInject constructor(
             WorkManager.getInstance(context)
                 .enqueueUniquePeriodicWork(
                     WORK_NAME,
-                    ExistingPeriodicWorkPolicy.KEEP,
+                    ExistingPeriodicWorkPolicy.UPDATE,
                     request
                 )
         }

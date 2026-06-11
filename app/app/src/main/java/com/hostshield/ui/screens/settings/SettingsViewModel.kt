@@ -9,6 +9,8 @@ import com.hostshield.data.model.RuleType
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.service.HostsUpdateWorker
+import com.hostshield.service.SourceHealthWorker
+import com.hostshield.service.ThreatIntelWorker
 import com.hostshield.util.BackupRestoreUtil
 import com.hostshield.util.BatteryOptimizationUtil
 import com.hostshield.util.DiagnosticEventStore
@@ -353,6 +355,8 @@ class SettingsViewModel @Inject constructor(
                 val interval = prefs.updateIntervalHours.first()
                 HostsUpdateWorker.schedule(getApplication(), interval, v)
             }
+            SourceHealthWorker.schedule(getApplication(), v)
+            ThreatIntelWorker.schedule(getApplication(), v)
         }
     }
 

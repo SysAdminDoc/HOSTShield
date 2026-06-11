@@ -14,8 +14,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 35
-        versionCode = 72
-        versionName = "6.6.4"
+        versionCode = 73
+        versionName = "6.6.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -74,7 +74,7 @@ android {
     }
 
     sourceSets {
-        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+        getByName("androidTest").assets.directories.add("$projectDir/schemas")
     }
 
     // Run unit tests against real org.json / android.util.Base64 (etc.) rather

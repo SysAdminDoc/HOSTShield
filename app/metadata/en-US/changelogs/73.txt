@@ -1,0 +1,7 @@
+v6.6.5 - Wi-Fi-Only Sync Hardening
+
+- Periodic threat-intel refreshes now honor the Wi-Fi-only sync preference instead of always running on any connected network.
+- Periodic source-health checks now use the same Wi-Fi-only network constraint as blocklist updates.
+- Changing the Wi-Fi-only setting refreshes existing WorkManager registrations so old constraints are not left behind.
+- Manual refresh actions still run when explicitly requested by the user.
+- Android test schema assets now use the current AGP 9 source-set directory API.
