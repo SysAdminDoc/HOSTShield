@@ -102,10 +102,7 @@ $requiredPatterns = @{
 
 if ($docs.ContainsKey($metadataChangelog)) {
     $requiredPatterns[$metadataChangelog] = @(
-        "v$versionName",
-        "QUERY_ALL_PACKAGES",
-        "com.hostshield.ACTION_*",
-        "duration_minutes"
+        "v$versionName"
     )
 }
 

@@ -12,6 +12,28 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private val THREAT_IPV4_TOKEN = Regex("""(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?(?![\d.])""")
+
+internal fun parseThreatIpCidrs(body: String, source: String): List<Pair<String, String>> {
+    val cidrs = LinkedHashSet<Pair<String, String>>()
+    for (line in body.lineSequence()) {
+        val searchable = line.substringBefore("#").substringBefore(";")
+        for (match in THREAT_IPV4_TOKEN.findAll(searchable)) {
+            normalizeThreatIpToken(match.value)?.let { cidrs.add(it to source) }
+        }
+    }
+    return cidrs.toList()
+}
+
+private fun normalizeThreatIpToken(token: String): String? {
+    val parts = token.split("/", limit = 2)
+    val octets = parts[0].split(".").map { it.toIntOrNull() ?: return null }
+    if (octets.size != 4 || octets.any { it !in 0..255 }) return null
+    val prefixLength = parts.getOrNull(1)?.toIntOrNull() ?: 32
+    if (prefixLength !in 8..32) return null
+    return "${octets.joinToString(".")}/$prefixLength"
+}
+
 // Threat intelligence feed engine
 //
 // Downloads and indexes malicious IPs (CIDR prefixes) and domains from
@@ -272,16 +294,7 @@ class ThreatIntelManager @Inject constructor(
     }
 
     private fun parseIpList(body: String, source: String): ParseResult {
-        val cidrs = mutableListOf<Pair<String, String>>()
-        for (line in body.lineSequence()) {
-            val trimmed = line.trim()
-            if (trimmed.isEmpty() || trimmed.startsWith("#")) continue
-            // Plain IP addresses — treat as /32
-            if (trimmed.matches(Regex("\\d+\\.\\d+\\.\\d+\\.\\d+"))) {
-                cidrs.add("$trimmed/32" to source)
-            }
-        }
-        return ParseResult(cidrs = cidrs)
+        return ParseResult(cidrs = parseThreatIpCidrs(body, source))
     }
 
     private fun parseDomainList(body: String, source: String): ParseResult {
@@ -377,8 +390,10 @@ class ThreatIntelManager @Inject constructor(
             json.put(CACHE_KEY_LAST_UPDATED, lastUpdated)
 
             File(context.filesDir, CACHE_FILE).writeText(json.toString())
-            Log.i(TAG, "Threat intel refreshed and persisted: $domainCount domains, $ipCidrCount CIDRs from $successCount feeds")
-            true
+            val allFeedsSucceeded = successCount == feeds.size
+            val status = if (allFeedsSucceeded) "complete" else "degraded"
+            Log.i(TAG, "Threat intel refresh $status and persisted: $domainCount domains, $ipCidrCount CIDRs from $successCount/${feeds.size} feeds")
+            allFeedsSucceeded
         } catch (e: Exception) {
             Log.e(TAG, "Threat intel refresh failed: ${e.message}")
             false

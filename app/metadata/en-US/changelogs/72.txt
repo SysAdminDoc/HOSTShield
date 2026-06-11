@@ -1,0 +1,7 @@
+v6.6.4 - Threat Intel Parser Hardening
+
+- Whitespace-separated compromised-IP feeds now parse every IPv4 and CIDR token instead of requiring one IP per line.
+- Invalid IPv4 tokens, invalid CIDR prefixes, and overly broad prefixes are rejected before they enter the threat-intel cache.
+- Duplicate IP tokens are de-duplicated while preserving first-seen feed order.
+- Partial feed refreshes now report degraded status to WorkManager while preserving successfully parsed and cached threat data.
+- Release-documentation checks now keep durable security and distribution claims in stable metadata while letting this per-version changelog stay focused on v6.6.4 changes.
