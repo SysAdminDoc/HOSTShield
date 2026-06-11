@@ -42,6 +42,9 @@ $requiredPatterns = @{
         "405 tracker SDK signatures",
         "ipapi.co",
         "Kotlin 2.3",
+        "com.hostshield.ACTION_ENABLE",
+        "com.hostshield.ACTION_SET_PROFILE",
+        "duration_minutes",
         "v1-v15"
     )
     "app/README.md" = @(
@@ -49,6 +52,8 @@ $requiredPatterns = @{
         "405 tracker SDK signatures",
         "ipapi.co",
         "Android SDK 36",
+        "com.hostshield.ACTION_ENABLE",
+        "duration_minutes",
         "v$versionName"
     )
     "app/CHANGELOG.md" = @(
@@ -73,7 +78,12 @@ $forbiddenPatterns = @(
     "Kotlin 2.0",
     "Kotlin 2.1",
     "Android SDK 35",
-    "v1-v12"
+    "v1-v12",
+    "com.hostshield.action.ENABLE",
+    "com.hostshield.action.DISABLE",
+    "com.hostshield.action.STATUS",
+    "com.hostshield.action.REFRESH_BLOCKLIST",
+    "--ei pause_minutes"
 )
 
 foreach ($doc in @("README.md", "app/README.md")) {

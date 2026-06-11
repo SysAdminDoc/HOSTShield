@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.6.1-blue)
+![Version](https://img.shields.io/badge/version-6.6.2-blue)
 ![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -241,25 +241,29 @@ Choose how blocked domains are handled:
 
 ### Automation API
 
-Broadcast intents for Tasker/MacroDroid (requires signature permission or ADB grant):
+Broadcast intents for Tasker/MacroDroid, shell, and same-signature companion apps. Canonical actions use `com.hostshield.ACTION_*`; older lowercase `com.hostshield.action.*` aliases are accepted for compatibility.
 
 ```bash
 # Enable/disable protection
-adb shell am broadcast -a com.hostshield.action.ENABLE  -n com.hostshield/.service.AutomationReceiver
-adb shell am broadcast -a com.hostshield.action.DISABLE -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_ENABLE  -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_DISABLE -n com.hostshield/.service.AutomationReceiver
 
 # Query current status
-adb shell am broadcast -a com.hostshield.action.STATUS  -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_STATUS  -n com.hostshield/.service.AutomationReceiver
 
 # Force blocklist refresh
-adb shell am broadcast -a com.hostshield.action.REFRESH_BLOCKLIST -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_REFRESH_BLOCKLIST -n com.hostshield/.service.AutomationReceiver
+
+# Apply profile or custom DNS
+adb shell am broadcast -a com.hostshield.ACTION_SET_PROFILE --es profile_name Work -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_SET_DNS --es dns_servers "9.9.9.9,149.112.112.112" -n com.hostshield/.service.AutomationReceiver
 
 # Pause/resume (5 minutes)
-adb shell am broadcast -a com.hostshield.action.PAUSE --ei pause_minutes 5 -n com.hostshield/.service.AutomationReceiver
-adb shell am broadcast -a com.hostshield.action.PAUSE --ei pause_minutes 0 -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_PAUSE --ei duration_minutes 5 -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_PAUSE --ei duration_minutes 0 -n com.hostshield/.service.AutomationReceiver
 ```
 
-All actions are rate-limited (5s cooldown per action per caller) and logged to the automation audit log.
+Public actions are protected by HostShield's signature-level automation permission, rate-limited (5s cooldown per action per caller), and logged to the automation audit log.
 
 ---
 
@@ -380,6 +384,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.6.2** | Automation API contract repair. Public docs now use canonical `com.hostshield.ACTION_*` actions and `duration_minutes`, the manifest exposes every supported automation action, lowercase aliases remain compatible, and unit tests lock the action/extra normalization contract. |
 | **6.6.1** | Dependency hardening. Updated OkHttp to 5.4.0 for the current stable networking stack, including the 256 KiB HTTP/2 response-header cap and current Okio baseline. |
 | **6.6.0** | Android 15/16 foreground-service resilience. Protection services now declare `systemExempted`, runtime foreground promotion uses the matching service type, service timeout callbacks record local diagnostics, and all protection restart surfaces record controlled start-failure events instead of crashing. |
 | **6.5.9** | DNSCrypt stamp and relay-route foundation. `sdns://` parsing now uses spec-width properties, preserves 32-byte DNSCrypt provider keys, parses Anonymized DNSCrypt relay stamps, and validates resolver-to-relay routes before building relay target prefixes. |

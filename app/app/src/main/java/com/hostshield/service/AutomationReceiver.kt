@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Binder
+import android.os.Build
+import android.os.Process
 import android.util.Log
 import com.hostshield.data.database.AutomationAuditDao
 import com.hostshield.data.database.ProfileDao
@@ -32,17 +34,6 @@ class AutomationReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "AutomationRcvr"
-        const val ACTION_ENABLE = "com.hostshield.ACTION_ENABLE"
-        const val ACTION_DISABLE = "com.hostshield.ACTION_DISABLE"
-        const val ACTION_TOGGLE = "com.hostshield.ACTION_TOGGLE"
-        const val ACTION_APPLY_FIREWALL = "com.hostshield.ACTION_APPLY_FIREWALL"
-        const val ACTION_CLEAR_FIREWALL = "com.hostshield.ACTION_CLEAR_FIREWALL"
-        const val ACTION_STATUS = "com.hostshield.ACTION_STATUS"
-        const val ACTION_REFRESH_BLOCKLIST = "com.hostshield.ACTION_REFRESH_BLOCKLIST"
-        const val ACTION_SET_PROFILE = "com.hostshield.ACTION_SET_PROFILE"
-        const val ACTION_SET_DNS = "com.hostshield.ACTION_SET_DNS"
-        const val ACTION_PAUSE = "com.hostshield.ACTION_PAUSE"
-        const val STATUS_RESULT = "com.hostshield.STATUS_RESULT"
         private const val PERMISSION_AUTOMATION_SUFFIX = ".permission.AUTOMATION"
 
         private val TRUSTED_UIDS = setOf(0, 2000) // root, shell
@@ -58,16 +49,23 @@ class AutomationReceiver : BroadcastReceiver() {
     @Inject lateinit var profileDao: ProfileDao
 
     override fun onReceive(context: Context, intent: Intent) {
-        val callerUid = Binder.getCallingUid()
+        val callerUid = resolveCallerUid()
         val callerPkg = resolveCallerPackage(context, callerUid)
-        val action = intent.action ?: return
+        val requestedAction = intent.action ?: return
         val automationPermission = automationPermission(context)
+        val action = AutomationActionContract.normalizeAction(requestedAction)
 
         // Security: verify the caller is trusted before executing
         if (!isCallerTrusted(context, callerUid, automationPermission)) {
-            Log.w(TAG, "DENIED $action from uid=$callerUid pkg=$callerPkg " +
+            Log.w(TAG, "DENIED $requestedAction from uid=$callerUid pkg=$callerPkg " +
                 "(missing $automationPermission)")
-            logAudit(action, callerUid, callerPkg, "DENIED")
+            logAudit(requestedAction, callerUid, callerPkg, "DENIED")
+            return
+        }
+
+        if (action == null) {
+            Log.w(TAG, "Unknown automation action: $requestedAction from uid=$callerUid pkg=$callerPkg")
+            logAudit(requestedAction, callerUid, callerPkg, "ERROR_UNKNOWN_ACTION")
             return
         }
 
@@ -82,35 +80,39 @@ class AutomationReceiver : BroadcastReceiver() {
         }
         lastExecTime.put(rateKey, now)
 
-        Log.i(TAG, "Received: $action from uid=$callerUid pkg=$callerPkg")
+        if (requestedAction != action) {
+            Log.i(TAG, "Received legacy action $requestedAction as $action from uid=$callerUid pkg=$callerPkg")
+        } else {
+            Log.i(TAG, "Received: $action from uid=$callerUid pkg=$callerPkg")
+        }
         val pendingResult = goAsync()
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 when (action) {
-                    ACTION_ENABLE -> enable(context)
-                    ACTION_DISABLE -> disable(context)
-                    ACTION_TOGGLE -> {
+                    AutomationActionContract.ACTION_ENABLE -> enable(context)
+                    AutomationActionContract.ACTION_DISABLE -> disable(context)
+                    AutomationActionContract.ACTION_TOGGLE -> {
                         if (prefs.isEnabled.first()) disable(context) else enable(context)
                     }
-                    ACTION_APPLY_FIREWALL -> {
+                    AutomationActionContract.ACTION_APPLY_FIREWALL -> {
                         iptablesManager.applyRules()
                         prefs.setNetworkFirewallEnabled(true)
                         Log.i(TAG, "Firewall applied via automation (caller=$callerPkg)")
                     }
-                    ACTION_CLEAR_FIREWALL -> {
+                    AutomationActionContract.ACTION_CLEAR_FIREWALL -> {
                         iptablesManager.clearRules()
                         prefs.setNetworkFirewallEnabled(false)
                         Log.i(TAG, "Firewall cleared via automation (caller=$callerPkg)")
                     }
-                    ACTION_REFRESH_BLOCKLIST -> {
+                    AutomationActionContract.ACTION_REFRESH_BLOCKLIST -> {
                         HostsUpdateWorker.runOnce(context)
                         Log.i(TAG, "Blocklist refresh queued via automation (caller=$callerPkg)")
                     }
-                    ACTION_SET_PROFILE -> {
-                        val profileName = intent.getStringExtra("profile_name")
+                    AutomationActionContract.ACTION_SET_PROFILE -> {
+                        val profileName = intent.getStringExtra(AutomationActionContract.EXTRA_PROFILE_NAME)
                         if (profileName.isNullOrBlank()) {
-                            Log.w(TAG, "SET_PROFILE missing 'profile_name' extra")
+                            Log.w(TAG, "SET_PROFILE missing '${AutomationActionContract.EXTRA_PROFILE_NAME}' extra")
                             logAudit(action, callerUid, callerPkg, "ERROR_MISSING_EXTRA")
                             pendingResult.finish()
                             return@launch
@@ -127,10 +129,10 @@ class AutomationReceiver : BroadcastReceiver() {
                         profileDao.activate(match.id)
                         Log.i(TAG, "Profile activated via automation: '${match.name}' (caller=$callerPkg)")
                     }
-                    ACTION_SET_DNS -> {
-                        val dnsServers = intent.getStringExtra("dns_servers")
+                    AutomationActionContract.ACTION_SET_DNS -> {
+                        val dnsServers = intent.getStringExtra(AutomationActionContract.EXTRA_DNS_SERVERS)
                         if (dnsServers.isNullOrBlank()) {
-                            Log.w(TAG, "SET_DNS missing 'dns_servers' extra")
+                            Log.w(TAG, "SET_DNS missing '${AutomationActionContract.EXTRA_DNS_SERVERS}' extra")
                             logAudit(action, callerUid, callerPkg, "ERROR_MISSING_EXTRA")
                             pendingResult.finish()
                             return@launch
@@ -138,11 +140,13 @@ class AutomationReceiver : BroadcastReceiver() {
                         prefs.setCustomUpstreamDns(dnsServers)
                         Log.i(TAG, "Custom DNS set via automation: $dnsServers (caller=$callerPkg)")
                     }
-                    ACTION_PAUSE -> {
-                        val durationMinutes = intent.getIntExtra("duration_minutes", 5)
-                            .coerceIn(1, 1440) // clamp: 1 min to 24 hours
-                        // duration_minutes == 0 (per README) → resume immediately
-                        if (intent.getIntExtra("duration_minutes", -1) == 0) {
+                    AutomationActionContract.ACTION_PAUSE -> {
+                        val durationMinutes = AutomationActionContract.pauseDurationMinutes(
+                            durationMinutes = intent.optionalIntExtra(AutomationActionContract.EXTRA_DURATION_MINUTES),
+                            legacyPauseMinutes = intent.optionalIntExtra(AutomationActionContract.LEGACY_EXTRA_PAUSE_MINUTES)
+                        )
+                        // duration_minutes == 0 resumes immediately
+                        if (durationMinutes == 0) {
                             PauseResumeWorker.cancel(context)
                             enable(context)
                             Log.i(TAG, "VPN resumed via PAUSE 0 (caller=$callerPkg)")
@@ -154,7 +158,7 @@ class AutomationReceiver : BroadcastReceiver() {
                             Log.i(TAG, "VPN paused for ${durationMinutes}m via automation (caller=$callerPkg)")
                         }
                     }
-                    ACTION_STATUS -> sendStatus(context)
+                    AutomationActionContract.ACTION_STATUS -> sendStatus(context)
                 }
                 logAudit(action, callerUid, callerPkg, "OK")
             } catch (e: Exception) {
@@ -165,6 +169,9 @@ class AutomationReceiver : BroadcastReceiver() {
             }
         }
     }
+
+    private fun Intent.optionalIntExtra(name: String): Int? =
+        if (hasExtra(name)) getIntExtra(name, 0) else null
 
     private fun logAudit(action: String, uid: Int, pkg: String, result: String) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -199,9 +206,20 @@ class AutomationReceiver : BroadcastReceiver() {
     }
 
     private fun resolveCallerPackage(context: Context, uid: Int): String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            getSentFromPackage()?.let { return it }
+        }
         if (uid == 0) return "root"
         if (uid == 2000) return "shell"
         return context.packageManager.getPackagesForUid(uid)?.firstOrNull() ?: "uid:$uid"
+    }
+
+    private fun resolveCallerUid(): Int {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val sentUid = getSentFromUid()
+            if (sentUid != Process.INVALID_UID) return sentUid
+        }
+        return Binder.getCallingUid()
     }
 
     private fun automationPermission(context: Context): String =
@@ -213,7 +231,7 @@ class AutomationReceiver : BroadcastReceiver() {
         val fwActive = iptablesManager.isActive.value
         val fwRules = iptablesManager.lastApplyCount.value
         context.sendBroadcast(
-            Intent(STATUS_RESULT).apply {
+            Intent(AutomationActionContract.STATUS_RESULT).apply {
                 putExtra("enabled", enabled)
                 putExtra("method", method.name)
                 putExtra("firewall_active", fwActive)

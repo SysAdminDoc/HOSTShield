@@ -121,6 +121,19 @@
                 <action android:name="com.hostshield.ACTION_CLEAR_FIREWALL" />
                 <action android:name="com.hostshield.ACTION_STATUS" />
                 <action android:name="com.hostshield.ACTION_REFRESH_BLOCKLIST" />
+                <action android:name="com.hostshield.ACTION_SET_PROFILE" />
+                <action android:name="com.hostshield.ACTION_SET_DNS" />
+                <action android:name="com.hostshield.ACTION_PAUSE" />
+                <action android:name="com.hostshield.action.ENABLE" />
+                <action android:name="com.hostshield.action.DISABLE" />
+                <action android:name="com.hostshield.action.TOGGLE" />
+                <action android:name="com.hostshield.action.APPLY_FIREWALL" />
+                <action android:name="com.hostshield.action.CLEAR_FIREWALL" />
+                <action android:name="com.hostshield.action.STATUS" />
+                <action android:name="com.hostshield.action.REFRESH_BLOCKLIST" />
+                <action android:name="com.hostshield.action.SET_PROFILE" />
+                <action android:name="com.hostshield.action.SET_DNS" />
+                <action android:name="com.hostshield.action.PAUSE" />
             </intent-filter>
         </receiver>
 

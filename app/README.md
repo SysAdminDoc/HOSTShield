@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.6.1-blue)
+![Version](https://img.shields.io/badge/version-6.6.2-blue)
 ![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -8,7 +8,7 @@
 
 > System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, offline GeoIP, and a professional AMOLED dark UI with an optional high-contrast mode.
 
-Current module baseline: v6.6.1, versionCode 69.
+Current module baseline: v6.6.2, versionCode 70.
 
 ## Quick Start
 
@@ -88,13 +88,17 @@ Current module baseline: v6.6.1, versionCode 69.
 Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Add custom URL sources via Settings → Sources in hosts, domains-only, or DNS adblock syntax.
 
 ### Automation API
-Broadcast intents for Tasker/MacroDroid (requires signature permission or ADB grant):
+Broadcast intents for Tasker/MacroDroid, shell, and same-signature companion apps. Canonical actions use `com.hostshield.ACTION_*`; older lowercase `com.hostshield.action.*` aliases are accepted for compatibility.
 
 ```bash
-adb shell am broadcast -a com.hostshield.action.ENABLE -n com.hostshield/.service.AutomationReceiver
-adb shell am broadcast -a com.hostshield.action.DISABLE -n com.hostshield/.service.AutomationReceiver
-adb shell am broadcast -a com.hostshield.action.STATUS -n com.hostshield/.service.AutomationReceiver
-adb shell am broadcast -a com.hostshield.action.REFRESH_BLOCKLIST -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_ENABLE -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_DISABLE -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_STATUS -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_REFRESH_BLOCKLIST -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_SET_PROFILE --es profile_name Work -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_SET_DNS --es dns_servers "9.9.9.9,149.112.112.112" -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_PAUSE --ei duration_minutes 5 -n com.hostshield/.service.AutomationReceiver
+adb shell am broadcast -a com.hostshield.ACTION_PAUSE --ei duration_minutes 0 -n com.hostshield/.service.AutomationReceiver
 ```
 
 ## FAQ
