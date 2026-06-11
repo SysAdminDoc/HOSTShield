@@ -226,21 +226,24 @@ class AutomationReceiver : BroadcastReceiver() {
 
     private suspend fun enable(context: Context) {
         val method = prefs.blockMethod.first()
-        when (method) {
+        val started = when (method) {
             BlockMethod.VPN -> {
-                context.startForegroundService(
+                ProtectionServiceStarter.startForegroundService(
+                    context,
                     Intent(context, DnsVpnService::class.java).apply {
                         action = DnsVpnService.ACTION_START
-                    }
+                    },
+                    "AutomationReceiver"
                 )
             }
             BlockMethod.ROOT_HOSTS -> RootDnsService.start(context)
             BlockMethod.DNS_PROXY -> {
-                context.startForegroundService(
-                    Intent(context, DnsProxyService::class.java)
-                )
+                DnsProxyService.start(context, "AutomationReceiver")
             }
-            BlockMethod.DISABLED -> { }
+            BlockMethod.DISABLED -> true
+        }
+        if (!started) {
+            throw IllegalStateException("Unable to start $method foreground service")
         }
         prefs.setEnabled(true)
         Log.i(TAG, "Enabled via automation (method=$method)")

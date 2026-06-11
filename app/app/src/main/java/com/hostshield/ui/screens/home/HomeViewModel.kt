@@ -24,6 +24,7 @@ import com.hostshield.service.HostsUpdateWorker
 import com.hostshield.service.IptablesManager
 import com.hostshield.service.NflogReader
 import com.hostshield.service.DnsProxyService
+import com.hostshield.service.ProtectionServiceStarter
 import com.hostshield.service.RootDnsService
 import com.hostshield.service.VpnRecoveryAdvisory
 import com.hostshield.util.PrivacyScorer
@@ -679,7 +680,9 @@ class HomeViewModel @Inject constructor(
             )
 
             // Start DNS proxy service
-            RootDnsService.start(getApplication())
+            if (!RootDnsService.start(getApplication(), "HomeViewModel.applyRootBlocking")) {
+                throw IllegalStateException("Unable to start root DNS foreground service")
+            }
 
             prefs.setEnabled(true)
             prefs.setLastApplyTime(System.currentTimeMillis())
@@ -766,7 +769,14 @@ class HomeViewModel @Inject constructor(
             val intent = Intent(getApplication(), DnsVpnService::class.java).apply {
                 action = DnsVpnService.ACTION_START
             }
-            getApplication<Application>().startForegroundService(intent)
+            if (!ProtectionServiceStarter.startForegroundService(
+                    getApplication(),
+                    intent,
+                    "HomeViewModel.applyVpnBlocking"
+                )
+            ) {
+                throw IllegalStateException("Unable to start VPN foreground service")
+            }
 
             prefs.setEnabled(true)
             prefs.setBlockMethod(BlockMethod.VPN)
@@ -839,7 +849,23 @@ class HomeViewModel @Inject constructor(
                     val intent = Intent(getApplication(), DnsVpnService::class.java).apply {
                         action = DnsVpnService.ACTION_START
                     }
-                    getApplication<Application>().startForegroundService(intent)
+                    if (!ProtectionServiceStarter.startForegroundService(
+                            getApplication(),
+                            intent,
+                            "HomeViewModel.resumeBlockingIfNeeded"
+                        )
+                    ) {
+                        prefs.setEnabled(false)
+                        _uiState.update {
+                            it.copy(
+                                isEnabled = false,
+                                isApplying = false,
+                                progressMessage = "",
+                                errorMessage = "Android blocked protection restart. Open HostShield and enable protection again."
+                            )
+                        }
+                        return@launch
+                    }
 
                     _uiState.update {
                         it.copy(
@@ -852,9 +878,18 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { it.copy(progressMessage = "Rebuilding blocklist...") }
                     buildBlocklistHolder()
                     _uiState.update { it.copy(progressMessage = "Starting DNS proxy...") }
-                    getApplication<Application>().startForegroundService(
-                        Intent(getApplication(), DnsProxyService::class.java)
-                    )
+                    if (!DnsProxyService.start(getApplication(), "HomeViewModel.resumeBlockingIfNeeded")) {
+                        prefs.setEnabled(false)
+                        _uiState.update {
+                            it.copy(
+                                isEnabled = false,
+                                isApplying = false,
+                                progressMessage = "",
+                                errorMessage = "Android blocked DNS proxy restart. Open HostShield and enable protection again."
+                            )
+                        }
+                        return@launch
+                    }
                     _uiState.update {
                         it.copy(
                             activeMethod = BlockMethod.DNS_PROXY,

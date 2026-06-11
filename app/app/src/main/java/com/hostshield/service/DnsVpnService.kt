@@ -410,8 +410,7 @@ class DnsVpnService : VpnService() {
             ACTION_START -> {
                 ServiceCompat.startForeground(
                     this, NOTIFICATION_ID, buildNotification(0),
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
+                    ProtectionForegroundServiceTypes.runtimeType()
                 )
                 serviceScope.launch { startVpn() }
             }
@@ -420,8 +419,7 @@ class DnsVpnService : VpnService() {
                 // Re-promote to foreground and restart the VPN if prefs say we should be on.
                 ServiceCompat.startForeground(
                     this, NOTIFICATION_ID, buildNotification(0),
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
+                    ProtectionForegroundServiceTypes.runtimeType()
                 )
                 serviceScope.launch {
                     val shouldRun = prefs.isEnabled.first()
@@ -438,6 +436,29 @@ class DnsVpnService : VpnService() {
     }
 
     override fun onRevoke() { stopVpn(); super.onRevoke() }
+
+    override fun onTimeout(startId: Int) {
+        handleForegroundServiceTimeout(startId, 0)
+    }
+
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        handleForegroundServiceTimeout(startId, fgsType)
+    }
+
+    private fun handleForegroundServiceTimeout(startId: Int, fgsType: Int) {
+        Log.w(TAG, "Foreground service timeout received (startId=$startId, type=$fgsType)")
+        diagnosticEvents.recordBlocking(
+            DiagnosticEventType.FOREGROUND_SERVICE_TIMEOUT,
+            "VPN foreground service timeout",
+            mapOf(
+                "service" to "DnsVpnService",
+                "start_id" to startId,
+                "fgs_type" to fgsType,
+                "uptime_ms" to if (vpnStartTime > 0) System.currentTimeMillis() - vpnStartTime else 0L
+            )
+        )
+        stopVpn()
+    }
 
     /**
      * Called when user swipes app from recents. Do NOT stop the VPN.

@@ -1,9 +1,9 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.5.9-blue)
+![Version](https://img.shields.io/badge/version-6.6.0-blue)
 ![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
@@ -364,6 +364,9 @@ HostShield focuses on local DNS blocking with a curated gallery of 50+ blocklist
 **Does it work with other VPNs?**
 In VPN mode: no — Android only allows one VPN at a time. In root mode: yes — iptables rules work alongside any VPN.
 
+**What happens on Android 15/16 if protection is killed or denied at boot?**
+Protection services use Android's `systemExempted` foreground-service type for VPN/root/proxy filtering, and each service records timeout events before shutting down cleanly. If Android denies a boot or background restart, HostShield records `foreground_service_start_failed` in the local diagnostic export and the Home screen asks the user to reopen the app and enable protection again.
+
 **Does it send data to any server?**
 No. All DNS filtering happens locally on-device. The only network requests are: downloading blocklist sources (user-configured URLs), DoH queries to the user-selected DNS provider, GeoIP database updates (MaxMind), optional city-level GeoIP fallback through ipapi.co, and optional remote DoH bypass / CNAME cloak list updates from GitHub.
 
@@ -376,13 +379,14 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.6.0** | Android 15/16 foreground-service resilience. Protection services now declare `systemExempted`, runtime foreground promotion uses the matching service type, service timeout callbacks record local diagnostics, and all protection restart surfaces record controlled start-failure events instead of crashing. |
 | **6.5.9** | DNSCrypt stamp and relay-route foundation. `sdns://` parsing now uses spec-width properties, preserves 32-byte DNSCrypt provider keys, parses Anonymized DNSCrypt relay stamps, and validates resolver-to-relay routes before building relay target prefixes. |
 | **6.5.8** | DoH3 resolver transport. Existing DoH now tries embedded-Cronet HTTP/3/QUIC first, accepts only actual `h3`/QUIC negotiation, labels successful query-log upstreams as `DoH3`, and falls back to the existing pinned OkHttp DoH path when HTTP/3 is unavailable. |
 | **6.5.7** | VPN route canonicalization. `VpnService.Builder.addRoute` paths now mask IPv4/IPv6 host bits before route insertion, preserving host routes while preventing Android 11+ validation failures for user-provided network prefixes. |
 | **6.5.6** | Magisk 26+ mount-master hardening. Root firewall command paths now detect Magisk 26+ and prefer libsu's mount-master shell for `iptables`, `ip6tables`, and route-localnet sysctl work, with focused version-gate coverage. |
 | **6.5.5** | TCP DNS fallback verification. Added shared RFC 7766 truncation handling, wired IPv6 UDP forwarding through the same `TC=1` TCP retry path as IPv4, and covered path-MTU-sized truncated responses with a 200 ms retry-start regression. |
 | **6.5.4** | Hot-reload blocklist hardening. Production rebuild paths now use `BlocklistHolder.updateAsync()` so trie construction happens off the caller thread before the single snapshot swap, with concurrent-reader regression coverage. |
-| **6.5.3** | Doze/App Standby resilience pass. Moved protection foreground services to `dataSync`, documented every WorkManager job, kept blocklist refresh expedited for immediate runs, and added a 60-second VPN heartbeat with structured kill/fd-failure events. |
+| **6.5.3** | Doze/App Standby resilience pass. Moved protection foreground services to explicit foreground-service type declarations, documented every WorkManager job, kept blocklist refresh expedited for immediate runs, and added a 60-second VPN heartbeat with structured kill/fd-failure events. |
 | **6.5.2** | Android 16 always-on VPN recovery advisory. Detects the always-on + lockdown + validated-network + zero-tunnel-ingress pattern, surfaces a Home recovery banner, and offers a rooted device restart action for the post-update VPN-stack corruption case. |
 | **6.5.1** | Premium UX/UI polish pass. Refined Compose shape and typography consistency, improved first-run onboarding layout and copy, fixed page-indicator/CTA collisions, converted the feature overview to a compact grid, anchored DNS resolver actions, moved Sources/Rules actions into header controls, improved loading/empty/error/selection/accessibility states, fixed debug automation permission side-by-side install, and corrected WebDAV failed-listing handling. |
 | **6.5.0** | Engineering hardening pass. Parental PIN fail-closed + brute-force lockout, PBKDF2 iterations raised to 600k, backup decrypt off-by-one fixed, RootUtil hostname injection guard, device-transfer no longer leaks encrypted prefs, widget receiver no longer launchable by other apps. ACTION_PAUSE > 10s now works via WorkManager (was killed by `goAsync()` timeout). TCP DNS fallback on TC=1 (RFC 7766). BlocklistHolder atomic snapshot + real LRU decision cache. DoH/DoT response size caps + cert-pin diagnostics. DnsCache RFC 2308 MINIMUM=0 honored, RR cap raised. Onboarding DNS choice now persisted. Sources URL validation + category picker. Settings update-check throttled. CHANGELOG / README version drift repaired. |

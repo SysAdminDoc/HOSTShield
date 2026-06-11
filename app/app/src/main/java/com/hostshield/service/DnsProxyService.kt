@@ -7,7 +7,6 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -76,9 +75,11 @@ class DnsProxyService : Service() {
         )
         val liveQueries: SharedFlow<DnsLogEntry> = liveQueriesFlow
 
-        fun start(context: Context) {
-            context.startForegroundService(
-                Intent(context, DnsProxyService::class.java).apply { action = ACTION_START }
+        fun start(context: Context, caller: String = "DnsProxyService.start"): Boolean {
+            return ProtectionServiceStarter.startForegroundService(
+                context,
+                Intent(context, DnsProxyService::class.java).apply { action = ACTION_START },
+                caller
             )
         }
 
@@ -128,7 +129,7 @@ class DnsProxyService : Service() {
                     Log.i(TAG, "Starting DNS proxy service")
                     ServiceCompat.startForeground(
                         this, NOTIFICATION_ID, buildNotification("Initializing..."),
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                        ProtectionForegroundServiceTypes.runtimeType()
                     )
                     serviceScope.launch { startProxy() }
                 }
@@ -142,7 +143,7 @@ class DnsProxyService : Service() {
                 Log.i(TAG, "System restarted DNS proxy service -- resuming")
                 ServiceCompat.startForeground(
                     this, NOTIFICATION_ID, buildNotification("Resuming..."),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    ProtectionForegroundServiceTypes.runtimeType()
                 )
                 serviceScope.launch { startProxy() }
             }
@@ -153,6 +154,20 @@ class DnsProxyService : Service() {
     override fun onDestroy() {
         stopProxy()
         super.onDestroy()
+    }
+
+    override fun onTimeout(startId: Int) {
+        handleForegroundServiceTimeout(startId, 0)
+    }
+
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        handleForegroundServiceTimeout(startId, fgsType)
+    }
+
+    private fun handleForegroundServiceTimeout(startId: Int, fgsType: Int) {
+        Log.w(TAG, "Foreground service timeout received (startId=$startId, type=$fgsType)")
+        stopProxy()
+        stopSelf(startId)
     }
 
     // ── Proxy core ──────────────────────────────────────────────────

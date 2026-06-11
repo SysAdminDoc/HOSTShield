@@ -89,9 +89,16 @@ class BlockingScheduleWorker @AssistedInject constructor(
                         BlockMethod.VPN -> {
                             val intent = Intent(applicationContext, DnsVpnService::class.java)
                                 .apply { action = DnsVpnService.ACTION_START }
-                            applicationContext.startForegroundService(intent)
+                            ProtectionServiceStarter.startForegroundService(
+                                applicationContext,
+                                intent,
+                                "BlockingScheduleWorker"
+                            )
                         }
-                        BlockMethod.ROOT_HOSTS -> RootDnsService.start(applicationContext)
+                        BlockMethod.ROOT_HOSTS -> RootDnsService.start(
+                            applicationContext,
+                            "BlockingScheduleWorker"
+                        )
                         else -> { }
                     }
                 } else {

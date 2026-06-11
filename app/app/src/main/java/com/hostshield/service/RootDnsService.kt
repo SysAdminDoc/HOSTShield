@@ -13,6 +13,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.hostshield.MainActivity
 import com.hostshield.R
+import com.hostshield.util.DiagnosticEventStore
+import com.hostshield.util.DiagnosticEventType
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -36,11 +38,11 @@ class RootDnsService : Service() {
         private const val NOTIFICATION_ID = 2
         private const val TAG = "RootDnsService"
 
-        fun start(context: Context) {
+        fun start(context: Context, caller: String = "RootDnsService.start"): Boolean {
             val intent = Intent(context, RootDnsService::class.java).apply {
                 action = ACTION_START
             }
-            context.startForegroundService(intent)
+            return ProtectionServiceStarter.startForegroundService(context, intent, caller)
         }
 
         fun stop(context: Context) {
@@ -53,6 +55,7 @@ class RootDnsService : Service() {
 
     @Inject lateinit var rootDnsLogger: RootDnsLogger
     @Inject lateinit var blockNotificationService: BlockNotificationService
+    @Inject lateinit var diagnosticEvents: DiagnosticEventStore
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -67,7 +70,7 @@ class RootDnsService : Service() {
                 Log.i(TAG, "Starting root DNS service")
                 ServiceCompat.startForeground(
                     this, NOTIFICATION_ID, buildNotification("Initializing..."),
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    ProtectionForegroundServiceTypes.runtimeType()
                 )
                 rootDnsLogger.start()
                 blockNotificationService.start()
@@ -86,7 +89,7 @@ class RootDnsService : Service() {
                 Log.i(TAG, "System restarted root DNS service -- resuming")
                 ServiceCompat.startForeground(
                     this, NOTIFICATION_ID, buildNotification("Resuming..."),
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    ProtectionForegroundServiceTypes.runtimeType()
                 )
                 rootDnsLogger.start()
                 blockNotificationService.start()
@@ -100,6 +103,31 @@ class RootDnsService : Service() {
         rootDnsLogger.stop()
         blockNotificationService.stop()
         super.onDestroy()
+    }
+
+    override fun onTimeout(startId: Int) {
+        handleForegroundServiceTimeout(startId, 0)
+    }
+
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        handleForegroundServiceTimeout(startId, fgsType)
+    }
+
+    private fun handleForegroundServiceTimeout(startId: Int, fgsType: Int) {
+        Log.w(TAG, "Foreground service timeout received (startId=$startId, type=$fgsType)")
+        diagnosticEvents.recordBlocking(
+            DiagnosticEventType.FOREGROUND_SERVICE_TIMEOUT,
+            "Root DNS foreground service timeout",
+            mapOf(
+                "service" to "RootDnsService",
+                "start_id" to startId,
+                "fgs_type" to fgsType
+            )
+        )
+        rootDnsLogger.stop()
+        blockNotificationService.stop()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf(startId)
     }
 
     private fun updateNotification(text: String) {

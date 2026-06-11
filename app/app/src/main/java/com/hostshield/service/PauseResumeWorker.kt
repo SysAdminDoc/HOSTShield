@@ -52,17 +52,17 @@ class PauseResumeWorker @AssistedInject constructor(
             val method = prefs.blockMethod.first()
             when (method) {
                 BlockMethod.VPN -> {
-                    appContext.startForegroundService(
+                    ProtectionServiceStarter.startForegroundService(
+                        appContext,
                         Intent(appContext, DnsVpnService::class.java).apply {
                             action = DnsVpnService.ACTION_START
-                        }
+                        },
+                        "PauseResumeWorker"
                     )
                 }
-                BlockMethod.ROOT_HOSTS -> RootDnsService.start(appContext)
+                BlockMethod.ROOT_HOSTS -> RootDnsService.start(appContext, "PauseResumeWorker")
                 BlockMethod.DNS_PROXY -> {
-                    appContext.startForegroundService(
-                        Intent(appContext, DnsProxyService::class.java)
-                    )
+                    DnsProxyService.start(appContext, "PauseResumeWorker")
                 }
                 BlockMethod.DISABLED -> { /* user disabled while paused — respect that */ }
             }

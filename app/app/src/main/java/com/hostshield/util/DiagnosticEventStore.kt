@@ -23,7 +23,9 @@ enum class DiagnosticEventType(val wireName: String) {
     RESOLVER_FAILOVER("resolver_failover"),
     DOZE_RESUME("doze_resume"),
     ROOT_COMMAND_FAILED("root_command_failed"),
-    BACKUP_IMPORT_FAILED("backup_import_failed")
+    BACKUP_IMPORT_FAILED("backup_import_failed"),
+    FOREGROUND_SERVICE_TIMEOUT("foreground_service_timeout"),
+    FOREGROUND_SERVICE_START_FAILED("foreground_service_start_failed")
 }
 
 data class DiagnosticEventSummary(

@@ -63,16 +63,19 @@ class BootReceiver : BroadcastReceiver() {
                         val vpnIntent = Intent(context, DnsVpnService::class.java).apply {
                             action = DnsVpnService.ACTION_START
                         }
-                        context.startForegroundService(vpnIntent)
-                        Log.i("BootReceiver", "VPN service restarted")
+                        if (ProtectionServiceStarter.startForegroundService(context, vpnIntent, "BootReceiver")) {
+                            Log.i("BootReceiver", "VPN service restarted")
+                        }
                     }
                     BlockMethod.ROOT_HOSTS -> {
-                        RootDnsService.start(context)
-                        Log.i("BootReceiver", "Root DNS service restarted")
+                        if (RootDnsService.start(context, "BootReceiver")) {
+                            Log.i("BootReceiver", "Root DNS service restarted")
+                        }
                     }
                     BlockMethod.DNS_PROXY -> {
-                        context.startForegroundService(Intent(context, DnsProxyService::class.java))
-                        Log.i("BootReceiver", "DNS proxy service restarted")
+                        if (DnsProxyService.start(context, "BootReceiver")) {
+                            Log.i("BootReceiver", "DNS proxy service restarted")
+                        }
                     }
                     BlockMethod.DISABLED -> { }
                 }

@@ -1,14 +1,14 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.5.9-blue)
+![Version](https://img.shields.io/badge/version-6.6.0-blue)
 ![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
 > System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, offline GeoIP, and a professional AMOLED dark UI with an optional high-contrast mode.
 
-Current module baseline: v6.5.9, versionCode 67.
+Current module baseline: v6.6.0, versionCode 68.
 
 ## Quick Start
 
@@ -101,6 +101,8 @@ adb shell am broadcast -a com.hostshield.action.REFRESH_BLOCKLIST -n com.hostshi
 **VPN mode vs Root mode?** Root mode: zero battery overhead, requires rooted device. VPN mode: works on any device, ~1-3% battery, persistent notification.
 
 **Why does it use a VPN?** Entirely local — no traffic goes to a remote server. Standard technique used by NetGuard, RethinkDNS, Blokada.
+
+**Android 15/16 foreground-service behavior?** VPN/root/proxy protection uses `systemExempted` foreground services. Timeout and denied background-start events are written to the local diagnostic export as `foreground_service_timeout` or `foreground_service_start_failed`.
 
 **How is this different from AdAway?** CNAME cloaking detection, DNS response caching, DoH with cert pinning, per-app firewall, live query streaming, 7-day trend charts, and modern Material 3 dark UI.
 

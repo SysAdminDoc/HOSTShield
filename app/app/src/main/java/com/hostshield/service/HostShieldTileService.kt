@@ -83,13 +83,17 @@ class HostShieldTileService : TileService() {
                     BlockMethod.VPN -> {
                         val intent = Intent(this@HostShieldTileService, DnsVpnService::class.java)
                             .apply { action = DnsVpnService.ACTION_START }
-                        startForegroundService(intent)
+                        ProtectionServiceStarter.startForegroundService(
+                            this@HostShieldTileService,
+                            intent,
+                            "HostShieldTileService"
+                        )
                     }
                     BlockMethod.ROOT_HOSTS -> {
-                        RootDnsService.start(this@HostShieldTileService)
+                        RootDnsService.start(this@HostShieldTileService, "HostShieldTileService")
                     }
                     BlockMethod.DNS_PROXY -> {
-                        startForegroundService(Intent(this@HostShieldTileService, DnsProxyService::class.java))
+                        DnsProxyService.start(this@HostShieldTileService, "HostShieldTileService")
                     }
                     BlockMethod.DISABLED -> { }
                 }
