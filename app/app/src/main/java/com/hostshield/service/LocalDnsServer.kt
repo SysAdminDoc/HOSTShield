@@ -1,8 +1,10 @@
 package com.hostshield.service
 
 import android.util.Log
+import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.domain.BlocklistHolder
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -26,7 +28,8 @@ import javax.inject.Singleton
 class LocalDnsServer @Inject constructor(
     private val blocklist: BlocklistHolder,
     private val dohResolver: DohResolver,
-    private val dotResolver: DotResolver
+    private val dotResolver: DotResolver,
+    private val prefs: AppPreferences
 ) {
     companion object {
         private const val TAG = "LocalDnsServer"
@@ -46,9 +49,11 @@ class LocalDnsServer @Inject constructor(
     private var serverSocket: DatagramSocket? = null
     private var serverJob: Job? = null
     private var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val rateLimiter = LocalDnsClientRateLimiter()
 
     @Volatile var port = DEFAULT_PORT; private set
     @Volatile var upstreamDns = UPSTREAM_DNS
+    @Volatile var allowExternalClients = false
     @Volatile var useDoH = false
     @Volatile var dohProvider = DohResolver.Provider.CLOUDFLARE
     @Volatile var useDoT = false
@@ -58,7 +63,11 @@ class LocalDnsServer @Inject constructor(
      * Start the local DNS server on the given port.
      * Returns the actual port used, or -1 on failure.
      */
-    fun start(listenPort: Int = DEFAULT_PORT, upstream: String = UPSTREAM_DNS): Int {
+    fun start(
+        listenPort: Int = DEFAULT_PORT,
+        upstream: String = UPSTREAM_DNS,
+        allowExternalClients: Boolean = false
+    ): Int {
         if (isRunning) {
             Log.w(TAG, "Already running on port $port")
             return port
@@ -66,6 +75,8 @@ class LocalDnsServer @Inject constructor(
 
         return try {
             upstreamDns = upstream
+            this.allowExternalClients = allowExternalClients
+            rateLimiter.clear()
             val socket = DatagramSocket(listenPort)
             socket.reuseAddress = true
             serverSocket = socket
@@ -97,6 +108,7 @@ class LocalDnsServer @Inject constructor(
     }
 
     private suspend fun runServer(socket: DatagramSocket) {
+        refreshResolverPreferences()
         val buf = ByteArray(BUFFER_SIZE)
         while (isRunning && !socket.isClosed) {
             try {
@@ -119,6 +131,29 @@ class LocalDnsServer @Inject constructor(
         }
     }
 
+    private suspend fun refreshResolverPreferences() {
+        try {
+            val customUpstream = prefs.customUpstreamDns.first()
+                .split(",")
+                .map { it.trim() }
+                .firstOrNull { it.isNotBlank() }
+            if (customUpstream != null) {
+                upstreamDns = customUpstream
+            }
+            useDoH = prefs.dohEnabled.first()
+            dohProvider = DohResolver.Provider.fromId(prefs.dohProvider.first())
+            useDoT = prefs.dotEnabled.first()
+            dotProvider = DotResolver.Provider.fromId(prefs.dotProvider.first())
+            Log.i(
+                TAG,
+                "Local DNS resolver chain configured: DoT=${if (useDoT) dotProvider.name else "off"}, " +
+                    "DoH=${if (useDoH) dohProvider.name else "off"}, upstream=$upstreamDns"
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to load local DNS resolver preferences: ${e.message}")
+        }
+    }
+
     private suspend fun handleQuery(
         serverSock: DatagramSocket,
         query: ByteArray,
@@ -126,14 +161,22 @@ class LocalDnsServer @Inject constructor(
         clientPort: Int
     ) {
         try {
+            if (!isAllowedLocalDnsClient(clientAddr, allowExternalClients)) {
+                Log.w(TAG, "Dropping local DNS query from non-local client ${clientAddr.hostAddress}")
+                return
+            }
+            if (!rateLimiter.tryAcquire(clientAddr)) {
+                Log.w(TAG, "Rate-limited local DNS client ${clientAddr.hostAddress}")
+                return
+            }
             queriesHandledAtomic.incrementAndGet()
 
             // Parse domain from DNS query
-            val domain = parseDnsQueryDomain(query)
+            val domain = DnsPacketBuilder.parseDomain(query)
             if (domain == null) {
                 // Can't parse — forward as-is
                 val resp = forwardToUpstream(query)
-                if (resp != null) sendResponse(serverSock, resp, clientAddr, clientPort)
+                if (resp != null) sendResponse(serverSock, query, resp, clientAddr, clientPort)
                 return
             }
 
@@ -141,15 +184,15 @@ class LocalDnsServer @Inject constructor(
             if (blocklist.isBlocked(domain)) {
                 queriesBlockedAtomic.incrementAndGet()
                 Log.d(TAG, "BLOCKED (local) $domain from ${clientAddr.hostAddress}")
-                val blockResp = buildNxdomainResponse(query)
-                if (blockResp != null) sendResponse(serverSock, blockResp, clientAddr, clientPort)
+                val blockResp = DnsPacketBuilder.buildNxdomain(query)
+                sendResponse(serverSock, query, blockResp, clientAddr, clientPort)
                 return
             }
 
             // Forward to upstream
             val resp = forwardToUpstream(query)
             if (resp != null) {
-                sendResponse(serverSock, resp, clientAddr, clientPort)
+                sendResponse(serverSock, query, resp, clientAddr, clientPort)
             }
         } catch (e: Exception) {
             Log.w(TAG, "Query handling error: ${e.message}")
@@ -198,70 +241,18 @@ class LocalDnsServer @Inject constructor(
 
     private fun sendResponse(
         serverSock: DatagramSocket,
+        query: ByteArray,
         response: ByteArray,
         clientAddr: InetAddress,
         clientPort: Int
     ) {
         try {
+            val udpResponse = localDnsUdpResponse(query, response)
             synchronized(sendLock) {
-                serverSock.send(DatagramPacket(response, response.size, clientAddr, clientPort))
+                serverSock.send(DatagramPacket(udpResponse, udpResponse.size, clientAddr, clientPort))
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to send response: ${e.message}")
         }
-    }
-
-    /**
-     * Parse the query domain from a DNS packet.
-     * Minimal parser — just extracts the QNAME from the question section.
-     */
-    private fun parseDnsQueryDomain(dns: ByteArray): String? {
-        if (dns.size < 12) return null
-        val qdCount = ((dns[4].toInt() and 0xFF) shl 8) or (dns[5].toInt() and 0xFF)
-        if (qdCount == 0) return null
-
-        val sb = StringBuilder()
-        var pos = 12
-        while (pos < dns.size) {
-            val len = dns[pos].toInt() and 0xFF
-            if (len == 0) break
-            if (len and 0xC0 == 0xC0) break // compression pointer — shouldn't appear in question
-            pos++
-            if (pos + len > dns.size) return null
-            if (sb.isNotEmpty()) sb.append('.')
-            for (i in 0 until len) {
-                sb.append(dns[pos + i].toInt().toChar())
-            }
-            pos += len
-        }
-        return if (sb.isNotEmpty()) sb.toString().lowercase() else null
-    }
-
-    /**
-     * Build an NXDOMAIN response for blocked queries.
-     */
-    private fun buildNxdomainResponse(query: ByteArray): ByteArray? {
-        if (query.size < 12) return null
-
-        // Find end of question section
-        var qEnd = 12
-        while (qEnd < query.size) {
-            val len = query[qEnd].toInt() and 0xFF
-            if (len == 0) { qEnd++; break }
-            if (len and 0xC0 == 0xC0) { qEnd += 2; break }
-            qEnd += 1 + len
-        }
-        qEnd += 4 // QTYPE + QCLASS
-        if (qEnd > query.size) return null
-
-        val resp = query.copyOf(qEnd)
-        // Set QR=1 (response), RD=1, RA=1, RCODE=3 (NXDOMAIN)
-        resp[2] = 0x81.toByte()
-        resp[3] = 0x83.toByte()
-        // ANCOUNT=0, NSCOUNT=0, ARCOUNT=0
-        resp[6] = 0; resp[7] = 0
-        resp[8] = 0; resp[9] = 0
-        resp[10] = 0; resp[11] = 0
-        return resp
     }
 }

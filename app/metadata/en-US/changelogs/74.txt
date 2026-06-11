@@ -1,0 +1,7 @@
+v6.6.6 - Local DNS Server Abuse Hardening
+
+- LAN DNS server mode now rejects public, non-local clients by default while still allowing private, loopback, link-local, and IPv6 ULA clients.
+- Added per-client query throttling to reduce open-resolver and amplification abuse risk on hostile networks.
+- Oversized UDP upstream responses now return a truncated DNS response with TC=1 so clients can retry over TCP instead of receiving oversized datagrams.
+- Local DNS blocking now uses the shared hardened DNS packet builder for blocked responses.
+- Local DNS startup loads configured custom upstream, DoT, and DoH preferences before falling back to plaintext UDP.

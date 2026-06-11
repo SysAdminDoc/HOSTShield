@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.6.5-blue)
+![Version](https://img.shields.io/badge/version-6.6.6-blue)
 ![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -176,7 +176,7 @@
 | **15 Content Categories** | Gaming, Streaming, Social Media, News, Shopping, Dating, Gambling, Adult, VPN/Proxy, Malware, and more — toggleable per category |
 | **Parental Controls** | 3 age profiles (Child, Teen, Adult) with automatic category blocking per profile |
 | **PIN Lock** | SHA-256 hashed PIN protects parental control settings from bypass |
-| **Local DNS Server** | "Portable Pi-hole" mode on port 5353 — other LAN devices can use phone as DNS filter |
+| **Local DNS Server** | "Portable Pi-hole" mode on port 5353 — private-network clients can use the phone as a DNS filter |
 | **DNS Proxy Mode** | No-VPN, no-root DNS blocking via local proxy (tri-mode: VPN / Root / Proxy) |
 | **Safe Search Enforcement** | DNS-level rewriting for Google, Bing, DuckDuckGo, YouTube |
 
@@ -384,6 +384,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.6.6** | Local DNS server abuse hardening. LAN DNS mode now rejects public clients by default, applies per-client query throttling, emits TC=1 for oversized UDP answers, reuses the shared DNS packet builder, and loads configured DoT/DoH/custom upstream preferences before plaintext fallback. |
 | **6.6.5** | Wi-Fi-only sync hardening. Periodic threat-intel and source-health refresh workers now use the same Wi-Fi-only network constraint as blocklist updates, and changing the setting refreshes existing WorkManager registrations instead of leaving stale constraints behind. |
 | **6.6.4** | Threat-intel parser hardening. Whitespace-separated compromised-IP feeds now parse into CIDRs correctly, invalid/broad tokens are rejected, duplicate feed tokens are de-duplicated, partial feed refreshes report degraded status while preserving successfully parsed data, and the release-doc gate now allows scoped per-version store changelogs while keeping durable metadata checks strict. |
 | **6.6.3** | Release gate consolidation. GitHub releases now run release-doc checks, Cronet posture validation, full unit tests, full APK build, Play AAB build, provenance/checksum generation, and artifact upload before publishing. |
