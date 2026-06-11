@@ -1113,16 +1113,13 @@ class DnsVpnService : VpnService() {
 
         // v6.0: Safe Search enforcement — intercept search engine queries
         if (safeSearchEnabled && safeSearchEnforcer.isSafeSearchDomain(domain)) {
-            val safeIp = safeSearchEnforcer.getSafeSearchIp(domain)
-            if (safeIp != null) {
-                val safeResp = safeSearchEnforcer.buildSafeResponse(dns, safeIp)
-                if (safeResp != null) {
-                    Log.d(TAG, "SAFE-SEARCH $domain -> $safeIp")
-                    logAsync(domain, false, app, qtype)
-                    wrapResponseV4(packet, ihl, safeResp)?.let { writeChannel.send(it) }
-                    allowedCount.incrementAndGet()
-                    return
-                }
+            val safeResp = safeSearchEnforcer.buildSafeResponse(dns, domain)
+            if (safeResp != null) {
+                Log.d(TAG, "SAFE-SEARCH $domain")
+                logAsync(domain, false, app, qtype)
+                wrapResponseV4(packet, ihl, safeResp)?.let { writeChannel.send(it) }
+                allowedCount.incrementAndGet()
+                return
             }
         }
 
@@ -1266,16 +1263,13 @@ class DnsVpnService : VpnService() {
 
         // v6.0: Safe Search enforcement (IPv6)
         if (safeSearchEnabled && safeSearchEnforcer.isSafeSearchDomain(domain)) {
-            val safeIp = safeSearchEnforcer.getSafeSearchIp(domain)
-            if (safeIp != null) {
-                val safeResp = safeSearchEnforcer.buildSafeResponse(dns, safeIp)
-                if (safeResp != null) {
-                    Log.d(TAG, "SAFE-SEARCH (v6) $domain -> $safeIp")
-                    logAsync(domain, false, app, qtype)
-                    wrapResponseV6(packet, hdr, safeResp)?.let { writeChannel.send(it) }
-                    allowedCount.incrementAndGet()
-                    return
-                }
+            val safeResp = safeSearchEnforcer.buildSafeResponse(dns, domain)
+            if (safeResp != null) {
+                Log.d(TAG, "SAFE-SEARCH (v6) $domain")
+                logAsync(domain, false, app, qtype)
+                wrapResponseV6(packet, hdr, safeResp)?.let { writeChannel.send(it) }
+                allowedCount.incrementAndGet()
+                return
             }
         }
 

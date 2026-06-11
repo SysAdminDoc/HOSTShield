@@ -1,0 +1,7 @@
+v6.6.7 - Safe Search Correctness Hardening
+
+- Safe Search DNS enforcement now covers Google country and region domains such as google.co.uk and google.com.br.
+- A and AAAA queries now receive query-type-correct safe endpoint responses, including IPv4-mapped safe IPv6 where appropriate.
+- Safe endpoints are resolved through their canonical hostnames with a local cache and bundled fallback addresses.
+- Services without safe IPv6 answers return NODATA for AAAA instead of an invalid A response.
+- HTTPS, SVCB, and other metadata queries return NODATA so clients do not learn alternate unsafe endpoints during enforcement.

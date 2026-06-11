@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.6.6-blue)
+![Version](https://img.shields.io/badge/version-6.6.7-blue)
 ![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -384,6 +384,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.6.7** | Safe Search correctness hardening. DNS-level enforcement now handles Google country domains, answers A and AAAA queries with safe endpoints or NODATA as appropriate, suppresses HTTPS/SVCB metadata answers, and caches resolved canonical safe-search endpoints with bundled fallbacks. |
 | **6.6.6** | Local DNS server abuse hardening. LAN DNS mode now rejects public clients by default, applies per-client query throttling, emits TC=1 for oversized UDP answers, reuses the shared DNS packet builder, and loads configured DoT/DoH/custom upstream preferences before plaintext fallback. |
 | **6.6.5** | Wi-Fi-only sync hardening. Periodic threat-intel and source-health refresh workers now use the same Wi-Fi-only network constraint as blocklist updates, and changing the setting refreshes existing WorkManager registrations instead of leaving stale constraints behind. |
 | **6.6.4** | Threat-intel parser hardening. Whitespace-separated compromised-IP feeds now parse into CIDRs correctly, invalid/broad tokens are rejected, duplicate feed tokens are de-duplicated, partial feed refreshes report degraded status while preserving successfully parsed data, and the release-doc gate now allows scoped per-version store changelogs while keeping durable metadata checks strict. |
