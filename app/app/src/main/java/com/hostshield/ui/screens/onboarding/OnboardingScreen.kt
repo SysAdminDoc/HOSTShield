@@ -98,7 +98,7 @@ fun OnboardingScreen(
                 )
                 4 -> if (hasPrivateDnsIssue) {
                     PrivateDnsWarningPage(
-                        status = privateDnsStatus!!,
+                        status = privateDnsStatus,
                         onNext = { page = totalPages - 1 }
                     )
                 } else {

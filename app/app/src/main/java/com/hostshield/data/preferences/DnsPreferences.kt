@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 @Singleton
 class DnsPreferences @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private val ds get() = context.hostShieldDataStore
 

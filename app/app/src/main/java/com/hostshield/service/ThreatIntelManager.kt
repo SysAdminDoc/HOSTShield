@@ -27,7 +27,7 @@ import javax.inject.Singleton
 
 @Singleton
 class ThreatIntelManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val okHttpClient: OkHttpClient
 ) {
     companion object {

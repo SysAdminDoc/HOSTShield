@@ -18,7 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 class PrivateDnsDetector @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val diagnosticEvents: DiagnosticEventStore
 ) {
     enum class PrivateDnsMode {

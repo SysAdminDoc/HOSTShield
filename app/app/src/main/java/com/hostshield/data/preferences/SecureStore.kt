@@ -25,7 +25,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class SecureStore @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private val prefs: SharedPreferences by lazy {
         context.getSharedPreferences(STORE_PREFS_NAME, Context.MODE_PRIVATE)

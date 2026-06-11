@@ -3,6 +3,7 @@ package com.hostshield.ui.screens.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -54,7 +55,7 @@ fun ProtectionSettingsSection(
         SettingsRow(
             "Connection log",
             "View blocked connections from iptables",
-            Icons.Filled.List,
+            Icons.AutoMirrored.Filled.List,
             onClick = onNavigateToConnectionLog
         )
         Spacer(Modifier.height(4.dp))

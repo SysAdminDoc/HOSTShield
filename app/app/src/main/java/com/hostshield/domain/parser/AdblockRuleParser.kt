@@ -236,7 +236,7 @@ object AdblockRuleParser {
                     m == "badfilter" -> isBadfilter = true
                     m.startsWith("dnstype=") -> {
                         val typeStr = m.removePrefix("dnstype=")
-                        dnsTypes = mutableSetOf()
+                        val parsedDnsTypes = mutableSetOf<Int>()
                         var hasNegated = false
                         var hasPositive = false
                         for (t in typeStr.split('|')) {
@@ -244,13 +244,13 @@ object AdblockRuleParser {
                             val typeName = (if (negated) t.removePrefix("~") else t).uppercase()
                             val typeVal = DNS_TYPES[typeName]
                             if (typeVal != null) {
-                                dnsTypes!!.add(typeVal)
+                                parsedDnsTypes.add(typeVal)
                                 if (negated) hasNegated = true else hasPositive = true
                             }
                         }
                         // AdGuard doesn't support mixing negated and non-negated — pick one mode
                         dnsTypesNegated = hasNegated && !hasPositive
-                        if (dnsTypes!!.isEmpty()) dnsTypes = null
+                        dnsTypes = parsedDnsTypes.ifEmpty { null }
                     }
                     m.startsWith("denyallow=") -> {
                         val domains = m.removePrefix("denyallow=")
@@ -258,7 +258,7 @@ object AdblockRuleParser {
                             .map { it.trim().lowercase() }
                             .filter { it.isNotEmpty() }
                             .toMutableSet()
-                        if (denyAllowDomains!!.isEmpty()) denyAllowDomains = null
+                        if (denyAllowDomains.isNullOrEmpty()) denyAllowDomains = null
                     }
                     m.startsWith("dnsrewrite=") -> {
                         // DNS rewrite rules — skip for now (future feature)

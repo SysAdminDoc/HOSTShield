@@ -125,7 +125,6 @@ class DnsStampParser @Inject constructor() {
             DnsStamp.Protocol.ODOH_TARGET -> parseOdoHTarget(buf, dnssec, noLog, noFilter)
             DnsStamp.Protocol.DNSCRYPT_RELAY -> parseDnsCryptRelay(buf)
             DnsStamp.Protocol.ODOH_RELAY -> parseOdoHRelay(buf, dnssec, noLog, noFilter)
-            else -> null
         }
     }
 

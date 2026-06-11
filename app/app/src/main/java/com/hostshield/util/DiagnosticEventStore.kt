@@ -37,7 +37,7 @@ data class DiagnosticEventSummary(
 
 @Singleton
 class DiagnosticEventStore @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     companion object {
         private const val TAG = "DiagnosticEvents"

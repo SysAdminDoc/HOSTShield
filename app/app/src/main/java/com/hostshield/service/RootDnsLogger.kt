@@ -57,7 +57,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class RootDnsLogger @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val dnsLogDao: DnsLogDao,
     private val blockStatsDao: BlockStatsDao,
     private val blocklist: BlocklistHolder,

@@ -50,7 +50,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class IptablesManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val firewallRuleDao: FirewallRuleDao,
     private val iptablesBin: IptablesBinaryManager,
     private val rootShell: RootShellRunner

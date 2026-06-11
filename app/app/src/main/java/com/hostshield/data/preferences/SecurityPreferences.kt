@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SecurityPreferences @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val secureStore: SecureStore
 ) {
     private val ds get() = context.hostShieldDataStore
