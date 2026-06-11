@@ -39,6 +39,21 @@ function Get-GradleSetting {
     return $match.Groups[1].Value
 }
 
+function Get-GradleDependencyVersion {
+    param(
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][string]$Coordinate
+    )
+
+    $pattern = [regex]::Escape($Coordinate) + ':([^")]+)'
+    $match = [regex]::Match($Text, $pattern)
+    if (-not $match.Success) {
+        return "unknown"
+    }
+
+    return $match.Groups[1].Value
+}
+
 function Find-ApkSigner {
     $candidateRoots = @()
 
@@ -72,6 +87,28 @@ function Find-ApkSigner {
     return $null
 }
 
+function Find-JavaHome {
+    $candidates = @()
+
+    if ($env:JAVA_HOME) {
+        $candidates += $env:JAVA_HOME
+    }
+
+    $androidStudioJbr = Join-Path $env:ProgramFiles "Android\Android Studio\jbr"
+    if (Test-Path -LiteralPath $androidStudioJbr) {
+        $candidates += $androidStudioJbr
+    }
+
+    foreach ($candidate in $candidates | Select-Object -Unique) {
+        $javaExe = Join-Path $candidate "bin\java.exe"
+        if (Test-Path -LiteralPath $javaExe) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
 $apk = Resolve-RepoPath $ApkPath
 $outputRoot = if ([System.IO.Path]::IsPathRooted($OutputDir)) {
     $OutputDir
@@ -90,8 +127,9 @@ $versionCode = Get-GradleSetting $appBuild 'versionCode\s*=\s*(\d+)' "versionCod
 $compileSdk = Get-GradleSetting $appBuild 'compileSdk\s*=\s*(\d+)' "compileSdk"
 $minSdk = Get-GradleSetting $appBuild 'minSdk\s*=\s*(\d+)' "minSdk"
 $agpVersion = Get-GradleSetting $rootBuild 'com\.android\.application"\)\s+version\s+"([^"]+)"' "AGP version"
-$kotlinVersion = Get-GradleSetting $rootBuild 'org\.jetbrains\.kotlin\.android"\)\s+version\s+"([^"]+)"' "Kotlin version"
+$kotlinVersion = Get-GradleSetting $rootBuild 'org\.jetbrains\.kotlin\.(?:android|plugin\.compose)"\)\s+version\s+"([^"]+)"' "Kotlin version"
 $gradleVersion = Get-GradleSetting $wrapperProperties 'gradle-([0-9][^-]+)-bin\.zip' "Gradle version"
+$cronetEmbeddedVersion = Get-GradleDependencyVersion $appBuild 'org.chromium.net:cronet-embedded'
 
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
 $status = (& git -C $repoRoot status --short).Trim()
@@ -101,10 +139,16 @@ $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $apk).Hash.ToLowerInvariant
 $apkName = Split-Path -Leaf $apk
 
 $apkSigner = Find-ApkSigner
+$javaHome = Find-JavaHome
 $signerFingerprint = "unavailable"
 $apkSignerStatus = "apksigner not found"
 
 if ($apkSigner) {
+    if ($javaHome) {
+        $env:JAVA_HOME = $javaHome
+        $env:Path = (Join-Path $javaHome "bin") + [System.IO.Path]::PathSeparator + $env:Path
+    }
+
     $apkSignerOutput = & $apkSigner verify --verbose --print-certs $apk 2>&1
     $apkSignerStatus = ($apkSignerOutput -join "`n").Trim()
     if ($LASTEXITCODE -ne 0) {
@@ -137,6 +181,8 @@ $provenance = @(
     "| Gradle | $gradleVersion |",
     "| Android Gradle Plugin | $agpVersion |",
     "| Kotlin | $kotlinVersion |",
+    "| Cronet embedded | $cronetEmbeddedVersion |",
+    "| Java home | $(if ($javaHome) { $javaHome } else { 'unknown' }) |",
     "| compileSdk | $compileSdk |",
     "| minSdk | $minSdk |",
     "",

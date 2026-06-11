@@ -210,6 +210,7 @@ cd C:\Users\--\repos\HostShield
 
 # Release doc/provenance checks
 powershell -ExecutionPolicy Bypass -File .\tools\check-release-docs.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\check-cronet-posture.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 ```
 
