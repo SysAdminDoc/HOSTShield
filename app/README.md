@@ -70,7 +70,7 @@ Current module baseline: v6.6.3, versionCode 71.
 ## Build
 
 ```powershell
-# Prerequisites: JDK 17+, Android SDK 36
+# Prerequisites: JDK 17+, Android SDK 36, AGP 9.2
 
 ./gradlew assembleFullDebug     # Full flavor (root features)
 ./gradlew assemblePlayDebug     # Play Store flavor

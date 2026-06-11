@@ -1,38 +1,46 @@
-HostShield is a powerful system-wide ad blocker and network firewall for Android. It blocks ads, trackers, malware domains, and telemetry at the DNS level before they reach your apps.
+HostShield is a local-first Android DNS firewall for blocking ads, trackers, malware domains, and unwanted app network activity before it leaves your device.
 
-Two blocking modes:
-- VPN Mode (no root): Creates a local VPN to intercept DNS queries. Works on any device.
-- Root Mode: Runs a DNS proxy with iptables NAT redirect for zero-overhead blocking with per-app attribution.
+Core protection modes:
 
-Network Firewall (root):
-- AFWall+-style iptables firewall with per-app WiFi, mobile data, and VPN control
-- Automatic rule re-application on network changes and device boot
-- Connection logging via NFLOG with blocked traffic analysis
-- Bulk operations and diagnostic tools
+- VPN mode works without root by routing DNS through a local Android VPN service.
+- Root mode uses iptables DNS redirection and per-app network firewall rules for rooted devices.
+- Protection services run locally with no hosted account, remote telemetry, analytics SDK, or ads.
 
-DNS Tools:
-- DNS lookup with blocklist checking
-- Batch domain testing
-- Ping and traceroute diagnostics
-- DNS cache viewer and flush
-- DNS-over-HTTPS support (Cloudflare, Google, Quad9, AdGuard, Mullvad)
+DNS and blocking features:
 
-Privacy Features:
-- DoH/DoT bypass prevention (blocks encrypted DNS from apps)
-- Private DNS detection with warnings
-- Battery optimization detection with OEM-specific guidance
-- Per-app DNS blocking
-- No data collection, no analytics, no ads
+- Fast trie plus hash-set domain matching for large blocklists.
+- Hosts, domains-only, and DNS adblock syntax support.
+- Built-in curated sources including Steven Black, OISD, HaGeZi, and 1Hosts.
+- Allowlist precedence, custom user rules, wildcard rules, regex rules with ReDoS guards, and source impact preview.
+- Configurable block responses: NXDOMAIN, null IP, or REFUSED.
+- DNS cache with serve-stale behavior, negative caching, SERVFAIL caching, and prefetch.
 
-Advanced Features:
-- Multiple blocklist sources (hosts files, ABP format)
-- Trie-optimized domain matching for fast lookups
-- Blocking profiles with time-based scheduling
-- Backup/restore with cross-device portability
-- Quick Settings tile for instant toggle
-- Home screen widget
-- Tasker/MacroDroid automation API
-- Per-app network usage statistics
-- Customizable upstream DNS servers
+Encrypted DNS and bypass defense:
 
-HostShield is free, open source, and contains no ads or tracking.
+- DNS-over-HTTPS with fail-closed certificate pinning from a local pin manifest.
+- Embedded-Cronet HTTP/3/QUIC path for DoH3 where supported, with pinned OkHttp DoH fallback.
+- DNS-over-TLS support with SNI and hostname verification.
+- Experimental DoQ and WireGuard DNS engines are clearly labeled and stay out of production defaults.
+- DoH bypass prevention, DNS trap routing for hardcoded public resolvers, and Private DNS warnings.
+
+Firewall and diagnostics:
+
+- Root per-app firewall controls for Wi-Fi, mobile data, and VPN paths.
+- Connection logging, DNS query logs, app attribution, traffic summaries, and local statistics.
+- Quick Settings tile, home-screen widget, scheduling, profiles, and Tasker/MacroDroid automation broadcasts.
+- Local diagnostic ZIP export with structured event logs.
+- Classic PCAP export for synthetic DNS/connection evidence.
+
+Privacy and portability:
+
+- No remote telemetry or hosted account model.
+- Local-only preferences with encrypted secret storage through Android Keystore.
+- Backup and restore support, including encrypted backup compatibility.
+- Tracker SDK scanner with 405 signatures and offline GeoIP-first lookup with HTTPS fallback through ipapi.co.
+
+Release and platform notes:
+
+- Android 8+ supported.
+- Built with Kotlin 2.3, Android SDK 36, Android Gradle Plugin 9.2, Material 3 Compose, Room, WorkManager, and Hilt.
+- Full APK releases include QUERY_ALL_PACKAGES for complete local app firewall visibility. Play flavor artifacts remove that permission and use limited package visibility.
+- The repository currently contains a license-publication conflict between the root MIT license and app GPL-3.0 license; release docs surface this until maintainers reconcile it.

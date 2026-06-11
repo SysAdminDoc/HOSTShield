@@ -1,1 +1,1 @@
-System-wide ad and tracker blocker with root DNS proxy and iptables firewall
+Local-first DNS firewall for ads, trackers, malware, and per-app network control

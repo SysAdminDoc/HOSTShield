@@ -1,0 +1,8 @@
+v6.6.3 - Release Gate and Automation Contract Hardening
+
+- GitHub release jobs now run release documentation checks, Cronet dependency posture validation, full debug unit tests, full release APK builds, Play release AAB builds, provenance generation, and checksum artifact upload before publishing.
+- Play release AAB artifacts remove QUERY_ALL_PACKAGES through the play flavor manifest overlay.
+- Release provenance now finds apksigner on Linux CI and Windows workstations.
+- Public automation docs now use canonical com.hostshield.ACTION_* broadcasts and duration_minutes for pause/resume.
+- The automation receiver keeps compatibility aliases for older lowercase action strings and the old pause extra while tests cover the normalized contract.
+- Kotlin 2.3 warning cleanup replaced deprecated Hilt Compose imports, explicitized ApplicationContext constructor qualifier targets, removed redundant parser assertions, and switched the connection-log settings icon to the auto-mirrored Material icon.

@@ -280,7 +280,7 @@ Public actions are protected by HostShield's signature-level automation permissi
 | Networking | OkHttp 5 (source downloads, DoH resolver) |
 | Root | libsu (topjohnwu) |
 | GeoIP | MaxMind GeoIP2 (GeoLite2-Country + ASN) |
-| Build | Gradle KTS, KSP, Android SDK 36 compile / targetSdk 35, minSdk 26 |
+| Build | Gradle KTS, AGP 9.2, KSP, Android SDK 36 compile / targetSdk 35, minSdk 26 |
 
 ---
 
