@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.6.2-blue)
+![Version](https://img.shields.io/badge/version-6.6.3-blue)
 ![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -384,6 +384,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.6.3** | Release gate consolidation. GitHub releases now run release-doc checks, Cronet posture validation, full unit tests, full APK build, Play AAB build, provenance/checksum generation, and artifact upload before publishing. |
 | **6.6.2** | Automation API contract repair. Public docs now use canonical `com.hostshield.ACTION_*` actions and `duration_minutes`, the manifest exposes every supported automation action, lowercase aliases remain compatible, and unit tests lock the action/extra normalization contract. |
 | **6.6.1** | Dependency hardening. Updated OkHttp to 5.4.0 for the current stable networking stack, including the 256 KiB HTTP/2 response-header cap and current Okio baseline. |
 | **6.6.0** | Android 15/16 foreground-service resilience. Protection services now declare `systemExempted`, runtime foreground promotion uses the matching service type, service timeout callbacks record local diagnostics, and all protection restart surfaces record controlled start-failure events instead of crashing. |

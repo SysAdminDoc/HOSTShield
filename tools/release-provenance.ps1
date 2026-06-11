@@ -75,7 +75,8 @@ function Find-ApkSigner {
             continue
         }
 
-        $apkSigner = Get-ChildItem -LiteralPath $buildTools -Recurse -Filter "apksigner.bat" -ErrorAction SilentlyContinue |
+        $apkSigner = Get-ChildItem -LiteralPath $buildTools -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -in @("apksigner", "apksigner.bat", "apksigner.exe") } |
             Sort-Object FullName -Descending |
             Select-Object -First 1
 
@@ -101,7 +102,8 @@ function Find-JavaHome {
 
     foreach ($candidate in $candidates | Select-Object -Unique) {
         $javaExe = Join-Path $candidate "bin\java.exe"
-        if (Test-Path -LiteralPath $javaExe) {
+        $javaUnix = Join-Path $candidate "bin/java"
+        if ((Test-Path -LiteralPath $javaExe) -or (Test-Path -LiteralPath $javaUnix)) {
             return $candidate
         }
     }

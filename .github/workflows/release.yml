@@ -45,6 +45,19 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      - name: Validate release docs
+        shell: pwsh
+        working-directory: .
+        run: ./tools/check-release-docs.ps1
+
+      - name: Validate Cronet embedded posture
+        shell: pwsh
+        working-directory: .
+        run: ./tools/check-cronet-posture.ps1
+
+      - name: Run full unit tests
+        run: ./gradlew testFullDebugUnitTest
+
       - name: Build Full Release APK
         env:
           KEYSTORE_FILE: /tmp/hostshield.keystore
@@ -53,23 +66,58 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleFullRelease
 
-      - name: Rename APK
+      - name: Build Play Release AAB
+        env:
+          KEYSTORE_FILE: /tmp/hostshield.keystore
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew bundlePlayRelease
+
+      - name: Collect release artifacts
         run: |
           VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
           APK_SRC=$(find app/build/outputs/apk/full/release -name "*.apk" | head -1)
+          AAB_SRC=$(find app/build/outputs/bundle/playRelease -name "*.aab" | head -1)
           cp "$APK_SRC" "HostShield-v${VERSION}-full-release.apk"
+          cp "$AAB_SRC" "HostShield-v${VERSION}-play-release.aab"
           echo "APK_PATH=app/HostShield-v${VERSION}-full-release.apk" >> $GITHUB_ENV
+          echo "AAB_PATH=app/HostShield-v${VERSION}-play-release.aab" >> $GITHUB_ENV
+
+      - name: Generate release provenance
+        shell: pwsh
+        working-directory: .
+        run: ./tools/release-provenance.ps1 -ApkPath "${{ env.APK_PATH }}" -OutputDir artifacts/release-provenance
+
+      - name: Upload release build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hostshield-release-${{ github.ref_name }}
+          path: |
+            ${{ env.APK_PATH }}
+            ${{ env.AAB_PATH }}
+            artifacts/release-provenance/checksums.txt
+            artifacts/release-provenance/release-provenance.md
+          if-no-files-found: error
 
       - name: Upload APK to Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.APK_PATH }}
+          files: |
+            ${{ env.APK_PATH }}
+            artifacts/release-provenance/checksums.txt
+            artifacts/release-provenance/release-provenance.md
           fail_on_unmatched_files: true
 
       - name: Upload APK (workflow_dispatch)
         if: ${{ !startsWith(github.ref, 'refs/tags/') && github.event.inputs.tag }}
+        working-directory: .
         run: |
-          gh release upload "${{ github.event.inputs.tag }}" "HostShield-v*.apk" --clobber
+          gh release upload "${{ github.event.inputs.tag }}" \
+            "${{ env.APK_PATH }}" \
+            "artifacts/release-provenance/checksums.txt" \
+            "artifacts/release-provenance/release-provenance.md" \
+            --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
