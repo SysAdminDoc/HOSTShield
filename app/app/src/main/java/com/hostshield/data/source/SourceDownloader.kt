@@ -72,7 +72,7 @@ class SourceDownloader @Inject constructor() {
                         Result.success(DownloadResult(notModified = true, etag = source.etag))
                     }
                     200 -> {
-                        val body = response.body?.string() ?: ""
+                        val body = response.body.string()
                         val etag = response.header("ETag") ?: ""
                         val lastMod = response.header("Last-Modified") ?: ""
                         val size = body.length.toLong()
@@ -102,7 +102,7 @@ class SourceDownloader @Inject constructor() {
                         response.code
                     )
                 }
-                response.body?.string() ?: ""
+                response.body.string()
             }
 
             val lineCount = body.lines().count { line ->

@@ -71,7 +71,7 @@ class DohBypassUpdater @Inject constructor(
                     Log.w(TAG, "Fetch failed: HTTP ${response.code}")
                     return@withContext null
                 }
-                body = response.body?.string()?.take(MAX_JSON_SIZE.toInt())
+                body = response.body.string().take(MAX_JSON_SIZE.toInt())
             } finally {
                 response.close()
             }

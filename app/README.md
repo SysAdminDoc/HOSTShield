@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.6.0-blue)
+![Version](https://img.shields.io/badge/version-6.6.1-blue)
 ![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -8,7 +8,7 @@
 
 > System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, offline GeoIP, and a professional AMOLED dark UI with an optional high-contrast mode.
 
-Current module baseline: v6.6.0, versionCode 68.
+Current module baseline: v6.6.1, versionCode 69.
 
 ## Quick Start
 

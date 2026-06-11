@@ -125,11 +125,10 @@ class CnameCloakUpdater @Inject constructor(
                     Log.w(TAG, "$source fetch failed: HTTP ${resp.code}")
                     return null
                 }
-                resp.body?.source()?.let { src ->
-                    src.request(MAX_BODY_SIZE.toLong())
-                    src.buffer.readUtf8(minOf(src.buffer.size, MAX_BODY_SIZE.toLong()))
-                }
-            } ?: return null
+                val src = resp.body.source()
+                src.request(MAX_BODY_SIZE.toLong())
+                src.buffer.readUtf8(minOf(src.buffer.size, MAX_BODY_SIZE.toLong()))
+            }
 
             val domains = HashSet<String>()
             body.lineSequence().forEach { rawLine ->

@@ -105,7 +105,7 @@ class GeoIpLookup @Inject constructor() {
                     // Successful response resets backoff
                     consecutiveBackoffs.set(0)
 
-                    body = response.body?.string() ?: return@withContext null
+                    body = response.body.string()
                 } finally {
                     response.close()
                 }

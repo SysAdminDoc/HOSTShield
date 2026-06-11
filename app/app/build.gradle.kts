@@ -14,8 +14,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 35
-        versionCode = 68
-        versionName = "6.6.0"
+        versionCode = 69
+        versionName = "6.6.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -145,7 +145,7 @@ dependencies {
     ksp("androidx.hilt:hilt-compiler:1.3.0")
 
     // Networking (for downloading hosts sources)
-    implementation("com.squareup.okhttp3:okhttp:5.3.2")
+    implementation("com.squareup.okhttp3:okhttp:5.4.0")
     // Embedded Cronet gives the DoH resolver a real HTTP/3/QUIC transport
     // without depending on Google Play Services availability.
     implementation("org.chromium.net:cronet-embedded:143.7445.0")

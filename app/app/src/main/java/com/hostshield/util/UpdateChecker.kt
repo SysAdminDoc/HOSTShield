@@ -56,8 +56,7 @@ class UpdateChecker @Inject constructor() {
                         Exception("GitHub API returned ${response.code}")
                     )
                 }
-                body = response.body?.string()
-                    ?: return@withContext Result.failure(Exception("Empty response"))
+                body = response.body.string()
             } finally {
                 response.close()
             }

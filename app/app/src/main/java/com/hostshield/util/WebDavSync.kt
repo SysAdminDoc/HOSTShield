@@ -91,7 +91,7 @@ class WebDavSync @Inject constructor(
             .build()
         return try {
             httpClient.newCall(request).execute().use { response ->
-                if (response.isSuccessful) response.body?.bytes() else null
+                if (response.isSuccessful) response.body.bytes() else null
             }
         } catch (_: Exception) {
             null
@@ -128,7 +128,7 @@ class WebDavSync @Inject constructor(
         return try {
             httpClient.newCall(request).execute().use { response ->
                 if (response.code == 207 || response.isSuccessful) {
-                    val xml = response.body?.string() ?: return@use emptyList()
+                    val xml = response.body.string()
                     parsePropfindResponse(xml, remotePath)
                 } else {
                     null
@@ -303,7 +303,7 @@ class WebDavSync @Inject constructor(
             httpClient.newCall(request).execute().use { response ->
                 val result = mapResponseToResult(response.code)
                 if (result is SyncResult.Success || response.code == 207) {
-                    val xml = response.body?.string() ?: return@use Pair(SyncResult.ParseError, emptyList())
+                    val xml = response.body.string()
                     val files = parsePropfindResponse(xml, BACKUPS_DIR)
                         .filter { !it.isDirectory && it.name.endsWith(".json") }
                     Pair(SyncResult.Success, files)

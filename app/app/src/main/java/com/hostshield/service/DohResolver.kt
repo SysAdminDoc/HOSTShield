@@ -251,7 +251,7 @@ class DohResolver @Inject constructor(
      * endpoint could use to OOM the VPN process.
      */
     private fun readBoundedBody(resp: okhttp3.Response): ByteArray? {
-        val body = resp.body ?: return null
+        val body = resp.body
         val declared = body.contentLength()
         if (declared > MAX_DOH_RESPONSE) {
             Log.w(TAG, "DoH response too large: declared=$declared")

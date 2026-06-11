@@ -255,7 +255,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                             val request = okhttp3.Request.Builder().url(url).build()
                             httpClient.newCall(request).execute().use { response ->
                                 if (response.isSuccessful) {
-                                    val content = response.body?.string() ?: ""
+                                    val content = response.body.string()
 
                                     // Reject content that exceeds the size limit
                                     if (content.toByteArray(Charsets.UTF_8).size > maxSyncSizeBytes) {

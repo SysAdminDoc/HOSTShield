@@ -304,7 +304,7 @@ class ThreatIntelManager @Inject constructor(
             val request = Request.Builder().url(url).build()
             okHttpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
-                    response.body?.string()
+                    response.body.string()
                 } else {
                     Log.w(TAG, "HTTP ${response.code} for $url")
                     null
