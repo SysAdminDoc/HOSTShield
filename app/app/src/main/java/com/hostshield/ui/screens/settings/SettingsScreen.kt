@@ -41,6 +41,7 @@ import com.hostshield.BuildConfig
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.HostShieldTestTags
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 
@@ -624,28 +625,17 @@ fun SettingsScreen(
         // Status messages
         val statusMsg = state.backupMessage ?: state.importMessage
         statusMsg?.let { msg ->
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = if (msg.contains("fail", ignoreCase = true)) Red.copy(alpha = 0.08f) else Teal.copy(alpha = 0.08f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        if (msg.contains("fail", ignoreCase = true)) Icons.Filled.Error else Icons.Filled.CheckCircle,
-                        null,
-                        tint = if (msg.contains("fail", ignoreCase = true)) Red else Teal,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(msg, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    IconButton(
-                        onClick = { viewModel.clearBackupMessage(); viewModel.clearImportMessage() },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(Icons.Filled.Close, "Dismiss status message", tint = TextDim, modifier = Modifier.size(14.dp))
-                    }
-                }
-            }
+            val isError = msg.contains("fail", ignoreCase = true) || msg.contains("error", ignoreCase = true)
+            HostShieldStatusBanner(
+                icon = if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
+                title = if (isError) "Settings action failed" else "Settings action complete",
+                message = msg,
+                accent = if (isError) Red else Teal,
+                onDismiss = {
+                    viewModel.clearBackupMessage()
+                    viewModel.clearImportMessage()
+                },
+            )
         }
 
         Spacer(Modifier.height(24.dp))
@@ -662,13 +652,20 @@ internal fun SettingsSection(
     content: @Composable ColumnScope.() -> Unit
 ) {
     GlassCard(modifier = Modifier.fillMaxWidth().testTag(HostShieldTestTags.Settings.section(title))) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .animateContentSize()
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(color.copy(alpha = 0.1f)),
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(color.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
+                    Icon(icon, null, tint = color, modifier = Modifier.size(15.dp))
                 }
                 Spacer(Modifier.width(10.dp))
                 Text(
@@ -696,7 +693,9 @@ internal fun SettingsToggle(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .heightIn(min = 58.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (checked) Teal.copy(alpha = 0.055f) else Surface2.copy(alpha = 0.32f))
             .testTag(HostShieldTestTags.Settings.toggle(title))
             .semantics(mergeDescendants = true) {
                 role = Role.Switch
@@ -704,14 +703,22 @@ internal fun SettingsToggle(
                 stateDescription = if (checked) "On" else "Off"
             }
             .clickable(role = Role.Switch) { onCheckedChange(!checked) }
-            .padding(vertical = 6.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, tint = TextSecondary, modifier = Modifier.size(18.dp))
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background((if (checked) Teal else Surface3).copy(alpha = if (checked) 0.14f else 0.75f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = if (checked) Teal else TextSecondary, modifier = Modifier.size(18.dp))
+        }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, color = TextDim, fontSize = 11.sp)
+            Text(subtitle, color = TextDim, fontSize = 11.sp, lineHeight = 15.sp)
         }
         Switch(
             checked = checked, onCheckedChange = null,
@@ -733,22 +740,31 @@ internal fun SettingsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .heightIn(min = 58.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(Surface2.copy(alpha = 0.32f))
             .testTag(HostShieldTestTags.Settings.row(title))
             .semantics(mergeDescendants = true) {
                 role = Role.Button
                 contentDescription = "$title. $subtitle"
             }
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 6.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, tint = TextSecondary, modifier = Modifier.size(18.dp))
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background(Surface3.copy(alpha = 0.75f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = TextSecondary, modifier = Modifier.size(18.dp))
+        }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, color = TextDim, fontSize = 11.sp)
+            Text(subtitle, color = TextDim, fontSize = 11.sp, lineHeight = 15.sp)
         }
         Icon(Icons.Filled.ChevronRight, null, tint = TextDim, modifier = Modifier.size(18.dp))
     }

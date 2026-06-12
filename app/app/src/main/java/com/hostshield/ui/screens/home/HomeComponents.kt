@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hostshield.ui.HostShieldTestTags
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import java.text.NumberFormat
 import kotlin.math.cos
@@ -436,7 +437,7 @@ fun ActionRow(
                 stateDescription = if (enabled) "Available" else "Unavailable"
                 if (!enabled) disabled()
             }
-            .background(if (enabled) Color.Transparent else Color.Transparent)
+            .background(if (enabled) Surface2.copy(alpha = 0.18f) else Surface2.copy(alpha = 0.10f))
             .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -467,25 +468,16 @@ fun ActionRow(
 
 @Composable
 fun ErrorBanner(error: String, onDismiss: () -> Unit) {
-    Card(
+    HostShieldStatusBanner(
+        icon = Icons.Filled.Error,
+        title = "Action failed",
+        message = error,
+        accent = Red,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Red.copy(alpha = 0.08f)),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Filled.Error, null, tint = Red, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(error, color = Red.copy(alpha = 0.9f), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-            IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Filled.Close, "Dismiss error", tint = Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
-            }
-        }
-    }
+        onDismiss = onDismiss,
+    )
 }
 
 // ── Module Card (Protection Modules) ────────────────────────
@@ -512,6 +504,7 @@ fun ModuleCard(
 
     Box(
         modifier = modifier
+            .animateContentSize()
             .clip(RoundedCornerShape(12.dp))
             .background(
                 Brush.verticalGradient(

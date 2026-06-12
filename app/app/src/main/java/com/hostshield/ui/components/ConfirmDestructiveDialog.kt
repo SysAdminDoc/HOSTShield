@@ -4,10 +4,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -49,13 +52,18 @@ fun ConfirmDestructiveDialog(
             )
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
                     onConfirm()
                     onDismiss()
                 },
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Red,
+                    contentColor = Color.Black,
+                ),
             ) {
-                Text(confirmLabel, color = Red, fontWeight = FontWeight.SemiBold)
+                Text(confirmLabel, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {

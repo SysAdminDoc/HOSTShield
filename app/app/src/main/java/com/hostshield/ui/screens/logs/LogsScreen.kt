@@ -46,7 +46,8 @@ import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
-import com.hostshield.ui.screens.home.GlassCard
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import com.hostshield.util.GeoIpLookup
 import com.hostshield.util.RootUtil
@@ -388,25 +389,15 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             }
         }
 
-        // Error banner
         if (error != null) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-                shape = RoundedCornerShape(10.dp),
-                color = Red.copy(alpha = 0.1f)
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Filled.Error, null, tint = Red, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(error ?: "", color = Red, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Filled.Close, "Dismiss", tint = Red, modifier = Modifier.size(14.dp))
-                    }
-                }
-            }
+            HostShieldStatusBanner(
+                icon = Icons.Filled.Error,
+                title = "DNS log error",
+                message = error ?: "",
+                accent = Red,
+                onDismiss = { viewModel.clearError() },
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+            )
         }
 
         // Loading indicator
@@ -480,6 +471,13 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             value = query, onValueChange = { viewModel.setSearch(it) },
             placeholder = { Text("Search domains, apps...", color = TextDim) },
             leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextDim) },
+            trailingIcon = {
+                if (query.isNotBlank()) {
+                    IconButton(onClick = { viewModel.setSearch("") }) {
+                        Icon(Icons.Filled.Close, "Clear DNS log search", tint = TextDim, modifier = Modifier.size(16.dp))
+                    }
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
@@ -523,15 +521,34 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
 
         Spacer(Modifier.height(8.dp))
 
+        val hasActiveFilters = query.isNotBlank() || blockedFilter != null || queryTypeFilter != null
         if (deduped.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Filled.Dns, null, tint = TextDim, modifier = Modifier.size(48.dp))
-                    Spacer(Modifier.height(12.dp))
-                    Text("No DNS logs yet", color = TextSecondary, fontSize = 14.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Text("Logs populate as DNS queries are captured", color = TextDim, fontSize = 12.sp)
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                HostShieldEmptyState(
+                    icon = if (hasActiveFilters) Icons.Filled.FilterAltOff else Icons.Filled.Dns,
+                    title = if (hasActiveFilters) "No matching DNS activity" else "No DNS activity yet",
+                    message = if (hasActiveFilters) {
+                        "No captured query matches the current search and filter combination."
+                    } else {
+                        "Captured DNS queries will appear here with verdicts, apps, timing, and rule actions."
+                    },
+                    accent = if (hasActiveFilters) Blue else Teal,
+                    primaryActionLabel = if (hasActiveFilters) "Clear filters" else null,
+                    onPrimaryAction = if (hasActiveFilters) {
+                        {
+                            viewModel.setSearch("")
+                            viewModel.setFilter(null)
+                            queryTypeFilter = null
+                        }
+                    } else {
+                        null
+                    },
+                )
             }
         } else {
             LazyColumn(
@@ -621,7 +638,9 @@ private fun LogFilter(label: String, selected: Boolean, onClick: () -> Unit) {
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
         color = if (selected) Teal.copy(alpha = 0.12f) else Surface2,
-        modifier = Modifier.accessibilitySelection("$label DNS log filter", selected)
+        modifier = Modifier
+            .heightIn(min = 34.dp)
+            .accessibilitySelection("$label DNS log filter", selected)
     ) {
         Text(
             label,

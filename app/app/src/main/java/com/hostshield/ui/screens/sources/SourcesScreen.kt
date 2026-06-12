@@ -41,6 +41,9 @@ import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldMetricTile
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -483,23 +486,15 @@ fun SourcesScreen(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Error banner
             if (error != null) {
                 item {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp),
-                        color = Red.copy(alpha = 0.1f)
-                    ) {
-                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Error, null, tint = Red, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(error ?: "", color = Red, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.weight(1f))
-                            IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Filled.Close, "Dismiss", tint = Red, modifier = Modifier.size(14.dp))
-                            }
-                        }
-                    }
+                    HostShieldStatusBanner(
+                        icon = Icons.Filled.Error,
+                        title = "Source error",
+                        message = error ?: "",
+                        accent = Red,
+                        onDismiss = { viewModel.clearError() },
+                    )
                 }
             }
             item {
@@ -598,16 +593,35 @@ fun SourcesScreen(
                     }
                 }
                 healthMsg?.let { msg ->
-                    Spacer(Modifier.height(4.dp))
-                    Text(msg, color = TextDim, fontSize = 11.sp)
+                    Spacer(Modifier.height(8.dp))
+                    HostShieldStatusBanner(
+                        icon = if (isChecking) Icons.Filled.Sync else Icons.Filled.HealthAndSafety,
+                        title = if (isChecking) "Checking source health" else "Source health",
+                        message = msg,
+                        accent = when {
+                            msg.contains("unreachable", ignoreCase = true) -> Yellow
+                            msg.contains("failed", ignoreCase = true) -> Red
+                            else -> Teal
+                        },
+                    )
                 }
                 allowlistMsg?.let { msg ->
-                    Spacer(Modifier.height(4.dp))
-                    Text(msg, color = Green.copy(alpha = 0.85f), fontSize = 11.sp)
+                    Spacer(Modifier.height(8.dp))
+                    HostShieldStatusBanner(
+                        icon = Icons.Filled.CheckCircle,
+                        title = "Allowlist impact",
+                        message = msg,
+                        accent = Green,
+                    )
                 }
                 sourceImpactMsg?.let { msg ->
-                    Spacer(Modifier.height(4.dp))
-                    Text(msg, color = Blue.copy(alpha = 0.9f), fontSize = 11.sp)
+                    Spacer(Modifier.height(8.dp))
+                    HostShieldStatusBanner(
+                        icon = Icons.Filled.Visibility,
+                        title = "Source update impact",
+                        message = msg,
+                        accent = Blue,
+                    )
                 }
                 sourceImpactPreview?.let { preview ->
                     Spacer(Modifier.height(8.dp))
@@ -623,27 +637,27 @@ fun SourcesScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Surface(shape = RoundedCornerShape(8.dp), color = Surface2, modifier = Modifier.weight(1f)) {
-                        Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(NumberFormat.getNumberInstance().format(totalDomains), color = Teal, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("Domains", color = TextDim, fontSize = 9.sp)
-                        }
-                    }
-                    Surface(shape = RoundedCornerShape(8.dp), color = Surface2, modifier = Modifier.weight(1f)) {
-                        Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            val sizeLabel = if (totalSize > 1_000_000) "${"%.1f".format(totalSize / 1_000_000f)} MB"
-                                else if (totalSize > 1000) "${totalSize / 1000} KB" else "$totalSize B"
-                            Text(sizeLabel, color = Blue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("Total Size", color = TextDim, fontSize = 9.sp)
-                        }
-                    }
+                    HostShieldMetricTile(
+                        value = NumberFormat.getNumberInstance().format(totalDomains),
+                        label = "Domains",
+                        accent = Teal,
+                        modifier = Modifier.weight(1f),
+                    )
+                    val sizeLabel = if (totalSize > 1_000_000) "${"%.1f".format(totalSize / 1_000_000f)} MB"
+                        else if (totalSize > 1000) "${totalSize / 1000} KB" else "$totalSize B"
+                    HostShieldMetricTile(
+                        value = sizeLabel,
+                        label = "Total size",
+                        accent = Blue,
+                        modifier = Modifier.weight(1f),
+                    )
                     if (unhealthy > 0) {
-                        Surface(shape = RoundedCornerShape(8.dp), color = Red.copy(alpha = 0.08f), modifier = Modifier.weight(1f)) {
-                            Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("$unhealthy", color = Red, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("Unhealthy", color = Red.copy(alpha = 0.7f), fontSize = 9.sp)
-                            }
-                        }
+                        HostShieldMetricTile(
+                            value = "$unhealthy",
+                            label = "Unhealthy",
+                            accent = Red,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -652,23 +666,16 @@ fun SourcesScreen(
             val grouped = sources.groupBy { it.category }
             if (sources.isEmpty()) {
                 item {
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(28.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(Icons.Filled.CloudOff, null, tint = TextDim, modifier = Modifier.size(40.dp))
-                            Spacer(Modifier.height(12.dp))
-                            Text("No sources configured", color = TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "Add a trusted blocklist or browse the gallery to start protection.",
-                                color = TextDim,
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp
-                            )
-                        }
-                    }
+                    HostShieldEmptyState(
+                        icon = Icons.Filled.CloudOff,
+                        title = "No sources configured",
+                        message = "Add a trusted blocklist or browse the curated gallery before enabling source-based protection.",
+                        accent = Teal,
+                        primaryActionLabel = "Browse gallery",
+                        onPrimaryAction = onNavigateToGallery,
+                        secondaryActionLabel = "Add URL",
+                        onSecondaryAction = { showAddDialog = true },
+                    )
                 }
             }
             SourceCategory.entries.forEach { category ->

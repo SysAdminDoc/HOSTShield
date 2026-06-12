@@ -35,6 +35,7 @@ import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
+import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -166,23 +167,25 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
 
             if (filtered.isEmpty()) {
                 item {
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(32.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.Rule, null, tint = TextDim, modifier = Modifier.size(40.dp))
-                            Spacer(Modifier.height(12.dp))
-                            Text("No custom rules yet", color = TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "Add a rule when a domain needs to be blocked, allowed, or redirected.",
-                                color = TextDim,
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp
-                            )
-                        }
-                    }
+                    val filteredByType = filterType != null
+                    HostShieldEmptyState(
+                        icon = if (filteredByType) Icons.Filled.FilterAltOff else Icons.AutoMirrored.Filled.Rule,
+                        title = if (filteredByType) "No rules in this filter" else "No custom rules yet",
+                        message = if (filteredByType) {
+                            "This rule type has no entries. Switch filters to review the full rule set."
+                        } else {
+                            "Create a block, allow, redirect, wildcard, or regex rule when source lists need a precise override."
+                        },
+                        accent = if (filteredByType) Blue else Teal,
+                        primaryActionLabel = if (filteredByType) "Show all" else "Add rule",
+                        onPrimaryAction = if (filteredByType) {
+                            { filterType = null }
+                        } else {
+                            { showAddDialog = true }
+                        },
+                        secondaryActionLabel = if (filteredByType) null else "Paste domains",
+                        onSecondaryAction = if (filteredByType) null else pasteDomainsFromClipboard,
+                    )
                 }
             }
 
@@ -245,7 +248,9 @@ private fun TypeChip(type: RuleType?, label: String, selected: Boolean, onClick:
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
         color = if (selected) color.copy(alpha = 0.12f) else Surface2,
-        modifier = Modifier.accessibilitySelection("$label rule filter", selected)
+        modifier = Modifier
+            .heightIn(min = 34.dp)
+            .accessibilitySelection("$label rule filter", selected)
     ) {
         Text(label, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = if (selected) color else TextDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
