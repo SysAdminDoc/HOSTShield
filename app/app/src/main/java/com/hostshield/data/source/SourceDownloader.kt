@@ -58,7 +58,8 @@ class SourceDownloader @Inject constructor() {
      */
     suspend fun download(source: HostSource, forceDownload: Boolean = false): Result<DownloadResult> = withContext(Dispatchers.IO) {
         try {
-            val requestBuilder = Request.Builder().url(source.url)
+            val requestBuilder = Request.Builder()
+                .url(SourceUrlPolicy.requireDownloadable(source.url))
 
             // Conditional request headers for bandwidth savings
             // SKIP when forceDownload=true (blocklist rebuild needs ALL domains)
@@ -102,7 +103,9 @@ class SourceDownloader @Inject constructor() {
      */
     suspend fun validate(url: String): Result<Int> = withContext(Dispatchers.IO) {
         try {
-            val request = Request.Builder().url(url).build()
+            val request = Request.Builder()
+                .url(SourceUrlPolicy.requireDownloadable(url))
+                .build()
             val body = client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     throw SourceDownloadException(

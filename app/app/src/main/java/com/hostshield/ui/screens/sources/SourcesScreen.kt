@@ -31,6 +31,7 @@ import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
+import com.hostshield.data.source.SourceUrlPolicy
 import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
@@ -136,7 +137,14 @@ class SourcesViewModel @Inject constructor(
     fun addSource(url: String, label: String, category: SourceCategory) {
         viewModelScope.launch {
             try {
-                repository.addSource(HostSource(url = url, label = label, category = category))
+                val validation = SourceUrlPolicy.validate(url)
+                if (!validation.isValid) {
+                    _error.value = validation.errorMessage
+                    return@launch
+                }
+                repository.addSource(
+                    HostSource(url = validation.normalizedUrl, label = label, category = category)
+                )
             } catch (e: Exception) {
                 _error.value = "Failed to add source: ${e.message}"
             }
@@ -1029,17 +1037,8 @@ private fun AddSourceDialog(
     var label by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(SourceCategory.ADS) }
 
-    // Validate URL: must parse as http:// or https://. https:// is the only safe
-    // choice for remote blocklists, but http:// is allowed for LAN mirrors.
-    val urlValid = remember(url) {
-        val trimmed = url.trim()
-        try {
-            val parsed = java.net.URL(trimmed)
-            (parsed.protocol == "http" || parsed.protocol == "https") && !parsed.host.isNullOrBlank()
-        } catch (_: Exception) {
-            false
-        }
-    }
+    val urlValidation = remember(url) { SourceUrlPolicy.validate(url) }
+    val urlValid = urlValidation.isValid
     val labelValid = label.trim().isNotEmpty()
     val canSubmit = urlValid && labelValid
 
@@ -1067,7 +1066,13 @@ private fun AddSourceDialog(
                     label = { Text("Source URL") }, singleLine = true,
                     isError = url.isNotBlank() && !urlValid,
                     supportingText = if (url.isNotBlank() && !urlValid) {
-                        { Text("Use a complete http:// or https:// URL.", color = Red, fontSize = 11.sp) }
+                        {
+                            Text(
+                                urlValidation.errorMessage ?: "Use a complete https:// URL.",
+                                color = Red,
+                                fontSize = 11.sp
+                            )
+                        }
                     } else null,
                     modifier = Modifier
                         .fillMaxWidth()
