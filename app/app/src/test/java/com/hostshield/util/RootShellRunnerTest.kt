@@ -29,4 +29,32 @@ class RootShellRunnerTest {
         assertTrue(RootShellRunner.supportsMountMaster("27.0:27000"))
         assertFalse(RootShellRunner.supportsMountMaster("unknown"))
     }
+
+    @Test
+    fun `detectFrameworkFromProbe prefers Magisk then APatch then KernelSU`() {
+        assertEquals(
+            RootShellFramework.MAGISK,
+            RootShellRunner.detectFrameworkFromProbe("27.0", hasKernelSu = true, hasAPatch = true)
+        )
+        assertEquals(
+            RootShellFramework.APATCH,
+            RootShellRunner.detectFrameworkFromProbe("", hasKernelSu = true, hasAPatch = true)
+        )
+        assertEquals(
+            RootShellFramework.KERNEL_SU,
+            RootShellRunner.detectFrameworkFromProbe(null, hasKernelSu = true, hasAPatch = false)
+        )
+        assertEquals(
+            RootShellFramework.UNKNOWN,
+            RootShellRunner.detectFrameworkFromProbe(null, hasKernelSu = false, hasAPatch = false)
+        )
+    }
+
+    @Test
+    fun `frameworkLabel names non-Magisk root environments`() {
+        assertEquals("Magisk 27.0", RootShellRunner.frameworkLabel(RootShellFramework.MAGISK, "27.0"))
+        assertEquals("KernelSU", RootShellRunner.frameworkLabel(RootShellFramework.KERNEL_SU))
+        assertEquals("APatch", RootShellRunner.frameworkLabel(RootShellFramework.APATCH))
+        assertEquals("unknown", RootShellRunner.frameworkLabel(RootShellFramework.UNKNOWN))
+    }
 }

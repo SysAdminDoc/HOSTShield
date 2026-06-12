@@ -20,6 +20,12 @@ class RootUtil @Inject constructor(
     companion object {
         const val HOSTS_PATH = "/system/etc/hosts"
 
+        internal val SYSTEMLESS_HOSTS_PATHS = listOf(
+            "/data/adb/modules/hosts/system/etc/hosts",
+            "/data/adb/modules/bindhosts/system/etc/hosts",
+            "/data/adb/modules/systemless-hosts-KernelSU-module/system/etc/hosts"
+        )
+
         // RFC 1123 hostname + IPv4 dotted-quad. Anything else is rejected before
         // it reaches the root shell, preventing newline/backtick/`$()` injection.
         private val HOSTNAME_RE = Regex("^[a-zA-Z0-9][a-zA-Z0-9._\\-]{0,253}$")
@@ -32,6 +38,9 @@ class RootUtil @Inject constructor(
 
         internal fun isValidRedirectIp(ip: String): Boolean =
             IPV4_RE.matches(ip) || IPV6_RE.matches(ip)
+
+        internal fun selectSystemlessHostsPath(output: List<String>): String? =
+            output.map { it.trim() }.firstOrNull { it in SYSTEMLESS_HOSTS_PATHS }
     }
 
     /** Temp file inside app-private cache (no root or SELinux issues). */
@@ -50,10 +59,9 @@ class RootUtil @Inject constructor(
         }
     }
 
-    /** Check if the device appears to use Magisk systemless hosts. */
+    /** Check if the device appears to use a Magisk/KernelSU/APatch systemless hosts module. */
     suspend fun isMagiskSystemless(): Boolean = withContext(Dispatchers.IO) {
-        val result = Shell.cmd("[ -f /data/adb/modules/hosts/system/etc/hosts ] && echo yes || echo no").exec()
-        result.out.firstOrNull()?.trim() == "yes"
+        getSystemlessHostsPath() != null
     }
 
     /** Read current hosts file content. */
@@ -262,13 +270,15 @@ class RootUtil @Inject constructor(
 
     private suspend fun getActiveHostsPath(): String {
         cachedActivePath?.let { return it }
-        val resolved = if (isMagiskSystemless()) {
-            "/data/adb/modules/hosts/system/etc/hosts"
-        } else {
-            HOSTS_PATH
-        }
+        val resolved = getSystemlessHostsPath() ?: HOSTS_PATH
         cachedActivePath = resolved
         return resolved
+    }
+
+    private suspend fun getSystemlessHostsPath(): String? = withContext(Dispatchers.IO) {
+        val commands = SYSTEMLESS_HOSTS_PATHS.map { "[ -f '$it' ] && echo '$it' || true" }
+        val result = Shell.cmd(*commands.toTypedArray()).exec()
+        selectSystemlessHostsPath(result.out)
     }
 
     suspend fun getSystemInfo(): Map<String, String> = withContext(Dispatchers.IO) {
@@ -278,6 +288,14 @@ class RootUtil @Inject constructor(
 
         val suImpl = Shell.cmd("magisk -v 2>/dev/null || su --version 2>/dev/null || echo unknown").exec()
         info["su_impl"] = suImpl.out.firstOrNull() ?: "unknown"
+
+        val rootFramework = Shell.cmd(
+            "if magisk -v >/dev/null 2>&1; then echo Magisk; " +
+                "elif [ -d /data/adb/ap ]; then echo APatch; " +
+                "elif [ -d /data/adb/ksu ]; then echo KernelSU; else echo unknown; fi"
+        ).exec()
+        info["root_framework"] = rootFramework.out.firstOrNull()?.trim().orEmpty().ifBlank { "unknown" }
+        info["systemless_hosts_path"] = getSystemlessHostsPath() ?: "none"
 
         val selinux = Shell.cmd("getenforce 2>/dev/null || echo unknown").exec()
         info["selinux"] = selinux.out.firstOrNull() ?: "unknown"

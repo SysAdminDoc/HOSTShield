@@ -355,7 +355,10 @@ app/src/main/java/com/hostshield/
 ## FAQ
 
 **VPN mode vs Root mode?**
-Root mode: zero battery overhead, requires rooted device with Magisk/KernelSU. VPN mode: works on any device, ~1-3% battery, persistent notification. Both use the same blocking engine.
+Root mode: zero battery overhead, requires rooted device with Magisk, KernelSU, or APatch. VPN mode: works on any device, ~1-3% battery, persistent notification. Both use the same blocking engine.
+
+**Which root frameworks are supported?**
+Magisk, KernelSU, and APatch are supported when HostShield has root permission. Magisk 26+ firewall commands use libsu's mount-master shell. KernelSU and APatch use the default `su` shell; hosts-file editing needs an active systemless hosts module such as bindhosts because those frameworks do not ship built-in systemless hosts. HostShield detects Magisk `hosts`, bindhosts, and the KernelSU systemless-hosts module paths under `/data/adb/modules/` when present. Without one, root DNS and firewall rules can still work through iptables, but direct hosts-file edits may fail on read-only `/system`.
 
 **Why does it use a VPN?**
 Entirely local — no traffic goes to a remote server. The VPN tunnel intercepts DNS queries on the device and filters them locally. Standard technique used by NetGuard, RethinkDNS, Blokada, and DNS66.

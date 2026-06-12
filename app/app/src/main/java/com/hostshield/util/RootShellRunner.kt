@@ -5,6 +5,13 @@ import com.topjohnwu.superuser.Shell
 import javax.inject.Inject
 import javax.inject.Singleton
 
+enum class RootShellFramework {
+    MAGISK,
+    KERNEL_SU,
+    APATCH,
+    UNKNOWN
+}
+
 @Singleton
 class RootShellRunner @Inject constructor(
     private val diagnosticEvents: DiagnosticEventStore
@@ -19,10 +26,32 @@ class RootShellRunner @Inject constructor(
 
         internal fun supportsMountMaster(version: String): Boolean =
             (parseMagiskMajor(version) ?: 0) >= 26
+
+        internal fun detectFrameworkFromProbe(
+            magiskVersion: String?,
+            hasKernelSu: Boolean,
+            hasAPatch: Boolean
+        ): RootShellFramework = when {
+            !magiskVersion.isNullOrBlank() -> RootShellFramework.MAGISK
+            hasAPatch -> RootShellFramework.APATCH
+            hasKernelSu -> RootShellFramework.KERNEL_SU
+            else -> RootShellFramework.UNKNOWN
+        }
+
+        internal fun frameworkLabel(
+            framework: RootShellFramework,
+            magiskVersion: String? = null
+        ): String = when (framework) {
+            RootShellFramework.MAGISK -> "Magisk ${magiskVersion.orEmpty().ifBlank { "unknown" }}"
+            RootShellFramework.KERNEL_SU -> "KernelSU"
+            RootShellFramework.APATCH -> "APatch"
+            RootShellFramework.UNKNOWN -> "unknown"
+        }
     }
 
     @Volatile private var cachedMagiskVersion: String? = null
     @Volatile private var cachedUseMountMaster: Boolean? = null
+    @Volatile private var cachedRootFramework: RootShellFramework? = null
     @Volatile private var mountMasterShell: Shell? = null
 
     fun run(commands: List<String>): Shell.Result =
@@ -44,16 +73,25 @@ class RootShellRunner @Inject constructor(
     }
 
     fun getIptablesShellLabel(): String {
-        val version = cachedMagiskVersion ?: detectMagiskVersion()
+        val framework = cachedRootFramework ?: detectRootFramework()
+        val version = cachedMagiskVersion ?: if (framework == RootShellFramework.MAGISK) {
+            detectMagiskVersion()
+        } else {
+            ""
+        }
         return if (shouldUseMountMaster()) {
             "su --mount-master (Magisk ${version.ifBlank { "26+" }})"
         } else {
-            "default su"
+            "default su (${frameworkLabel(framework, version)})"
         }
     }
 
     private fun shouldUseMountMaster(): Boolean {
         cachedUseMountMaster?.let { return it }
+        if (detectRootFramework() != RootShellFramework.MAGISK) {
+            cachedUseMountMaster = false
+            return false
+        }
         val version = detectMagiskVersion()
         val useMountMaster = supportsMountMaster(version)
         cachedUseMountMaster = useMountMaster
@@ -77,6 +115,26 @@ class RootShellRunner @Inject constructor(
         return version
     }
 
+    private fun detectRootFramework(): RootShellFramework {
+        cachedRootFramework?.let { return it }
+        val magiskVersion = detectMagiskVersion()
+        val probeOutput = try {
+            Shell.cmd(
+                "[ -d /data/adb/ksu ] && echo kernelsu || true",
+                "[ -d /data/adb/ap ] && echo apatch || true"
+            ).exec().out
+        } catch (_: Exception) {
+            emptyList()
+        }
+        val framework = detectFrameworkFromProbe(
+            magiskVersion = magiskVersion,
+            hasKernelSu = probeOutput.any { it.trim() == "kernelsu" },
+            hasAPatch = probeOutput.any { it.trim() == "apatch" }
+        )
+        cachedRootFramework = framework
+        return framework
+    }
+
     private fun getMountMasterShell(): Shell? {
         mountMasterShell?.takeIf { it.isAlive && it.isRoot }?.let { return it }
         return try {
@@ -97,6 +155,7 @@ class RootShellRunner @Inject constructor(
             "Root shell command failed",
             mapOf(
                 "context" to context,
+                "framework" to frameworkLabel(cachedRootFramework ?: detectRootFramework(), cachedMagiskVersion),
                 "command_count" to commandCount,
                 "stderr" to result.err.joinToString().take(500)
             )
