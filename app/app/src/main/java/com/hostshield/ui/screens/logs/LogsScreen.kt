@@ -41,12 +41,12 @@ import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.ui.accessibility.accessibilityAction
 import com.hostshield.ui.accessibility.accessibilityHeading
-import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import com.hostshield.util.GeoIpLookup
@@ -402,16 +402,12 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
 
         // Loading indicator
         if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = Teal,
-                    modifier = Modifier.size(24.dp).accessibilityLiveRegion("Loading DNS logs"),
-                    strokeWidth = 2.dp
-                )
-            }
+            HostShieldLoadingState(
+                title = "Loading DNS decisions",
+                message = "Restoring pinned, blocked, and allowed domain state.",
+                accent = Teal,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
+            )
         }
 
         // Multi-select action bar

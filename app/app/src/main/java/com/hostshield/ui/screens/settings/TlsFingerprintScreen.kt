@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import com.hostshield.ui.components.ConfirmDestructiveDialog
+import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.TlsFingerprinter
@@ -143,30 +144,23 @@ fun TlsFingerprintScreen(
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
+                        containerColor = Surface2,
+                        labelColor = TextDim,
                         selectedContainerColor = Sky.copy(alpha = 0.15f),
                         selectedLabelColor = Sky,
                     ),
+                    shape = RoundedCornerShape(8.dp),
                 )
             }
         }
 
         if (viewModel.fingerprints.isEmpty()) {
-            GlassCard(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(Icons.Filled.Fingerprint, null, tint = TextDim, modifier = Modifier.size(36.dp))
-                    Spacer(Modifier.height(8.dp))
-                    Text("No fingerprints captured yet", color = TextDim, fontSize = 13.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "TLS fingerprints are captured from TCP connections passing through the VPN tunnel. Enable HostShield and browse to start collecting.",
-                        color = TextDim, fontSize = 11.sp, lineHeight = 15.sp,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
-            }
+            HostShieldEmptyState(
+                icon = Icons.Filled.Fingerprint,
+                title = "No TLS fingerprints yet",
+                message = "Enable HostShield in VPN mode and browse normally. JA3/JA4 identities will appear here for local inspection.",
+                accent = Sky,
+            )
         }
 
         when (viewModel.viewMode) {

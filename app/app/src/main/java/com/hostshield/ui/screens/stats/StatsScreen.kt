@@ -38,6 +38,7 @@ import com.hostshield.data.database.TopApp
 import com.hostshield.data.database.TopHostname
 import com.hostshield.data.model.BlockStats
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.ui.components.HostShieldCompactState
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -212,9 +213,12 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     if (state.hourlyBlocked.isNotEmpty()) {
                         HourlyBarChart(data = state.hourlyBlocked, modifier = Modifier.fillMaxWidth().height(140.dp))
                     } else {
-                        Box(modifier = Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
-                            Text("Charts populate with VPN mode logging.", color = TextDim, fontSize = 12.sp)
-                        }
+                        HostShieldCompactState(
+                            icon = Icons.Filled.Timeline,
+                            title = "No hourly activity yet",
+                            message = "VPN mode logging will chart blocked traffic by hour.",
+                            accent = Teal,
+                        )
                     }
                 }
             }
@@ -242,9 +246,12 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                             Text("Peak: ${maxAll}ms", color = Red, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                         }
                     } else {
-                        Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
-                            Text("Latency data populates with VPN mode.", color = TextDim, fontSize = 12.sp)
-                        }
+                        HostShieldCompactState(
+                            icon = Icons.Filled.Speed,
+                            title = "No latency samples yet",
+                            message = "Resolver timing appears after DNS queries pass through VPN mode.",
+                            accent = Peach,
+                        )
                     }
                 }
             }
@@ -415,9 +422,12 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     if (state.dailyTrend.size >= 2) {
                         TrendLineChart(data = state.dailyTrend, modifier = Modifier.fillMaxWidth().height(140.dp))
                     } else {
-                        Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
-                            Text("Trend charts need at least 2 days of data.", color = TextDim, fontSize = 12.sp)
-                        }
+                        HostShieldCompactState(
+                            icon = Icons.AutoMirrored.Filled.TrendingUp,
+                            title = "Trend warming up",
+                            message = "Two or more days of DNS history are needed for a reliable trend.",
+                            accent = Blue,
+                        )
                     }
                 }
             }
@@ -436,7 +446,12 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     }
                     Spacer(Modifier.height(12.dp))
                     if (state.topDomains.isEmpty()) {
-                        Text("No blocked domains recorded yet.", color = TextDim, fontSize = 12.sp)
+                        HostShieldCompactState(
+                            icon = Icons.Filled.Block,
+                            title = "No blocked domains yet",
+                            message = "Blocked domains will rank here as protection starts catching requests.",
+                            accent = Red,
+                        )
                     }
                 }
             }
@@ -463,7 +478,12 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     }
                     Spacer(Modifier.height(12.dp))
                     if (state.topApps.isEmpty()) {
-                        Text("Requires VPN mode for per-app data.", color = TextDim, fontSize = 12.sp)
+                        HostShieldCompactState(
+                            icon = Icons.Filled.Apps,
+                            title = "Per-app data unavailable",
+                            message = "Enable VPN mode to attribute DNS activity to individual apps.",
+                            accent = Mauve,
+                        )
                     } else {
                         state.topApps.forEachIndexed { idx, app ->
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -499,7 +519,12 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     }
                     Spacer(Modifier.height(12.dp))
                     if (state.mostQueried.isEmpty()) {
-                        Text("No data yet. DNS queries will appear after enabling blocking.", color = TextDim, fontSize = 12.sp)
+                        HostShieldCompactState(
+                            icon = Icons.Filled.Radar,
+                            title = "No noisy domains detected",
+                            message = "High-frequency domains appear here after recent DNS traffic is collected.",
+                            accent = Yellow,
+                        )
                     } else {
                         val maxMq = state.mostQueried.maxOfOrNull { it.cnt } ?: 1
                         state.mostQueried.forEachIndexed { idx, dom ->
@@ -586,7 +611,12 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     }
                     Spacer(Modifier.height(12.dp))
                     if (state.dailyStats.isEmpty()) {
-                        Text("No daily stats recorded yet.", color = TextDim, fontSize = 12.sp)
+                        HostShieldCompactState(
+                            icon = Icons.Filled.CalendarMonth,
+                            title = "No daily history yet",
+                            message = "Daily totals will appear once HostShield records a full activity window.",
+                            accent = Peach,
+                        )
                     } else {
                         state.dailyStats.forEach { day ->
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {

@@ -23,6 +23,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.ui.components.HostShieldPanelHeader
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.BackupRestoreUtil
@@ -129,11 +131,12 @@ fun WebDavSyncScreen(
         // Server configuration
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Cloud, null, tint = Blue, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Server Configuration", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                }
+                HostShieldPanelHeader(
+                    icon = Icons.Filled.Cloud,
+                    title = "Server configuration",
+                    subtitle = "Credentials stay on this device",
+                    accent = Blue,
+                )
                 Spacer(Modifier.height(12.dp))
 
                 OutlinedTextField(
@@ -151,13 +154,13 @@ fun WebDavSyncScreen(
                 )
                 Spacer(Modifier.height(8.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = user,
                         onValueChange = { user = it },
                         label = { Text("Username", color = TextDim, fontSize = 12.sp) },
                         singleLine = true,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Blue, unfocusedBorderColor = Surface3,
@@ -170,7 +173,7 @@ fun WebDavSyncScreen(
                         label = { Text("Password", color = TextDim, fontSize = 12.sp) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Blue, unfocusedBorderColor = Surface3,
@@ -183,16 +186,19 @@ fun WebDavSyncScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = { viewModel.saveCredentials(url, user, pass) },
+                        enabled = url.isNotBlank() && user.isNotBlank(),
+                        modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal),
                     ) {
                         Icon(Icons.Filled.Save, null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Save", fontSize = 12.sp)
+                        Text("Save settings", fontSize = 12.sp)
                     }
                     OutlinedButton(
                         onClick = { viewModel.testConnection(url, user, pass) },
                         enabled = url.isNotBlank() && !viewModel.isSyncing,
+                        modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Blue),
                     ) {
@@ -202,7 +208,7 @@ fun WebDavSyncScreen(
                             Icon(Icons.Filled.Wifi, null, modifier = Modifier.size(14.dp))
                         }
                         Spacer(Modifier.width(4.dp))
-                        Text("Test", fontSize = 12.sp)
+                        Text("Test connection", fontSize = 12.sp)
                     }
                 }
             }
@@ -241,23 +247,13 @@ fun WebDavSyncScreen(
         // Message
         viewModel.message?.let { msg ->
             val isError = msg.contains("fail", ignoreCase = true)
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = if (isError) Red.copy(alpha = 0.08f) else Teal.copy(alpha = 0.08f),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
-                        null, tint = if (isError) Red else Teal, modifier = Modifier.size(16.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(msg, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearMessage() }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Filled.Close, "Dismiss WebDAV message", tint = TextDim, modifier = Modifier.size(14.dp))
-                    }
-                }
-            }
+            HostShieldStatusBanner(
+                icon = if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
+                title = if (isError) "WebDAV action failed" else "WebDAV action complete",
+                message = msg,
+                accent = if (isError) Red else Teal,
+                onDismiss = { viewModel.clearMessage() },
+            )
         }
 
         Spacer(Modifier.height(24.dp))

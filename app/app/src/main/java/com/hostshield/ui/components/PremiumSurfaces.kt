@@ -10,12 +10,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +37,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hostshield.ui.theme.Surface1
@@ -44,6 +47,61 @@ import com.hostshield.ui.theme.Teal
 import com.hostshield.ui.theme.TextDim
 import com.hostshield.ui.theme.TextPrimary
 import com.hostshield.ui.theme.TextSecondary
+
+@Composable
+fun HostShieldPanelHeader(
+    icon: ImageVector,
+    title: String,
+    accent: Color,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    trailingContent: (@Composable () -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = if (subtitle.isNullOrBlank()) title else "$title. $subtitle"
+            },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = accent.copy(alpha = 0.12f),
+            border = BorderStroke(1.dp, accent.copy(alpha = 0.12f)),
+        ) {
+            Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(17.dp))
+            }
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(
+                title,
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                lineHeight = 18.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics { heading() },
+            )
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    subtitle,
+                    color = TextDim,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        if (trailingContent != null) {
+            Spacer(Modifier.width(8.dp))
+            trailingContent()
+        }
+    }
+}
 
 @Composable
 fun HostShieldStatusBanner(
@@ -132,6 +190,74 @@ fun HostShieldStatusBanner(
 }
 
 @Composable
+fun HostShieldCompactState(
+    icon: ImageVector,
+    title: String,
+    message: String,
+    modifier: Modifier = Modifier,
+    accent: Color = Teal,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$title. $message"
+            },
+        shape = RoundedCornerShape(10.dp),
+        color = Surface2.copy(alpha = 0.42f),
+        border = BorderStroke(1.dp, Surface3.copy(alpha = 0.55f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(shape = RoundedCornerShape(8.dp), color = accent.copy(alpha = 0.10f)) {
+                Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, tint = accent.copy(alpha = 0.78f), modifier = Modifier.size(17.dp))
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, lineHeight = 16.sp)
+                Text(message, color = TextDim, style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+@Composable
+fun HostShieldLoadingState(
+    title: String,
+    message: String,
+    modifier: Modifier = Modifier,
+    accent: Color = Teal,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$title. $message"
+                liveRegion = LiveRegionMode.Polite
+            },
+        shape = RoundedCornerShape(10.dp),
+        color = Surface2.copy(alpha = 0.36f),
+        border = BorderStroke(1.dp, Surface3.copy(alpha = 0.55f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = accent, strokeWidth = 2.dp)
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Text(title, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(message, color = TextDim, style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+@Composable
 fun HostShieldEmptyState(
     icon: ImageVector,
     title: String,
@@ -210,6 +336,36 @@ fun HostShieldEmptyState(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun HostShieldTrustStrip(
+    leading: String,
+    message: String,
+    accent: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = accent.copy(alpha = 0.08f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.14f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                leading,
+                color = accent,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.widthIn(min = 54.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(message, color = TextSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
         }
     }
 }

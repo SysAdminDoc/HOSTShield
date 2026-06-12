@@ -36,6 +36,8 @@ import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.ui.accessibility.accessibilityAction
 import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldMetricTile
 import com.hostshield.util.RootUtil
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -124,6 +126,8 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
             it.appPackage.contains(query, ignoreCase = true)
         }
     }
+    val totalQueries = remember(apps) { apps.sumOf { it.totalQueries } }
+    val blockedQueries = remember(apps) { apps.sumOf { it.blockedQueries } }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         // Header
@@ -153,10 +157,39 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
         }
 
         if (selectedApp == null) {
+            if (apps.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    HostShieldMetricTile(
+                        value = "${apps.size}",
+                        label = "tracked apps",
+                        accent = Mauve,
+                        modifier = Modifier.weight(1f),
+                    )
+                    HostShieldMetricTile(
+                        value = formatCompact(totalQueries),
+                        label = "queries",
+                        accent = Blue,
+                        modifier = Modifier.weight(1f),
+                    )
+                    HostShieldMetricTile(
+                        value = formatCompact(blockedQueries),
+                        label = "blocked",
+                        accent = Red,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
             // Search
             OutlinedTextField(
                 value = query, onValueChange = { viewModel.setSearch(it) },
-                placeholder = { Text("Search apps...", color = TextDim) },
+                placeholder = { Text("Search app name or package", color = TextDim) },
                 leadingIcon = { Icon(Icons.Filled.Search, "Search", tint = TextDim) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 singleLine = true, shape = RoundedCornerShape(12.dp),
@@ -170,14 +203,17 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
 
             // App list
             if (filtered.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Filled.Apps, "No app data", tint = TextDim, modifier = Modifier.size(48.dp))
-                        Spacer(Modifier.height(12.dp))
-                        Text("No app data yet", color = TextSecondary, fontSize = 14.sp)
-                        Text("DNS queries will appear here as apps make requests", color = TextDim, fontSize = 12.sp)
-                    }
-                }
+                HostShieldEmptyState(
+                    icon = Icons.Filled.Apps,
+                    title = if (query.isBlank()) "No app activity yet" else "No apps match this search",
+                    message = if (query.isBlank()) {
+                        "Enable VPN protection and open a few apps. HostShield will group DNS activity here by app."
+                    } else {
+                        "Try a different app name or package id."
+                    },
+                    accent = Mauve,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
+                )
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
@@ -216,17 +252,33 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
 
             Spacer(Modifier.height(4.dp))
 
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                items(effectiveDomains, key = { it.hostname }) { domain ->
-                    DomainItem(domain = domain, onBlock = { viewModel.blockDomain(domain.hostname) })
+            if (effectiveDomains.isEmpty()) {
+                HostShieldEmptyState(
+                    icon = Icons.Filled.Dns,
+                    title = "No domains recorded for this app",
+                    message = "Recent domains will appear after this app makes DNS requests while protection is active.",
+                    accent = Blue,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                )
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    items(effectiveDomains, key = { it.hostname }) { domain ->
+                        DomainItem(domain = domain, onBlock = { viewModel.blockDomain(domain.hostname) })
+                    }
+                    item { Spacer(Modifier.height(16.dp)) }
                 }
-                item { Spacer(Modifier.height(16.dp)) }
             }
         }
     }
+}
+
+private fun formatCompact(n: Int): String = when {
+    n >= 1_000_000 -> "${n / 1_000_000}.${(n % 1_000_000) / 100_000}M"
+    n >= 1_000 -> "${n / 1_000}.${(n % 1_000) / 100}K"
+    else -> n.toString()
 }
 
 @Composable

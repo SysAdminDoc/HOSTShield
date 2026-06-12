@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -690,12 +691,18 @@ internal fun SettingsToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val rowShape = RoundedCornerShape(10.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 58.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(rowShape)
             .background(if (checked) Teal.copy(alpha = 0.055f) else Surface2.copy(alpha = 0.32f))
+            .border(
+                width = 1.dp,
+                color = if (checked) Teal.copy(alpha = 0.22f) else Surface3.copy(alpha = 0.32f),
+                shape = rowShape,
+            )
             .testTag(HostShieldTestTags.Settings.toggle(title))
             .semantics(mergeDescendants = true) {
                 role = Role.Switch
@@ -737,12 +744,14 @@ internal fun SettingsRow(
     icon: ImageVector,
     onClick: () -> Unit
 ) {
+    val rowShape = RoundedCornerShape(10.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 58.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(rowShape)
             .background(Surface2.copy(alpha = 0.32f))
+            .border(1.dp, Surface3.copy(alpha = 0.32f), rowShape)
             .testTag(HostShieldTestTags.Settings.row(title))
             .semantics(mergeDescendants = true) {
                 role = Role.Button

@@ -430,6 +430,7 @@ fun ActionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 58.dp)
             .clip(RoundedCornerShape(10.dp))
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics {
@@ -438,7 +439,12 @@ fun ActionRow(
                 if (!enabled) disabled()
             }
             .background(if (enabled) Surface2.copy(alpha = 0.18f) else Surface2.copy(alpha = 0.10f))
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .border(
+                width = 1.dp,
+                color = if (enabled) color.copy(alpha = 0.16f) else Surface3.copy(alpha = 0.25f),
+                shape = RoundedCornerShape(10.dp)
+            )
+            .padding(vertical = 9.dp, horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -460,7 +466,12 @@ fun ActionRow(
             )
             Text(subtitle, color = TextDim, fontSize = 11.sp)
         }
-        Icon(Icons.Filled.ChevronRight, null, tint = TextDim, modifier = Modifier.size(18.dp))
+        Icon(
+            Icons.Filled.ChevronRight,
+            null,
+            tint = if (enabled) color.copy(alpha = 0.78f) else TextDim.copy(alpha = 0.55f),
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
@@ -625,7 +636,7 @@ fun FeatureAccessCard(
             Spacer(Modifier.height(10.dp))
             Text(title, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(2.dp))
-            Text(subtitle, color = TextSecondary, fontSize = 10.sp, maxLines = 1)
+            Text(subtitle, color = TextSecondary, fontSize = 10.sp, lineHeight = 13.sp, maxLines = 2)
         }
     }
 }
@@ -663,6 +674,7 @@ fun GlassCard(
 ) {
     Box(
         modifier = modifier
+            .animateContentSize(animationSpec = tween(180, easing = FastOutSlowInEasing))
             .clip(RoundedCornerShape(12.dp))
             .background(
                 Brush.verticalGradient(

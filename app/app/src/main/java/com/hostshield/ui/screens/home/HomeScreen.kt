@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,6 +24,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import com.hostshield.ui.components.HostShieldCompactState
+import com.hostshield.ui.components.HostShieldPanelHeader
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.theme.*
@@ -261,41 +263,23 @@ fun HomeScreen(
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    HostShieldPanelHeader(
+                        icon = Icons.Filled.Dns,
+                        title = "Live DNS Activity",
+                        subtitle = if (state.dnsLoggingEnabled) "Newest resolver decisions" else "Logging is paused",
+                        accent = Blue,
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Blue.copy(alpha = 0.1f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Filled.Dns, null, tint = Blue, modifier = Modifier.size(16.dp))
-                            }
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                "Live DNS Activity",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = TextPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.accessibilityHeading()
-                            )
-                        }
                         Surface(
                             onClick = onNavigateToLogs,
                             shape = RoundedCornerShape(8.dp),
-                            color = Surface2
+                            color = Surface2,
                         ) {
                             Text(
                                 "View all",
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 color = Teal,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             )
                         }
                     }
@@ -303,42 +287,24 @@ fun HomeScreen(
                     Spacer(Modifier.height(12.dp))
 
                     if (!state.dnsLoggingEnabled) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Yellow.copy(alpha = 0.06f))
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Filled.Warning, null, tint = Yellow, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                "DNS logging is disabled. Enable it in Settings to see activity here.",
-                                color = Yellow.copy(alpha = 0.8f),
-                                fontSize = 11.sp,
-                                lineHeight = 15.sp
-                            )
-                        }
+                        HostShieldStatusBanner(
+                            icon = Icons.Filled.Warning,
+                            title = "Logging paused",
+                            message = "Enable DNS logging in Settings to review app activity, resolver latency, and blocked domains.",
+                            accent = Yellow,
+                            announce = false,
+                        )
                     } else if (liveLogs.isEmpty()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Surface2.copy(alpha = 0.5f))
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Filled.HourglassEmpty, null, tint = TextDim, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                if (state.isEnabled) "Waiting for DNS queries"
-                                else "Enable protection to see DNS activity",
-                                color = TextDim,
-                                fontSize = 12.sp
-                            )
-                        }
+                        HostShieldCompactState(
+                            icon = Icons.Filled.HourglassEmpty,
+                            title = if (state.isEnabled) "Waiting for DNS traffic" else "Protection is paused",
+                            message = if (state.isEnabled) {
+                                "Recent queries will stream here as apps resolve domains."
+                            } else {
+                                "Activate protection to start collecting resolver activity."
+                            },
+                            accent = Blue,
+                        )
                     } else {
                         val recentEntries = liveLogs.take(8)
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -524,9 +490,13 @@ fun HomeScreen(
                     ActionRow(
                         icon = Icons.Filled.RestartAlt,
                         label = "Pause protection",
-                        subtitle = "Stop blocking and restore the system hosts file",
+                        subtitle = if (state.isEnabled) {
+                            "Stop blocking and restore the current network path"
+                        } else {
+                            "Protection is already paused"
+                        },
                         color = TextSecondary,
-                        enabled = !state.isApplying,
+                        enabled = state.isEnabled && !state.isApplying,
                         onClick = { viewModel.disableBlocking() }
                     )
                 }
@@ -536,32 +506,16 @@ fun HomeScreen(
         // Root warning
         if (!state.isRootAvailable) {
             Spacer(Modifier.height(12.dp))
-            GlassCard(
+            HostShieldStatusBanner(
+                icon = Icons.Filled.Warning,
+                title = "Root not detected",
+                message = "Use VPN mode for system-wide DNS filtering, or grant root permission to write the hosts file.",
+                accent = Yellow,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
-                borderBrush = Brush.linearGradient(
-                    colors = listOf(Yellow.copy(alpha = 0.3f), Yellow.copy(alpha = 0.05f))
-                )
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Icon(Icons.Filled.Warning, null, tint = Yellow, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text("Root Not Detected", color = Yellow, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            "Grant root permission or use VPN mode.",
-                            color = TextSecondary,
-                            style = MaterialTheme.typography.bodySmall,
-                            lineHeight = 16.sp
-                        )
-                    }
-                }
-            }
+                announce = false,
+            )
         }
 
         Spacer(Modifier.height(32.dp))

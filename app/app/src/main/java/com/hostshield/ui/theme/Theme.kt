@@ -204,26 +204,72 @@ internal fun hostShieldColorScheme(palette: HostShieldPalette) = darkColorScheme
     surfaceTint = palette.teal
 )
 
+private val DefaultHostShieldTypography = Typography()
+
 val HostShieldTypography = Typography(
-    headlineLarge = Typography().headlineLarge.copy(
+    headlineLarge = DefaultHostShieldTypography.headlineLarge.copy(
         fontWeight = FontWeight.Bold,
-        letterSpacing = 0.sp
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
+        letterSpacing = 0.sp,
     ),
-    headlineMedium = Typography().headlineMedium.copy(
+    headlineMedium = DefaultHostShieldTypography.headlineMedium.copy(
         fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.sp
+        fontSize = 25.sp,
+        lineHeight = 31.sp,
+        letterSpacing = 0.sp,
     ),
-    titleLarge = Typography().titleLarge.copy(
-        fontWeight = FontWeight.SemiBold
-    ),
-    titleMedium = Typography().titleMedium.copy(
-        fontWeight = FontWeight.Medium
-    ),
-    bodyLarge = Typography().bodyLarge.copy(lineHeight = 24.sp),
-    labelLarge = Typography().labelLarge.copy(
+    titleLarge = DefaultHostShieldTypography.titleLarge.copy(
         fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.sp
-    )
+        fontSize = 21.sp,
+        lineHeight = 27.sp,
+        letterSpacing = 0.sp,
+    ),
+    titleMedium = DefaultHostShieldTypography.titleMedium.copy(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
+        letterSpacing = 0.sp,
+    ),
+    titleSmall = DefaultHostShieldTypography.titleSmall.copy(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 14.sp,
+        lineHeight = 19.sp,
+        letterSpacing = 0.sp,
+    ),
+    bodyLarge = DefaultHostShieldTypography.bodyLarge.copy(
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.sp,
+    ),
+    bodyMedium = DefaultHostShieldTypography.bodyMedium.copy(
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp,
+    ),
+    bodySmall = DefaultHostShieldTypography.bodySmall.copy(
+        fontSize = 12.sp,
+        lineHeight = 17.sp,
+        letterSpacing = 0.sp,
+    ),
+    labelLarge = DefaultHostShieldTypography.labelLarge.copy(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 14.sp,
+        lineHeight = 18.sp,
+        letterSpacing = 0.sp,
+    ),
+    labelMedium = DefaultHostShieldTypography.labelMedium.copy(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.sp,
+    ),
+    labelSmall = DefaultHostShieldTypography.labelSmall.copy(
+        fontWeight = FontWeight.Medium,
+        fontSize = 10.sp,
+        lineHeight = 13.sp,
+        letterSpacing = 0.sp,
+    ),
 )
 
 private val HostShieldShapes = Shapes(
