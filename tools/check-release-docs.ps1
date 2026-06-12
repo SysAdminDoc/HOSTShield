@@ -21,6 +21,7 @@ $rootBuild = Read-RepoFile "app/build.gradle.kts"
 $releaseWorkflow = Read-RepoFile ".github/workflows/release.yml"
 $releaseProvenance = Read-RepoFile "tools/release-provenance.ps1"
 $osvPolicyScript = Read-RepoFile "tools/check-osv-report.ps1"
+$androidPageAlignmentScript = Read-RepoFile "tools/check-android-page-alignment.ps1"
 $versionNameMatch = [regex]::Match($appBuild, 'versionName\s*=\s*"([^"]+)"')
 $versionCodeMatch = [regex]::Match($appBuild, 'versionCode\s*=\s*(\d+)')
 $compileSdkMatch = [regex]::Match($appBuild, 'compileSdk\s*=\s*(\d+)')
@@ -235,8 +236,10 @@ $releaseGatePatterns = @{
             "cyclonedxBom",
             "google/osv-scanner-action/osv-scanner-action@v2.3.8",
             "check-osv-report.ps1",
+            "check-android-page-alignment.ps1",
             "hostshield-bom.cdx.json",
             "osv-results.json",
+            "android-page-alignment.txt",
             "release-provenance.ps1",
             "upload-artifact"
         )
@@ -247,8 +250,11 @@ $releaseGatePatterns = @{
             "SbomPath",
             "OsvReportPath",
             "OsvAllowlistPath",
+            "PageAlignmentReportPath",
             "hostshield-bom.cdx.json",
             "osv-results.json",
+            "android-page-alignment.txt",
+            "16 KB",
             "OSV policy fails release CI"
         )
     }
@@ -260,6 +266,17 @@ $releaseGatePatterns = @{
             "CRITICAL",
             "allowlist",
             "expires"
+        )
+    }
+    "tools/check-android-page-alignment.ps1" = @{
+        Text = $androidPageAlignmentScript
+        Patterns = @(
+            "zipalign",
+            "-P",
+            "16",
+            "bundletool",
+            "PAGE_ALIGNMENT_16K",
+            "bundletool dump config"
         )
     }
 }

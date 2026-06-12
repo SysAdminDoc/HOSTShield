@@ -105,10 +105,15 @@ jobs:
           echo "APK_PATH=app/HostShield-v${VERSION}-full-release.apk" >> $GITHUB_ENV
           echo "AAB_PATH=app/HostShield-v${VERSION}-play-release.aab" >> $GITHUB_ENV
 
+      - name: Verify Android 16 KB page alignment
+        shell: pwsh
+        working-directory: .
+        run: ./tools/check-android-page-alignment.ps1 -ApkPath "${{ env.APK_PATH }}" -AabPath "${{ env.AAB_PATH }}" -OutputPath artifacts/release-provenance/android-page-alignment.txt
+
       - name: Generate release provenance
         shell: pwsh
         working-directory: .
-        run: ./tools/release-provenance.ps1 -ApkPath "${{ env.APK_PATH }}" -OutputDir artifacts/release-provenance -SbomPath artifacts/release-provenance/hostshield-bom.cdx.json -OsvReportPath artifacts/release-provenance/osv-results.json -OsvAllowlistPath tools/osv-allowlist.json
+        run: ./tools/release-provenance.ps1 -ApkPath "${{ env.APK_PATH }}" -OutputDir artifacts/release-provenance -SbomPath artifacts/release-provenance/hostshield-bom.cdx.json -OsvReportPath artifacts/release-provenance/osv-results.json -OsvAllowlistPath tools/osv-allowlist.json -PageAlignmentReportPath artifacts/release-provenance/android-page-alignment.txt
 
       - name: Upload release build artifacts
         uses: actions/upload-artifact@v4
@@ -121,6 +126,7 @@ jobs:
             artifacts/release-provenance/release-provenance.md
             artifacts/release-provenance/hostshield-bom.cdx.json
             artifacts/release-provenance/osv-results.json
+            artifacts/release-provenance/android-page-alignment.txt
           if-no-files-found: error
 
       - name: Upload APK to Release
@@ -133,6 +139,7 @@ jobs:
             artifacts/release-provenance/release-provenance.md
             artifacts/release-provenance/hostshield-bom.cdx.json
             artifacts/release-provenance/osv-results.json
+            artifacts/release-provenance/android-page-alignment.txt
           fail_on_unmatched_files: true
 
       - name: Upload APK (workflow_dispatch)
@@ -145,6 +152,7 @@ jobs:
             "artifacts/release-provenance/release-provenance.md" \
             "artifacts/release-provenance/hostshield-bom.cdx.json" \
             "artifacts/release-provenance/osv-results.json" \
+            "artifacts/release-provenance/android-page-alignment.txt" \
             --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

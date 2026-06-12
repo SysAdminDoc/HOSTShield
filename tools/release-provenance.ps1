@@ -4,7 +4,8 @@ param(
     [string]$OutputDir = "artifacts/release-provenance",
     [string]$SbomPath = "artifacts/release-provenance/hostshield-bom.cdx.json",
     [string]$OsvReportPath = "artifacts/release-provenance/osv-results.json",
-    [string]$OsvAllowlistPath = "tools/osv-allowlist.json"
+    [string]$OsvAllowlistPath = "tools/osv-allowlist.json",
+    [string]$PageAlignmentReportPath = "artifacts/release-provenance/android-page-alignment.txt"
 )
 
 $ErrorActionPreference = "Stop"
@@ -155,11 +156,14 @@ $apkName = Split-Path -Leaf $apk
 $sbom = if (Test-RepoPath $SbomPath) { Resolve-RepoPath $SbomPath } else { $null }
 $osvReport = if (Test-RepoPath $OsvReportPath) { Resolve-RepoPath $OsvReportPath } else { $null }
 $osvAllowlist = if (Test-RepoPath $OsvAllowlistPath) { Resolve-RepoPath $OsvAllowlistPath } else { $null }
+$pageAlignmentReport = if (Test-RepoPath $PageAlignmentReportPath) { Resolve-RepoPath $PageAlignmentReportPath } else { $null }
 $sbomHash = if ($sbom) { (Get-FileHash -Algorithm SHA256 -LiteralPath $sbom).Hash.ToLowerInvariant() } else { "unavailable" }
 $osvReportHash = if ($osvReport) { (Get-FileHash -Algorithm SHA256 -LiteralPath $osvReport).Hash.ToLowerInvariant() } else { "unavailable" }
 $osvAllowlistHash = if ($osvAllowlist) { (Get-FileHash -Algorithm SHA256 -LiteralPath $osvAllowlist).Hash.ToLowerInvariant() } else { "unavailable" }
+$pageAlignmentReportHash = if ($pageAlignmentReport) { (Get-FileHash -Algorithm SHA256 -LiteralPath $pageAlignmentReport).Hash.ToLowerInvariant() } else { "unavailable" }
 $sbomName = if ($sbom) { Split-Path -Leaf $sbom } else { Split-Path -Leaf $SbomPath }
 $osvReportName = if ($osvReport) { Split-Path -Leaf $osvReport } else { Split-Path -Leaf $OsvReportPath }
+$pageAlignmentReportName = if ($pageAlignmentReport) { Split-Path -Leaf $pageAlignmentReport } else { Split-Path -Leaf $PageAlignmentReportPath }
 
 $apkSigner = Find-ApkSigner
 $javaHome = Find-JavaHome
@@ -194,6 +198,9 @@ if ($sbom) {
 if ($osvReport) {
     $checksumLines += "$osvReportHash  $osvReportName"
 }
+if ($pageAlignmentReport) {
+    $checksumLines += "$pageAlignmentReportHash  $pageAlignmentReportName"
+}
 $checksumLines | Set-Content -Encoding UTF8 -LiteralPath $checksumsPath
 
 $provenance = @(
@@ -213,6 +220,8 @@ $provenance = @(
     "| OSV report SHA-256 | $osvReportHash |",
     "| OSV allowlist path | $(if ($osvAllowlist) { $osvAllowlist } else { 'missing' }) |",
     "| OSV allowlist SHA-256 | $osvAllowlistHash |",
+    "| Android 16 KB page alignment report path | $(if ($pageAlignmentReport) { $pageAlignmentReport } else { 'missing' }) |",
+    "| Android 16 KB page alignment report SHA-256 | $pageAlignmentReportHash |",
     "| Signing cert SHA-256 | $signerFingerprint |",
     "| Gradle | $gradleVersion |",
     "| Android Gradle Plugin | $agpVersion |",
@@ -227,6 +236,7 @@ $provenance = @(
     '- `checksums.txt` contains the APK SHA-256 line for release notes or GitHub release assets.',
     '- CycloneDX SBOM and OSV JSON report hashes are recorded when release CI generated them before the APK build.',
     '- OSV policy fails release CI on unacknowledged HIGH or CRITICAL vulnerabilities; allowlist entries require a reason and expiry.',
+    '- Android 16 KB page alignment is verified with `zipalign -P 16` for APKs and `PAGE_ALIGNMENT_16K` bundle config for AABs.',
     '- Signing certificate fingerprint comes from `apksigner verify --verbose --print-certs` when Android build tools are available.',
     '- Git status is recorded so release notes can distinguish clean tagged releases from local smoke-test artifacts.'
 )
