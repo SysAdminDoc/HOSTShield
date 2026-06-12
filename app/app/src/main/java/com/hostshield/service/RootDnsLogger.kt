@@ -500,7 +500,8 @@ class RootDnsLogger @Inject constructor(
             }
 
             val queryType = parseDnsQueryType(data)
-            val isBlocked = blocklist.isBlocked(hostname)
+            val decision = blocklist.decide(hostname)
+            val isBlocked = decision.blocked
 
             if (isBlocked) {
                 val resp = buildBlockResponse(data, queryType)
@@ -530,7 +531,11 @@ class RootDnsLogger @Inject constructor(
                     queryType = queryType,
                     timestamp = System.currentTimeMillis(),
                     appPackage = appPkg,
-                    appLabel = appLabel
+                    appLabel = appLabel,
+                    decisionReason = decision.reason,
+                    decisionSource = decision.source,
+                    matchedValue = decision.matchedValue,
+                    decisionPrecedence = decision.precedence
                 ))
 
                 // If we don't have app info yet, queue for enrichment

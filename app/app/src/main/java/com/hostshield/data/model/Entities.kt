@@ -92,7 +92,11 @@ data class DnsLogEntry(
     @ColumnInfo(name = "cname_chain") val cnameChain: String = "",   // comma-separated CNAME targets
     @ColumnInfo(name = "resolved_ips") val resolvedIps: String = "",  // comma-separated answer IPs
     @ColumnInfo(name = "tracker_category") val trackerCategory: String = "",  // v6.0: network tracker category (Advertising, Analytics, etc.)
-    @ColumnInfo(name = "tracker_owner") val trackerOwner: String = ""  // v6.0: tracker owner (Google, Facebook, etc.)
+    @ColumnInfo(name = "tracker_owner") val trackerOwner: String = "",  // v6.0: tracker owner (Google, Facebook, etc.)
+    @ColumnInfo(name = "decision_reason", defaultValue = "") val decisionReason: String = "",
+    @ColumnInfo(name = "decision_source", defaultValue = "") val decisionSource: String = "",
+    @ColumnInfo(name = "matched_value", defaultValue = "") val matchedValue: String = "",
+    @ColumnInfo(name = "decision_precedence", defaultValue = "") val decisionPrecedence: String = ""
 )
 
 @Entity(tableName = "block_stats")

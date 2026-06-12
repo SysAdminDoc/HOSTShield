@@ -100,14 +100,20 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 val sourceAllowDomains = mutableSetOf<String>()
                 val sourceWildcardBlocks = mutableSetOf<String>()
                 val sourceWildcardAllows = mutableSetOf<String>()
+                val exactBlockOrigins = mutableMapOf<String, String>()
+                val wildcardBlockOrigins = mutableMapOf<String, String>()
                 for (source in blockSources) {
                     downloader.download(source).onSuccess { dl ->
                         repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                         if (!dl.notModified) {
                             val parsed = HostsParser.parseForBlocking(dl.content)
                             allDomains.addAll(parsed.blockDomains)
+                            parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
                             sourceAllowDomains.addAll(parsed.allowDomains)
                             sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                            parsed.wildcardBlockDomains.forEach {
+                                wildcardBlockOrigins.putIfAbsent(it, source.label)
+                            }
                             sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                         }
                     }.onFailure { err ->
@@ -143,16 +149,28 @@ class ProfileScheduleWorker @AssistedInject constructor(
                     }
                 }
                 val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-                blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
+                blockRules.filter { !it.isWildcard }.forEach {
+                    val hostname = it.hostname.lowercase()
+                    allDomains.add(hostname)
+                    exactBlockOrigins[hostname] = "User block rule"
+                }
                 val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
                 allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
                 allDomains.removeAll(sourceAllowDomains)
-                dohBypassUpdater.mergeCachedInto(allDomains, sourceWildcardBlocks)
+                dohBypassUpdater.mergeCachedInto(
+                    allDomains,
+                    sourceWildcardBlocks,
+                    exactBlockOrigins,
+                    wildcardBlockOrigins
+                )
                 blocklistHolder.updateAsync(
                     allDomains,
                     repository.getEnabledWildcards(),
                     sourceWildcardBlocks = sourceWildcardBlocks,
-                    sourceWildcardAllows = sourceWildcardAllows
+                    sourceWildcardAllows = sourceWildcardAllows,
+                    exactBlockOrigins = exactBlockOrigins,
+                    sourceWildcardBlockOrigins = wildcardBlockOrigins,
+                    sourceExactAllows = sourceAllowDomains
                 )
                 val blockingDomainCount = allDomains.size + sourceWildcardBlocks.size
 

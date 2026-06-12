@@ -103,6 +103,10 @@ class HostShieldMigrationTest {
         assertColumn(db, "host_sources", "prev_entry_count")
         assertColumn(db, "dns_logs", "tracker_category")
         assertColumn(db, "dns_logs", "tracker_owner")
+        assertColumn(db, "dns_logs", "decision_reason")
+        assertColumn(db, "dns_logs", "decision_source")
+        assertColumn(db, "dns_logs", "matched_value")
+        assertColumn(db, "dns_logs", "decision_precedence")
         assertColumn(db, "profiles", "wifi_ssids")
         assertColumn(db, "firewall_rules", "blocked_countries")
         assertColumn(db, "firewall_rules", "lan_allowed")
@@ -117,6 +121,8 @@ class HostShieldMigrationTest {
         assertEquals(1, db.queryInt("SELECT COUNT(*) FROM host_sources WHERE url = 'https://fixture.hostshield.test/hosts.txt'"))
         assertEquals(1, db.queryInt("SELECT COUNT(*) FROM user_rules WHERE hostname = 'ads.fixture.test'"))
         assertEquals(1, db.queryInt("SELECT COUNT(*) FROM dns_logs WHERE hostname = 'ads.fixture.test'"))
+        assertEquals("", db.queryString("SELECT decision_reason FROM dns_logs WHERE hostname = 'ads.fixture.test'"))
+        assertEquals("", db.queryString("SELECT decision_source FROM dns_logs WHERE hostname = 'ads.fixture.test'"))
         assertEquals(0, db.queryInt("SELECT last_http_status FROM host_sources WHERE url = 'https://fixture.hostshield.test/hosts.txt'"))
 
         if (version >= 2) {
@@ -165,6 +171,13 @@ class HostShieldMigrationTest {
         }
     }
 
+    private fun SupportSQLiteDatabase.queryString(sql: String): String {
+        query(sql).use { cursor ->
+            assertTrue("No result for $sql", cursor.moveToFirst())
+            return cursor.getString(0)
+        }
+    }
+
     private object HistoricalRoomFixtures {
         val supportedStartVersions = 1 until HOST_SHIELD_DATABASE_VERSION
 
@@ -210,6 +223,9 @@ class HostShieldMigrationTest {
                 columns += "domains_added INTEGER NOT NULL"
                 columns += "domains_removed INTEGER NOT NULL"
             }
+            if (version >= 15) {
+                columns += "last_http_status INTEGER NOT NULL DEFAULT 0"
+            }
             db.execSQL("CREATE TABLE host_sources (${columns.joinToString(", ")})")
             if (version >= 13) db.execSQL("CREATE INDEX index_host_sources_enabled ON host_sources (enabled)")
             if (version >= 14) db.execSQL("CREATE INDEX index_host_sources_category ON host_sources (category)")
@@ -249,6 +265,10 @@ class HostShieldMigrationTest {
             if (version >= 7) {
                 insertColumns += listOf("prev_entry_count", "domains_added", "domains_removed")
                 values += listOf("40", "2", "0")
+            }
+            if (version >= 15) {
+                insertColumns += "last_http_status"
+                values += "0"
             }
             db.execSQL("INSERT INTO host_sources (${insertColumns.joinToString(", ")}) VALUES (${values.joinToString(", ")})")
         }
@@ -299,6 +319,12 @@ class HostShieldMigrationTest {
                 columns += "tracker_category TEXT NOT NULL"
                 columns += "tracker_owner TEXT NOT NULL"
             }
+            if (version >= 16) {
+                columns += "decision_reason TEXT NOT NULL"
+                columns += "decision_source TEXT NOT NULL"
+                columns += "matched_value TEXT NOT NULL"
+                columns += "decision_precedence TEXT NOT NULL"
+            }
             db.execSQL("CREATE TABLE dns_logs (${columns.joinToString(", ")})")
             db.execSQL("CREATE INDEX index_dns_logs_timestamp ON dns_logs (timestamp)")
             if (version >= 5) {
@@ -325,6 +351,10 @@ class HostShieldMigrationTest {
             if (version >= 11) {
                 insertColumns += listOf("tracker_category", "tracker_owner")
                 values += listOf("'Advertising'", "'Fixture Tracker'")
+            }
+            if (version >= 16) {
+                insertColumns += listOf("decision_reason", "decision_source", "matched_value", "decision_precedence")
+                values += listOf("'source_list'", "'Fixture Hosts'", "'ads.fixture.test'", "'exact block match'")
             }
             db.execSQL("INSERT INTO dns_logs (${insertColumns.joinToString(", ")}) VALUES (${values.joinToString(", ")})")
         }

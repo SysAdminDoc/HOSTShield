@@ -8,6 +8,22 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class BlockDecision(
+    val blocked: Boolean,
+    val reason: String,
+    val source: String = "",
+    val matchedValue: String = "",
+    val precedence: String = ""
+) {
+    companion object {
+        val ALLOWED_DEFAULT = BlockDecision(
+            blocked = false,
+            reason = "none",
+            precedence = "no matching block rule"
+        )
+    }
+}
+
 // Trie-optimized blocklist holder with hash set fast path
 // and filter decision LRU cache.
 //
@@ -55,6 +71,10 @@ class BlocklistHolder @Inject constructor() {
         val blockedIps: Set<String>,
         val domainCount: Int,
         val sourceWildcardBlockDomains: Set<String>,
+        val exactBlockOrigins: Map<String, String>,
+        val sourceWildcardBlockOrigins: Map<String, String>,
+        val sourceExactAllowDomains: Set<String>,
+        val sourceWildcardAllowDomains: Set<String>,
     ) {
         companion object {
             val EMPTY = Snapshot(
@@ -66,6 +86,10 @@ class BlocklistHolder @Inject constructor() {
                 blockedIps = emptySet(),
                 domainCount = 0,
                 sourceWildcardBlockDomains = emptySet(),
+                exactBlockOrigins = emptyMap(),
+                sourceWildcardBlockOrigins = emptyMap(),
+                sourceExactAllowDomains = emptySet(),
+                sourceWildcardAllowDomains = emptySet(),
             )
         }
     }
@@ -82,10 +106,10 @@ class BlocklistHolder @Inject constructor() {
      * mutate it concurrently. Invalidated on every [update].
      */
     private val decisionCacheMaxSize = 8192
-    private val decisionCache: MutableMap<String, Boolean> =
+    private val decisionCache: MutableMap<String, BlockDecision> =
         java.util.Collections.synchronizedMap(
-            object : LinkedHashMap<String, Boolean>(2048, 0.75f, true) {
-                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Boolean>?): Boolean =
+            object : LinkedHashMap<String, BlockDecision>(2048, 0.75f, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, BlockDecision>?): Boolean =
                     size > decisionCacheMaxSize
             }
         )
@@ -203,10 +227,23 @@ class BlocklistHolder @Inject constructor() {
         regexRules: List<UserRule> = emptyList(),
         ipBlocks: Set<String> = emptySet(),
         sourceWildcardBlocks: Set<String> = emptySet(),
-        sourceWildcardAllows: Set<String> = emptySet()
+        sourceWildcardAllows: Set<String> = emptySet(),
+        exactBlockOrigins: Map<String, String> = emptyMap(),
+        sourceWildcardBlockOrigins: Map<String, String> = emptyMap(),
+        sourceExactAllows: Set<String> = emptySet(),
     ) {
         val newRoot = TrieNode()
         val newExactSet: MutableSet<String> = HashSet(newDomains.size + dohBypassDomains.size)
+        val normalizedExactBlockOrigins = exactBlockOrigins
+            .mapKeys { it.key.lowercase() }
+            .filterKeys { it.isNotBlank() }
+        val normalizedSourceWildcardBlockOrigins = sourceWildcardBlockOrigins
+            .mapKeys { it.key.lowercase() }
+            .filterKeys { it.isNotBlank() }
+        val normalizedSourceExactAllows = sourceExactAllows
+            .map { it.lowercase() }
+            .filter { it.isNotBlank() }
+            .toSet()
 
         for (domain in newDomains) {
             val lower = domain.lowercase()
@@ -217,13 +254,16 @@ class BlocklistHolder @Inject constructor() {
             .map { it.lowercase() }
             .filter { it.isNotBlank() }
             .toSet()
+        val normalizedSourceWildcardAllows = sourceWildcardAllows
+            .map { it.lowercase() }
+            .filter { it.isNotBlank() }
+            .toSet()
 
         for (domain in normalizedSourceWildcardBlocks) {
             insertDomain(newRoot, domain, wildcardBlock = true)
         }
-        for (domain in sourceWildcardAllows) {
-            val lower = domain.lowercase()
-            if (lower.isNotBlank()) insertDomain(newRoot, lower, wildcardAllow = true)
+        for (domain in normalizedSourceWildcardAllows) {
+            insertDomain(newRoot, domain, wildcardAllow = true)
         }
         // Always block DoH bypass domains (exact match)
         for (domain in dohBypassDomains) {
@@ -274,6 +314,10 @@ class BlocklistHolder @Inject constructor() {
             blockedIps = ipBlocks,
             domainCount = newDomains.size + normalizedSourceWildcardBlocks.size + dohBypassDomains.size,
             sourceWildcardBlockDomains = normalizedSourceWildcardBlocks,
+            exactBlockOrigins = normalizedExactBlockOrigins,
+            sourceWildcardBlockOrigins = normalizedSourceWildcardBlockOrigins,
+            sourceExactAllowDomains = normalizedSourceExactAllows,
+            sourceWildcardAllowDomains = normalizedSourceWildcardAllows,
         )
 
         decisionCache.clear()
@@ -285,9 +329,22 @@ class BlocklistHolder @Inject constructor() {
         regexRules: List<UserRule> = emptyList(),
         ipBlocks: Set<String> = emptySet(),
         sourceWildcardBlocks: Set<String> = emptySet(),
-        sourceWildcardAllows: Set<String> = emptySet()
+        sourceWildcardAllows: Set<String> = emptySet(),
+        exactBlockOrigins: Map<String, String> = emptyMap(),
+        sourceWildcardBlockOrigins: Map<String, String> = emptyMap(),
+        sourceExactAllows: Set<String> = emptySet(),
     ) = withContext(Dispatchers.Default) {
-        update(newDomains, wildcards, regexRules, ipBlocks, sourceWildcardBlocks, sourceWildcardAllows)
+        update(
+            newDomains,
+            wildcards,
+            regexRules,
+            ipBlocks,
+            sourceWildcardBlocks,
+            sourceWildcardAllows,
+            exactBlockOrigins,
+            sourceWildcardBlockOrigins,
+            sourceExactAllows
+        )
     }
 
     fun clear() {
@@ -331,6 +388,10 @@ class BlocklistHolder @Inject constructor() {
             blockedIps = current.blockedIps,
             domainCount = current.domainCount + 1,
             sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
+            exactBlockOrigins = current.exactBlockOrigins + (h to "User block rule"),
+            sourceWildcardBlockOrigins = current.sourceWildcardBlockOrigins,
+            sourceExactAllowDomains = current.sourceExactAllowDomains,
+            sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
         )
         decisionCache.remove(h)
     }
@@ -358,6 +419,10 @@ class BlocklistHolder @Inject constructor() {
             blockedIps = current.blockedIps,
             domainCount = (current.domainCount - 1).coerceAtLeast(0),
             sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
+            exactBlockOrigins = current.exactBlockOrigins - h,
+            sourceWildcardBlockOrigins = current.sourceWildcardBlockOrigins,
+            sourceExactAllowDomains = current.sourceExactAllowDomains,
+            sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
         )
         decisionCache.remove(h)
     }
@@ -370,6 +435,10 @@ class BlocklistHolder @Inject constructor() {
      * only evaluated when needed. Results cached in decision LRU.
      */
     fun isBlocked(hostname: String): Boolean {
+        return decide(hostname).blocked
+    }
+
+    fun decide(hostname: String): BlockDecision {
         val lower = hostname.lowercase()
 
         // L1: Filter decision LRU cache — O(1) for hot domains. LinkedHashMap in
@@ -381,7 +450,7 @@ class BlocklistHolder @Inject constructor() {
         // mid-evaluation and atomically swap `snapshot`, but the local copy is
         // immutable from this thread's perspective.
         val snap = snapshot
-        val result = isBlockedInternal(lower, snap)
+        val result = decideInternal(lower, snap)
         decisionCache[lower] = result
         return result
     }
@@ -389,44 +458,151 @@ class BlocklistHolder @Inject constructor() {
     /** Check if a resolved IP address is in the IP blocklist. */
     fun isIpBlocked(ip: String): Boolean = ip in snapshot.blockedIps
 
-    private fun isBlockedInternal(lower: String, snap: Snapshot): Boolean {
+    private fun decideInternal(lower: String, snap: Snapshot): BlockDecision {
+        if (lower in dohBypassDomains) {
+            return blockedDecision(
+                reason = "doh_bypass",
+                source = "Built-in DoH bypass guard",
+                matchedValue = lower,
+                precedence = "DoH bypass guard is always blocked"
+            )
+        }
+        findWildcardMatch(lower, dohBypassWildcards)?.let { match ->
+            return blockedDecision(
+                reason = "doh_bypass",
+                source = "Built-in DoH bypass guard",
+                matchedValue = match,
+                precedence = "DoH bypass guard is always blocked"
+            )
+        }
+        if (lower in snap.sourceExactAllowDomains) {
+            return BlockDecision(
+                blocked = false,
+                reason = "allowlist",
+                source = "Source allowlist",
+                matchedValue = lower,
+                precedence = "source allowlist overrides source and user block entries"
+            )
+        }
+
         // Trie walk over a stable snapshot — gathers wildcard allow/block and
         // exact-match signal in one traversal.
         val labels = lower.split('.').reversed()
         var node = snap.root
-        var wildcardBlocked = false
-        var wildcardAllowed = false
+        var wildcardBlockMatch = ""
+        var wildcardAllowMatch = ""
         var depth = 0
 
         for (label in labels) {
             val child = node.children[label] ?: break
-            if (child.wildcardAllow) { wildcardAllowed = true; break }
-            if (child.wildcardBlock) wildcardBlocked = true
+            val match = labels.take(depth + 1).asReversed().joinToString(".")
+            if (child.wildcardAllow) { wildcardAllowMatch = match; break }
+            if (child.wildcardBlock) wildcardBlockMatch = match
             node = child
             depth++
         }
 
-        if (wildcardAllowed) return false
+        if (wildcardAllowMatch.isNotEmpty()) {
+            return BlockDecision(
+                blocked = false,
+                reason = "allowlist_wildcard",
+                source = if (wildcardAllowMatch in snap.sourceWildcardAllowDomains) {
+                    "Source wildcard allowlist"
+                } else {
+                    "User wildcard allow rule"
+                },
+                matchedValue = wildcardAllowMatch,
+                precedence = "wildcard allow overrides blocklist matches"
+            )
+        }
 
         val exactBlocked = lower in snap.exactBlockSet
         val trieExact = depth == labels.size && node.terminal
-        val blocked = exactBlocked || trieExact || wildcardBlocked
+        val blocked = exactBlocked || trieExact || wildcardBlockMatch.isNotEmpty()
 
         if (blocked) {
-            if (snap.regexAllowRules.any { it.containsMatchIn(lower) }) return false
-            return true
+            snap.regexAllowRules.firstOrNull { it.containsMatchIn(lower) }?.let { regex ->
+                return BlockDecision(
+                    blocked = false,
+                    reason = "regex_allow",
+                    source = "User regex allow rule",
+                    matchedValue = regex.pattern,
+                    precedence = "regex allow overrides blocklist match"
+                )
+            }
+            if (exactBlocked || trieExact) {
+                val origin = snap.exactBlockOrigins[lower].orEmpty()
+                return blockedDecision(
+                    reason = origin.toBlockReason(default = "source_list"),
+                    source = origin.ifBlank { "Source or user blocklist" },
+                    matchedValue = lower,
+                    precedence = "exact block match"
+                )
+            }
+            val origin = snap.sourceWildcardBlockOrigins[wildcardBlockMatch].orEmpty()
+            return blockedDecision(
+                reason = origin.toBlockReason(default = "wildcard_block"),
+                source = origin.ifBlank { "User wildcard block rule" },
+                matchedValue = wildcardBlockMatch,
+                precedence = "wildcard block match"
+            )
         }
 
-        if (snap.regexBlockRules.any { it.containsMatchIn(lower) }) {
-            if (snap.regexAllowRules.any { it.containsMatchIn(lower) }) return false
-            return true
+        snap.regexBlockRules.firstOrNull { it.containsMatchIn(lower) }?.let { regex ->
+            snap.regexAllowRules.firstOrNull { it.containsMatchIn(lower) }?.let { allowRegex ->
+                return BlockDecision(
+                    blocked = false,
+                    reason = "regex_allow",
+                    source = "User regex allow rule",
+                    matchedValue = allowRegex.pattern,
+                    precedence = "regex allow overrides regex block"
+                )
+            }
+            return blockedDecision(
+                reason = "regex_block",
+                source = "User regex block rule",
+                matchedValue = regex.pattern,
+                precedence = "regex block fallback after exact and wildcard checks"
+            )
         }
 
         if (lower.startsWith("www.")) {
-            return isBlockedInternal(lower.removePrefix("www."), snap)
+            val wwwDecision = decideInternal(lower.removePrefix("www."), snap)
+            return if (wwwDecision.blocked) {
+                wwwDecision.copy(
+                    precedence = listOf("www alias fallback", wwwDecision.precedence)
+                        .filter { it.isNotBlank() }
+                        .joinToString("; ")
+                )
+            } else {
+                wwwDecision
+            }
         }
 
-        return false
+        return BlockDecision.ALLOWED_DEFAULT
+    }
+
+    private fun blockedDecision(
+        reason: String,
+        source: String,
+        matchedValue: String,
+        precedence: String
+    ): BlockDecision = BlockDecision(
+        blocked = true,
+        reason = reason,
+        source = source,
+        matchedValue = matchedValue,
+        precedence = precedence
+    )
+
+    private fun findWildcardMatch(lower: String, wildcards: Set<String>): String? =
+        wildcards.firstOrNull { lower == it || lower.endsWith(".$it") }
+
+    private fun String.toBlockReason(default: String): String = when {
+        startsWith("User block rule", ignoreCase = true) -> "user_rule"
+        startsWith("Remote DoH bypass", ignoreCase = true) -> "doh_bypass"
+        isNotBlank() -> "source_list"
+        else -> default
     }
 
     private fun insertDomain(

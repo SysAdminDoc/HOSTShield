@@ -34,6 +34,7 @@ import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.sourceHttpStatus
+import com.hostshield.domain.BlockDecision
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
 import com.hostshield.util.Android16VpnRecoveryDetector
@@ -887,6 +888,8 @@ class DnsVpnService : VpnService() {
             val sourceAllowDomains = mutableSetOf<String>()
             val sourceWildcardBlocks = mutableSetOf<String>()
             val sourceWildcardAllows = mutableSetOf<String>()
+            val exactBlockOrigins = mutableMapOf<String, String>()
+            val wildcardBlockOrigins = mutableMapOf<String, String>()
             val failedSources = mutableListOf<SourceFailureNotice>()
             for (source in blockSources) {
                 // forceDownload=true: must get ALL domains, not just changes.
@@ -894,8 +897,12 @@ class DnsVpnService : VpnService() {
                 downloader.download(source, forceDownload = true).onSuccess { dl ->
                     val parsed = HostsParser.parseForBlocking(dl.content)
                     allDomains.addAll(parsed.blockDomains)
+                    parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
                     sourceAllowDomains.addAll(parsed.allowDomains)
                     sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                    parsed.wildcardBlockDomains.forEach {
+                        wildcardBlockOrigins.putIfAbsent(it, source.label)
+                    }
                     sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                     repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                 }.onFailure { err ->
@@ -958,16 +965,28 @@ class DnsVpnService : VpnService() {
             }
             sourceFailureNotifier.notifyFailures(failedSources)
             repository.getEnabledRulesByType(RuleType.BLOCK).filter { !it.isWildcard }
-                .forEach { allDomains.add(it.hostname.lowercase()) }
+                .forEach {
+                    val hostname = it.hostname.lowercase()
+                    allDomains.add(hostname)
+                    exactBlockOrigins[hostname] = "User block rule"
+                }
             repository.getEnabledRulesByType(RuleType.ALLOW).filter { !it.isWildcard }
                 .forEach { allDomains.remove(it.hostname.lowercase()) }
             allDomains.removeAll(sourceAllowDomains)
-            dohBypassUpdater.mergeCachedInto(allDomains, sourceWildcardBlocks)
+            dohBypassUpdater.mergeCachedInto(
+                allDomains,
+                sourceWildcardBlocks,
+                exactBlockOrigins,
+                wildcardBlockOrigins
+            )
             blocklist.updateAsync(
                 allDomains,
                 repository.getEnabledWildcards(),
                 sourceWildcardBlocks = sourceWildcardBlocks,
-                sourceWildcardAllows = sourceWildcardAllows
+                sourceWildcardAllows = sourceWildcardAllows,
+                exactBlockOrigins = exactBlockOrigins,
+                sourceWildcardBlockOrigins = wildcardBlockOrigins,
+                sourceExactAllows = sourceAllowDomains
             )
             val blockingDomainCount = allDomains.size + sourceWildcardBlocks.size
             recordEvent(
@@ -1098,7 +1117,13 @@ class DnsVpnService : VpnService() {
         // Per-app firewall: block ALL DNS for firewalled apps
         // v6.0: Skip firewall checks in DNS-only mode (no per-app blocking)
         if (!dnsOnlyMode && app.first.isNotEmpty() && app.first in blockedApps) {
-            logAsync(domain, true, app, qtype)
+            logAsync(domain, true, app, qtype, explicitDecision(
+                blocked = true,
+                reason = "app_firewall",
+                source = "Per-app DNS firewall",
+                matchedValue = app.first,
+                precedence = "per-app firewall runs before DNS policy"
+            ))
             sendBlockResponse(dns, packet, ihl, false, qtype)
             return
         }
@@ -1107,7 +1132,13 @@ class DnsVpnService : VpnService() {
         if (!dnsOnlyMode && app.first.isNotEmpty()) {
             val ctxRule = contextRules[app.first]
             if (ctxRule != null && shouldBlockByContext(ctxRule, app.first)) {
-                logAsync(domain, true, app, qtype)
+                logAsync(domain, true, app, qtype, explicitDecision(
+                    blocked = true,
+                    reason = "context_firewall",
+                    source = "Context-aware firewall",
+                    matchedValue = app.first,
+                    precedence = "context firewall runs before DNS policy"
+                ))
                 sendBlockResponse(dns, packet, ihl, false, qtype)
                 return
             }
@@ -1118,7 +1149,13 @@ class DnsVpnService : VpnService() {
             val safeResp = safeSearchEnforcer.buildSafeResponse(dns, domain)
             if (safeResp != null) {
                 Log.d(TAG, "SAFE-SEARCH $domain")
-                logAsync(domain, false, app, qtype)
+                logAsync(domain, false, app, qtype, explicitDecision(
+                    blocked = false,
+                    reason = "safe_search",
+                    source = "Safe Search enforcer",
+                    matchedValue = domain,
+                    precedence = "safe-search rewrite runs before blocklist lookup"
+                ))
                 wrapResponseV4(packet, ihl, safeResp)?.let { writeChannel.send(it) }
                 allowedCount.incrementAndGet()
                 return
@@ -1130,14 +1167,26 @@ class DnsVpnService : VpnService() {
             val ruleAction = appDnsRuleEngine.checkDomain(app.first, domain)
             if (ruleAction == AppDnsRuleEngine.RuleAction.BLOCK) {
                 Log.d(TAG, "APP-RULE blocked $domain for ${app.second}")
-                logAsync(domain, true, app, qtype)
+                logAsync(domain, true, app, qtype, explicitDecision(
+                    blocked = true,
+                    reason = "app_rule_block",
+                    source = "Per-app DNS rule",
+                    matchedValue = app.first,
+                    precedence = "per-app block rule runs before shared blocklist"
+                ))
                 sendBlockResponse(dns, packet, ihl, false, qtype)
                 return
             }
             if (ruleAction == AppDnsRuleEngine.RuleAction.ALLOW) {
                 // Explicitly allowed by per-app rule — skip blocklist
                 Log.d(TAG, "APP-RULE allowed $domain for ${app.second}")
-                logAsync(domain, false, app, qtype)
+                logAsync(domain, false, app, qtype, explicitDecision(
+                    blocked = false,
+                    reason = "app_rule_allow",
+                    source = "Per-app DNS rule",
+                    matchedValue = app.first,
+                    precedence = "per-app allow rule skips shared blocklist"
+                ))
                 val pCopy = packet.copyOf()
                 serviceScope.launch { forwardEncrypted(dns, domain, pCopy, ihl, app) }
                 allowedCount.incrementAndGet()
@@ -1149,7 +1198,15 @@ class DnsVpnService : VpnService() {
         if (contentFilterCategories.isNotEmpty() && contentFilterManager.isBlocked(domain, contentFilterCategories)) {
             val cat = contentFilterManager.lookupCategory(domain)?.displayName ?: "Unknown"
             Log.d(TAG, "CONTENT-FILTER blocked $domain ($qtype) category=$cat")
-            logAsyncRich(domain, true, app, qtype, trackerCategory = "ContentFilter:$cat")
+            logAsyncRich(domain, true, app, qtype,
+                trackerCategory = "ContentFilter:$cat",
+                decision = explicitDecision(
+                    blocked = true,
+                    reason = "content_filter",
+                    source = cat,
+                    matchedValue = domain,
+                    precedence = "content category policy runs before shared blocklist"
+                ))
             sendBlockResponse(dns, packet, ihl, false, qtype)
             return
         }
@@ -1158,26 +1215,41 @@ class DnsVpnService : VpnService() {
         if (parentalControlManager.shouldBlock(domain)) {
             val cat = contentFilterManager.lookupCategory(domain)?.displayName ?: "Unknown"
             Log.d(TAG, "PARENTAL blocked $domain ($qtype) category=$cat profile=${parentalControlManager.currentProfile.name}")
-            logAsyncRich(domain, true, app, qtype, trackerCategory = "Parental:$cat")
+            logAsyncRich(domain, true, app, qtype,
+                trackerCategory = "Parental:$cat",
+                decision = explicitDecision(
+                    blocked = true,
+                    reason = "parental_control",
+                    source = parentalControlManager.currentProfile.name,
+                    matchedValue = cat,
+                    precedence = "parental profile runs before shared blocklist"
+                ))
             sendBlockResponse(dns, packet, ihl, false, qtype)
             return
         }
 
-        val blocked = isDomainBlocked(domain)
+        val blockDecision = domainDecision(domain)
+        val blocked = blockDecision.blocked
 
         // v6.0: Threat intelligence domain check
         if (!blocked && threatIntelEnabled) {
             val threat = threatIntelManager.isDomainMalicious(domain)
             if (threat != null) {
                 Log.i(TAG, "THREAT-INTEL blocked domain: $domain (${threat.feedName})")
-                logAsync(domain, true, app, qtype)
+                logAsync(domain, true, app, qtype, explicitDecision(
+                    blocked = true,
+                    reason = "threat_intel_domain",
+                    source = threat.feedName,
+                    matchedValue = domain,
+                    precedence = "threat intel runs after blocklist miss"
+                ))
                 sendBlockResponse(dns, packet, ihl, false, qtype)
                 return
             }
         }
 
         if (blocked) {
-            logAsync(domain, true, app, qtype)
+            logAsync(domain, true, app, qtype, blockDecision)
             Log.d(TAG, "BLOCKED $domain ($qtype) [${app.second.ifEmpty { "system" }}]")
             sendBlockResponse(dns, packet, ihl, false, qtype)
         } else {
@@ -1242,7 +1314,13 @@ class DnsVpnService : VpnService() {
         // Per-app firewall: block ALL DNS for firewalled apps
         // v6.0: Skip firewall checks in DNS-only mode
         if (!dnsOnlyMode && app.first.isNotEmpty() && app.first in blockedApps) {
-            logAsync(domain, true, app, qtype)
+            logAsync(domain, true, app, qtype, explicitDecision(
+                blocked = true,
+                reason = "app_firewall",
+                source = "Per-app DNS firewall",
+                matchedValue = app.first,
+                precedence = "per-app firewall runs before DNS policy"
+            ))
             val resp = buildBlockResponse(dns, qtype) ?: return
             val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
             writeChannel.send(wrapped); blockedCount.incrementAndGet()
@@ -1254,7 +1332,13 @@ class DnsVpnService : VpnService() {
         if (!dnsOnlyMode && app.first.isNotEmpty()) {
             val ctxRule = contextRules[app.first]
             if (ctxRule != null && shouldBlockByContext(ctxRule, app.first)) {
-                logAsync(domain, true, app, qtype)
+                logAsync(domain, true, app, qtype, explicitDecision(
+                    blocked = true,
+                    reason = "context_firewall",
+                    source = "Context-aware firewall",
+                    matchedValue = app.first,
+                    precedence = "context firewall runs before DNS policy"
+                ))
                 val resp = buildBlockResponse(dns, qtype) ?: return
                 val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
                 writeChannel.send(wrapped); blockedCount.incrementAndGet()
@@ -1268,7 +1352,13 @@ class DnsVpnService : VpnService() {
             val safeResp = safeSearchEnforcer.buildSafeResponse(dns, domain)
             if (safeResp != null) {
                 Log.d(TAG, "SAFE-SEARCH (v6) $domain")
-                logAsync(domain, false, app, qtype)
+                logAsync(domain, false, app, qtype, explicitDecision(
+                    blocked = false,
+                    reason = "safe_search",
+                    source = "Safe Search enforcer",
+                    matchedValue = domain,
+                    precedence = "safe-search rewrite runs before blocklist lookup"
+                ))
                 wrapResponseV6(packet, hdr, safeResp)?.let { writeChannel.send(it) }
                 allowedCount.incrementAndGet()
                 return
@@ -1280,7 +1370,13 @@ class DnsVpnService : VpnService() {
             val ruleAction = appDnsRuleEngine.checkDomain(app.first, domain)
             if (ruleAction == AppDnsRuleEngine.RuleAction.BLOCK) {
                 Log.d(TAG, "APP-RULE blocked (v6) $domain for ${app.second}")
-                logAsync(domain, true, app, qtype)
+                logAsync(domain, true, app, qtype, explicitDecision(
+                    blocked = true,
+                    reason = "app_rule_block",
+                    source = "Per-app DNS rule",
+                    matchedValue = app.first,
+                    precedence = "per-app block rule runs before shared blocklist"
+                ))
                 val resp = buildBlockResponse(dns, qtype) ?: return
                 val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
                 writeChannel.send(wrapped); blockedCount.incrementAndGet()
@@ -1289,7 +1385,13 @@ class DnsVpnService : VpnService() {
             }
             if (ruleAction == AppDnsRuleEngine.RuleAction.ALLOW) {
                 Log.d(TAG, "APP-RULE allowed (v6) $domain for ${app.second}")
-                logAsync(domain, false, app, qtype)
+                logAsync(domain, false, app, qtype, explicitDecision(
+                    blocked = false,
+                    reason = "app_rule_allow",
+                    source = "Per-app DNS rule",
+                    matchedValue = app.first,
+                    precedence = "per-app allow rule skips shared blocklist"
+                ))
                 val pCopy = packet.copyOf(length)
                 serviceScope.launch { forwardEncrypted(dns, domain, pCopy, 0, app, wrapV6 = true, v6Hdr = hdr) }
                 allowedCount.incrementAndGet()
@@ -1301,7 +1403,15 @@ class DnsVpnService : VpnService() {
         if (contentFilterCategories.isNotEmpty() && contentFilterManager.isBlocked(domain, contentFilterCategories)) {
             val cat = contentFilterManager.lookupCategory(domain)?.displayName ?: "Unknown"
             Log.d(TAG, "CONTENT-FILTER blocked (v6) $domain ($qtype) category=$cat")
-            logAsyncRich(domain, true, app, qtype, trackerCategory = "ContentFilter:$cat")
+            logAsyncRich(domain, true, app, qtype,
+                trackerCategory = "ContentFilter:$cat",
+                decision = explicitDecision(
+                    blocked = true,
+                    reason = "content_filter",
+                    source = cat,
+                    matchedValue = domain,
+                    precedence = "content category policy runs before shared blocklist"
+                ))
             val resp = buildBlockResponse(dns, qtype) ?: return
             val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
             writeChannel.send(wrapped); blockedCount.incrementAndGet()
@@ -1313,7 +1423,15 @@ class DnsVpnService : VpnService() {
         if (parentalControlManager.shouldBlock(domain)) {
             val cat = contentFilterManager.lookupCategory(domain)?.displayName ?: "Unknown"
             Log.d(TAG, "PARENTAL blocked (v6) $domain ($qtype) category=$cat profile=${parentalControlManager.currentProfile.name}")
-            logAsyncRich(domain, true, app, qtype, trackerCategory = "Parental:$cat")
+            logAsyncRich(domain, true, app, qtype,
+                trackerCategory = "Parental:$cat",
+                decision = explicitDecision(
+                    blocked = true,
+                    reason = "parental_control",
+                    source = parentalControlManager.currentProfile.name,
+                    matchedValue = cat,
+                    precedence = "parental profile runs before shared blocklist"
+                ))
             val resp = buildBlockResponse(dns, qtype) ?: return
             val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
             writeChannel.send(wrapped); blockedCount.incrementAndGet()
@@ -1321,14 +1439,21 @@ class DnsVpnService : VpnService() {
             return
         }
 
-        val blocked = isDomainBlocked(domain)
+        val blockDecision = domainDecision(domain)
+        val blocked = blockDecision.blocked
 
         // v6.0: Threat intelligence domain check
         if (!blocked && threatIntelEnabled) {
             val threat = threatIntelManager.isDomainMalicious(domain)
             if (threat != null) {
                 Log.i(TAG, "THREAT-INTEL blocked domain (v6): $domain (${threat.feedName})")
-                logAsync(domain, true, app, qtype)
+                logAsync(domain, true, app, qtype, explicitDecision(
+                    blocked = true,
+                    reason = "threat_intel_domain",
+                    source = threat.feedName,
+                    matchedValue = domain,
+                    precedence = "threat intel runs after blocklist miss"
+                ))
                 val resp = buildBlockResponse(dns, qtype) ?: return
                 val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
                 writeChannel.send(wrapped); blockedCount.incrementAndGet()
@@ -1338,7 +1463,7 @@ class DnsVpnService : VpnService() {
         }
 
         if (blocked) {
-            logAsync(domain, true, app, qtype)
+            logAsync(domain, true, app, qtype, blockDecision)
             val resp = buildBlockResponse(dns, qtype) ?: return
             val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
             writeChannel.send(wrapped); blockedCount.incrementAndGet()
@@ -1413,8 +1538,14 @@ class DnsVpnService : VpnService() {
         return DnsPacketBuilder.buildBlockResponse(dns, blockResponseType)
     }
 
-    private fun logAsync(domain: String, blocked: Boolean, app: Pair<String, String>, qtype: String) {
-        logAsyncRich(domain, blocked, app, qtype)
+    private fun logAsync(
+        domain: String,
+        blocked: Boolean,
+        app: Pair<String, String>,
+        qtype: String,
+        decision: BlockDecision? = null
+    ) {
+        logAsyncRich(domain, blocked, app, qtype, decision = decision)
     }
 
     /** Rich log entry with CNAME chain, resolved IPs, latency, and upstream server. */
@@ -1422,7 +1553,8 @@ class DnsVpnService : VpnService() {
         domain: String, blocked: Boolean, app: Pair<String, String>, qtype: String,
         cnameChain: String = "", resolvedIps: String = "",
         responseTimeMs: Int = 0, upstreamServer: String = "",
-        trackerCategory: String = "", trackerOwner: String = ""
+        trackerCategory: String = "", trackerOwner: String = "",
+        decision: BlockDecision? = null
     ) {
         // Always count stats even if logging disabled
         if (blocked) pendingBlockedStats.incrementAndGet() else pendingAllowedStats.incrementAndGet()
@@ -1443,7 +1575,11 @@ class DnsVpnService : VpnService() {
             appPackage = app.first, appLabel = app.second, queryType = qtype,
             cnameChain = cnameChain, resolvedIps = resolvedIps,
             responseTimeMs = responseTimeMs, upstreamServer = upstreamServer,
-            trackerCategory = tCat, trackerOwner = tOwner
+            trackerCategory = tCat, trackerOwner = tOwner,
+            decisionReason = decision?.reason.orEmpty(),
+            decisionSource = decision?.source.orEmpty(),
+            matchedValue = decision?.matchedValue.orEmpty(),
+            decisionPrecedence = decision?.precedence.orEmpty()
         )
 
         // v6.2: Track connection in ring buffer for per-app analytics
@@ -1610,9 +1746,27 @@ class DnsVpnService : VpnService() {
      * Handles exact match, www. prefix, wildcard allow/block.
      * Replaces the old linear Set.contains() + wildcard scan.
      */
+    private fun domainDecision(domain: String): BlockDecision {
+        if (isPaused) {
+            return BlockDecision(
+                blocked = false,
+                reason = "protection_paused",
+                precedence = "pause state bypasses blocklist lookup"
+            )
+        }
+        return blocklist.decide(domain)
+    }
+
+    private fun explicitDecision(
+        blocked: Boolean,
+        reason: String,
+        source: String = "",
+        matchedValue: String = "",
+        precedence: String = ""
+    ): BlockDecision = BlockDecision(blocked, reason, source, matchedValue, precedence)
+
     private fun isDomainBlocked(domain: String): Boolean {
-        if (isPaused) return false
-        return blocklist.isBlocked(domain)
+        return domainDecision(domain).blocked
     }
 
     // ── Packet Parsing (delegated to PacketClassifier & DnsPacketParser) ───
@@ -1838,7 +1992,14 @@ class DnsVpnService : VpnService() {
             Log.i(TAG, "CNAME CLOAK blocked: $domain -> ${cnameResult.blockedCname}")
             logAsyncRich(domain, true, app, qtype,
                 cnameChain = cnameResult.cnameChain.joinToString(","),
-                responseTimeMs = latencyMs, upstreamServer = upstreamServer)
+                responseTimeMs = latencyMs, upstreamServer = upstreamServer,
+                decision = explicitDecision(
+                    blocked = true,
+                    reason = "cname_cloak",
+                    source = "CNAME cloak detector",
+                    matchedValue = cnameResult.blockedCname.orEmpty(),
+                    precedence = "post-forward CNAME target check"
+                ))
             val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
                 when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
             })
@@ -1855,7 +2016,14 @@ class DnsVpnService : VpnService() {
                     Log.i(TAG, "THREAT-INTEL blocked IP: $ip for $domain (${threat.feedName})")
                     logAsyncRich(domain, true, app, qtype,
                         resolvedIps = resolvedIps.joinToString(","),
-                        responseTimeMs = latencyMs, upstreamServer = upstreamServer)
+                        responseTimeMs = latencyMs, upstreamServer = upstreamServer,
+                        decision = explicitDecision(
+                            blocked = true,
+                            reason = "threat_intel_ip",
+                            source = threat.feedName,
+                            matchedValue = ip,
+                            precedence = "post-forward resolved IP threat check"
+                        ))
                     val blockResp = buildBlockResponse(dns, DnsPacketBuilder.parseQueryType(dns).let {
                         when (it) { 1 -> "A"; 28 -> "AAAA"; else -> "A" }
                     })
@@ -1869,7 +2037,14 @@ class DnsVpnService : VpnService() {
         logAsyncRich(domain, false, app, qtype,
             cnameChain = cnameResult.cnameChain.joinToString(","),
             resolvedIps = resolvedIps.joinToString(","),
-            responseTimeMs = latencyMs, upstreamServer = upstreamServer)
+            responseTimeMs = latencyMs, upstreamServer = upstreamServer,
+            decision = explicitDecision(
+                blocked = false,
+                reason = "upstream",
+                source = upstreamServer,
+                matchedValue = domain,
+                precedence = "no local block decision matched before upstream response"
+            ))
 
         cacheDnsAnswerIps(domain, respBytes)
         dnsCache.put(domain, DnsPacketBuilder.parseQueryType(dns), respBytes)

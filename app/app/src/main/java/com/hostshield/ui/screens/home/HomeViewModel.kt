@@ -598,6 +598,8 @@ class HomeViewModel @Inject constructor(
             val sourceAllowDomains = mutableSetOf<String>()
             val sourceWildcardBlocks = mutableSetOf<String>()
             val sourceWildcardAllows = mutableSetOf<String>()
+            val exactBlockOrigins = mutableMapOf<String, String>()
+            val wildcardBlockOrigins = mutableMapOf<String, String>()
 
             for ((index, source) in blockSources.withIndex()) {
                 _uiState.update {
@@ -606,8 +608,12 @@ class HomeViewModel @Inject constructor(
                 downloader.download(source, forceDownload = true).onSuccess { dl ->
                     val parsed = HostsParser.parseForBlocking(dl.content)
                     allDomains.addAll(parsed.blockDomains)
+                    parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
                     sourceAllowDomains.addAll(parsed.allowDomains)
                     sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                    parsed.wildcardBlockDomains.forEach {
+                        wildcardBlockOrigins.putIfAbsent(it, source.label)
+                    }
                     sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                     // Update source meta for health tracking
                     try {
@@ -649,17 +655,29 @@ class HomeViewModel @Inject constructor(
 
             // Merge user rules
             val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-            blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
+            blockRules.filter { !it.isWildcard }.forEach {
+                val hostname = it.hostname.lowercase()
+                allDomains.add(hostname)
+                exactBlockOrigins[hostname] = "User block rule"
+            }
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             allDomains.removeAll(sourceAllowDomains)
-            dohBypassUpdater.mergeCachedInto(allDomains, sourceWildcardBlocks)
+            dohBypassUpdater.mergeCachedInto(
+                allDomains,
+                sourceWildcardBlocks,
+                exactBlockOrigins,
+                wildcardBlockOrigins
+            )
             val wildcards = repository.getEnabledWildcards()
             blocklistHolder.updateAsync(
                 allDomains,
                 wildcards,
                 sourceWildcardBlocks = sourceWildcardBlocks,
-                sourceWildcardAllows = sourceWildcardAllows
+                sourceWildcardAllows = sourceWildcardAllows,
+                exactBlockOrigins = exactBlockOrigins,
+                sourceWildcardBlockOrigins = wildcardBlockOrigins,
+                sourceExactAllows = sourceAllowDomains
             )
 
             val count = allDomains.size + sourceWildcardBlocks.size
@@ -718,6 +736,8 @@ class HomeViewModel @Inject constructor(
             val sourceAllowDomains = mutableSetOf<String>()
             val sourceWildcardBlocks = mutableSetOf<String>()
             val sourceWildcardAllows = mutableSetOf<String>()
+            val exactBlockOrigins = mutableMapOf<String, String>()
+            val wildcardBlockOrigins = mutableMapOf<String, String>()
             val totalSources = blockSources.size + allowlistSources.size
 
             for ((index, source) in blockSources.withIndex()) {
@@ -728,8 +748,12 @@ class HomeViewModel @Inject constructor(
                 result.onSuccess { dl ->
                     val parsed = HostsParser.parseForBlocking(dl.content)
                     allDomains.addAll(parsed.blockDomains)
+                    parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
                     sourceAllowDomains.addAll(parsed.allowDomains)
                     sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                    parsed.wildcardBlockDomains.forEach {
+                        wildcardBlockOrigins.putIfAbsent(it, source.label)
+                    }
                     sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                     markSourceDownloadSuccess(source.id)
                 }.onFailure { err ->
@@ -752,17 +776,29 @@ class HomeViewModel @Inject constructor(
             }
 
             val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-            blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
+            blockRules.filter { !it.isWildcard }.forEach {
+                val hostname = it.hostname.lowercase()
+                allDomains.add(hostname)
+                exactBlockOrigins[hostname] = "User block rule"
+            }
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             allDomains.removeAll(sourceAllowDomains)
-            dohBypassUpdater.mergeCachedInto(allDomains, sourceWildcardBlocks)
+            dohBypassUpdater.mergeCachedInto(
+                allDomains,
+                sourceWildcardBlocks,
+                exactBlockOrigins,
+                wildcardBlockOrigins
+            )
             val wildcards = repository.getEnabledWildcards()
             blocklistHolder.updateAsync(
                 allDomains,
                 wildcards,
                 sourceWildcardBlocks = sourceWildcardBlocks,
-                sourceWildcardAllows = sourceWildcardAllows
+                sourceWildcardAllows = sourceWildcardAllows,
+                exactBlockOrigins = exactBlockOrigins,
+                sourceWildcardBlockOrigins = wildcardBlockOrigins,
+                sourceExactAllows = sourceAllowDomains
             )
 
             val count = allDomains.size + sourceWildcardBlocks.size
@@ -951,14 +987,20 @@ class HomeViewModel @Inject constructor(
             val sourceAllowDomains = mutableSetOf<String>()
             val sourceWildcardBlocks = mutableSetOf<String>()
             val sourceWildcardAllows = mutableSetOf<String>()
+            val exactBlockOrigins = mutableMapOf<String, String>()
+            val wildcardBlockOrigins = mutableMapOf<String, String>()
 
             for (source in blockSources) {
                 val result = downloader.download(source, forceDownload = true)
                 result.onSuccess { dl ->
                     val parsed = HostsParser.parseForBlocking(dl.content)
                     allDomains.addAll(parsed.blockDomains)
+                    parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
                     sourceAllowDomains.addAll(parsed.allowDomains)
                     sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                    parsed.wildcardBlockDomains.forEach {
+                        wildcardBlockOrigins.putIfAbsent(it, source.label)
+                    }
                     sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                     markSourceDownloadSuccess(source.id)
                 }.onFailure { err ->
@@ -978,17 +1020,29 @@ class HomeViewModel @Inject constructor(
             }
 
             val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-            blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
+            blockRules.filter { !it.isWildcard }.forEach {
+                val hostname = it.hostname.lowercase()
+                allDomains.add(hostname)
+                exactBlockOrigins[hostname] = "User block rule"
+            }
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             allDomains.removeAll(sourceAllowDomains)
-            dohBypassUpdater.mergeCachedInto(allDomains, sourceWildcardBlocks)
+            dohBypassUpdater.mergeCachedInto(
+                allDomains,
+                sourceWildcardBlocks,
+                exactBlockOrigins,
+                wildcardBlockOrigins
+            )
             val wildcards = repository.getEnabledWildcards()
             blocklistHolder.updateAsync(
                 allDomains,
                 wildcards,
                 sourceWildcardBlocks = sourceWildcardBlocks,
-                sourceWildcardAllows = sourceWildcardAllows
+                sourceWildcardAllows = sourceWildcardAllows,
+                exactBlockOrigins = exactBlockOrigins,
+                sourceWildcardBlockOrigins = wildcardBlockOrigins,
+                sourceExactAllows = sourceAllowDomains
             )
 
             val count = allDomains.size + sourceWildcardBlocks.size

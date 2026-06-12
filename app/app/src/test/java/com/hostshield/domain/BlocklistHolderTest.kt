@@ -95,6 +95,63 @@ class BlocklistHolderTest {
     }
 
     @Test
+    fun `decision reports source list attribution for exact and wildcard matches`() {
+        holder.update(
+            newDomains = setOf("ads.example.com"),
+            wildcards = emptyList(),
+            sourceWildcardBlocks = setOf("tracker.example.com"),
+            exactBlockOrigins = mapOf("ads.example.com" to "Fixture Blocklist"),
+            sourceWildcardBlockOrigins = mapOf("tracker.example.com" to "Fixture Wildcards")
+        )
+
+        val exact = holder.decide("ads.example.com")
+        assertTrue(exact.blocked)
+        assertEquals("source_list", exact.reason)
+        assertEquals("Fixture Blocklist", exact.source)
+        assertEquals("ads.example.com", exact.matchedValue)
+
+        val wildcard = holder.decide("cdn.tracker.example.com")
+        assertTrue(wildcard.blocked)
+        assertEquals("source_list", wildcard.reason)
+        assertEquals("Fixture Wildcards", wildcard.source)
+        assertEquals("tracker.example.com", wildcard.matchedValue)
+    }
+
+    @Test
+    fun `decision reports allowlist precedence over source blocks`() {
+        holder.update(
+            newDomains = setOf("ads.example.com"),
+            wildcards = emptyList(),
+            sourceExactAllows = setOf("ads.example.com")
+        )
+
+        val decision = holder.decide("ads.example.com")
+
+        assertFalse(decision.blocked)
+        assertEquals("allowlist", decision.reason)
+        assertEquals("Source allowlist", decision.source)
+        assertTrue(decision.precedence.contains("overrides"))
+    }
+
+    @Test
+    fun `decision keeps DoH bypass blocked despite allowlists`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            sourceExactAllows = setOf("dns.google"),
+            sourceWildcardAllows = setOf("dns.nextdns.io")
+        )
+
+        val exact = holder.decide("dns.google")
+        val wildcard = holder.decide("abc123.dns.nextdns.io")
+
+        assertTrue(exact.blocked)
+        assertEquals("doh_bypass", exact.reason)
+        assertTrue(wildcard.blocked)
+        assertEquals("doh_bypass", wildcard.reason)
+    }
+
+    @Test
     fun `preview export includes effective exact and source wildcard entries`() {
         holder.update(
             newDomains = setOf("ads.example.com"),

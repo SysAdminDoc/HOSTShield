@@ -20,6 +20,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - v13: Composite indices for common query patterns
  * - v14: Added index on host_sources.category
  * - v15: Added host_sources.last_http_status for source failure feedback
+ * - v16: Added dns_logs decision provenance columns
  */
 object Migrations {
 
@@ -241,6 +242,15 @@ object Migrations {
         }
     }
 
+    val MIGRATION_15_16 = object : Migration(15, 16) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE dns_logs ADD COLUMN decision_reason TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE dns_logs ADD COLUMN decision_source TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE dns_logs ADD COLUMN matched_value TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE dns_logs ADD COLUMN decision_precedence TEXT NOT NULL DEFAULT ''")
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
     val ALL = arrayOf(
         MIGRATION_1_2,
@@ -256,6 +266,7 @@ object Migrations {
         MIGRATION_11_12,
         MIGRATION_12_13,
         MIGRATION_13_14,
-        MIGRATION_14_15
+        MIGRATION_14_15,
+        MIGRATION_15_16
     )
 }

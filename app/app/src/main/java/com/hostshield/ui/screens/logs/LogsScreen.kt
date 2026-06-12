@@ -72,7 +72,11 @@ data class DedupedLogEntry(
     val responseTimeMs: Int = 0,
     val upstreamServer: String = "",
     val cnameChain: String = "",
-    val resolvedIps: String = ""
+    val resolvedIps: String = "",
+    val decisionReason: String = "",
+    val decisionSource: String = "",
+    val matchedValue: String = "",
+    val decisionPrecedence: String = ""
 )
 
 @HiltViewModel
@@ -317,7 +321,11 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                     responseTimeMs = latest?.responseTimeMs ?: 0,
                     upstreamServer = latest?.upstreamServer ?: "",
                     cnameChain = latest?.cnameChain ?: "",
-                    resolvedIps = latest?.resolvedIps ?: ""
+                    resolvedIps = latest?.resolvedIps ?: "",
+                    decisionReason = latest?.decisionReason ?: "",
+                    decisionSource = latest?.decisionSource ?: "",
+                    matchedValue = latest?.matchedValue ?: "",
+                    decisionPrecedence = latest?.decisionPrecedence ?: ""
                 )
             }
             .filter { entry ->
@@ -826,6 +834,11 @@ private fun formatTime(ms: Long): String = try {
     Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("h:mm:ss a"))
 } catch (_: Exception) { "" }
 
+private fun formatDecisionReason(reason: String): String =
+    reason.split('_')
+        .filter { it.isNotBlank() }
+        .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
+
 @Composable
 private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}, onTemporaryAllow: (Int) -> Unit = {}, onBlock: () -> Unit = {}, onAllow: () -> Unit = {}, geoIpLookup: GeoIpLookup? = null) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -868,6 +881,18 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
         DetailRow("Domain", entry.hostname)
         DetailRow("Status", if (entry.blocked) "BLOCKED" else "ALLOWED",
             valueColor = if (entry.blocked) Red else Green)
+        if (entry.decisionReason.isNotBlank() && entry.decisionReason != "none") {
+            DetailRow("Decision", formatDecisionReason(entry.decisionReason))
+        }
+        if (entry.decisionSource.isNotBlank()) {
+            DetailRow("Source", entry.decisionSource)
+        }
+        if (entry.matchedValue.isNotBlank()) {
+            DetailRow("Matched", entry.matchedValue)
+        }
+        if (entry.decisionPrecedence.isNotBlank()) {
+            DetailRow("Precedence", entry.decisionPrecedence)
+        }
         DetailRow("Query Type", entry.queryType)
         DetailRow("Hit Count", "${entry.hitCount}x")
         DetailRow("Last Seen", formatTime(entry.latestTimestamp))

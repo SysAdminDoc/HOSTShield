@@ -18,6 +18,7 @@ import com.hostshield.data.database.DnsLogDao
 import com.hostshield.data.model.BlockStats
 import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.domain.BlockDecision
 import com.hostshield.domain.BlocklistHolder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
@@ -244,7 +245,8 @@ class DnsProxyService : Service() {
             return
         }
 
-        val blocked = blocklist.isBlocked(domain)
+        val blockDecision = blocklist.decide(domain)
+        val blocked = blockDecision.blocked
 
         if (blocked) {
             // Build block response
@@ -262,7 +264,7 @@ class DnsProxyService : Service() {
                 updateNotification("$count blocked")
             }
 
-            logQuery(domain, queryTypeLabel, true, System.currentTimeMillis() - startTime)
+            logQuery(domain, queryTypeLabel, true, System.currentTimeMillis() - startTime, blockDecision)
         } else {
             // Forward to upstream
             val response = forwardToUpstream(queryData)
@@ -276,7 +278,7 @@ class DnsProxyService : Service() {
             }
             allowedCount.incrementAndGet()
 
-            logQuery(domain, queryTypeLabel, false, System.currentTimeMillis() - startTime)
+            logQuery(domain, queryTypeLabel, false, System.currentTimeMillis() - startTime, blockDecision)
         }
     }
 
@@ -346,7 +348,13 @@ class DnsProxyService : Service() {
 
     // ── Logging ─────────────────────────────────────────────────────
 
-    private fun logQuery(domain: String, queryType: String, blocked: Boolean, responseTimeMs: Long) {
+    private fun logQuery(
+        domain: String,
+        queryType: String,
+        blocked: Boolean,
+        responseTimeMs: Long,
+        decision: BlockDecision
+    ) {
         if (!loggingEnabled) return
 
         val entry = DnsLogEntry(
@@ -354,7 +362,11 @@ class DnsProxyService : Service() {
             blocked = blocked,
             queryType = queryType,
             responseTimeMs = responseTimeMs.toInt(),
-            upstreamServer = if (blocked) "local" else upstreamServers.firstOrNull() ?: ""
+            upstreamServer = if (blocked) "local" else upstreamServers.firstOrNull() ?: "",
+            decisionReason = decision.reason,
+            decisionSource = decision.source,
+            matchedValue = decision.matchedValue,
+            decisionPrecedence = decision.precedence
         )
 
         // Emit to live stream (non-blocking)

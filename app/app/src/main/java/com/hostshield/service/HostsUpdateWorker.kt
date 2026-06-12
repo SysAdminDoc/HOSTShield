@@ -123,6 +123,8 @@ class HostsUpdateWorker @AssistedInject constructor(
                     val adblockAllowDomains = mutableSetOf<String>()
                     val adblockWildcardBlocks = mutableSetOf<String>()
                     val adblockWildcardAllows = mutableSetOf<String>()
+                    val exactBlockOrigins = mutableMapOf<String, String>()
+                    val wildcardBlockOrigins = mutableMapOf<String, String>()
 
                     // Track per-source failures so the user can see why a blocklist
                     // is stale (silent swallow used to make this look like the lists
@@ -135,8 +137,12 @@ class HostsUpdateWorker @AssistedInject constructor(
                                 if (!dl.notModified) {
                                     val parsed = HostsParser.parseForBlocking(dl.content)
                                     allDomains.addAll(parsed.blockDomains)
+                                    parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
                                     adblockAllowDomains.addAll(parsed.allowDomains)
                                     adblockWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                                    parsed.wildcardBlockDomains.forEach {
+                                        wildcardBlockOrigins.putIfAbsent(it, source.label)
+                                    }
                                     adblockWildcardAllows.addAll(parsed.wildcardAllowDomains)
                                 }
                             }
@@ -267,7 +273,10 @@ class HostsUpdateWorker @AssistedInject constructor(
                                     }
                                     prefs.setSyncUrlHash(url, hash)
 
-                                    HostsParser.parse(content).forEach { allDomains.add(it.hostname) }
+                                    HostsParser.parse(content).forEach {
+                                        allDomains.add(it.hostname)
+                                        exactBlockOrigins[it.hostname] = "Rule sync URL ${url.substringAfter("://")}"
+                                    }
                                 } else {
                                     throw SourceDownloadException(
                                         "HTTP ${response.code}: ${response.message}",
@@ -304,13 +313,22 @@ class HostsUpdateWorker @AssistedInject constructor(
                     }
 
                     val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-                    blockRules.filter { !it.isWildcard }.forEach { allDomains.add(it.hostname.lowercase()) }
+                    blockRules.filter { !it.isWildcard }.forEach {
+                        val hostname = it.hostname.lowercase()
+                        allDomains.add(hostname)
+                        exactBlockOrigins[hostname] = "User block rule"
+                    }
                     val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
                     allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
                     // Remove allowlist source domains + adblock-syntax @@|| allow rules
                     allDomains.removeAll(sourceAllowDomains)
                     allDomains.removeAll(adblockAllowDomains)
-                    dohBypassUpdater.mergeCachedInto(allDomains, adblockWildcardBlocks)
+                    dohBypassUpdater.mergeCachedInto(
+                        allDomains,
+                        adblockWildcardBlocks,
+                        exactBlockOrigins,
+                        wildcardBlockOrigins
+                    )
 
                     val wildcards = repository.getEnabledWildcards()
                     val regexRules = repository.getEnabledRegexRules()
@@ -320,7 +338,10 @@ class HostsUpdateWorker @AssistedInject constructor(
                         wildcards,
                         regexRules,
                         sourceWildcardBlocks = adblockWildcardBlocks,
-                        sourceWildcardAllows = adblockWildcardAllows
+                        sourceWildcardAllows = adblockWildcardAllows,
+                        exactBlockOrigins = exactBlockOrigins,
+                        sourceWildcardBlockOrigins = wildcardBlockOrigins,
+                        sourceExactAllows = sourceAllowDomains + adblockAllowDomains
                     )
                     diagnosticEvents.record(
                         DiagnosticEventType.BLOCKLIST_SWAP,

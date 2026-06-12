@@ -119,11 +119,20 @@ class DohBypassUpdater @Inject constructor(
      */
     suspend fun mergeCachedInto(
         blockDomains: MutableSet<String>,
-        wildcardBlockDomains: MutableSet<String>
+        wildcardBlockDomains: MutableSet<String>,
+        exactOrigins: MutableMap<String, String>? = null,
+        wildcardOrigins: MutableMap<String, String>? = null
     ): RemoteList {
         val cached = getCached()
         blockDomains.addAll(cached.domains)
         wildcardBlockDomains.addAll(cached.wildcards)
+        val origin = if (cached.version > 0) {
+            "Remote DoH bypass list v${cached.version}"
+        } else {
+            "Remote DoH bypass list"
+        }
+        cached.domains.forEach { exactOrigins?.put(it, origin) }
+        cached.wildcards.forEach { wildcardOrigins?.put(it, origin) }
         return cached
     }
 
