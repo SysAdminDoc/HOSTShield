@@ -8,6 +8,7 @@ import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.data.source.BoundedResponseReader
 import com.hostshield.data.source.SourceDownloadException
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.sourceHttpStatus
@@ -44,6 +45,7 @@ class HostsUpdateWorker @AssistedInject constructor(
         const val WORK_NAME = "hostshield_update"
         const val TAG = "hosts_update"
         private const val DEAD_FAILURE_THRESHOLD = 5
+        private const val MAX_RULE_SYNC_BYTES = 10L * 1024L * 1024L
 
         fun schedule(context: Context, intervalHours: Int, wifiOnly: Boolean) {
             val request = PeriodicWorkRequestBuilder<HostsUpdateWorker>(
@@ -238,7 +240,6 @@ class HostsUpdateWorker @AssistedInject constructor(
 
                     // Fetch remote rule sync URLs and merge domains
                     val syncUrls = prefs.getRuleSyncUrlList()
-                    val maxSyncSizeBytes = 10 * 1024 * 1024 // 10 MB size limit
                     for (url in syncUrls) {
                         // Only allow HTTPS sync URLs for security
                         if (!url.startsWith("https://")) {
@@ -249,13 +250,11 @@ class HostsUpdateWorker @AssistedInject constructor(
                             val request = okhttp3.Request.Builder().url(url).build()
                             httpClient.newCall(request).execute().use { response ->
                                 if (response.isSuccessful) {
-                                    val content = response.body.string()
-
-                                    // Reject content that exceeds the size limit
-                                    if (content.toByteArray(Charsets.UTF_8).size > maxSyncSizeBytes) {
-                                        Log.w(TAG, "Sync URL content exceeds 10 MB limit, rejecting: $url")
-                                        return@use
-                                    }
+                                    val content = BoundedResponseReader.readUtf8(
+                                        response,
+                                        MAX_RULE_SYNC_BYTES,
+                                        "rule sync URL"
+                                    ).content
 
                                     // Compute SHA-256 hash for integrity tracking
                                     val digest = MessageDigest.getInstance("SHA-256")

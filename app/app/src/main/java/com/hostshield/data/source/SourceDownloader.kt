@@ -40,6 +40,11 @@ fun Throwable.sourceHttpStatus(): Int {
 @Singleton
 class SourceDownloader @Inject constructor() {
 
+    companion object {
+        const val MAX_SOURCE_DOWNLOAD_BYTES = 80L * 1024L * 1024L
+        const val MAX_SOURCE_VALIDATION_BYTES = 5L * 1024L * 1024L
+    }
+
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
@@ -72,11 +77,14 @@ class SourceDownloader @Inject constructor() {
                         Result.success(DownloadResult(notModified = true, etag = source.etag))
                     }
                     200 -> {
-                        val body = response.body.string()
+                        val body = BoundedResponseReader.readUtf8(
+                            response,
+                            MAX_SOURCE_DOWNLOAD_BYTES,
+                            "source ${source.label.ifBlank { source.url }}"
+                        )
                         val etag = response.header("ETag") ?: ""
                         val lastMod = response.header("Last-Modified") ?: ""
-                        val size = body.length.toLong()
-                        Result.success(DownloadResult(body, etag, lastMod, size))
+                        Result.success(DownloadResult(body.content, etag, lastMod, body.sizeBytes))
                     }
                     else -> {
                         val msg = "HTTP ${response.code}: ${response.message}"
@@ -102,7 +110,11 @@ class SourceDownloader @Inject constructor() {
                         response.code
                     )
                 }
-                response.body.string()
+                BoundedResponseReader.readUtf8(
+                    response,
+                    MAX_SOURCE_VALIDATION_BYTES,
+                    "source validation"
+                ).content
             }
 
             val lineCount = body.lines().count { line ->

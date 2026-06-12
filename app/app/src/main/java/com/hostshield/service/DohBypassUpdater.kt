@@ -1,8 +1,8 @@
 package com.hostshield.service
 
-import android.content.Context
 import android.util.Log
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.data.source.BoundedResponseReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -64,18 +64,18 @@ class DohBypassUpdater @Inject constructor(
                 .addHeader("Accept", "application/json")
                 .build()
 
-            val response = client.newCall(request).execute()
-            val body: String?
-            try {
+            val body = client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     Log.w(TAG, "Fetch failed: HTTP ${response.code}")
                     return@withContext null
                 }
-                body = response.body.string().take(MAX_JSON_SIZE.toInt())
-            } finally {
-                response.close()
+                BoundedResponseReader.readUtf8(
+                    response,
+                    MAX_JSON_SIZE,
+                    "remote DoH bypass list"
+                ).content
             }
-            if (body.isNullOrBlank()) {
+            if (body.isBlank()) {
                 Log.w(TAG, "Empty response body")
                 return@withContext null
             }
