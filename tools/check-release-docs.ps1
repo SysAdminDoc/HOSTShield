@@ -18,6 +18,9 @@ function Test-RepoFile {
 
 $appBuild = Read-RepoFile "app/app/build.gradle.kts"
 $rootBuild = Read-RepoFile "app/build.gradle.kts"
+$releaseWorkflow = Read-RepoFile ".github/workflows/release.yml"
+$releaseProvenance = Read-RepoFile "tools/release-provenance.ps1"
+$osvPolicyScript = Read-RepoFile "tools/check-osv-report.ps1"
 $versionNameMatch = [regex]::Match($appBuild, 'versionName\s*=\s*"([^"]+)"')
 $versionCodeMatch = [regex]::Match($appBuild, 'versionCode\s*=\s*(\d+)')
 $compileSdkMatch = [regex]::Match($appBuild, 'compileSdk\s*=\s*(\d+)')
@@ -125,6 +128,23 @@ if (-not (Test-RepoFile $dohBypassManifest)) {
     }
 }
 
+$osvAllowlistPath = "tools/osv-allowlist.json"
+if (-not (Test-RepoFile $osvAllowlistPath)) {
+    $failures.Add("Missing OSV vulnerability allowlist: $osvAllowlistPath")
+} else {
+    try {
+        $osvAllowlist = Read-RepoFile $osvAllowlistPath | ConvertFrom-Json -ErrorAction Stop
+        if ([int]$osvAllowlist.version -ne 1) {
+            $failures.Add("$osvAllowlistPath must contain version 1.")
+        }
+        if ($null -eq $osvAllowlist.ignored) {
+            $failures.Add("$osvAllowlistPath must contain an ignored array.")
+        }
+    } catch {
+        $failures.Add("$osvAllowlistPath is not valid JSON: $($_.Exception.Message)")
+    }
+}
+
 $dohUpdaterPath = "app/app/src/main/java/com/hostshield/service/DohBypassUpdater.kt"
 $dohUpdater = Read-RepoFile $dohUpdaterPath
 $expectedDohManifestUrl = "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/$dohBypassManifest"
@@ -195,6 +215,59 @@ foreach ($doc in $requiredPatterns.Keys) {
     foreach ($pattern in $requiredPatterns[$doc]) {
         if ($docs[$doc] -notmatch [regex]::Escape($pattern)) {
             $failures.Add("$doc is missing required release-doc phrase: $pattern")
+        }
+    }
+}
+
+$releaseGatePatterns = @{
+    "app/build.gradle.kts" = @{
+        Text = $rootBuild
+        Patterns = @(
+            "org.cyclonedx.bom",
+            "3.2.4",
+            "hostshield-bom.cdx.json",
+            "componentVersion"
+        )
+    }
+    ".github/workflows/release.yml" = @{
+        Text = $releaseWorkflow
+        Patterns = @(
+            "cyclonedxBom",
+            "google/osv-scanner-action/osv-scanner-action@v2.3.8",
+            "check-osv-report.ps1",
+            "hostshield-bom.cdx.json",
+            "osv-results.json",
+            "release-provenance.ps1",
+            "upload-artifact"
+        )
+    }
+    "tools/release-provenance.ps1" = @{
+        Text = $releaseProvenance
+        Patterns = @(
+            "SbomPath",
+            "OsvReportPath",
+            "OsvAllowlistPath",
+            "hostshield-bom.cdx.json",
+            "osv-results.json",
+            "OSV policy fails release CI"
+        )
+    }
+    "tools/check-osv-report.ps1" = @{
+        Text = $osvPolicyScript
+        Patterns = @(
+            "MinimumSeverity",
+            "HIGH",
+            "CRITICAL",
+            "allowlist",
+            "expires"
+        )
+    }
+}
+
+foreach ($file in $releaseGatePatterns.Keys) {
+    foreach ($pattern in $releaseGatePatterns[$file].Patterns) {
+        if ($releaseGatePatterns[$file].Text -notmatch [regex]::Escape($pattern)) {
+            $failures.Add("$file is missing required release-gate phrase: $pattern")
         }
     }
 }

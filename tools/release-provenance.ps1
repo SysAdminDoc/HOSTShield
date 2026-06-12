@@ -1,7 +1,10 @@
 [CmdletBinding()]
 param(
     [string]$ApkPath = "app/app/build/outputs/apk/full/release/app-full-release.apk",
-    [string]$OutputDir = "artifacts/release-provenance"
+    [string]$OutputDir = "artifacts/release-provenance",
+    [string]$SbomPath = "artifacts/release-provenance/hostshield-bom.cdx.json",
+    [string]$OsvReportPath = "artifacts/release-provenance/osv-results.json",
+    [string]$OsvAllowlistPath = "tools/osv-allowlist.json"
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,6 +20,16 @@ function Resolve-RepoPath {
     }
 
     return Resolve-Path -LiteralPath (Join-Path $repoRoot $Path)
+}
+
+function Test-RepoPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        return Test-Path -LiteralPath $Path
+    }
+
+    return Test-Path -LiteralPath (Join-Path $repoRoot $Path)
 }
 
 function Read-RepoFile {
@@ -139,6 +152,14 @@ $dirtyState = if ([string]::IsNullOrWhiteSpace($status)) { "clean" } else { "dir
 
 $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $apk).Hash.ToLowerInvariant()
 $apkName = Split-Path -Leaf $apk
+$sbom = if (Test-RepoPath $SbomPath) { Resolve-RepoPath $SbomPath } else { $null }
+$osvReport = if (Test-RepoPath $OsvReportPath) { Resolve-RepoPath $OsvReportPath } else { $null }
+$osvAllowlist = if (Test-RepoPath $OsvAllowlistPath) { Resolve-RepoPath $OsvAllowlistPath } else { $null }
+$sbomHash = if ($sbom) { (Get-FileHash -Algorithm SHA256 -LiteralPath $sbom).Hash.ToLowerInvariant() } else { "unavailable" }
+$osvReportHash = if ($osvReport) { (Get-FileHash -Algorithm SHA256 -LiteralPath $osvReport).Hash.ToLowerInvariant() } else { "unavailable" }
+$osvAllowlistHash = if ($osvAllowlist) { (Get-FileHash -Algorithm SHA256 -LiteralPath $osvAllowlist).Hash.ToLowerInvariant() } else { "unavailable" }
+$sbomName = if ($sbom) { Split-Path -Leaf $sbom } else { Split-Path -Leaf $SbomPath }
+$osvReportName = if ($osvReport) { Split-Path -Leaf $osvReport } else { Split-Path -Leaf $OsvReportPath }
 
 $apkSigner = Find-ApkSigner
 $javaHome = Find-JavaHome
@@ -166,7 +187,14 @@ if ($apkSigner) {
 $checksumsPath = Join-Path $outputRoot "checksums.txt"
 $provenancePath = Join-Path $outputRoot "release-provenance.md"
 
-"$hash  $apkName" | Set-Content -Encoding UTF8 -LiteralPath $checksumsPath
+$checksumLines = @("$hash  $apkName")
+if ($sbom) {
+    $checksumLines += "$sbomHash  $sbomName"
+}
+if ($osvReport) {
+    $checksumLines += "$osvReportHash  $osvReportName"
+}
+$checksumLines | Set-Content -Encoding UTF8 -LiteralPath $checksumsPath
 
 $provenance = @(
     "# HostShield Release Provenance",
@@ -179,6 +207,12 @@ $provenance = @(
     "| Git status | $dirtyState |",
     "| APK path | $apk |",
     "| APK SHA-256 | $hash |",
+    "| CycloneDX SBOM path | $(if ($sbom) { $sbom } else { 'missing' }) |",
+    "| CycloneDX SBOM SHA-256 | $sbomHash |",
+    "| OSV report path | $(if ($osvReport) { $osvReport } else { 'missing' }) |",
+    "| OSV report SHA-256 | $osvReportHash |",
+    "| OSV allowlist path | $(if ($osvAllowlist) { $osvAllowlist } else { 'missing' }) |",
+    "| OSV allowlist SHA-256 | $osvAllowlistHash |",
     "| Signing cert SHA-256 | $signerFingerprint |",
     "| Gradle | $gradleVersion |",
     "| Android Gradle Plugin | $agpVersion |",
@@ -191,6 +225,8 @@ $provenance = @(
     "## Verification",
     "",
     '- `checksums.txt` contains the APK SHA-256 line for release notes or GitHub release assets.',
+    '- CycloneDX SBOM and OSV JSON report hashes are recorded when release CI generated them before the APK build.',
+    '- OSV policy fails release CI on unacknowledged HIGH or CRITICAL vulnerabilities; allowlist entries require a reason and expiry.',
     '- Signing certificate fingerprint comes from `apksigner verify --verbose --print-certs` when Android build tools are available.',
     '- Git status is recorded so release notes can distinguish clean tagged releases from local smoke-test artifacts.'
 )

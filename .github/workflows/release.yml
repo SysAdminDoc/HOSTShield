@@ -58,6 +58,27 @@ jobs:
       - name: Run full unit tests
         run: ./gradlew testFullDebugUnitTest
 
+      - name: Generate CycloneDX SBOM
+        run: |
+          ./gradlew cyclonedxBom
+          mkdir -p ../artifacts/release-provenance
+          cp build/reports/cyclonedx/hostshield-bom.cdx.json ../artifacts/release-provenance/hostshield-bom.cdx.json
+
+      - name: Run OSV vulnerability scan
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
+        continue-on-error: true
+        with:
+          scan-args: |-
+            --lockfile=artifacts/release-provenance/hostshield-bom.cdx.json
+            --format=json
+            --output-file=artifacts/release-provenance/osv-results.json
+            --show-all-vulns
+
+      - name: Enforce OSV vulnerability policy
+        shell: pwsh
+        working-directory: .
+        run: ./tools/check-osv-report.ps1 -ReportPath artifacts/release-provenance/osv-results.json -AllowlistPath tools/osv-allowlist.json
+
       - name: Build Full Release APK
         env:
           KEYSTORE_FILE: /tmp/hostshield.keystore
@@ -87,7 +108,7 @@ jobs:
       - name: Generate release provenance
         shell: pwsh
         working-directory: .
-        run: ./tools/release-provenance.ps1 -ApkPath "${{ env.APK_PATH }}" -OutputDir artifacts/release-provenance
+        run: ./tools/release-provenance.ps1 -ApkPath "${{ env.APK_PATH }}" -OutputDir artifacts/release-provenance -SbomPath artifacts/release-provenance/hostshield-bom.cdx.json -OsvReportPath artifacts/release-provenance/osv-results.json -OsvAllowlistPath tools/osv-allowlist.json
 
       - name: Upload release build artifacts
         uses: actions/upload-artifact@v4
@@ -98,6 +119,8 @@ jobs:
             ${{ env.AAB_PATH }}
             artifacts/release-provenance/checksums.txt
             artifacts/release-provenance/release-provenance.md
+            artifacts/release-provenance/hostshield-bom.cdx.json
+            artifacts/release-provenance/osv-results.json
           if-no-files-found: error
 
       - name: Upload APK to Release
@@ -108,6 +131,8 @@ jobs:
             ${{ env.APK_PATH }}
             artifacts/release-provenance/checksums.txt
             artifacts/release-provenance/release-provenance.md
+            artifacts/release-provenance/hostshield-bom.cdx.json
+            artifacts/release-provenance/osv-results.json
           fail_on_unmatched_files: true
 
       - name: Upload APK (workflow_dispatch)
@@ -118,6 +143,8 @@ jobs:
             "${{ env.APK_PATH }}" \
             "artifacts/release-provenance/checksums.txt" \
             "artifacts/release-provenance/release-provenance.md" \
+            "artifacts/release-provenance/hostshield-bom.cdx.json" \
+            "artifacts/release-provenance/osv-results.json" \
             --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
