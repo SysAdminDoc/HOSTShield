@@ -35,7 +35,8 @@ class ProfileScheduleWorker @AssistedInject constructor(
     private val prefs: AppPreferences,
     private val iptablesManager: IptablesManager,
     private val downloader: SourceDownloader,
-    private val blocklistHolder: BlocklistHolder
+    private val blocklistHolder: BlocklistHolder,
+    private val dohBypassUpdater: DohBypassUpdater
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -146,6 +147,7 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
                 allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
                 allDomains.removeAll(sourceAllowDomains)
+                dohBypassUpdater.mergeCachedInto(allDomains, sourceWildcardBlocks)
                 blocklistHolder.updateAsync(
                     allDomains,
                     repository.getEnabledWildcards(),

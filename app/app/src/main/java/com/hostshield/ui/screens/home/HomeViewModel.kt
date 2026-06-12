@@ -26,6 +26,7 @@ import com.hostshield.service.NflogReader
 import com.hostshield.service.DnsProxyService
 import com.hostshield.service.ProtectionServiceStarter
 import com.hostshield.service.RootDnsService
+import com.hostshield.service.DohBypassUpdater
 import com.hostshield.service.VpnRecoveryAdvisory
 import com.hostshield.util.PrivacyScorer
 import com.hostshield.util.PrivateDnsDetector
@@ -116,7 +117,8 @@ class HomeViewModel @Inject constructor(
     private val nflogReader: NflogReader,
     private val dnsLogDao: DnsLogDao,
     private val connectionLogDao: ConnectionLogDao,
-    private val privacyScorer: PrivacyScorer
+    private val privacyScorer: PrivacyScorer,
+    private val dohBypassUpdater: DohBypassUpdater
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -651,6 +653,7 @@ class HomeViewModel @Inject constructor(
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             allDomains.removeAll(sourceAllowDomains)
+            dohBypassUpdater.mergeCachedInto(allDomains, sourceWildcardBlocks)
             val wildcards = repository.getEnabledWildcards()
             blocklistHolder.updateAsync(
                 allDomains,
@@ -753,6 +756,7 @@ class HomeViewModel @Inject constructor(
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             allDomains.removeAll(sourceAllowDomains)
+            dohBypassUpdater.mergeCachedInto(allDomains, sourceWildcardBlocks)
             val wildcards = repository.getEnabledWildcards()
             blocklistHolder.updateAsync(
                 allDomains,
@@ -978,6 +982,7 @@ class HomeViewModel @Inject constructor(
             val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
             allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             allDomains.removeAll(sourceAllowDomains)
+            dohBypassUpdater.mergeCachedInto(allDomains, sourceWildcardBlocks)
             val wildcards = repository.getEnabledWildcards()
             blocklistHolder.updateAsync(
                 allDomains,

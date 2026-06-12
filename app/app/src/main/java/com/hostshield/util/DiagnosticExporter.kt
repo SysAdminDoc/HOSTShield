@@ -103,6 +103,11 @@ class DiagnosticExporter @Inject constructor(
             sb.appendLine("Custom upstream: ${prefs.customUpstreamDns.first().ifEmpty { "(default)" }}")
             sb.appendLine("Firewall enabled: ${prefs.networkFirewallEnabled.first()}")
             sb.appendLine("Firewall mode: ${prefs.firewallMode.first()}")
+            val remoteDohVersionLabel =
+                prefs.getRemoteDohVersion().takeIf { it > 0 }?.toString() ?: "(none)"
+            sb.appendLine("Remote DoH bypass version: $remoteDohVersionLabel")
+            sb.appendLine("Remote DoH bypass domains: ${countCsvValues(prefs.getRemoteDohDomains())}")
+            sb.appendLine("Remote DoH bypass wildcards: ${countCsvValues(prefs.getRemoteDohWildcards())}")
         } catch (e: Exception) {
             sb.appendLine("Error reading prefs: ${e.message}")
         }
@@ -237,6 +242,9 @@ class DiagnosticExporter @Inject constructor(
     suspend fun generateZip(context: Context): File = withContext(Dispatchers.IO) {
         val report = generate(context)
         val eventsJsonl = diagnosticEventStore.readJsonlSnapshot()
+        val remoteDohVersion = prefs.getRemoteDohVersion()
+        val remoteDohDomainCount = countCsvValues(prefs.getRemoteDohDomains())
+        val remoteDohWildcardCount = countCsvValues(prefs.getRemoteDohWildcards())
         val dir = File(context.cacheDir, "diagnostics")
         dir.mkdirs()
 
@@ -253,6 +261,9 @@ class DiagnosticExporter @Inject constructor(
                     .put("event_count", eventsJsonl.lineSequence().filter { it.isNotBlank() }.count())
                     .put("doh_pin_manifest_version", DohPinManifest.VERSION)
                     .put("doh_pin_manifest_issued_on", DohPinManifest.ISSUED_ON)
+                    .put("remote_doh_bypass_version", remoteDohVersion)
+                    .put("remote_doh_bypass_domain_count", remoteDohDomainCount)
+                    .put("remote_doh_bypass_wildcard_count", remoteDohWildcardCount)
                     .toString(2)
             )
         }
@@ -295,4 +306,7 @@ class DiagnosticExporter @Inject constructor(
         write(content.toByteArray(Charsets.UTF_8))
         closeEntry()
     }
+
+    private fun countCsvValues(value: String): Int =
+        value.split(",").count { it.trim().isNotBlank() }
 }

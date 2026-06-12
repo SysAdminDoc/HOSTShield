@@ -106,11 +106,25 @@ class DohBypassUpdater @Inject constructor(
         val version = prefs.getRemoteDohVersion()
         return RemoteList(
             version = version,
-            domains = if (domains.isBlank()) emptySet()
-                else domains.split(",").filter { it.isNotBlank() }.toSet(),
-            wildcards = if (wildcards.isBlank()) emptySet()
-                else wildcards.split(",").filter { it.isNotBlank() }.toSet()
+            domains = normalizeCachedSet(domains),
+            wildcards = normalizeCachedSet(wildcards)
         )
+    }
+
+    /**
+     * Merge the cached remote list into a blocklist rebuild snapshot.
+     *
+     * This is intentionally cache-only so rebuilds never depend on network
+     * availability. HostsUpdateWorker is responsible for refreshing the cache.
+     */
+    suspend fun mergeCachedInto(
+        blockDomains: MutableSet<String>,
+        wildcardBlockDomains: MutableSet<String>
+    ): RemoteList {
+        val cached = getCached()
+        blockDomains.addAll(cached.domains)
+        wildcardBlockDomains.addAll(cached.wildcards)
+        return cached
     }
 
     /**
@@ -150,5 +164,13 @@ class DohBypassUpdater @Inject constructor(
             Log.w(TAG, "JSON parse error: ${e.message}")
             null
         }
+    }
+
+    private fun normalizeCachedSet(value: String): Set<String> {
+        if (value.isBlank()) return emptySet()
+        return value.split(",")
+            .map { it.trim().lowercase() }
+            .filter { it.isNotBlank() && it.contains('.') && !it.contains(' ') }
+            .toSet()
     }
 }

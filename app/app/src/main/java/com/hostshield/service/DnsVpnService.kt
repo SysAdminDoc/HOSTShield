@@ -239,6 +239,7 @@ class DnsVpnService : VpnService() {
     @Inject lateinit var wireGuardProxy: WireGuardProxy
     @Inject lateinit var diagnosticEvents: DiagnosticEventStore
     @Inject lateinit var sourceFailureNotifier: SourceFailureNotifier
+    @Inject lateinit var dohBypassUpdater: DohBypassUpdater
 
     private var vpnInterface: ParcelFileDescriptor? = null
     @Volatile private var isRunning = false
@@ -961,6 +962,7 @@ class DnsVpnService : VpnService() {
             repository.getEnabledRulesByType(RuleType.ALLOW).filter { !it.isWildcard }
                 .forEach { allDomains.remove(it.hostname.lowercase()) }
             allDomains.removeAll(sourceAllowDomains)
+            dohBypassUpdater.mergeCachedInto(allDomains, sourceWildcardBlocks)
             blocklist.updateAsync(
                 allDomains,
                 repository.getEnabledWildcards(),

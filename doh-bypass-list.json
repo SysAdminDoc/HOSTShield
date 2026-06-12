@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "updated": "2026-06-12",
+  "domains": [
+    "dnsforge.de",
+    "doh.dnswarden.com",
+    "dns.digitale-gesellschaft.ch",
+    "doh.ffmuc.net",
+    "doh.tiar.app",
+    "doh.tiarap.org",
+    "jp.tiar.app",
+    "dns.oszx.co",
+    "doh.crypto.sx",
+    "doh-2.seby.io",
+    "doh.seby.io",
+    "dns.dnsoverhttps.net",
+    "fi.doh.dns.snopyta.org",
+    "dns.containerpi.com",
+    "doh.li",
+    "dns.digitalsize.net",
+    "anycast.uncensoreddns.org",
+    "unicast.uncensoreddns.org",
+    "doh.powerdns.org",
+    "dns-family.adguard.com"
+  ],
+  "wildcards": [
+    "dnswarden.com",
+    "tiar.app",
+    "tiarap.org",
+    "seby.io"
+  ]
+}

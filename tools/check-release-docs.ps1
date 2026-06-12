@@ -47,6 +47,91 @@ $docs = @{
 
 $failures = New-Object System.Collections.Generic.List[string]
 
+function Test-DohBypassDomain {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    $candidate = $Value.Trim().ToLowerInvariant()
+    if ($candidate.Length -lt 4 -or $candidate.Length -gt 253) {
+        return $false
+    }
+    if ($candidate.StartsWith("*.") -or $candidate.StartsWith(".") -or $candidate.EndsWith(".")) {
+        return $false
+    }
+    return $candidate -match '^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])$'
+}
+
+$dohBypassManifest = "doh-bypass-list.json"
+if (-not (Test-RepoFile $dohBypassManifest)) {
+    $failures.Add("Missing remote DoH bypass manifest: $dohBypassManifest")
+} else {
+    $manifestRaw = Read-RepoFile $dohBypassManifest
+    if ([Text.Encoding]::UTF8.GetByteCount($manifestRaw) -gt 50000) {
+        $failures.Add("$dohBypassManifest exceeds DohBypassUpdater MAX_JSON_SIZE.")
+    }
+
+    $manifest = $null
+    try {
+        $manifest = $manifestRaw | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        $failures.Add("$dohBypassManifest is not valid JSON: $($_.Exception.Message)")
+    }
+
+    if ($null -ne $manifest) {
+        [int]$manifestVersion = 0
+        if (-not [int]::TryParse([string]$manifest.version, [ref]$manifestVersion) -or $manifestVersion -lt 1) {
+            $failures.Add("$dohBypassManifest must contain integer version >= 1.")
+        }
+
+        $updatedDate = [DateTime]::MinValue
+        if (-not [DateTime]::TryParseExact(
+                [string]$manifest.updated,
+                "yyyy-MM-dd",
+                [Globalization.CultureInfo]::InvariantCulture,
+                [Globalization.DateTimeStyles]::None,
+                [ref]$updatedDate
+            )) {
+            $failures.Add("$dohBypassManifest must contain updated as yyyy-MM-dd.")
+        }
+
+        $domains = if ($null -ne $manifest.domains) { @($manifest.domains) } else { @() }
+        $wildcards = if ($null -ne $manifest.wildcards) { @($manifest.wildcards) } else { @() }
+        $entryCount = $domains.Count + $wildcards.Count
+        if ($entryCount -eq 0) {
+            $failures.Add("$dohBypassManifest must contain at least one domain or wildcard entry.")
+        }
+        if ($entryCount -gt 500) {
+            $failures.Add("$dohBypassManifest has $entryCount entries; DohBypassUpdater caps remote lists at 500.")
+        }
+
+        $seenDomains = New-Object System.Collections.Generic.HashSet[string]
+        foreach ($entry in $domains) {
+            $value = ([string]$entry).Trim().ToLowerInvariant()
+            if (-not (Test-DohBypassDomain $value)) {
+                $failures.Add("$dohBypassManifest contains invalid domain entry: $entry")
+            } elseif (-not $seenDomains.Add($value)) {
+                $failures.Add("$dohBypassManifest contains duplicate domain entry: $value")
+            }
+        }
+
+        $seenWildcards = New-Object System.Collections.Generic.HashSet[string]
+        foreach ($entry in $wildcards) {
+            $value = ([string]$entry).Trim().ToLowerInvariant()
+            if (-not (Test-DohBypassDomain $value)) {
+                $failures.Add("$dohBypassManifest contains invalid wildcard entry: $entry")
+            } elseif (-not $seenWildcards.Add($value)) {
+                $failures.Add("$dohBypassManifest contains duplicate wildcard entry: $value")
+            }
+        }
+    }
+}
+
+$dohUpdaterPath = "app/app/src/main/java/com/hostshield/service/DohBypassUpdater.kt"
+$dohUpdater = Read-RepoFile $dohUpdaterPath
+$expectedDohManifestUrl = "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/$dohBypassManifest"
+if ($dohUpdater -notmatch [regex]::Escape($expectedDohManifestUrl)) {
+    $failures.Add("$dohUpdaterPath does not point at $expectedDohManifestUrl")
+}
+
 foreach ($doc in @("README.md", "app/README.md")) {
     if ($docs[$doc] -notmatch [regex]::Escape("version-$versionName")) {
         $failures.Add("$doc does not advertise version badge $versionName.")

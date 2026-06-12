@@ -310,6 +310,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                     // Remove allowlist source domains + adblock-syntax @@|| allow rules
                     allDomains.removeAll(sourceAllowDomains)
                     allDomains.removeAll(adblockAllowDomains)
+                    dohBypassUpdater.mergeCachedInto(allDomains, adblockWildcardBlocks)
 
                     val wildcards = repository.getEnabledWildcards()
                     val regexRules = repository.getEnabledRegexRules()
