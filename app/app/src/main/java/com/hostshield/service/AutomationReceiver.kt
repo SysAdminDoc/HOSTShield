@@ -41,6 +41,10 @@ class AutomationReceiver : BroadcastReceiver() {
 
         // Static rate limit state — survives receiver re-creation per broadcast delivery
         private val lastExecTime = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+        internal fun clearRateLimitsForTest() {
+            lastExecTime.clear()
+        }
     }
 
     @Inject lateinit var prefs: AppPreferences

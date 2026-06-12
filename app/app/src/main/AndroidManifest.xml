@@ -20,6 +20,7 @@
     <permission
         android:name="${applicationId}.permission.AUTOMATION"
         android:protectionLevel="signature" />
+    <uses-permission android:name="${applicationId}.permission.AUTOMATION" />
 
     <application
         android:name=".HostShieldApp"
