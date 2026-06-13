@@ -202,9 +202,9 @@ fun HomeWarningsSection(
                         Spacer(Modifier.height(2.dp))
                         Text(
                             if (canRestartDevice) {
-                                "HostShield is in always-on lockdown but has received no tunnel traffic. Restart now to recover the Android VPN stack."
+                                "Android 16 VPN stack corruption detected — always-on lockdown is active but no traffic is reaching the tunnel. This is a known Android bug. Restart now to recover."
                             } else {
-                                "HostShield is in always-on lockdown but has received no tunnel traffic. Restart the device manually to recover the Android VPN stack."
+                                "Android 16 VPN stack corruption detected — always-on lockdown is active but no traffic is reaching the tunnel. This is a known Android bug. Restart the device manually to recover."
                             },
                             color = Red.copy(alpha = 0.82f),
                             fontSize = 11.sp,

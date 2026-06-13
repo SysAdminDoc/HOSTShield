@@ -378,6 +378,9 @@ Protection services use Android's `systemExempted` foreground-service type for V
 **Does it send data to any server?**
 No. All DNS filtering happens locally on-device. The only network requests are: downloading blocklist sources (user-configured URLs), DoH queries to the user-selected DNS provider, GeoIP database updates (MaxMind), optional city-level GeoIP fallback through ipapi.co, and optional remote DoH bypass / CNAME cloak list updates from GitHub.
 
+**What about the Android 16 VPN update bug?**
+Android 16 has a confirmed system-level bug where VPN apps become unusable after a background app update while always-on VPN is active. The device's network stack enters a corrupted state where all connections time out even though the VPN tunnel appears connected. This affects all VPN-based apps (Mullvad, Proton, Ivanti, TunnelBear, and others have confirmed it). Google has not issued a fix. HostShield detects this condition automatically (since v6.5.2) and shows a recovery banner on the Home screen. **Workaround**: reboot the device, or uninstall and reinstall the app. On rooted devices, HostShield offers a one-tap device restart from the recovery banner. To prevent the issue, disable always-on VPN before updating HostShield, then re-enable it after the update completes.
+
 **What about battery life?**
 VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Root mode: ~0% additional battery (iptables operates at kernel level). The DNS cache (60-70% hit rate) and serve-stale reduce upstream queries significantly.
 
