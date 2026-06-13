@@ -3,6 +3,7 @@ package com.hostshield.ui.screens.settings
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.RuleType
@@ -28,6 +29,13 @@ import javax.inject.Inject
 // ══════════════════════════════════════════════════════════════
 // Settings view model
 // ══════════════════════════════════════════════════════════════
+
+sealed interface DiagnosticExportState {
+    data object Idle : DiagnosticExportState
+    data object Generating : DiagnosticExportState
+    data class Ready(val filePath: String, val sizeBytes: Long) : DiagnosticExportState
+    data class Failed(val error: String) : DiagnosticExportState
+}
 
 sealed interface BackupDialogState {
     data object None : BackupDialogState
@@ -63,6 +71,7 @@ data class SettingsUiState(
     val importMessage: String? = null,
     val backupMessage: String? = null,
     val backupDialog: BackupDialogState = BackupDialogState.None,
+    val diagnosticExport: DiagnosticExportState = DiagnosticExportState.Idle,
     val batteryOptimized: Boolean = false,
     val batteryMessage: String = "",
     val oemBatteryKiller: String? = null,
@@ -753,11 +762,50 @@ class SettingsViewModel @Inject constructor(
 
     fun generateDiagnosticReport() {
         viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(diagnosticExport = DiagnosticExportState.Generating) }
             try {
-                diagnosticExporter.generateAndShare(getApplication())
+                val file = diagnosticExporter.generateZip(getApplication())
+                _uiState.update {
+                    it.copy(diagnosticExport = DiagnosticExportState.Ready(
+                        file.absolutePath, file.length()
+                    ))
+                }
             } catch (e: Exception) {
-                android.util.Log.e("Settings", "Diagnostic export failed: ${e.message}", e)
+                _uiState.update {
+                    it.copy(diagnosticExport = DiagnosticExportState.Failed(
+                        e.message ?: "Unknown error"
+                    ))
+                }
             }
         }
+    }
+
+    fun shareDiagnosticReport() {
+        val export = _uiState.value.diagnosticExport
+        if (export !is DiagnosticExportState.Ready) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val file = java.io.File(export.filePath)
+                val context = getApplication<android.app.Application>()
+                val uri = FileProvider.getUriForFile(
+                    context, "${context.packageName}.fileprovider", file
+                )
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/zip"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    putExtra(Intent.EXTRA_SUBJECT, "HostShield Diagnostic Package")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(Intent.createChooser(intent, "Share Diagnostic Package")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (e: Exception) {
+                android.util.Log.e("Settings", "Share failed: ${e.message}", e)
+            }
+        }
+    }
+
+    fun dismissDiagnosticExport() {
+        _uiState.update { it.copy(diagnosticExport = DiagnosticExportState.Idle) }
     }
 }

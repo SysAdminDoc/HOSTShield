@@ -380,11 +380,58 @@ fun SettingsScreen(
 
         // Diagnostics & Export
         SettingsSection("Diagnostics & Export", Icons.Filled.BugReport, Yellow) {
-            SettingsRow(
-                "Generate diagnostic package",
-                "Device info, config, logs, event log ZIP",
-                Icons.Filled.Description
-            ) { viewModel.generateDiagnosticReport() }
+            val diagState = state.diagnosticExport
+            when (diagState) {
+                DiagnosticExportState.Idle -> {
+                    SettingsRow(
+                        "Generate diagnostic package",
+                        "Device info, config, logs, event log ZIP",
+                        Icons.Filled.Description
+                    ) { viewModel.generateDiagnosticReport() }
+                }
+                DiagnosticExportState.Generating -> {
+                    SettingsRow(
+                        "Generating diagnostic package…",
+                        "Building ZIP with device info, config, logs",
+                        Icons.Filled.HourglassTop
+                    ) {}
+                }
+                is DiagnosticExportState.Ready -> {
+                    val sizeKb = diagState.sizeBytes / 1024
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { viewModel.shareDiagnosticReport() },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
+                        ) {
+                            Icon(Icons.Filled.Share, null, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Share (${sizeKb} KB)", fontSize = 10.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.dismissDiagnosticExport() },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim)
+                        ) {
+                            Icon(Icons.Filled.Close, null, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Discard", fontSize = 10.sp)
+                        }
+                    }
+                }
+                is DiagnosticExportState.Failed -> {
+                    SettingsRow(
+                        "Export failed",
+                        diagState.error,
+                        Icons.Filled.Error
+                    ) { viewModel.generateDiagnosticReport() }
+                }
+            }
             Spacer(Modifier.height(4.dp))
             SettingsRow("Crash reports", "View stored crash logs", Icons.Filled.BugReport, onClick = onNavigateToCrashReports)
             Spacer(Modifier.height(4.dp))
