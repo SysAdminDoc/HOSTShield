@@ -112,7 +112,7 @@ object HostsParser {
         val wildcardAllowDomains = mutableSetOf<String>()
 
         parsed.blockRules.forEach { rule ->
-            if (rule.isRegex || rule.dnsTypes != null || rule.domain.isBlank()) return@forEach
+            if (rule.isRegex || rule.dnsTypes != null || rule.redirectIp != null || rule.domain.isBlank()) return@forEach
 
             if (rule.matchesSubdomains || rule.isWildcard) {
                 wildcardBlockDomains.add(rule.domain)
@@ -175,7 +175,7 @@ object HostsParser {
         val result = AdblockRuleParser.parse(content)
         val hosts = mutableSetOf<ParsedHost>()
         for (rule in result.blockRules) {
-            if (!rule.isRegex && !rule.isWildcard && rule.dnsTypes == null && rule.domain.isNotEmpty()) {
+            if (!rule.isRegex && !rule.isWildcard && rule.dnsTypes == null && rule.redirectIp == null && rule.domain.isNotEmpty()) {
                 hosts.add(ParsedHost(rule.domain))
             }
         }

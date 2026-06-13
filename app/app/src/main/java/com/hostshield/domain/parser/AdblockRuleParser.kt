@@ -16,6 +16,8 @@ package com.hostshield.domain.parser
  *   ||example.com^$dnstype=~A  — block for all types except A
  *   ||example.com^$badfilter   — disable any matching rule
  *   ||example.com^$denyallow=good.com — block all except good.com
+ *   ||example.com^$dnsrewrite=NXDOMAIN — rewrite as NXDOMAIN (→ block)
+ *   ||example.com^$dnsrewrite=1.2.3.4 — rewrite to IP (→ redirect rule)
  *   /regex/                    — regex block rule
  *   @@/regex/                  — regex allow rule
  *   0.0.0.0 example.com       — hosts-style rule (delegated to HostsParser)
@@ -55,7 +57,8 @@ object AdblockRuleParser {
         val matchesSubdomains: Boolean = true,   // true for ||domain^ (blocks domain + subdomains)
         val dnsTypes: Set<Int>? = null,          // null = all types
         val dnsTypesNegated: Boolean = false,    // true = block all EXCEPT these types
-        val denyAllowDomains: Set<String>? = null // $denyallow exception domains
+        val denyAllowDomains: Set<String>? = null, // $denyallow exception domains
+        val redirectIp: String? = null           // non-null when parsed from $dnsrewrite=<IP>
     ) {
         /**
          * Priority level for rule ordering (higher = takes precedence).
@@ -78,15 +81,16 @@ object AdblockRuleParser {
         val badfilterRules: List<DnsRule>,
         val totalLines: Int,
         val parsedRules: Int,
-        val skippedLines: Int
+        val skippedLines: Int,
+        val dnsRewriteSkipped: Int = 0
     ) {
         /**
          * All block domains for the exact hash set + trie insertion.
          * Includes ||domain^ rules (matchesSubdomains=true, isWildcard=false).
-         * Excludes explicit *.domain wildcards, regex, and $dnstype-filtered rules.
+         * Excludes explicit *.domain wildcards, regex, $dnstype-filtered, and redirect rules.
          */
         val exactBlockDomains: Set<String> get() =
-            blockRules.filter { !it.isWildcard && !it.isRegex && it.dnsTypes == null }
+            blockRules.filter { !it.isWildcard && !it.isRegex && it.dnsTypes == null && it.redirectIp == null }
                 .map { it.domain }.toSet()
 
         /** All allow domains for subtraction from blocklist. */
@@ -101,6 +105,10 @@ object AdblockRuleParser {
         /** Explicit wildcard allow rules. */
         val wildcardAllowRules: List<DnsRule> get() =
             allowRules.filter { it.isWildcard }
+
+        /** Redirect rules parsed from $dnsrewrite=<IP> modifiers. */
+        val redirectRules: List<DnsRule> get() =
+            blockRules.filter { it.redirectIp != null }
     }
 
     // DNS type name → value mapping
@@ -126,6 +134,7 @@ object AdblockRuleParser {
         var totalLines = 0
         var parsedRules = 0
         var skippedLines = 0
+        var dnsRewriteSkipped = 0
 
         content.lineSequence().forEach { rawLine ->
             totalLines++
@@ -147,6 +156,11 @@ object AdblockRuleParser {
                     else -> blockRules.add(rule)
                 }
             } else {
+                if (line.contains("dnsrewrite=", ignoreCase = true)) {
+                    dnsRewriteSkipped++
+                    skippedLines++
+                    return@forEach
+                }
                 // Try as hosts-style or domains-only
                 val hostRule = parseAsHostsOrDomain(line)
                 if (hostRule != null) {
@@ -168,7 +182,8 @@ object AdblockRuleParser {
             badfilterRules = badfilterRules,
             totalLines = totalLines,
             parsedRules = parsedRules,
-            skippedLines = skippedLines
+            skippedLines = skippedLines,
+            dnsRewriteSkipped = dnsRewriteSkipped
         )
     }
 
@@ -227,6 +242,7 @@ object AdblockRuleParser {
         var dnsTypes: MutableSet<Int>? = null
         var dnsTypesNegated = false
         var denyAllowDomains: MutableSet<String>? = null
+        var redirectIpValue: String? = null
 
         if (modifiers.isNotEmpty()) {
             for (mod in modifiers.split(',')) {
@@ -261,8 +277,9 @@ object AdblockRuleParser {
                         if (denyAllowDomains.isNullOrEmpty()) denyAllowDomains = null
                     }
                     m.startsWith("dnsrewrite=") -> {
-                        // DNS rewrite rules — skip for now (future feature)
-                        return null
+                        val rewrite = parseDnsRewriteValue(m.removePrefix("dnsrewrite=").trim())
+                            ?: return null // unsupported form (CNAME, etc.)
+                        if (rewrite.isNotEmpty()) redirectIpValue = rewrite
                     }
                     m == "all" || m == "popup" || m == "third-party" || m == "first-party" ||
                         m.startsWith("domain=") || m.startsWith("app=") || m.startsWith("client=") -> {
@@ -283,7 +300,8 @@ object AdblockRuleParser {
             matchesSubdomains = true,                  // ||domain^ always matches subdomains
             dnsTypes = dnsTypes,
             dnsTypesNegated = dnsTypesNegated,
-            denyAllowDomains = denyAllowDomains
+            denyAllowDomains = denyAllowDomains,
+            redirectIp = redirectIpValue
         )
     }
 
@@ -361,7 +379,44 @@ object AdblockRuleParser {
     private val DOMAIN_PATTERN = Regex("""^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$""")
     private val LOCALHOST = setOf("localhost", "localhost.localdomain", "local", "broadcasthost",
         "ip6-localhost", "ip6-loopback")
+    private val IPV4_PATTERN = Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$""")
+    private val IPV6_PATTERN = Regex("""^[0-9a-fA-F:]+$""")
+    private val NULL_IPS = setOf("0.0.0.0", "::", "::0", "0:0:0:0:0:0:0:0")
 
     private fun isValidDomain(s: String): Boolean =
         s.length in 3..253 && s.contains('.') && s !in LOCALHOST && DOMAIN_PATTERN.matches(s)
+
+    /**
+     * Parse a $dnsrewrite= value.
+     * Returns "" for block-equivalent forms (NXDOMAIN/REFUSED/null-IP),
+     * an IP string for A/AAAA redirects, or null for unsupported forms (CNAME, etc.).
+     */
+    private fun parseDnsRewriteValue(value: String): String? {
+        if (value.isEmpty()) return null
+
+        val upper = value.uppercase()
+        if (upper == "NXDOMAIN" || upper == "REFUSED" || upper == "SERVFAIL") return ""
+        if (value in NULL_IPS) return ""
+
+        // 3-part form: RCODE;TYPE;VALUE (e.g. NOERROR;A;1.2.3.4)
+        if (value.contains(';')) {
+            val parts = value.split(';', limit = 3)
+            if (parts.size != 3) return null
+            val rcode = parts[0].uppercase()
+            val type = parts[1].uppercase()
+            val v = parts[2].trim()
+
+            if (rcode == "NXDOMAIN" || rcode == "REFUSED" || rcode == "SERVFAIL") return ""
+            if ((type == "A" || type == "AAAA") && v in NULL_IPS) return ""
+            if (type == "A" && IPV4_PATTERN.matches(v)) return v
+            if (type == "AAAA" && v.contains(':') && IPV6_PATTERN.matches(v)) return v
+            return null
+        }
+
+        if (IPV4_PATTERN.matches(value)) return value
+        if (value.contains(':') && IPV6_PATTERN.matches(value)) return value
+
+        // Bare domain = CNAME rewrite — not supported
+        return null
+    }
 }
