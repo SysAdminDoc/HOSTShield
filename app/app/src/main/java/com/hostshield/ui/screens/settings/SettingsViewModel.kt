@@ -29,6 +29,16 @@ import javax.inject.Inject
 // Settings view model
 // ══════════════════════════════════════════════════════════════
 
+sealed interface BackupDialogState {
+    data object None : BackupDialogState
+    data object ExportChoice : BackupDialogState
+    data class ExportPassphrase(val uri: Uri) : BackupDialogState
+    data class ImportPassphrase(
+        val uri: Uri,
+        val error: String? = null
+    ) : BackupDialogState
+}
+
 data class SettingsUiState(
     val ipv4Redirect: String = "0.0.0.0",
     val ipv6Redirect: String = "::",
@@ -52,6 +62,7 @@ data class SettingsUiState(
     val exportResult: String? = null,
     val importMessage: String? = null,
     val backupMessage: String? = null,
+    val backupDialog: BackupDialogState = BackupDialogState.None,
     val batteryOptimized: Boolean = false,
     val batteryMessage: String = "",
     val oemBatteryKiller: String? = null,
@@ -468,6 +479,22 @@ class SettingsViewModel @Inject constructor(
     fun clearExportResult() { _uiState.update { it.copy(exportResult = null) } }
     fun clearBackupMessage() { _uiState.update { it.copy(backupMessage = null) } }
 
+    fun showBackupExportChoice() {
+        _uiState.update { it.copy(backupDialog = BackupDialogState.ExportChoice) }
+    }
+
+    fun dismissBackupDialog() {
+        _uiState.update { it.copy(backupDialog = BackupDialogState.None) }
+    }
+
+    fun startEncryptedExport(uri: Uri) {
+        _uiState.update { it.copy(backupDialog = BackupDialogState.ExportPassphrase(uri)) }
+    }
+
+    fun retryImportPassphrase(uri: Uri, error: String? = null) {
+        _uiState.update { it.copy(backupDialog = BackupDialogState.ImportPassphrase(uri, error)) }
+    }
+
     /** Export user rules as a shareable hosts file that other blockers can subscribe to. */
     fun exportShareableBlocklist() {
         viewModelScope.launch {
@@ -509,31 +536,35 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Restore from a backup file at the given URI.
-     * If the file is encrypted and [passphrase] is null/empty, an
-     * [EncryptedBackupException] is raised via backupMessage prefixed with "ENCRYPTED:"
-     * so the UI can prompt the user for a passphrase.
-     * Plaintext backups are restored directly regardless of passphrase.
-     */
     fun restoreFromUri(uri: Uri, passphrase: String? = null) {
         viewModelScope.launch {
             try {
                 val json = backupRestore.readBackupFromUri(getApplication(), uri, passphrase)
                 val result = backupRestore.restoreBackup(json)
                 _uiState.update {
-                    it.copy(backupMessage = "Restored ${result.sourcesCount} sources, ${result.rulesCount} rules, " +
-                        "${result.profilesCount} profiles, ${result.firewallRulesCount} firewall rules")
+                    it.copy(
+                        backupDialog = BackupDialogState.None,
+                        backupMessage = "Restored ${result.sourcesCount} sources, ${result.rulesCount} rules, " +
+                            "${result.profilesCount} profiles, ${result.firewallRulesCount} firewall rules"
+                    )
                 }
             } catch (e: com.hostshield.util.EncryptedBackupException) {
-                _uiState.update { it.copy(backupMessage = "ENCRYPTED:${e.message}") }
+                _uiState.update {
+                    it.copy(backupDialog = BackupDialogState.ImportPassphrase(uri))
+                }
             } catch (e: javax.crypto.AEADBadTagException) {
                 diagnosticEvents.record(
                     DiagnosticEventType.BACKUP_IMPORT_FAILED,
                     "Encrypted backup restore failed",
                     mapOf("reason" to "auth_tag_or_passphrase")
                 )
-                _uiState.update { it.copy(backupMessage = "Restore failed: incorrect passphrase or corrupted backup") }
+                _uiState.update {
+                    it.copy(
+                        backupDialog = BackupDialogState.ImportPassphrase(
+                            uri, "Incorrect passphrase or corrupted backup"
+                        )
+                    )
+                }
             } catch (e: Exception) {
                 diagnosticEvents.record(
                     DiagnosticEventType.BACKUP_IMPORT_FAILED,

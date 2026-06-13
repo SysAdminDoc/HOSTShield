@@ -77,9 +77,16 @@ fun SettingsScreen(
         viewModel.refreshBattery()
     }
 
-    val backupLauncher = rememberLauncherForActivityResult(
+    val plaintextBackupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri -> uri?.let { viewModel.backupToUri(it) } }
+
+    val encryptedBackupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        uri?.let { viewModel.startEncryptedExport(it) }
+            ?: viewModel.dismissBackupDialog()
+    }
 
     val restoreLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -329,11 +336,11 @@ fun SettingsScreen(
         // Backup
         SettingsSection("Backup", Icons.Filled.Backup, Mauve) {
             SettingsRow("Create backup", "Sources, rules, profiles, preferences", Icons.Filled.SaveAlt) {
-                backupLauncher.launch("hostshield_backup.json")
+                viewModel.showBackupExportChoice()
             }
             Spacer(Modifier.height(4.dp))
             SettingsRow("Restore backup", "Restore from previous backup", Icons.Filled.RestorePage) {
-                restoreLauncher.launch(arrayOf("application/json"))
+                restoreLauncher.launch(arrayOf("application/json", "application/octet-stream", "*/*"))
             }
             Spacer(Modifier.height(4.dp))
             SettingsRow("WebDAV sync", "Sync backups to Nextcloud, ownCloud", Icons.Filled.Cloud, onClick = onNavigateToWebDavSync)
@@ -647,6 +654,174 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(24.dp))
     }
+
+    // Backup dialogs
+    when (val dialog = state.backupDialog) {
+        BackupDialogState.None -> {}
+        BackupDialogState.ExportChoice -> {
+            BackupExportChoiceDialog(
+                onPlaintext = {
+                    viewModel.dismissBackupDialog()
+                    plaintextBackupLauncher.launch("hostshield_backup.json")
+                },
+                onEncrypted = {
+                    encryptedBackupLauncher.launch("hostshield_backup.hsbackup")
+                },
+                onDismiss = { viewModel.dismissBackupDialog() }
+            )
+        }
+        is BackupDialogState.ExportPassphrase -> {
+            BackupPassphraseDialog(
+                title = "Encrypt Backup",
+                confirmLabel = "Export",
+                showConfirmField = true,
+                error = null,
+                onConfirm = { passphrase ->
+                    viewModel.dismissBackupDialog()
+                    viewModel.backupToUri(dialog.uri, passphrase)
+                },
+                onDismiss = { viewModel.dismissBackupDialog() }
+            )
+        }
+        is BackupDialogState.ImportPassphrase -> {
+            BackupPassphraseDialog(
+                title = "Encrypted Backup",
+                confirmLabel = "Restore",
+                showConfirmField = false,
+                error = dialog.error,
+                onConfirm = { passphrase ->
+                    viewModel.restoreFromUri(dialog.uri, passphrase)
+                },
+                onDismiss = { viewModel.dismissBackupDialog() }
+            )
+        }
+    }
+}
+
+@Composable
+private fun BackupExportChoiceDialog(
+    onPlaintext: () -> Unit,
+    onEncrypted: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Surface0,
+        titleContentColor = TextPrimary,
+        textContentColor = TextSecondary,
+        title = { Text("Create Backup") },
+        text = { Text("Choose whether to encrypt the backup with a passphrase.") },
+        confirmButton = {
+            TextButton(onClick = onEncrypted) {
+                Text("Encrypted", color = Teal)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onPlaintext) {
+                Text("Plaintext", color = TextSecondary)
+            }
+        }
+    )
+}
+
+@Composable
+private fun BackupPassphraseDialog(
+    title: String,
+    confirmLabel: String,
+    showConfirmField: Boolean,
+    error: String?,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var passphrase by remember { mutableStateOf("") }
+    var confirmPassphrase by remember { mutableStateOf("") }
+    var visible by remember { mutableStateOf(false) }
+    val mismatch = showConfirmField && passphrase.isNotEmpty() &&
+        confirmPassphrase.isNotEmpty() && passphrase != confirmPassphrase
+    val canConfirm = passphrase.isNotEmpty() &&
+        (!showConfirmField || passphrase == confirmPassphrase)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Surface0,
+        titleContentColor = TextPrimary,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (error != null) {
+                    Text(error, color = Red, fontSize = 13.sp)
+                }
+                OutlinedTextField(
+                    value = passphrase,
+                    onValueChange = { passphrase = it },
+                    label = { Text("Passphrase") },
+                    singleLine = true,
+                    visualTransformation = if (visible)
+                        androidx.compose.ui.text.input.VisualTransformation.None
+                    else
+                        androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { visible = !visible }) {
+                            Icon(
+                                if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                "Toggle visibility",
+                                tint = TextDim
+                            )
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = Teal,
+                        unfocusedBorderColor = Surface2,
+                        focusedLabelColor = Teal,
+                        unfocusedLabelColor = TextDim,
+                        cursorColor = Teal
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (showConfirmField) {
+                    OutlinedTextField(
+                        value = confirmPassphrase,
+                        onValueChange = { confirmPassphrase = it },
+                        label = { Text("Confirm passphrase") },
+                        singleLine = true,
+                        isError = mismatch,
+                        supportingText = if (mismatch) {
+                            { Text("Passphrases do not match", color = Red) }
+                        } else null,
+                        visualTransformation = if (visible)
+                            androidx.compose.ui.text.input.VisualTransformation.None
+                        else
+                            androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = Teal,
+                            unfocusedBorderColor = Surface2,
+                            focusedLabelColor = Teal,
+                            unfocusedLabelColor = TextDim,
+                            cursorColor = Teal,
+                            errorBorderColor = Red,
+                            errorLabelColor = Red,
+                            errorCursorColor = Red
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(passphrase) }, enabled = canConfirm) {
+                Text(confirmLabel, color = if (canConfirm) Teal else TextDim)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextSecondary)
+            }
+        }
+    )
 }
 
 // ── Shared Settings Components ──────────────────────────────
