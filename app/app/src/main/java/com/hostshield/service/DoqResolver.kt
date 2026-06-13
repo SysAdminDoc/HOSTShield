@@ -2,6 +2,7 @@ package com.hostshield.service
 
 import android.util.Log
 import com.hostshield.util.ExperimentalEngineDisclosure
+import com.hostshield.util.PrivacyLog
 import java.io.ByteArrayOutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -100,7 +101,7 @@ class DoqResolver @Inject constructor(
         return try {
             resolveQuic(dns, provider)
         } catch (e: Exception) {
-            Log.w(TAG, "DoQ failed for ${provider.hostname}, falling back to DoT: ${e.message}")
+            PrivacyLog.w(TAG, "DoQ failed for ${provider.hostname}, falling back to DoT: ${e.message}")
             fallbackToDot(dns, provider)
         }
     }
@@ -138,7 +139,7 @@ class DoqResolver @Inject constructor(
             // Extract DNS response from QUIC packet
             val response = extractDnsResponse(recvBuf, recvPacket.length)
             if (response != null) {
-                Log.d(TAG, "DoQ success via ${provider.hostname}: ${response.size} bytes")
+                PrivacyLog.d(TAG, "DoQ success via ${provider.hostname}: ${response.size} bytes")
                 return response
             }
 

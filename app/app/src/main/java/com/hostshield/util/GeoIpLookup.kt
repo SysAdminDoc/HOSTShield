@@ -126,7 +126,7 @@ class GeoIpLookup @Inject constructor() {
                 cache[ip] = info
                 info
             } catch (e: Exception) {
-                Log.d(TAG, "GeoIP lookup failed for $ip: ${e.message}")
+                PrivacyLog.d(TAG, "GeoIP lookup failed for $ip: ${e.message}")
                 null
             }
         }

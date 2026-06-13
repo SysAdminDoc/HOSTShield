@@ -1,6 +1,7 @@
 package com.hostshield.ui.screens.logs
 
 import android.util.Log
+import com.hostshield.util.PrivacyLog
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -166,7 +167,7 @@ class LogsViewModel @Inject constructor(
                     rootUtil.appendHostEntry(host)
                 }
             } catch (e: Exception) {
-                Log.e("LogsViewModel", "Failed to block domain: $host", e)
+                PrivacyLog.e("LogsViewModel", "Failed to block domain: $host", e)
                 _error.value = "Failed to block $host: ${e.message}"
             }
         }
@@ -185,7 +186,7 @@ class LogsViewModel @Inject constructor(
                     rootUtil.removeHostEntry(host)
                 }
             } catch (e: Exception) {
-                Log.e("LogsViewModel", "Failed to allow domain: $host", e)
+                PrivacyLog.e("LogsViewModel", "Failed to allow domain: $host", e)
                 _error.value = "Failed to allow $host: ${e.message}"
             }
         }
@@ -243,7 +244,7 @@ class LogsViewModel @Inject constructor(
                 blocklist.addDomain(host)
                 if (method == BlockMethod.ROOT_HOSTS) rootUtil.appendHostEntry(host)
             } catch (e: Exception) {
-                Log.e("LogsViewModel", "Failed to temporarily allow domain: $host", e)
+                PrivacyLog.e("LogsViewModel", "Failed to temporarily allow domain: $host", e)
                 _error.value = "Failed to temporarily allow $host: ${e.message}"
             }
         }
@@ -256,7 +257,7 @@ class LogsViewModel @Inject constructor(
                 if (domain.lowercase() in current) prefs.unpinDomain(domain)
                 else prefs.pinDomain(domain)
             } catch (e: Exception) {
-                Log.e("LogsViewModel", "Failed to toggle pin for: $domain", e)
+                PrivacyLog.e("LogsViewModel", "Failed to toggle pin for: $domain", e)
                 _error.value = "Failed to toggle pin: ${e.message}"
             }
         }

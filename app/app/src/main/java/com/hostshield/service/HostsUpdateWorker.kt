@@ -20,6 +20,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import android.util.Log
+import com.hostshield.util.PrivacyLog
 import okhttp3.OkHttpClient
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
@@ -165,7 +166,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                                     lastSuccessfulUpdate = source.lastUpdated,
                                     consecutiveFailures = failures,
                                 )
-                                Log.w(TAG, "Block source download failed: ${source.url} — ${err.message}")
+                                PrivacyLog.w(TAG, "Block source download failed: ${source.url} — ${err.message}")
                                 diagnosticEvents.record(
                                     DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
                                     "Block source download failed",
@@ -230,7 +231,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                                     lastSuccessfulUpdate = source.lastUpdated,
                                     consecutiveFailures = failures,
                                 )
-                                Log.w(TAG, "Allowlist source download failed: ${source.url} — ${err.message}")
+                                PrivacyLog.w(TAG, "Allowlist source download failed: ${source.url} — ${err.message}")
                                 diagnosticEvents.record(
                                     DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
                                     "Allowlist source download failed",
@@ -249,7 +250,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                     for (url in syncUrls) {
                         // Only allow HTTPS sync URLs for security
                         if (!url.startsWith("https://")) {
-                            Log.w(TAG, "Skipping non-HTTPS sync URL: $url — only https:// URLs are allowed")
+                            PrivacyLog.w(TAG, "Skipping non-HTTPS sync URL: $url — only https:// URLs are allowed")
                             continue
                         }
                         try {
@@ -269,7 +270,7 @@ class HostsUpdateWorker @AssistedInject constructor(
 
                                     val previousHash = prefs.getSyncUrlHash(url)
                                     if (previousHash != null && previousHash != hash) {
-                                        Log.i(TAG, "Sync URL content changed: $url (hash $previousHash -> $hash)")
+                                        PrivacyLog.i(TAG, "Sync URL content changed: $url (hash $previousHash -> $hash)")
                                     }
                                     prefs.setSyncUrlHash(url, hash)
 
@@ -294,7 +295,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                                 lastSuccessfulUpdate = 0L,
                                 consecutiveFailures = 1,
                             )
-                            Log.w(TAG, "Sync URL fetch failed: $url — ${e.message}")
+                            PrivacyLog.w(TAG, "Sync URL fetch failed: $url — ${e.message}")
                             diagnosticEvents.record(
                                 DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
                                 "Rule sync URL fetch failed",
@@ -307,7 +308,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                         }
                     }
                     if (failedSources.isNotEmpty()) {
-                        Log.w(TAG, "Blocklist refresh completed with ${failedSources.size} failed source(s): " +
+                        PrivacyLog.w(TAG, "Blocklist refresh completed with ${failedSources.size} failed source(s): " +
                             failedSources.joinToString(", ") { it.url })
                         sourceFailureNotifier.notifyFailures(failedSources)
                     }

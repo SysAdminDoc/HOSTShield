@@ -1,6 +1,7 @@
 package com.hostshield.service
 
 import android.util.Log
+import com.hostshield.util.PrivacyLog
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.domain.BlocklistHolder
 import kotlinx.coroutines.*
@@ -87,7 +88,7 @@ class LocalDnsServer @Inject constructor(
 
             serverJob = scope.launch { runServer(socket) }
 
-            Log.i(TAG, "Local DNS server started on port $port, upstream=$upstreamDns")
+            PrivacyLog.i(TAG, "Local DNS server started on port $port, upstream=$upstreamDns")
             port
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start local DNS server: ${e.message}")
@@ -144,7 +145,7 @@ class LocalDnsServer @Inject constructor(
             dohProvider = DohResolver.Provider.fromId(prefs.dohProvider.first())
             useDoT = prefs.dotEnabled.first()
             dotProvider = DotResolver.Provider.fromId(prefs.dotProvider.first())
-            Log.i(
+            PrivacyLog.i(
                 TAG,
                 "Local DNS resolver chain configured: DoT=${if (useDoT) dotProvider.name else "off"}, " +
                     "DoH=${if (useDoH) dohProvider.name else "off"}, upstream=$upstreamDns"
@@ -162,11 +163,11 @@ class LocalDnsServer @Inject constructor(
     ) {
         try {
             if (!isAllowedLocalDnsClient(clientAddr, allowExternalClients)) {
-                Log.w(TAG, "Dropping local DNS query from non-local client ${clientAddr.hostAddress}")
+                PrivacyLog.w(TAG, "Dropping local DNS query from non-local client ${clientAddr.hostAddress}")
                 return
             }
             if (!rateLimiter.tryAcquire(clientAddr)) {
-                Log.w(TAG, "Rate-limited local DNS client ${clientAddr.hostAddress}")
+                PrivacyLog.w(TAG, "Rate-limited local DNS client ${clientAddr.hostAddress}")
                 return
             }
             queriesHandledAtomic.incrementAndGet()
@@ -183,7 +184,7 @@ class LocalDnsServer @Inject constructor(
             // Check blocklist
             if (blocklist.isBlocked(domain)) {
                 queriesBlockedAtomic.incrementAndGet()
-                Log.d(TAG, "BLOCKED (local) $domain from ${clientAddr.hostAddress}")
+                PrivacyLog.d(TAG, "BLOCKED (local) $domain from ${clientAddr.hostAddress}")
                 val blockResp = DnsPacketBuilder.buildNxdomain(query)
                 sendResponse(serverSock, query, blockResp, clientAddr, clientPort)
                 return

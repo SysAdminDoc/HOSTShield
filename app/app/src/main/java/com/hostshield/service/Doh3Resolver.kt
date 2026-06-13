@@ -3,6 +3,7 @@ package com.hostshield.service
 import android.content.Context
 import android.util.Base64
 import android.util.Log
+import com.hostshield.util.PrivacyLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -162,7 +163,7 @@ class Doh3Resolver @Inject constructor(
                 info: UrlResponseInfo,
                 newLocationUrl: String
             ) {
-                Log.w(TAG, "Unexpected DoH3 redirect from ${provider.name} to $newLocationUrl")
+                PrivacyLog.w(TAG, "Unexpected DoH3 redirect from ${provider.name} to $newLocationUrl")
                 result.complete(null)
                 request.cancel()
             }

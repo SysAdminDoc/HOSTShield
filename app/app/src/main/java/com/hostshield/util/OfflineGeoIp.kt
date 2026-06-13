@@ -115,7 +115,7 @@ class OfflineGeoIp @Inject constructor(
                 flag = countryCodeToFlag(countryCode)
             )
         } catch (e: Exception) {
-            Log.d(TAG, "Lookup failed for $ip: ${e.message}")
+            PrivacyLog.d(TAG, "Lookup failed for $ip: ${e.message}")
             null
         }
     }

@@ -1,6 +1,7 @@
 package com.hostshield.service
 
 import android.util.Log
+import com.hostshield.util.PrivacyLog
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.InetSocketAddress
@@ -79,7 +80,7 @@ class DotResolver @Inject constructor() {
             val peerHost = session.peerHost ?: provider.ip
             val verifier = javax.net.ssl.HttpsURLConnection.getDefaultHostnameVerifier()
             if (!verifier.verify(provider.hostname, session)) {
-                Log.w(TAG, "Hostname verification failed for ${provider.hostname}")
+                PrivacyLog.w(TAG, "Hostname verification failed for ${provider.hostname}")
                 return null
             }
 

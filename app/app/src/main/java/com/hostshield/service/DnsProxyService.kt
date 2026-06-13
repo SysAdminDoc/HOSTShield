@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
+import com.hostshield.util.PrivacyLog
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.hostshield.MainActivity
@@ -339,7 +340,7 @@ class DnsProxyService : Service() {
 
                 return buf.copyOfRange(inPacket.offset, inPacket.offset + inPacket.length)
             } catch (e: Exception) {
-                Log.w(TAG, "Upstream $upstream failed: ${e.message}")
+                PrivacyLog.w(TAG, "Upstream $upstream failed: ${e.message}")
                 try { upstreamSocket?.close() } catch (_: Exception) { }
             }
         }

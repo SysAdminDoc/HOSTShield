@@ -2,6 +2,7 @@ package com.hostshield.service
 
 import android.content.Context
 import android.util.Log
+import com.hostshield.util.PrivacyLog
 import com.hostshield.data.database.DnsLogDao
 import com.hostshield.data.database.BlockStatsDao
 import com.hostshield.data.model.BlockStats
@@ -120,7 +121,7 @@ class RootDnsLogger @Inject constructor(
 
                 // Step 2: Resolve upstream DNS
                 upstreamDns = resolveUpstreamDns()
-                Log.i(TAG, "Upstream DNS: ${upstreamDns.hostAddress}")
+                PrivacyLog.i(TAG, "Upstream DNS: ${upstreamDns.hostAddress}")
 
                 // Step 3: Install iptables NAT redirect (with route_localnet hardening)
                 removeIptablesRules()
@@ -371,7 +372,7 @@ class RootDnsLogger @Inject constructor(
             try {
                 dnsLogDao.updateAppInfo(id, pkg, label)
             } catch (e: Exception) {
-                Log.w(TAG, "UID enrichment failed for $hostname: ${e.message}")
+                PrivacyLog.w(TAG, "UID enrichment failed for $hostname: ${e.message}")
             }
         }
     }
@@ -543,7 +544,7 @@ class RootDnsLogger @Inject constructor(
                     pendingUidLookup[hostname] = entryId
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "DB insert failed for $hostname: ${e.message}", e)
+                PrivacyLog.e(TAG, "DB insert failed for $hostname: ${e.message}", e)
             }
 
         } catch (e: Exception) { Log.w(TAG, "Query handler: ${e.message}") }
@@ -721,7 +722,7 @@ class RootDnsLogger @Inject constructor(
             val custom = prefs.customUpstreamDns.first().trim()
             if (custom.isNotBlank()) {
                 try { return InetAddress.getByName(custom) } catch (_: Exception) {
-                    Log.w(TAG, "Invalid custom DNS: $custom, falling back")
+                    PrivacyLog.w(TAG, "Invalid custom DNS: $custom, falling back")
                 }
             }
         } catch (_: Exception) { }

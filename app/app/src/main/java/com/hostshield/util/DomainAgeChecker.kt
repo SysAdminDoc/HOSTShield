@@ -73,7 +73,7 @@ class DomainAgeChecker @Inject constructor() {
                 isSuspicious = ageDays != null && ageDays < 7
             )
         } catch (e: Exception) {
-            Log.w(TAG, "RDAP check failed for $domain: ${e.message}")
+            PrivacyLog.w(TAG, "RDAP check failed for $domain: ${e.message}")
             DomainAge(domain, error = e.message?.take(50))
         }
     }

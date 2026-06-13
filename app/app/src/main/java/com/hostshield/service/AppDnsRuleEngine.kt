@@ -1,6 +1,7 @@
 package com.hostshield.service
 
 import android.util.Log
+import com.hostshield.util.PrivacyLog
 import com.hostshield.data.database.AppDnsRuleDao
 import com.hostshield.data.model.AppDnsRule
 import kotlinx.coroutines.flow.first
@@ -121,7 +122,7 @@ class AppDnsRuleEngine @Inject constructor(
                 ruleCache[packageName] = rules.map { compile(it) }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to reload rules for $packageName", e)
+            PrivacyLog.e(TAG, "Failed to reload rules for $packageName", e)
         }
     }
 

@@ -2,6 +2,7 @@ package com.hostshield.service
 
 import android.util.Log
 import com.hostshield.util.ExperimentalEngineDisclosure
+import com.hostshield.util.PrivacyLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.DatagramPacket
@@ -133,7 +134,7 @@ class WireGuardProxy @Inject constructor() {
             // Send Handshake Initiation
             val sendPacket = DatagramPacket(initMsg, initMsg.size, endpoint)
             socket.send(sendPacket)
-            Log.d(TAG, "WireGuard handshake sent to ${config.endpoint}")
+            PrivacyLog.d(TAG, "WireGuard handshake sent to ${config.endpoint}")
 
             // Receive Handshake Response (Type 2)
             val recvBuf = ByteArray(256)
@@ -167,7 +168,7 @@ class WireGuardProxy @Inject constructor() {
             isConnected = true
             socket = null // Transfer ownership to session — don't close in finally
 
-            Log.i(TAG, "WireGuard tunnel established to ${config.endpoint}")
+            PrivacyLog.i(TAG, "WireGuard tunnel established to ${config.endpoint}")
             true
         } catch (e: Exception) {
             Log.e(TAG, "WireGuard handshake failed: ${e.message}")

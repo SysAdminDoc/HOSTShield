@@ -538,7 +538,7 @@ class TrackerSignatureDb @Inject constructor(
             cacheDao.upsert(scanResultToCache(result, versionCode))
             result
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to scan $packageName: ${e.message}")
+            PrivacyLog.w(TAG, "Failed to scan $packageName: ${e.message}")
             null
         }
     }
@@ -572,7 +572,7 @@ class TrackerSignatureDb @Inject constructor(
                 cacheDao.upsert(scanResultToCache(result, versionCode))
                 results.add(result)
             } catch (e: Exception) {
-                Log.w(TAG, "Scan failed for ${appInfo.packageName}: ${e.message}")
+                PrivacyLog.w(TAG, "Scan failed for ${appInfo.packageName}: ${e.message}")
             }
         }
         results.sortedByDescending { it.trackerCount }
