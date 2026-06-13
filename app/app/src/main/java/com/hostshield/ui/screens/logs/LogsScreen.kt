@@ -51,6 +51,7 @@ import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import com.hostshield.util.GeoIpLookup
+import com.hostshield.util.OfflineGeoIp
 import com.hostshield.util.RootUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -87,7 +88,8 @@ class LogsViewModel @Inject constructor(
     private val blocklist: BlocklistHolder,
     private val rootUtil: RootUtil,
     private val prefs: AppPreferences,
-    val geoIpLookup: GeoIpLookup
+    private val offlineGeoIp: OfflineGeoIp,
+    private val geoIpLookup: GeoIpLookup
 ) : ViewModel() {
     val logs: StateFlow<List<DnsLogEntry>> = repository.getRecentLogs(2000)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -281,6 +283,37 @@ class LogsViewModel @Inject constructor(
                 _error.value = "Failed to allow domains: ${e.message}"
             }
         }
+    }
+
+    suspend fun lookupAllGeo(ips: List<String>): List<GeoIpLookup.GeoInfo> {
+        val results = mutableListOf<GeoIpLookup.GeoInfo>()
+        val onlineFallbackIps = mutableListOf<String>()
+
+        for (ip in ips) {
+            val trimmed = ip.trim()
+            val offlineResult = offlineGeoIp.lookup(trimmed)
+            if (offlineResult != null) {
+                results += GeoIpLookup.GeoInfo(
+                    ip = trimmed,
+                    country = offlineResult.country,
+                    countryCode = offlineResult.countryCode,
+                    org = offlineResult.asnOrg,
+                    asn = if (offlineResult.asn > 0) "AS${offlineResult.asn}" else "",
+                    flag = offlineResult.flag
+                )
+            } else {
+                onlineFallbackIps += trimmed
+            }
+        }
+
+        if (onlineFallbackIps.isNotEmpty()) {
+            val useOnline = prefs.onlineGeoIpEnabled.first()
+            if (useOnline) {
+                results += geoIpLookup.lookupAll(onlineFallbackIps)
+            }
+        }
+
+        return results
     }
 }
 
@@ -613,7 +646,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                 onTemporaryAllow = { mins -> viewModel.temporaryAllow(entry.hostname, mins) },
                 onBlock = { viewModel.blockDomain(entry.hostname) },
                 onAllow = { viewModel.allowDomain(entry.hostname) },
-                geoIpLookup = viewModel.geoIpLookup
+                geoLookup = viewModel::lookupAllGeo
             )
         }
     }
@@ -856,7 +889,7 @@ private fun formatDecisionReason(reason: String): String =
         .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
 
 @Composable
-private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}, onTemporaryAllow: (Int) -> Unit = {}, onBlock: () -> Unit = {}, onAllow: () -> Unit = {}, geoIpLookup: GeoIpLookup? = null) {
+private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}, onTemporaryAllow: (Int) -> Unit = {}, onBlock: () -> Unit = {}, onAllow: () -> Unit = {}, geoLookup: (suspend (List<String>) -> List<GeoIpLookup.GeoInfo>)? = null) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
@@ -967,11 +1000,10 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
             Text("Resolved IPs", color = TextDim, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
 
             val ips = entry.resolvedIps.split(",").filter { it.isNotBlank() }
-            // GeoIP lookup for resolved IPs
             var geoResults by remember { mutableStateOf<List<GeoIpLookup.GeoInfo>>(emptyList()) }
-            if (geoIpLookup != null) {
+            if (geoLookup != null) {
                 LaunchedEffect(entry.resolvedIps) {
-                    geoResults = geoIpLookup.lookupAll(ips)
+                    geoResults = geoLookup(ips)
                 }
             }
 

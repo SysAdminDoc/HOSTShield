@@ -181,6 +181,10 @@ class AppPreferences @Inject constructor(
     val captivePortalHandling: Flow<Boolean> get() = dns.captivePortalHandling
     suspend fun setCaptivePortalHandling(enabled: Boolean) = dns.setCaptivePortalHandling(enabled)
 
+    // ── Online GeoIP Fallback ───────────────────────────────
+    val onlineGeoIpEnabled: Flow<Boolean> get() = dns.onlineGeoIpEnabled
+    suspend fun setOnlineGeoIpEnabled(enabled: Boolean) = dns.setOnlineGeoIpEnabled(enabled)
+
     // ── Threat Intelligence ─────────────────────────────────────
     val threatIntelEnabled: Flow<Boolean> get() = security.threatIntelEnabled
     suspend fun setThreatIntelEnabled(enabled: Boolean) = security.setThreatIntelEnabled(enabled)

@@ -291,6 +291,10 @@ fun SettingsScreen(
             SettingsToggle("DNS logging", "Record DNS queries for stats", Icons.Filled.Analytics, state.dnsLogging) {
                 viewModel.setDnsLogging(it)
             }
+            Spacer(Modifier.height(4.dp))
+            SettingsToggle("Online IP lookup", "Use ipapi.co when offline GeoIP is unavailable", Icons.Filled.Public, state.onlineGeoIpEnabled) {
+                viewModel.setOnlineGeoIpEnabled(it)
+            }
         }
 
         // Tools

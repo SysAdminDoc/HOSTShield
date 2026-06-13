@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.7.1-blue)
+![Version](https://img.shields.io/badge/version-6.7.2-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -393,6 +393,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.7.2** | GeoIP local-first. Log detail IP enrichment now uses offline MaxMind GeoLite2 databases by default with no network call. Online ipapi.co lookup is an explicit opt-in setting. |
 | **6.7.1** | Temporary bypass timer. Home screen pause now offers 5/15/30/60-minute durations with visible countdown and auto-resume via WorkManager. |
 | **6.7.0** | TargetSdk 36 (Android 16). QR config import hardened with bounded decompression, Base64 padding tolerance, and separated import planning. |
 | **6.6.9** | License unification and hardening. Unified project license on GPL-3.0, resolving the root MIT / app GPL-3.0 conflict that blocked F-Droid/IzzyOnDroid publication. |

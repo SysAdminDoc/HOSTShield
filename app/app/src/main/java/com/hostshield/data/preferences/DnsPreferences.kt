@@ -31,6 +31,7 @@ class DnsPreferences @Inject constructor(
         val LOG_RETENTION_DAYS = intPreferencesKey("log_retention_days")
         val DNS_ONLY_MODE = booleanPreferencesKey("dns_only_mode")
         val CAPTIVE_PORTAL_HANDLING = booleanPreferencesKey("captive_portal_handling")
+        val ONLINE_GEOIP_ENABLED = booleanPreferencesKey("online_geoip_enabled")
     }
 
     // DoH
@@ -92,4 +93,8 @@ class DnsPreferences @Inject constructor(
     // Captive portal
     val captivePortalHandling: Flow<Boolean> = ds.data.map { it[Keys.CAPTIVE_PORTAL_HANDLING] ?: true }
     suspend fun setCaptivePortalHandling(enabled: Boolean) = ds.edit { it[Keys.CAPTIVE_PORTAL_HANDLING] = enabled }
+
+    // Online GeoIP fallback (ipapi.co) — disabled by default for privacy
+    val onlineGeoIpEnabled: Flow<Boolean> = ds.data.map { it[Keys.ONLINE_GEOIP_ENABLED] ?: false }
+    suspend fun setOnlineGeoIpEnabled(enabled: Boolean) = ds.edit { it[Keys.ONLINE_GEOIP_ENABLED] = enabled }
 }

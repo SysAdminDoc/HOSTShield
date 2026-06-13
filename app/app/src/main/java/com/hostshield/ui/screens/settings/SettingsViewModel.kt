@@ -78,6 +78,7 @@ data class SettingsUiState(
     val wireGuardEnabled: Boolean = false,
     val wireGuardEndpoint: String = "",
     val wireGuardDnsIp: String = "",
+    val onlineGeoIpEnabled: Boolean = false,
 )
 
 @HiltViewModel
@@ -187,6 +188,13 @@ class SettingsViewModel @Inject constructor(
                         customUpstreamDns = p.customUpstream
                     )
                 }
+            }
+        }
+
+        // ── Online GeoIP fallback ─────────────────────────────
+        viewModelScope.launch {
+            prefs.onlineGeoIpEnabled.collect { enabled ->
+                _uiState.update { it.copy(onlineGeoIpEnabled = enabled) }
             }
         }
 
@@ -363,6 +371,7 @@ class SettingsViewModel @Inject constructor(
     fun setDnsLogging(v: Boolean) { viewModelScope.launch { prefs.setDnsLogging(v) } }
     fun setShowNotification(v: Boolean) { viewModelScope.launch { prefs.setShowNotification(v) } }
     fun setDohEnabled(v: Boolean) { viewModelScope.launch { prefs.setDohEnabled(v) } }
+    fun setOnlineGeoIpEnabled(v: Boolean) { viewModelScope.launch { prefs.setOnlineGeoIpEnabled(v) } }
 
     fun setDohProvider(provider: String) { viewModelScope.launch { prefs.setDohProvider(provider) } }
 
