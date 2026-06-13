@@ -106,6 +106,7 @@ class DnsVpnService : VpnService() {
         private const val WATCHDOG_INTERVAL_MS = 60_000L  // Doze/App Standby heartbeat
         private const val HEARTBEAT_INTERVAL_MS = 60_000L
         private const val WATCHDOG_REQUEST_CODE = 99
+        private const val WRITE_CHANNEL_CAPACITY = 512
 
         // Live query stream — hot SharedFlow for real-time log tail in UI.
         // Replays last 100 entries for late subscribers (e.g., screen rotation).
@@ -276,7 +277,7 @@ class DnsVpnService : VpnService() {
     // Custom upstream DNS resolved at start
     private var upstreamDnsServers = UPSTREAM_DNS.toList()
 
-    private var writeChannel = Channel<ByteArray>(Channel.UNLIMITED)
+    private var writeChannel = Channel<ByteArray>(WRITE_CHANNEL_CAPACITY)
     private val blockedCount = AtomicInteger(0)
     private val allowedCount = AtomicInteger(0)
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
@@ -498,7 +499,7 @@ class DnsVpnService : VpnService() {
         if (isRunning) return
         try {
             // Fresh channel for each VPN session (previous may be closed)
-            writeChannel = Channel(Channel.UNLIMITED)
+            writeChannel = Channel(WRITE_CHANNEL_CAPACITY)
             blockedCount.set(0)
             currentBlockedCount = 0
             allowedCount.set(0)
@@ -1156,7 +1157,7 @@ class DnsVpnService : VpnService() {
                     matchedValue = domain,
                     precedence = "safe-search rewrite runs before blocklist lookup"
                 ))
-                wrapResponseV4(packet, ihl, safeResp)?.let { writeChannel.send(it) }
+                wrapResponseV4(packet, ihl, safeResp)?.let { sendToTun(it) }
                 allowedCount.incrementAndGet()
                 return
             }
@@ -1262,7 +1263,7 @@ class DnsVpnService : VpnService() {
                     // Fresh cache hit
                     Log.d(TAG, "CACHE HIT $domain ($qtype)")
                     logAsync(domain, false, app, qtype)
-                    wrapResponseV4(packet, ihl, cacheResult.response)?.let { writeChannel.send(it) }
+                    wrapResponseV4(packet, ihl, cacheResult.response)?.let { sendToTun(it) }
                     allowedCount.incrementAndGet()
                     // v5.0: Trigger background prefetch if entry is nearing expiry
                     if (cacheResult.needsPrefetch) {
@@ -1277,7 +1278,7 @@ class DnsVpnService : VpnService() {
                 } else {
                     // v5.0: Stale entry — serve immediately per RFC 8767, re-query in background
                     Log.d(TAG, "SERVE-STALE $domain ($qtype) — refreshing in background")
-                    wrapResponseV4(packet, ihl, cacheResult.response)?.let { writeChannel.send(it) }
+                    wrapResponseV4(packet, ihl, cacheResult.response)?.let { sendToTun(it) }
                     allowedCount.incrementAndGet()
                     // Background refresh to update the cache
                     val pCopy = packet.copyOf(length)
@@ -1323,7 +1324,7 @@ class DnsVpnService : VpnService() {
             ))
             val resp = buildBlockResponse(dns, qtype) ?: return
             val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-            writeChannel.send(wrapped); blockedCount.incrementAndGet()
+            sendToTun(wrapped); blockedCount.incrementAndGet()
             if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
             return
         }
@@ -1341,7 +1342,7 @@ class DnsVpnService : VpnService() {
                 ))
                 val resp = buildBlockResponse(dns, qtype) ?: return
                 val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-                writeChannel.send(wrapped); blockedCount.incrementAndGet()
+                sendToTun(wrapped); blockedCount.incrementAndGet()
                 if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
                 return
             }
@@ -1359,7 +1360,7 @@ class DnsVpnService : VpnService() {
                     matchedValue = domain,
                     precedence = "safe-search rewrite runs before blocklist lookup"
                 ))
-                wrapResponseV6(packet, hdr, safeResp)?.let { writeChannel.send(it) }
+                wrapResponseV6(packet, hdr, safeResp)?.let { sendToTun(it) }
                 allowedCount.incrementAndGet()
                 return
             }
@@ -1379,7 +1380,7 @@ class DnsVpnService : VpnService() {
                 ))
                 val resp = buildBlockResponse(dns, qtype) ?: return
                 val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-                writeChannel.send(wrapped); blockedCount.incrementAndGet()
+                sendToTun(wrapped); blockedCount.incrementAndGet()
                 if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
                 return
             }
@@ -1414,7 +1415,7 @@ class DnsVpnService : VpnService() {
                 ))
             val resp = buildBlockResponse(dns, qtype) ?: return
             val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-            writeChannel.send(wrapped); blockedCount.incrementAndGet()
+            sendToTun(wrapped); blockedCount.incrementAndGet()
             if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
             return
         }
@@ -1434,7 +1435,7 @@ class DnsVpnService : VpnService() {
                 ))
             val resp = buildBlockResponse(dns, qtype) ?: return
             val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-            writeChannel.send(wrapped); blockedCount.incrementAndGet()
+            sendToTun(wrapped); blockedCount.incrementAndGet()
             if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
             return
         }
@@ -1456,7 +1457,7 @@ class DnsVpnService : VpnService() {
                 ))
                 val resp = buildBlockResponse(dns, qtype) ?: return
                 val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-                writeChannel.send(wrapped); blockedCount.incrementAndGet()
+                sendToTun(wrapped); blockedCount.incrementAndGet()
                 if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
                 return
             }
@@ -1466,7 +1467,7 @@ class DnsVpnService : VpnService() {
             logAsync(domain, true, app, qtype, blockDecision)
             val resp = buildBlockResponse(dns, qtype) ?: return
             val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-            writeChannel.send(wrapped); blockedCount.incrementAndGet()
+            sendToTun(wrapped); blockedCount.incrementAndGet()
             if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
         } else {
             // Cache lookup (v5.0: CacheResult with stale/prefetch)
@@ -1477,7 +1478,7 @@ class DnsVpnService : VpnService() {
                 if (!cacheResult.isStale) {
                     // Fresh cache hit
                     Log.d(TAG, "CACHE HIT (v6) $domain ($qtype)")
-                    wrapResponseV6(packet, hdr, cacheResult.response)?.let { writeChannel.send(it) }
+                    wrapResponseV6(packet, hdr, cacheResult.response)?.let { sendToTun(it) }
                     allowedCount.incrementAndGet()
                     if (cacheResult.needsPrefetch) {
                         val pCopy = packet.copyOf(length)
@@ -1491,7 +1492,7 @@ class DnsVpnService : VpnService() {
                 } else {
                     // v5.0: Serve stale immediately, refresh in background (RFC 8767)
                     Log.d(TAG, "SERVE-STALE (v6) $domain ($qtype) — refreshing in background")
-                    wrapResponseV6(packet, hdr, cacheResult.response)?.let { writeChannel.send(it) }
+                    wrapResponseV6(packet, hdr, cacheResult.response)?.let { sendToTun(it) }
                     allowedCount.incrementAndGet()
                     val pCopy = packet.copyOf(length)
                     serviceScope.launch {
@@ -1517,7 +1518,7 @@ class DnsVpnService : VpnService() {
     private suspend fun sendBlockResponse(dns: ByteArray, packet: ByteArray, ihl: Int, isV6: Boolean, qtype: String) {
         val resp = buildBlockResponse(dns, qtype) ?: return
         val wrapped = wrapResponseV4(packet, ihl, resp) ?: return
-        writeChannel.send(wrapped); blockedCount.incrementAndGet()
+        sendToTun(wrapped); blockedCount.incrementAndGet()
         if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
     }
 
@@ -1729,6 +1730,11 @@ class DnsVpnService : VpnService() {
         }
     }
 
+    private fun sendToTun(packet: ByteArray) {
+        val result = writeChannel.trySend(packet)
+        if (result.isFailure) droppedQueries.incrementAndGet()
+    }
+
     private suspend fun writeLoop() = withContext(Dispatchers.IO) {
         val vpnFd = vpnInterface ?: return@withContext
         FileOutputStream(vpnFd.fileDescriptor).use { output ->
@@ -1830,7 +1836,7 @@ class DnsVpnService : VpnService() {
         if (blocked) {
             // Send TCP RST — immediate connection rejection
             val rst = buildTcpRst(packet, ihl) ?: return
-            writeChannel.send(rst)
+            sendToTun(rst)
             blockedCount.incrementAndGet()
             if (hostname != null) {
                 Log.d(TAG, "TCP-DNS BLOCKED (RST) $hostname")
@@ -1873,7 +1879,7 @@ class DnsVpnService : VpnService() {
 
         if (blocked) {
             val rst = buildTcpRstV6(packet) ?: return
-            writeChannel.send(rst)
+            sendToTun(rst)
             blockedCount.incrementAndGet()
             if (hostname != null) {
                 Log.d(TAG, "TCP6-DNS BLOCKED (RST) $hostname")
@@ -2076,11 +2082,11 @@ class DnsVpnService : VpnService() {
 
                 val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, primary)
                 if (pfResult.blocked) {
-                    if (pfResult.blockResponse != null) wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                    if (pfResult.blockResponse != null) wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
                     return
                 }
 
-                wrapResponseV4(orig, ihl, respBytes)?.let { writeChannel.send(it) }
+                wrapResponseV4(orig, ihl, respBytes)?.let { sendToTun(it) }
             } catch (_: java.net.SocketTimeoutException) {
                 forwardUdpFallback(dns, domain, orig, ihl, app)
             }
@@ -2158,11 +2164,11 @@ class DnsVpnService : VpnService() {
 
             val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, "$fallback (fallback)")
             if (pfResult.blocked) {
-                if (pfResult.blockResponse != null) wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                if (pfResult.blockResponse != null) wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
                 return
             }
 
-            wrapResponseV4(orig, ihl, respBytes)?.let { writeChannel.send(it) }
+            wrapResponseV4(orig, ihl, respBytes)?.let { sendToTun(it) }
         } catch (_: Exception) {
             // v5.0: Serve-stale fallback — both upstreams failed, try expired cache
             serveStaleV4(dns, domain, orig, ihl)
@@ -2183,7 +2189,7 @@ class DnsVpnService : VpnService() {
         val stale = dnsCache.getStale(domain, qtypeNum, txId)
         if (stale != null) {
             Log.i(TAG, "SERVE-STALE $domain (upstream failed, returning expired cache)")
-            wrapResponseV4(orig, ihl, stale)?.let { writeChannel.send(it) }
+            wrapResponseV4(orig, ihl, stale)?.let { sendToTun(it) }
         }
     }
 
@@ -2204,14 +2210,14 @@ class DnsVpnService : VpnService() {
                 val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
                 if (pfResult.blocked) {
                     if (pfResult.blockResponse != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
-                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { sendToTun(it) }
+                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
                     }
                     return
                 }
 
-                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { writeChannel.send(it) }
-                else wrapResponseV4(orig, ihl, resp)?.let { writeChannel.send(it) }
+                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { sendToTun(it) }
+                else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
             }
             else {
                 if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
@@ -2240,14 +2246,14 @@ class DnsVpnService : VpnService() {
                 val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
                 if (pfResult.blocked) {
                     if (pfResult.blockResponse != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
-                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { sendToTun(it) }
+                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
                     }
                     return
                 }
 
-                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { writeChannel.send(it) }
-                else wrapResponseV4(orig, ihl, resp)?.let { writeChannel.send(it) }
+                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { sendToTun(it) }
+                else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
             } else {
                 // DoQ returned null (server requires full QUIC handshake) — fall back
                 if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
@@ -2279,14 +2285,14 @@ class DnsVpnService : VpnService() {
                 val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
                 if (pfResult.blocked) {
                     if (pfResult.blockResponse != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
-                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { sendToTun(it) }
+                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
                     }
                     return
                 }
 
-                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { writeChannel.send(it) }
-                else wrapResponseV4(orig, ihl, resp)?.let { writeChannel.send(it) }
+                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { sendToTun(it) }
+                else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
             } else {
                 // WireGuard returned null — fall through
                 if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
@@ -2323,14 +2329,14 @@ class DnsVpnService : VpnService() {
                 val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
                 if (pfResult.blocked) {
                     if (pfResult.blockResponse != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
-                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { sendToTun(it) }
+                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
                     }
                     return
                 }
 
-                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { writeChannel.send(it) }
-                else wrapResponseV4(orig, ihl, resp)?.let { writeChannel.send(it) }
+                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { sendToTun(it) }
+                else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
             } else {
                 // DoT returned null — fall back to plaintext UDP
                 if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
@@ -2387,11 +2393,11 @@ class DnsVpnService : VpnService() {
 
             val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, responseUpstream)
             if (pfResult.blocked) {
-                if (pfResult.blockResponse != null) wrapResponseV6(orig, hdr, pfResult.blockResponse)?.let { writeChannel.send(it) }
+                if (pfResult.blockResponse != null) wrapResponseV6(orig, hdr, pfResult.blockResponse)?.let { sendToTun(it) }
                 return
             }
 
-            wrapResponseV6(orig, hdr, respBytes)?.let { writeChannel.send(it) }
+            wrapResponseV6(orig, hdr, respBytes)?.let { sendToTun(it) }
         } catch (_: Exception) {
             // v5.0: Serve-stale fallback for IPv6
             val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
@@ -2399,7 +2405,7 @@ class DnsVpnService : VpnService() {
             val stale = dnsCache.getStale(domain, qtypeNum, txId)
             if (stale != null) {
                 Log.i(TAG, "SERVE-STALE (v6) $domain (upstream failed)")
-                wrapResponseV6(orig, hdr, stale)?.let { writeChannel.send(it) }
+                wrapResponseV6(orig, hdr, stale)?.let { sendToTun(it) }
             }
         } finally {
             try { sock.close() } catch (_: Exception) { }
