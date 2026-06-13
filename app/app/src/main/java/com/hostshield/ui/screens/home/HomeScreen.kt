@@ -487,17 +487,19 @@ fun HomeScreen(
                         }
                     )
                     Spacer(Modifier.height(4.dp))
-                    ActionRow(
-                        icon = Icons.Filled.RestartAlt,
-                        label = "Pause protection",
-                        subtitle = if (state.isEnabled) {
-                            "Stop blocking and restore the current network path"
-                        } else {
-                            "Protection is already paused"
+                    PauseTimerSection(
+                        isEnabled = state.isEnabled,
+                        isApplying = state.isApplying,
+                        pauseEndTimeMs = state.pauseEndTimeMs,
+                        onPause = { minutes -> viewModel.pauseWithTimer(minutes) },
+                        onResume = {
+                            if (state.blockMethod == com.hostshield.data.model.BlockMethod.VPN) {
+                                requestVpnThenApply()
+                            } else {
+                                viewModel.resumeFromPause()
+                            }
                         },
-                        color = TextSecondary,
-                        enabled = state.isEnabled && !state.isApplying,
-                        onClick = { viewModel.disableBlocking() }
+                        onDisable = { viewModel.disableBlocking() }
                     )
                 }
             }
@@ -534,4 +536,121 @@ fun HomeScreen(
         )
     }
     } // Box
+}
+
+@Composable
+private fun PauseTimerSection(
+    isEnabled: Boolean,
+    isApplying: Boolean,
+    pauseEndTimeMs: Long,
+    onPause: (Int) -> Unit,
+    onResume: () -> Unit,
+    onDisable: () -> Unit
+) {
+    var showDurationPicker by remember { mutableStateOf(false) }
+    val isPausedWithTimer = !isEnabled && pauseEndTimeMs > 0L
+
+    if (isPausedWithTimer) {
+        var remainingMs by remember { mutableLongStateOf(pauseEndTimeMs - System.currentTimeMillis()) }
+        LaunchedEffect(pauseEndTimeMs) {
+            while (true) {
+                remainingMs = pauseEndTimeMs - System.currentTimeMillis()
+                if (remainingMs <= 0) break
+                kotlinx.coroutines.delay(1000L)
+            }
+        }
+        val minutes = (remainingMs / 60_000).coerceAtLeast(0)
+        val seconds = ((remainingMs % 60_000) / 1_000).coerceAtLeast(0)
+        ActionRow(
+            icon = Icons.Filled.PlayArrow,
+            label = "Resume protection",
+            subtitle = if (remainingMs > 0) "Auto-resumes in ${minutes}m ${seconds}s" else "Resuming…",
+            color = Teal,
+            enabled = remainingMs > 0 && !isApplying,
+            onClick = onResume
+        )
+    } else if (!isEnabled) {
+        ActionRow(
+            icon = Icons.Filled.RestartAlt,
+            label = "Protection disabled",
+            subtitle = "Tap the shield to re-enable",
+            color = TextSecondary,
+            enabled = false,
+            onClick = {}
+        )
+    } else {
+        ActionRow(
+            icon = Icons.Filled.Timer,
+            label = "Pause protection",
+            subtitle = "Temporarily disable blocking",
+            color = TextSecondary,
+            enabled = !isApplying,
+            onClick = { showDurationPicker = true }
+        )
+    }
+
+    if (showDurationPicker) {
+        PauseDurationSheet(
+            onDismiss = { showDurationPicker = false },
+            onSelect = { minutes ->
+                showDurationPicker = false
+                onPause(minutes)
+            },
+            onIndefinite = {
+                showDurationPicker = false
+                onDisable()
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PauseDurationSheet(
+    onDismiss: () -> Unit,
+    onSelect: (Int) -> Unit,
+    onIndefinite: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Surface1,
+        contentColor = TextPrimary,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+        ) {
+            Text(
+                "Pause for…",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            val durations = listOf(5 to "5 minutes", 15 to "15 minutes", 30 to "30 minutes", 60 to "1 hour")
+            durations.forEach { (mins, label) ->
+                ActionRow(
+                    icon = Icons.Filled.Timer,
+                    label = label,
+                    subtitle = "Auto-resumes after $label",
+                    color = Teal,
+                    enabled = true,
+                    onClick = { onSelect(mins) }
+                )
+                Spacer(Modifier.height(4.dp))
+            }
+            ActionRow(
+                icon = Icons.Filled.PauseCircle,
+                label = "Until manually resumed",
+                subtitle = "Disable blocking indefinitely",
+                color = TextSecondary,
+                enabled = true,
+                onClick = onIndefinite
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+    }
 }

@@ -62,6 +62,9 @@ class AppPreferences @Inject constructor(
     val isFirstLaunch: Flow<Boolean> get() = blocking.isFirstLaunch
     suspend fun setFirstLaunch(first: Boolean) = blocking.setFirstLaunch(first)
 
+    val pauseEndTime: Flow<Long> get() = blocking.pauseEndTime
+    suspend fun setPauseEndTime(epochMs: Long) = blocking.setPauseEndTime(epochMs)
+
     // ── Updates ───────────────────────────────────────────────
     val autoUpdate: Flow<Boolean> get() = sync.autoUpdate
     suspend fun setAutoUpdate(enabled: Boolean) = sync.setAutoUpdate(enabled)

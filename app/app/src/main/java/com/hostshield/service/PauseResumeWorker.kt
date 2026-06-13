@@ -67,6 +67,7 @@ class PauseResumeWorker @AssistedInject constructor(
                 BlockMethod.DISABLED -> { /* user disabled while paused — respect that */ }
             }
             prefs.setEnabled(true)
+            prefs.setPauseEndTime(0L)
             Log.i("PauseResume", "VPN auto-resumed after pause (method=$method)")
             Result.success()
         } catch (e: Exception) {

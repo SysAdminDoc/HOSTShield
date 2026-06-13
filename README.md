@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.6.9-blue)
+![Version](https://img.shields.io/badge/version-6.7.1-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -280,7 +280,7 @@ Public actions are protected by HostShield's signature-level automation permissi
 | Networking | OkHttp 5 (source downloads, DoH resolver) |
 | Root | libsu (topjohnwu) |
 | GeoIP | MaxMind GeoIP2 (GeoLite2-Country + ASN) |
-| Build | Gradle KTS, AGP 9.2, KSP, Android SDK 36 compile / targetSdk 35, minSdk 26 |
+| Build | Gradle KTS, AGP 9.2, KSP, Android SDK 36 compile / targetSdk 36, minSdk 26 |
 
 ---
 
@@ -393,6 +393,8 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.7.1** | Temporary bypass timer. Home screen pause now offers 5/15/30/60-minute durations with visible countdown and auto-resume via WorkManager. |
+| **6.7.0** | TargetSdk 36 (Android 16). QR config import hardened with bounded decompression, Base64 padding tolerance, and separated import planning. |
 | **6.6.9** | License unification and hardening. Unified project license on GPL-3.0, resolving the root MIT / app GPL-3.0 conflict that blocked F-Droid/IzzyOnDroid publication. |
 | **6.6.8** | QR config import completion. QR transfer now exports real rules and custom sources, previews import deltas, applies validated rules/sources/DNS settings, rejects oversized compressed payloads, and accepts only HTTPS source URLs before insertion. |
 | **6.6.7** | Safe Search correctness hardening. DNS-level enforcement now handles Google country domains, answers A and AAAA queries with safe endpoints or NODATA as appropriate, suppresses HTTPS/SVCB metadata answers, and caches resolved canonical safe-search endpoints with bundled fallbacks. |

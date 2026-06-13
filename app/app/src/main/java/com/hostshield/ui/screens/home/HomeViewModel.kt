@@ -27,6 +27,7 @@ import com.hostshield.service.DnsProxyService
 import com.hostshield.service.ProtectionServiceStarter
 import com.hostshield.service.RootDnsService
 import com.hostshield.service.DohBypassUpdater
+import com.hostshield.service.PauseResumeWorker
 import com.hostshield.service.VpnRecoveryAdvisory
 import com.hostshield.util.PrivacyScorer
 import com.hostshield.util.PrivateDnsDetector
@@ -100,7 +101,9 @@ data class HomeUiState(
     /** Recent DNS latencies for sparkline (last 20 values). */
     val latencySparkline: List<Int> = emptyList(),
     /** Average latency from sparkline. */
-    val avgLatencyMs: Int = 0
+    val avgLatencyMs: Int = 0,
+    /** Epoch ms when timed pause expires, 0 = no active timer. */
+    val pauseEndTimeMs: Long = 0L
 )
 
 @HiltViewModel
@@ -399,6 +402,12 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(dnsLoggingEnabled = enabled) }
             }
         }
+        viewModelScope.launch {
+            prefs.pauseEndTime.collect { endMs ->
+                val effective = if (endMs > 0 && endMs <= System.currentTimeMillis()) 0L else endMs
+                _uiState.update { it.copy(pauseEndTimeMs = effective) }
+            }
+        }
     }
 
     private fun observeStats() {
@@ -518,6 +527,8 @@ class HomeViewModel @Inject constructor(
         if (_uiState.value.isApplying) return
         viewModelScope.launch {
             _uiState.update { it.copy(isApplying = true, errorMessage = null) }
+            PauseResumeWorker.cancel(getApplication())
+            prefs.setPauseEndTime(0L)
             stopCurrentBlocking()
             prefs.setBlockMethod(BlockMethod.ROOT_HOSTS)
             applyRootBlocking()
@@ -532,6 +543,8 @@ class HomeViewModel @Inject constructor(
         if (granted) {
             viewModelScope.launch {
                 _uiState.update { it.copy(isApplying = true, errorMessage = null) }
+                PauseResumeWorker.cancel(getApplication())
+                prefs.setPauseEndTime(0L)
                 stopCurrentBlocking()
                 prefs.setBlockMethod(BlockMethod.VPN)
                 applyVpnBlocking()
@@ -554,6 +567,8 @@ class HomeViewModel @Inject constructor(
             val wasActive = _uiState.value.activeMethod
             stopCurrentBlocking()
             prefs.setEnabled(false)
+            PauseResumeWorker.cancel(getApplication())
+            prefs.setPauseEndTime(0L)
             HostShieldWidgetProvider.updateWidget(getApplication(), false, 0)
             val label = when (wasActive) {
                 BlockMethod.VPN -> "VPN stopped"
@@ -561,7 +576,34 @@ class HomeViewModel @Inject constructor(
                 else -> "Blocking disabled"
             }
             showSnackbar(label)
-            _uiState.update { it.copy(isEnabled = false, isApplying = false) }
+            _uiState.update { it.copy(isEnabled = false, isApplying = false, pauseEndTimeMs = 0L) }
+        }
+    }
+
+    fun pauseWithTimer(minutes: Int) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isApplying = true) }
+            stopCurrentBlocking()
+            prefs.setEnabled(false)
+            val endMs = System.currentTimeMillis() + minutes * 60_000L
+            prefs.setPauseEndTime(endMs)
+            PauseResumeWorker.schedule(getApplication(), minutes)
+            HostShieldWidgetProvider.updateWidget(getApplication(), false, 0)
+            showSnackbar("Paused for $minutes minutes")
+            _uiState.update { it.copy(isEnabled = false, isApplying = false, pauseEndTimeMs = endMs) }
+        }
+    }
+
+    fun resumeFromPause() {
+        viewModelScope.launch {
+            PauseResumeWorker.cancel(getApplication())
+            prefs.setPauseEndTime(0L)
+            _uiState.update { it.copy(pauseEndTimeMs = 0L) }
+        }
+        if (_uiState.value.blockMethod == BlockMethod.VPN) {
+            // Caller must handle VPN permission; re-enable needs onVpnPermissionResult path
+        } else {
+            applyRootMode()
         }
     }
 

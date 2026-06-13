@@ -13,9 +13,9 @@ android {
     defaultConfig {
         applicationId = "com.hostshield"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 77
-        versionName = "6.6.9"
+        targetSdk = 36
+        versionCode = 79
+        versionName = "6.7.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
