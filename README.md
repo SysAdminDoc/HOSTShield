@@ -1,7 +1,7 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.6.7-blue)
-![License](https://img.shields.io/badge/license-needs%20reconciliation-yellow)
+![Version](https://img.shields.io/badge/version-6.6.9-blue)
+![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
@@ -387,6 +387,8 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.6.9** | License unification and hardening. Unified project license on GPL-3.0, resolving the root MIT / app GPL-3.0 conflict that blocked F-Droid/IzzyOnDroid publication. |
+| **6.6.8** | QR config import completion. QR transfer now exports real rules and custom sources, previews import deltas, applies validated rules/sources/DNS settings, rejects oversized compressed payloads, and accepts only HTTPS source URLs before insertion. |
 | **6.6.7** | Safe Search correctness hardening. DNS-level enforcement now handles Google country domains, answers A and AAAA queries with safe endpoints or NODATA as appropriate, suppresses HTTPS/SVCB metadata answers, and caches resolved canonical safe-search endpoints with bundled fallbacks. |
 | **6.6.6** | Local DNS server abuse hardening. LAN DNS mode now rejects public clients by default, applies per-client query throttling, emits TC=1 for oversized UDP answers, reuses the shared DNS packet builder, and loads configured DoT/DoH/custom upstream preferences before plaintext fallback. |
 | **6.6.5** | Wi-Fi-only sync hardening. Periodic threat-intel and source-health refresh workers now use the same Wi-Fi-only network constraint as blocklist updates, and changing the setting refreshes existing WorkManager registrations instead of leaving stale constraints behind. |
@@ -436,4 +438,4 @@ The `gradlew` script lives in the `app/` directory, not the repo root.
 
 ## License
 
-Release licensing needs maintainer reconciliation before publication: the root [LICENSE](LICENSE) is MIT, while [app/LICENSE](app/LICENSE) is GPL-3.0.
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
