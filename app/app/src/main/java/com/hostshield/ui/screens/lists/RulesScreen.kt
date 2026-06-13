@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -78,23 +78,28 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
     var filterType by remember { mutableStateOf<RuleType?>(null) }
     var clipboardMessage by remember { mutableStateOf<String?>(null) }
     var pendingDeleteRule by remember { mutableStateOf<UserRule?>(null) }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
 
     val filtered = remember(rules, filterType) {
         if (filterType == null) rules else rules.filter { it.type == filterType }
     }
     val pasteDomainsFromClipboard = {
-        val text = clipboardManager.getText()?.text ?: ""
-        val domains = text.lines()
-            .map { it.trim().lowercase() }
-            .filter { it.isNotBlank() && it.contains('.') && !it.startsWith("#") }
-            .distinct()
-        if (domains.isNotEmpty()) {
-            domains.forEach { viewModel.addRule(it, RuleType.BLOCK) }
-            clipboardMessage = "Added ${domains.size} domains from clipboard"
-        } else {
-            clipboardMessage = "No valid domains in clipboard"
+        scope.launch {
+            val text = clipboard.getClipEntry()
+                ?.clipData?.getItemAt(0)?.text?.toString() ?: ""
+            val domains = text.lines()
+                .map { it.trim().lowercase() }
+                .filter { it.isNotBlank() && it.contains('.') && !it.startsWith("#") }
+                .distinct()
+            if (domains.isNotEmpty()) {
+                domains.forEach { viewModel.addRule(it, RuleType.BLOCK) }
+                clipboardMessage = "Added ${domains.size} domains from clipboard"
+            } else {
+                clipboardMessage = "No valid domains in clipboard"
+            }
         }
+        Unit
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {

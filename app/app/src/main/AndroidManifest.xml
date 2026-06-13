@@ -100,15 +100,6 @@
                 android:value="true" />
         </service>
 
-        <!-- Network change receiver for iptables re-apply -->
-        <receiver
-            android:name=".service.NetworkChangeReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
-            </intent-filter>
-        </receiver>
-
         <!-- Tasker / MacroDroid / shell automation API -->
         <receiver
             android:name=".service.AutomationReceiver"

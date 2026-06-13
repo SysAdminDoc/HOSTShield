@@ -105,13 +105,13 @@ class OfflineGeoIp @Inject constructor(
             val country = try { countryReader?.country(addr) } catch (_: Exception) { null }
             val asn = try { asnReader?.asn(addr) } catch (_: Exception) { null }
 
-            val countryCode = country?.country?.isoCode ?: ""
+            val countryCode = country?.country()?.isoCode() ?: ""
             GeoResult(
-                country = country?.country?.name ?: "",
+                country = country?.country()?.name() ?: "",
                 countryCode = countryCode,
-                continent = country?.continent?.name ?: "",
-                asn = (asn?.autonomousSystemNumber ?: 0L).toInt(),
-                asnOrg = asn?.autonomousSystemOrganization ?: "",
+                continent = country?.continent()?.name() ?: "",
+                asn = (asn?.autonomousSystemNumber() ?: 0L).toInt(),
+                asnOrg = asn?.autonomousSystemOrganization() ?: "",
                 flag = countryCodeToFlag(countryCode)
             )
         } catch (e: Exception) {
