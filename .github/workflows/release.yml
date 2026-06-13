@@ -45,6 +45,9 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      - name: Validate Gradle wrapper integrity
+        uses: gradle/actions/wrapper-validation@v4
+
       - name: Validate release docs
         shell: pwsh
         working-directory: .
