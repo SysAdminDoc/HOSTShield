@@ -8,6 +8,7 @@ import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -62,6 +63,7 @@ class ThreatIntelManager @Inject constructor(
         private const val CACHE_KEY_IP_CIDRS = "ip_cidrs"
         private const val CACHE_KEY_FEEDS = "feeds"
         private const val CACHE_KEY_LAST_UPDATED = "last_updated"
+        private const val CACHE_KEY_FEED_HEALTH = "feed_health"
     }
 
     // ── Data classes ──────────────────────────────────────────
@@ -84,6 +86,25 @@ class ThreatIntelManager @Inject constructor(
     private data class ParseResult(
         val domains: List<Pair<String, String>> = emptyList(),   // domain -> source
         val cidrs: List<Pair<String, String>> = emptyList()      // cidr -> source
+    )
+
+    data class FeedHealth(
+        val name: String,
+        val lastSuccess: Long = 0L,
+        val lastFailure: Long = 0L,
+        val httpStatus: Int = 0,
+        val entryCount: Int = 0,
+        val bytesDownloaded: Long = 0L,
+        val sha256: String = "",
+        val consecutiveFailures: Int = 0,
+        val lastError: String = ""
+    )
+
+    private data class DownloadResult(
+        val body: String? = null,
+        val httpStatus: Int = 0,
+        val bytesDownloaded: Long = 0L,
+        val error: String? = null
     )
 
     // ── Radix Trie for IPv4 CIDR matching ─────────────────────
@@ -154,6 +175,7 @@ class ThreatIntelManager @Inject constructor(
     @Volatile var domainCount = 0; private set
     @Volatile var ipCidrCount = 0; private set
     @Volatile var lastUpdated = 0L; private set
+    @Volatile var feedHealthMap: Map<String, FeedHealth> = emptyMap(); private set
 
     // ── Feed Configuration ────────────────────────────────────
     //
@@ -230,6 +252,27 @@ class ThreatIntelManager @Inject constructor(
                 }
             }
 
+            // Load feed health
+            val restoredHealth = mutableMapOf<String, FeedHealth>()
+            val healthArr = json.optJSONArray(CACHE_KEY_FEED_HEALTH)
+            if (healthArr != null) {
+                for (i in 0 until healthArr.length()) {
+                    val h = healthArr.getJSONObject(i)
+                    val name = h.getString("name")
+                    restoredHealth[name] = FeedHealth(
+                        name = name,
+                        lastSuccess = h.optLong("last_success"),
+                        lastFailure = h.optLong("last_failure"),
+                        httpStatus = h.optInt("http_status"),
+                        entryCount = h.optInt("entry_count"),
+                        bytesDownloaded = h.optLong("bytes_downloaded"),
+                        sha256 = h.optString("sha256", ""),
+                        consecutiveFailures = h.optInt("consecutive_failures"),
+                        lastError = h.optString("last_error", "")
+                    )
+                }
+            }
+
             // Atomic swap
             synchronized(this) {
                 ipTrie = newTrie
@@ -239,8 +282,9 @@ class ThreatIntelManager @Inject constructor(
                 lastUpdated = json.optLong(CACHE_KEY_LAST_UPDATED, 0L)
                 domainCount = domainThreats.size
                 ipCidrCount = ipTrie.size
+                feedHealthMap = restoredHealth
             }
-            Log.i(TAG, "Loaded cached threat intel: $domainCount domains, $ipCidrCount IP CIDRs")
+            Log.i(TAG, "Loaded cached threat intel: $domainCount domains, $ipCidrCount IP CIDRs, ${restoredHealth.size} feed health records")
         } catch (e: Exception) {
             Log.w(TAG, "Failed to load threat intel cache: ${e.message}")
         }
@@ -271,6 +315,12 @@ class ThreatIntelManager @Inject constructor(
             if (parentSource != null) return ThreatMatch(feedName = parentSource, matchType = "domain", matchedValue = parent)
         }
         return null
+    }
+
+    fun isFeedStale(name: String, thresholdMs: Long = 48 * 60 * 60 * 1000L): Boolean {
+        val health = feedHealthMap[name] ?: return true
+        return health.lastSuccess == 0L ||
+            (System.currentTimeMillis() - health.lastSuccess) > thresholdMs
     }
 
     // ── Feed Parsers ──────────────────────────────────────────
@@ -325,24 +375,30 @@ class ThreatIntelManager @Inject constructor(
 
     // ── Network ───────────────────────────────────────────────
 
-    private fun downloadFeed(url: String): String? {
+    private fun downloadFeed(url: String): DownloadResult {
         return try {
             val request = Request.Builder().url(url).build()
             okHttpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
-                    response.body.string()
+                    val body = response.body.string()
+                    DownloadResult(body = body, httpStatus = response.code, bytesDownloaded = body.length.toLong())
                 } else {
                     Log.w(TAG, "HTTP ${response.code} for $url")
-                    null
+                    DownloadResult(httpStatus = response.code, error = "HTTP ${response.code}")
                 }
             }
         } catch (e: Exception) {
             Log.w(TAG, "Download failed for $url: ${e.message}")
-            null
+            DownloadResult(error = e.message ?: "Unknown error")
         }
     }
 
     // ── Persistence ───────────────────────────────────────────
+
+    private fun sha256Hex(data: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(data.toByteArray())
+            .joinToString("") { "%02x".format(it) }
 
     /** Full refresh: download all feeds, swap state atomically, persist to disk. */
     suspend fun refreshFeedsAndPersist(): Boolean {
@@ -350,28 +406,70 @@ class ThreatIntelManager @Inject constructor(
             val newTrie = IpRadixTrie()
             val newDomains = ConcurrentHashMap<String, String>()
             val rawCidrs = mutableListOf<Pair<String, String>>()
+            val previousHealth = feedHealthMap
+            val newHealth = mutableMapOf<String, FeedHealth>()
             var successCount = 0
 
             for (feed in feeds) {
-                try {
-                    val body = downloadFeed(feed.url) ?: continue
-                    val result = feed.parser(body, feed.name)
-                    for ((domain, source) in result.domains) {
-                        newDomains[domain] = source
+                val prev = previousHealth[feed.name]
+                val dl = downloadFeed(feed.url)
+                val body = dl.body
+                if (body != null) {
+                    try {
+                        val result = feed.parser(body, feed.name)
+                        for ((domain, source) in result.domains) {
+                            newDomains[domain] = source
+                        }
+                        for ((cidr, source) in result.cidrs) {
+                            newTrie.insert(cidr, source)
+                            rawCidrs.add(cidr to source)
+                        }
+                        val entries = result.domains.size + result.cidrs.size
+                        newHealth[feed.name] = FeedHealth(
+                            name = feed.name,
+                            lastSuccess = System.currentTimeMillis(),
+                            lastFailure = prev?.lastFailure ?: 0L,
+                            httpStatus = dl.httpStatus,
+                            entryCount = entries,
+                            bytesDownloaded = dl.bytesDownloaded,
+                            sha256 = sha256Hex(body),
+                            consecutiveFailures = 0,
+                            lastError = ""
+                        )
+                        successCount++
+                        Log.i(TAG, "Parsed ${feed.name}: ${result.domains.size} domains, ${result.cidrs.size} CIDRs")
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to parse feed ${feed.name}: ${e.message}")
+                        newHealth[feed.name] = FeedHealth(
+                            name = feed.name,
+                            lastSuccess = prev?.lastSuccess ?: 0L,
+                            lastFailure = System.currentTimeMillis(),
+                            httpStatus = dl.httpStatus,
+                            entryCount = 0,
+                            bytesDownloaded = dl.bytesDownloaded,
+                            sha256 = "",
+                            consecutiveFailures = (prev?.consecutiveFailures ?: 0) + 1,
+                            lastError = "Parse: ${e.message?.take(120)}"
+                        )
                     }
-                    for ((cidr, source) in result.cidrs) {
-                        newTrie.insert(cidr, source)
-                        rawCidrs.add(cidr to source)
-                    }
-                    successCount++
-                    Log.i(TAG, "Parsed ${feed.name}: ${result.domains.size} domains, ${result.cidrs.size} CIDRs")
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to parse feed ${feed.name}: ${e.message}")
+                } else {
+                    newHealth[feed.name] = FeedHealth(
+                        name = feed.name,
+                        lastSuccess = prev?.lastSuccess ?: 0L,
+                        lastFailure = System.currentTimeMillis(),
+                        httpStatus = dl.httpStatus,
+                        entryCount = 0,
+                        bytesDownloaded = 0L,
+                        sha256 = "",
+                        consecutiveFailures = (prev?.consecutiveFailures ?: 0) + 1,
+                        lastError = dl.error?.take(120) ?: "Download failed"
+                    )
                 }
             }
 
             if (successCount == 0) {
                 Log.w(TAG, "All feeds failed to download")
+                synchronized(this) { feedHealthMap = newHealth }
                 return false
             }
 
@@ -384,9 +482,10 @@ class ThreatIntelManager @Inject constructor(
                 lastUpdated = System.currentTimeMillis()
                 domainCount = domainThreats.size
                 ipCidrCount = ipTrie.size
+                feedHealthMap = newHealth
             }
 
-            // Persist with raw CIDRs for cache reload
+            // Persist with raw CIDRs and feed health for cache reload
             val json = JSONObject()
             val domainArray = JSONArray()
             for ((domain, source) in newDomains) {
@@ -401,6 +500,22 @@ class ThreatIntelManager @Inject constructor(
             json.put(CACHE_KEY_IP_CIDRS, cidrArray)
             json.put(CACHE_KEY_FEEDS, successCount)
             json.put(CACHE_KEY_LAST_UPDATED, lastUpdated)
+
+            val healthArray = JSONArray()
+            for ((_, h) in newHealth) {
+                healthArray.put(JSONObject().apply {
+                    put("name", h.name)
+                    put("last_success", h.lastSuccess)
+                    put("last_failure", h.lastFailure)
+                    put("http_status", h.httpStatus)
+                    put("entry_count", h.entryCount)
+                    put("bytes_downloaded", h.bytesDownloaded)
+                    put("sha256", h.sha256)
+                    put("consecutive_failures", h.consecutiveFailures)
+                    put("last_error", h.lastError)
+                })
+            }
+            json.put(CACHE_KEY_FEED_HEALTH, healthArray)
 
             File(context.filesDir, CACHE_FILE).writeText(json.toString())
             val allFeedsSucceeded = successCount == feeds.size
