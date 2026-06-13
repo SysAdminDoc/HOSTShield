@@ -2,6 +2,7 @@ package com.hostshield.service
 
 import android.util.Log
 import com.hostshield.domain.BlocklistHolder
+import com.hostshield.util.PrivacyLog
 
 /**
  * CNAME Cloaking Detector
@@ -123,7 +124,7 @@ object CnameCloakDetector {
         // Check each target in the chain against main blocklist
         for (target in allTargets) {
             if (blocklist.isBlocked(target)) {
-                Log.i(TAG, "CNAME cloak detected: $target blocked in chain $allTargets")
+                PrivacyLog.i(TAG, "CNAME cloak detected: $target blocked in chain $allTargets")
                 return CnameResult(blocked = true, blockedCname = target, cnameChain = allTargets)
             }
         }
@@ -133,7 +134,7 @@ object CnameCloakDetector {
         for (target in allTargets) {
             // Check exact match and parent domain match
             if (target in cloakDb || getParentDomain(target) in cloakDb) {
-                Log.i(TAG, "CNAME cloak detected (cloak DB): $target in chain $allTargets")
+                PrivacyLog.i(TAG, "CNAME cloak detected (cloak DB): $target in chain $allTargets")
                 return CnameResult(
                     blocked = true, blockedCname = target,
                     cnameChain = allTargets, blockedViaCloakDb = true

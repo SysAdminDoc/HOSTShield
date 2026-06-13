@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Process
 import android.util.Log
 import com.hostshield.data.database.AutomationAuditDao
+import com.hostshield.util.PrivacyLog
 import com.hostshield.data.database.ProfileDao
 import com.hostshield.data.model.AutomationAuditEntry
 import com.hostshield.data.model.BlockMethod
@@ -61,14 +62,14 @@ class AutomationReceiver : BroadcastReceiver() {
 
         // Security: verify the caller is trusted before executing
         if (!isCallerTrusted(context, callerUid, automationPermission)) {
-            Log.w(TAG, "DENIED $requestedAction from uid=$callerUid pkg=$callerPkg " +
+            PrivacyLog.w(TAG, "DENIED $requestedAction from uid=$callerUid pkg=$callerPkg " +
                 "(missing $automationPermission)")
             logAudit(requestedAction, callerUid, callerPkg, "DENIED")
             return
         }
 
         if (action == null) {
-            Log.w(TAG, "Unknown automation action: $requestedAction from uid=$callerUid pkg=$callerPkg")
+            PrivacyLog.w(TAG, "Unknown automation action: $requestedAction from uid=$callerUid pkg=$callerPkg")
             logAudit(requestedAction, callerUid, callerPkg, "ERROR_UNKNOWN_ACTION")
             return
         }
@@ -85,9 +86,9 @@ class AutomationReceiver : BroadcastReceiver() {
         lastExecTime.put(rateKey, now)
 
         if (requestedAction != action) {
-            Log.i(TAG, "Received legacy action $requestedAction as $action from uid=$callerUid pkg=$callerPkg")
+            PrivacyLog.i(TAG, "Received legacy action $requestedAction as $action from uid=$callerUid pkg=$callerPkg")
         } else {
-            Log.i(TAG, "Received: $action from uid=$callerUid pkg=$callerPkg")
+            PrivacyLog.i(TAG, "Received: $action from uid=$callerUid pkg=$callerPkg")
         }
         val pendingResult = goAsync()
 
@@ -102,16 +103,16 @@ class AutomationReceiver : BroadcastReceiver() {
                     AutomationActionContract.ACTION_APPLY_FIREWALL -> {
                         iptablesManager.applyRules()
                         prefs.setNetworkFirewallEnabled(true)
-                        Log.i(TAG, "Firewall applied via automation (caller=$callerPkg)")
+                        PrivacyLog.i(TAG, "Firewall applied via automation (caller=$callerPkg)")
                     }
                     AutomationActionContract.ACTION_CLEAR_FIREWALL -> {
                         iptablesManager.clearRules()
                         prefs.setNetworkFirewallEnabled(false)
-                        Log.i(TAG, "Firewall cleared via automation (caller=$callerPkg)")
+                        PrivacyLog.i(TAG, "Firewall cleared via automation (caller=$callerPkg)")
                     }
                     AutomationActionContract.ACTION_REFRESH_BLOCKLIST -> {
                         HostsUpdateWorker.runOnce(context)
-                        Log.i(TAG, "Blocklist refresh queued via automation (caller=$callerPkg)")
+                        PrivacyLog.i(TAG, "Blocklist refresh queued via automation (caller=$callerPkg)")
                     }
                     AutomationActionContract.ACTION_SET_PROFILE -> {
                         val profileName = intent.getStringExtra(AutomationActionContract.EXTRA_PROFILE_NAME)
@@ -131,7 +132,7 @@ class AutomationReceiver : BroadcastReceiver() {
                         }
                         profileDao.deactivateAll()
                         profileDao.activate(match.id)
-                        Log.i(TAG, "Profile activated via automation: '${match.name}' (caller=$callerPkg)")
+                        PrivacyLog.i(TAG, "Profile activated via automation: '${match.name}' (caller=$callerPkg)")
                     }
                     AutomationActionContract.ACTION_SET_DNS -> {
                         val dnsServers = intent.getStringExtra(AutomationActionContract.EXTRA_DNS_SERVERS)
@@ -142,7 +143,7 @@ class AutomationReceiver : BroadcastReceiver() {
                             return@launch
                         }
                         prefs.setCustomUpstreamDns(dnsServers)
-                        Log.i(TAG, "Custom DNS set via automation: $dnsServers (caller=$callerPkg)")
+                        PrivacyLog.i(TAG, "Custom DNS set via automation: $dnsServers (caller=$callerPkg)")
                     }
                     AutomationActionContract.ACTION_PAUSE -> {
                         val durationMinutes = AutomationActionContract.pauseDurationMinutes(
@@ -153,13 +154,13 @@ class AutomationReceiver : BroadcastReceiver() {
                         if (durationMinutes == 0) {
                             PauseResumeWorker.cancel(context)
                             enable(context)
-                            Log.i(TAG, "VPN resumed via PAUSE 0 (caller=$callerPkg)")
+                            PrivacyLog.i(TAG, "VPN resumed via PAUSE 0 (caller=$callerPkg)")
                         } else {
                             disable(context)
                             // BroadcastReceiver.goAsync() is killed after ~10s, so we cannot
                             // sleep here. Schedule WorkManager resume — survives Doze.
                             PauseResumeWorker.schedule(context, durationMinutes)
-                            Log.i(TAG, "VPN paused for ${durationMinutes}m via automation (caller=$callerPkg)")
+                            PrivacyLog.i(TAG, "VPN paused for ${durationMinutes}m via automation (caller=$callerPkg)")
                         }
                     }
                     AutomationActionContract.ACTION_STATUS -> sendStatus(context)
