@@ -141,8 +141,9 @@ fun SettingsScreen(
         Spacer(Modifier.height(4.dp))
 
         // DNS Configuration (extracted)
-        val pcapMessage by viewModel.pcapMessage.collectAsStateWithLifecycle()
-        val isExportingPcap by viewModel.isExportingPcap.collectAsStateWithLifecycle()
+        val pcapSaveLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/vnd.tcpdump.pcap")
+        ) { uri -> uri?.let { viewModel.savePcapToUri(it) } }
 
         DnsSettingsSection(
             dohEnabled = state.dohEnabled,
@@ -186,9 +187,15 @@ fun SettingsScreen(
             onNavigateToConnectionLog = onNavigateToConnectionLog,
             onNavigateToDnsTools = onNavigateToDnsTools,
             onNavigateToNetworkStats = onNavigateToNetworkStats,
-            pcapMessage = pcapMessage,
-            isExportingPcap = isExportingPcap,
-            onExportPcap = { viewModel.exportPcap(it) }
+            pcapExport = state.pcapExport,
+            onExportPcap = { viewModel.exportPcap(it) },
+            onSharePcap = { viewModel.sharePcap() },
+            onSavePcap = {
+                val name = (state.pcapExport as? PcapExportState.Ready)?.fileName
+                    ?: "hostshield_export.pcap"
+                pcapSaveLauncher.launch(name)
+            },
+            onDismissPcap = { viewModel.dismissPcapExport() }
         )
 
         // Battery Optimization — only show when exemption has NOT been granted

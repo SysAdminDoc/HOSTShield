@@ -30,6 +30,14 @@ import javax.inject.Inject
 // Settings view model
 // ══════════════════════════════════════════════════════════════
 
+sealed interface PcapExportState {
+    data object Idle : PcapExportState
+    data object Exporting : PcapExportState
+    data class Ready(val filePath: String, val fileName: String, val sizeBytes: Long) : PcapExportState
+    data object Empty : PcapExportState
+    data class Failed(val error: String) : PcapExportState
+}
+
 sealed interface DiagnosticExportState {
     data object Idle : DiagnosticExportState
     data object Generating : DiagnosticExportState
@@ -72,6 +80,7 @@ data class SettingsUiState(
     val backupMessage: String? = null,
     val backupDialog: BackupDialogState = BackupDialogState.None,
     val diagnosticExport: DiagnosticExportState = DiagnosticExportState.Idle,
+    val pcapExport: PcapExportState = PcapExportState.Idle,
     val batteryOptimized: Boolean = false,
     val batteryMessage: String = "",
     val oemBatteryKiller: String? = null,
@@ -585,15 +594,9 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private val _pcapMessage = MutableStateFlow("")
-    val pcapMessage: StateFlow<String> = _pcapMessage.asStateFlow()
-    private val _isExportingPcap = MutableStateFlow(false)
-    val isExportingPcap: StateFlow<Boolean> = _isExportingPcap.asStateFlow()
-
     fun exportPcap(mode: String = "all", days: Int = 7) {
         viewModelScope.launch(Dispatchers.IO) {
-            _isExportingPcap.value = true
-            _pcapMessage.value = "Exporting..."
+            _uiState.update { it.copy(pcapExport = PcapExportState.Exporting) }
             try {
                 val file = when (mode) {
                     "dns" -> pcapExporter.exportDnsLogs(getApplication(), days)
@@ -601,16 +604,73 @@ class SettingsViewModel @Inject constructor(
                     else -> pcapExporter.exportAll(getApplication(), days)
                 }
                 if (file != null) {
-                    _pcapMessage.value = "PCAP saved: ${file.name} (${file.length() / 1024}KB)"
+                    _uiState.update {
+                        it.copy(pcapExport = PcapExportState.Ready(
+                            file.absolutePath, file.name, file.length()
+                        ))
+                    }
                 } else {
-                    _pcapMessage.value = "No blocked entries to export"
+                    _uiState.update { it.copy(pcapExport = PcapExportState.Empty) }
                 }
             } catch (e: Exception) {
-                _pcapMessage.value = "Export failed: ${e.message}"
-            } finally {
-                _isExportingPcap.value = false
+                _uiState.update {
+                    it.copy(pcapExport = PcapExportState.Failed(e.message ?: "Unknown error"))
+                }
             }
         }
+    }
+
+    fun sharePcap() {
+        val export = _uiState.value.pcapExport
+        if (export !is PcapExportState.Ready) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val file = java.io.File(export.filePath)
+                val context = getApplication<android.app.Application>()
+                val uri = FileProvider.getUriForFile(
+                    context, "${context.packageName}.fileprovider", file
+                )
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/vnd.tcpdump.pcap"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    putExtra(Intent.EXTRA_SUBJECT, "HostShield PCAP Export")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(Intent.createChooser(intent, "Share PCAP")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (e: Exception) {
+                android.util.Log.e("Settings", "PCAP share failed: ${e.message}", e)
+            }
+        }
+    }
+
+    fun savePcapToUri(uri: Uri) {
+        val export = _uiState.value.pcapExport
+        if (export !is PcapExportState.Ready) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val source = java.io.File(export.filePath)
+                getApplication<android.app.Application>().contentResolver
+                    .openOutputStream(uri)?.use { out ->
+                        source.inputStream().use { it.copyTo(out) }
+                    }
+                _uiState.update { it.copy(pcapExport = PcapExportState.Idle) }
+                _uiState.update { it.copy(backupMessage = "PCAP saved to chosen location") }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(pcapExport = PcapExportState.Failed("Save failed: ${e.message}"))
+                }
+            }
+        }
+    }
+
+    fun dismissPcapExport() {
+        val export = _uiState.value.pcapExport
+        if (export is PcapExportState.Ready) {
+            try { java.io.File(export.filePath).delete() } catch (_: Exception) {}
+        }
+        _uiState.update { it.copy(pcapExport = PcapExportState.Idle) }
     }
 
     // ── App Update Checker ──────────────────────────────────

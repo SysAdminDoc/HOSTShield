@@ -27,9 +27,11 @@ fun ProtectionSettingsSection(
     onNavigateToDnsTools: () -> Unit,
     onNavigateToNetworkStats: () -> Unit,
     // PCAP
-    pcapMessage: String,
-    isExportingPcap: Boolean,
-    onExportPcap: (String) -> Unit
+    pcapExport: PcapExportState,
+    onExportPcap: (String) -> Unit,
+    onSharePcap: () -> Unit,
+    onSavePcap: () -> Unit,
+    onDismissPcap: () -> Unit
 ) {
     // VPN Settings
     SettingsSection("VPN", Icons.Filled.VpnLock, Teal) {
@@ -75,25 +77,90 @@ fun ProtectionSettingsSection(
         Spacer(Modifier.height(4.dp))
 
         // PCAP export
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            OutlinedButton(
-                onClick = { onExportPcap("all") },
-                enabled = !isExportingPcap,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
-            ) {
-                if (isExportingPcap) CircularProgressIndicator(Modifier.size(12.dp), color = Teal, strokeWidth = 1.5.dp)
-                else Icon(Icons.Filled.SaveAlt, null, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Export PCAP", fontSize = 10.sp)
+        when (pcapExport) {
+            PcapExportState.Idle -> {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { onExportPcap("all") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
+                    ) {
+                        Icon(Icons.Filled.SaveAlt, null, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Export PCAP", fontSize = 10.sp)
+                    }
+                }
             }
-        }
-        if (pcapMessage.isNotBlank()) {
-            Text(pcapMessage, color = TextDim, fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
+            PcapExportState.Exporting -> {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CircularProgressIndicator(Modifier.size(14.dp), color = Teal, strokeWidth = 1.5.dp)
+                    Text("Generating PCAP…", color = TextDim, fontSize = 11.sp)
+                }
+            }
+            is PcapExportState.Ready -> {
+                val sizeKb = pcapExport.sizeBytes / 1024
+                Text(
+                    "Contains DNS hostnames and connection destinations",
+                    color = Peach,
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onSharePcap,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
+                    ) {
+                        Icon(Icons.Filled.Share, null, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Share (${sizeKb} KB)", fontSize = 10.sp)
+                    }
+                    OutlinedButton(
+                        onClick = onSavePcap,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Blue)
+                    ) {
+                        Icon(Icons.Filled.Save, null, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Save As", fontSize = 10.sp)
+                    }
+                    OutlinedButton(
+                        onClick = onDismissPcap,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim)
+                    ) {
+                        Icon(Icons.Filled.Close, null, modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+            PcapExportState.Empty -> {
+                Text("No blocked entries to export", color = TextDim, fontSize = 10.sp, modifier = Modifier.padding(vertical = 4.dp))
+            }
+            is PcapExportState.Failed -> {
+                Text(pcapExport.error, color = Red, fontSize = 10.sp, modifier = Modifier.padding(vertical = 4.dp))
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    OutlinedButton(
+                        onClick = { onExportPcap("all") },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
+                    ) {
+                        Text("Retry", fontSize = 10.sp)
+                    }
+                }
+            }
         }
     }
 }
