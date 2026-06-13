@@ -41,6 +41,8 @@ fun DnsSettingsSection(
     onCustomUpstreamDnsChange: (String) -> Unit,
     blockResponseType: String,
     onBlockResponseTypeChange: (String) -> Unit,
+    edeEnabled: Boolean,
+    onEdeEnabledChange: (Boolean) -> Unit,
     onClearDnsCache: () -> Unit,
     onNavigateToDnsBenchmark: () -> Unit,
     onNavigateToDnsLeakTest: () -> Unit
@@ -174,6 +176,13 @@ fun DnsSettingsSection(
         )
         Spacer(Modifier.height(6.dp))
         BlockResponseSelector(blockResponseType) { onBlockResponseTypeChange(it) }
+        Spacer(Modifier.height(8.dp))
+        SettingsToggle(
+            "Extended DNS Errors",
+            "Attach RFC 8914 EDE info code to blocked responses",
+            Icons.Filled.Info,
+            edeEnabled
+        ) { onEdeEnabledChange(it) }
 
         // DNS Cache management
         Spacer(Modifier.height(12.dp))

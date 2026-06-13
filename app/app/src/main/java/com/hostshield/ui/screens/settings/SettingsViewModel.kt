@@ -46,6 +46,7 @@ data class SettingsUiState(
     val dnsTrapEnabled: Boolean = true,
     /** Block response type: "nxdomain", "zero_ip", "refused" */
     val blockResponseType: String = "nxdomain",
+    val edeEnabled: Boolean = false,
     val isRootAvailable: Boolean = false,
     val systemInfo: Map<String, String> = emptyMap(),
     val exportResult: String? = null,
@@ -162,9 +163,10 @@ class SettingsViewModel @Inject constructor(
             val dnsResponsePrefs = combine(
                 prefs.dnsTrapEnabled,
                 prefs.blockResponseType,
-                prefs.customUpstreamDns
-            ) { dnsTrap, blockResponse, customUpstream ->
-                DnsResponsePrefs(dnsTrap, blockResponse, customUpstream)
+                prefs.customUpstreamDns,
+                prefs.edeEnabled
+            ) { dnsTrap, blockResponse, customUpstream, ede ->
+                DnsResponsePrefs(dnsTrap, blockResponse, customUpstream, ede)
             }
             combine(dnsBasePrefs, dnsResponsePrefs) { base, response ->
                 DnsPrefs(
@@ -174,7 +176,8 @@ class SettingsViewModel @Inject constructor(
                     dohProvider = base.dohProvider,
                     dnsTrap = response.dnsTrap,
                     blockResponse = response.blockResponse,
-                    customUpstream = response.customUpstream
+                    customUpstream = response.customUpstream,
+                    edeEnabled = response.edeEnabled
                 )
             }.collect { p ->
                 _uiState.update {
@@ -185,7 +188,8 @@ class SettingsViewModel @Inject constructor(
                         dohProvider = p.dohProvider,
                         dnsTrapEnabled = p.dnsTrap,
                         blockResponseType = p.blockResponse,
-                        customUpstreamDns = p.customUpstream
+                        customUpstreamDns = p.customUpstream,
+                        edeEnabled = p.edeEnabled
                     )
                 }
             }
@@ -291,8 +295,8 @@ class SettingsViewModel @Inject constructor(
     private data class IpRedirectPrefs(val ipv4: String, val ipv6: String, val includeIpv6: Boolean, val localWebserver: Boolean)
     private data class UpdatePrefs(val autoUpdate: Boolean, val intervalHours: Int, val wifiOnly: Boolean)
     private data class DnsBasePrefs(val logging: Boolean, val retentionDays: Int, val dohEnabled: Boolean, val dohProvider: String)
-    private data class DnsResponsePrefs(val dnsTrap: Boolean, val blockResponse: String, val customUpstream: String)
-    private data class DnsPrefs(val logging: Boolean, val retentionDays: Int, val dohEnabled: Boolean, val dohProvider: String, val dnsTrap: Boolean, val blockResponse: String, val customUpstream: String)
+    private data class DnsResponsePrefs(val dnsTrap: Boolean, val blockResponse: String, val customUpstream: String, val edeEnabled: Boolean)
+    private data class DnsPrefs(val logging: Boolean, val retentionDays: Int, val dohEnabled: Boolean, val dohProvider: String, val dnsTrap: Boolean, val blockResponse: String, val customUpstream: String, val edeEnabled: Boolean)
     private data class UiPrefs(
         val showNotification: Boolean,
         val accentColor: String,
@@ -379,6 +383,7 @@ class SettingsViewModel @Inject constructor(
     fun setIpv6Redirect(ip: String) { viewModelScope.launch { prefs.setIpv6Redirect(ip) } }
     fun setLogRetention(days: Int) { viewModelScope.launch { prefs.setLogRetentionDays(days) } }
     fun setBlockResponseType(type: String) { viewModelScope.launch { prefs.setBlockResponseType(type) } }
+    fun setEdeEnabled(enabled: Boolean) { viewModelScope.launch { prefs.setEdeEnabled(enabled) } }
     fun setAccentColor(color: String) { viewModelScope.launch { prefs.setAccentColor(color) } }
     fun setHighContrastAmoled(enabled: Boolean) { viewModelScope.launch { prefs.setHighContrastAmoled(enabled) } }
 

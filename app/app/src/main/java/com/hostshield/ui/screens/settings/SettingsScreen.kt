@@ -162,6 +162,8 @@ fun SettingsScreen(
             onCustomUpstreamDnsChange = { viewModel.setCustomUpstreamDns(it) },
             blockResponseType = state.blockResponseType,
             onBlockResponseTypeChange = { viewModel.setBlockResponseType(it) },
+            edeEnabled = state.edeEnabled,
+            onEdeEnabledChange = { viewModel.setEdeEnabled(it) },
             onClearDnsCache = { viewModel.clearDnsCache() },
             onNavigateToDnsBenchmark = onNavigateToDnsBenchmark,
             onNavigateToDnsLeakTest = onNavigateToDnsLeakTest

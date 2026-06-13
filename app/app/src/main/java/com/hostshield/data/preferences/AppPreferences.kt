@@ -65,6 +65,9 @@ class AppPreferences @Inject constructor(
     val pauseEndTime: Flow<Long> get() = blocking.pauseEndTime
     suspend fun setPauseEndTime(epochMs: Long) = blocking.setPauseEndTime(epochMs)
 
+    val edeEnabled: Flow<Boolean> get() = blocking.edeEnabled
+    suspend fun setEdeEnabled(enabled: Boolean) = blocking.setEdeEnabled(enabled)
+
     // ── Updates ───────────────────────────────────────────────
     val autoUpdate: Flow<Boolean> get() = sync.autoUpdate
     suspend fun setAutoUpdate(enabled: Boolean) = sync.setAutoUpdate(enabled)

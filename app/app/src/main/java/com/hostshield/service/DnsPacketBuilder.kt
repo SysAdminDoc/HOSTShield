@@ -20,6 +20,12 @@ object DnsPacketBuilder {
     const val RCODE_NXDOMAIN = 3
     const val RCODE_REFUSED = 5
 
+    // Extended DNS Error info codes (RFC 8914)
+    const val EDE_BLOCKED = 15
+    const val EDE_CENSORED = 16
+    const val EDE_FILTERED = 17
+    const val EDE_PROHIBITED = 18
+
     // Record types
     private const val TYPE_A: Short = 1
     const val TYPE_NS: Int = 2
@@ -173,12 +179,37 @@ object DnsPacketBuilder {
      * @param responseType One of "nxdomain", "zero_ip", "refused"
      * @return DNS response bytes
      */
-    fun buildBlockResponse(queryDns: ByteArray, responseType: String): ByteArray {
-        return when (responseType) {
+    fun buildBlockResponse(queryDns: ByteArray, responseType: String, edeInfoCode: Int = -1): ByteArray {
+        val resp = when (responseType) {
             "zero_ip" -> buildZeroIp(queryDns)
             "refused" -> buildRefused(queryDns)
             else -> buildNxdomain(queryDns)
         }
+        if (edeInfoCode < 0 || resp.size < 12) return resp
+        return appendEdeOpt(resp, edeInfoCode)
+    }
+
+    fun appendEdeOpt(response: ByteArray, infoCode: Int): ByteArray {
+        if (response.size < 12) return response
+        val opt = ByteArray(17)
+        opt[0] = 0x00                          // NAME: root
+        opt[1] = 0x00; opt[2] = 0x29           // TYPE = OPT (41)
+        opt[3] = 0x04; opt[4] = 0x00           // CLASS = UDP payload 1024
+        // opt[5..8] = 0 — extended RCODE, version, flags
+        opt[9] = 0x00; opt[10] = 0x06          // RDLENGTH = 6
+        opt[11] = 0x00; opt[12] = 0x0F         // OPTION-CODE = 15 (EDE)
+        opt[13] = 0x00; opt[14] = 0x02         // OPTION-LENGTH = 2
+        opt[15] = (infoCode shr 8).toByte()
+        opt[16] = (infoCode and 0xFF).toByte()
+
+        val result = ByteArray(response.size + opt.size)
+        System.arraycopy(response, 0, result, 0, response.size)
+        System.arraycopy(opt, 0, result, response.size, opt.size)
+        val arcount = ((result[10].toInt() and 0xFF) shl 8) or (result[11].toInt() and 0xFF)
+        val newAr = arcount + 1
+        result[10] = (newAr shr 8).toByte()
+        result[11] = (newAr and 0xFF).toByte()
+        return result
     }
 
     // ── Internal builders ─────────────────────────────────────

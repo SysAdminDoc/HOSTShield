@@ -28,6 +28,7 @@ class BlockingPreferences @Inject constructor(
         val LAST_APPLY_COUNT = intPreferencesKey("last_apply_count")
         val FIRST_LAUNCH = booleanPreferencesKey("first_launch")
         val PAUSE_END_TIME = longPreferencesKey("pause_end_time")
+        val EDE_ENABLED = booleanPreferencesKey("ede_enabled")
     }
 
     val blockMethod: Flow<BlockMethod> = ds.data.map {
@@ -68,4 +69,7 @@ class BlockingPreferences @Inject constructor(
 
     val pauseEndTime: Flow<Long> = ds.data.map { it[Keys.PAUSE_END_TIME] ?: 0L }
     suspend fun setPauseEndTime(epochMs: Long) = ds.edit { it[Keys.PAUSE_END_TIME] = epochMs }
+
+    val edeEnabled: Flow<Boolean> = ds.data.map { it[Keys.EDE_ENABLED] ?: false }
+    suspend fun setEdeEnabled(enabled: Boolean) = ds.edit { it[Keys.EDE_ENABLED] = enabled }
 }

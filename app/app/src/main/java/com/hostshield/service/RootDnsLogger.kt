@@ -97,6 +97,7 @@ class RootDnsLogger @Inject constructor(
     private var logFlushJob: Job? = null
     private var loggingEnabled = true
     private var blockResponseType = "nxdomain"
+    private var edeEnabled = false
     private val pendingBlockedStats = java.util.concurrent.atomic.AtomicInteger(0)
     private val pendingAllowedStats = java.util.concurrent.atomic.AtomicInteger(0)
 
@@ -114,7 +115,8 @@ class RootDnsLogger @Inject constructor(
                 // Read logging preference
                 loggingEnabled = try { prefs.dnsLogging.first() } catch (_: Exception) { true }
                 blockResponseType = try { prefs.blockResponseType.first() } catch (_: Exception) { "nxdomain" }
-                Log.i(TAG, "Root DNS starting (logging=$loggingEnabled, blockResponse=$blockResponseType)")
+                edeEnabled = try { prefs.edeEnabled.first() } catch (_: Exception) { false }
+                Log.i(TAG, "Root DNS starting (logging=$loggingEnabled, blockResponse=$blockResponseType, ede=$edeEnabled)")
 
                 // Step 1: Disable Private DNS so netd uses plain port 53
                 disablePrivateDns()
@@ -640,11 +642,13 @@ class RootDnsLogger @Inject constructor(
      * Dispatches to NXDOMAIN, zero-IP, or REFUSED builder.
      */
     private fun buildBlockResponse(query: ByteArray, queryType: String): ByteArray {
-        return when (blockResponseType) {
+        val base = when (blockResponseType) {
             "zero_ip" -> buildZeroIpResponse(query, queryType) ?: buildNxdomainResponse(query)
             "refused" -> buildRefusedResponse(query)
-            else -> buildNxdomainResponse(query) // "nxdomain" (default)
+            else -> buildNxdomainResponse(query)
         }
+        if (edeEnabled) return DnsPacketBuilder.appendEdeOpt(base, DnsPacketBuilder.EDE_BLOCKED)
+        return base
     }
 
     private fun buildNxdomainResponse(query: ByteArray): ByteArray {

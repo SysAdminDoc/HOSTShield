@@ -275,6 +275,7 @@ class DnsVpnService : VpnService() {
     @Volatile private var contentFilterCategories: Set<ContentCategory> = emptySet()
     // Block response: "nxdomain", "zero_ip", "refused"
     private var blockResponseType = "nxdomain"
+    private var edeEnabled = false
     // Custom upstream DNS resolved at start
     private var upstreamDnsServers = UPSTREAM_DNS.toList()
 
@@ -560,6 +561,7 @@ class DnsVpnService : VpnService() {
                 }.toSet()
             loggingEnabled = prefs.dnsLogging.first()
             blockResponseType = prefs.blockResponseType.first()
+            edeEnabled = prefs.edeEnabled.first()
 
             // Resolve custom upstream DNS
             val customDns = prefs.customUpstreamDns.first().trim()
@@ -1535,9 +1537,8 @@ class DnsVpnService : VpnService() {
      *   interpret this as a server error and retry.
      */
     private fun buildBlockResponse(dns: ByteArray, qtype: String): ByteArray? {
-        // Delegate to shared DnsPacketBuilder for consistent responses
-        // across VPN and root mode services
-        return DnsPacketBuilder.buildBlockResponse(dns, blockResponseType)
+        val edeCode = if (edeEnabled) DnsPacketBuilder.EDE_BLOCKED else -1
+        return DnsPacketBuilder.buildBlockResponse(dns, blockResponseType, edeCode)
     }
 
     private fun logAsync(

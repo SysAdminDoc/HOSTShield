@@ -106,6 +106,7 @@ class DnsProxyService : Service() {
     private val blockedCount = AtomicInteger(0)
     private val allowedCount = AtomicInteger(0)
     private var blockResponseType = "nxdomain"
+    private var edeEnabled = false
     private var upstreamServers = DEFAULT_UPSTREAM.toList()
     private var loggingEnabled = true
     private var useDoH = false
@@ -179,6 +180,7 @@ class DnsProxyService : Service() {
 
         // Load preferences
         blockResponseType = prefs.blockResponseType.first()
+        edeEnabled = prefs.edeEnabled.first()
         loggingEnabled = prefs.dnsLogging.first()
         val customUpstream = prefs.getUpstreamDnsList()
         upstreamServers = if (customUpstream.isNotEmpty()) customUpstream else DEFAULT_UPSTREAM.toList()
@@ -251,7 +253,8 @@ class DnsProxyService : Service() {
 
         if (blocked) {
             // Build block response
-            val response = DnsPacketBuilder.buildBlockResponse(queryData, blockResponseType)
+            val edeCode = if (edeEnabled) DnsPacketBuilder.EDE_BLOCKED else -1
+            val response = DnsPacketBuilder.buildBlockResponse(queryData, blockResponseType, edeCode)
             val reply = DatagramPacket(response, response.size, clientAddr, clientPort)
             try {
                 socket.send(reply)

@@ -326,6 +326,84 @@ class DnsPacketBuilderTest {
         assertEquals(hostname, DnsPacketBuilder.parseDomain(query))
     }
 
+    // ── EDE (Extended DNS Errors, RFC 8914) ───────────────
+
+    @Test
+    fun `buildBlockResponse with EDE appends OPT record and bumps ARCOUNT`() {
+        val resp = DnsPacketBuilder.buildBlockResponse(
+            buildQuery("ad.com"), "nxdomain", DnsPacketBuilder.EDE_BLOCKED
+        )
+        assertTrue(isResponse(resp))
+        assertEquals(3, rcode(resp))
+        assertEquals(1, u16(resp, 10)) // ARCOUNT = 1
+    }
+
+    @Test
+    fun `buildBlockResponse without EDE has ARCOUNT 0`() {
+        val resp = DnsPacketBuilder.buildBlockResponse(buildQuery("ad.com"), "nxdomain")
+        assertEquals(0, u16(resp, 10))
+    }
+
+    @Test
+    fun `buildBlockResponse with negative EDE code has ARCOUNT 0`() {
+        val resp = DnsPacketBuilder.buildBlockResponse(buildQuery("ad.com"), "nxdomain", -1)
+        assertEquals(0, u16(resp, 10))
+    }
+
+    @Test
+    fun `appendEdeOpt encodes correct OPT wire format`() {
+        val base = DnsPacketBuilder.buildNxdomain(buildQuery("x.com"))
+        val result = DnsPacketBuilder.appendEdeOpt(base, DnsPacketBuilder.EDE_BLOCKED)
+
+        assertEquals(base.size + 17, result.size)
+        assertEquals(1, u16(result, 10)) // ARCOUNT bumped
+
+        val optStart = base.size
+        assertEquals(0x00.toByte(), result[optStart])          // root name
+        assertEquals(0x00.toByte(), result[optStart + 1])      // TYPE high
+        assertEquals(0x29.toByte(), result[optStart + 2])      // TYPE low = 41 (OPT)
+        assertEquals(0x04.toByte(), result[optStart + 3])      // CLASS high = 1024 UDP
+        assertEquals(0x00.toByte(), result[optStart + 4])      // CLASS low
+        assertEquals(6, u16(result, optStart + 9))             // RDLENGTH = 6
+        assertEquals(15, u16(result, optStart + 11))           // OPTION-CODE = 15 (EDE)
+        assertEquals(2, u16(result, optStart + 13))            // OPTION-LENGTH = 2
+        assertEquals(15, u16(result, optStart + 15))           // INFO-CODE = 15 (Blocked)
+    }
+
+    @Test
+    fun `appendEdeOpt with FILTERED info code`() {
+        val base = DnsPacketBuilder.buildRefused(buildQuery("y.com"))
+        val result = DnsPacketBuilder.appendEdeOpt(base, DnsPacketBuilder.EDE_FILTERED)
+        val optStart = base.size
+        assertEquals(17, u16(result, optStart + 15)) // INFO-CODE = 17
+    }
+
+    @Test
+    fun `EDE works with zero_ip response type`() {
+        val resp = DnsPacketBuilder.buildBlockResponse(
+            buildQuery("ad.co", qtype = 1), "zero_ip", DnsPacketBuilder.EDE_BLOCKED
+        )
+        assertEquals(DnsPacketBuilder.RCODE_NOERROR, rcode(resp))
+        assertEquals(1, u16(resp, 6))  // ANCOUNT = 1
+        assertEquals(1, u16(resp, 10)) // ARCOUNT = 1
+    }
+
+    @Test
+    fun `EDE works with refused response type`() {
+        val resp = DnsPacketBuilder.buildBlockResponse(
+            buildQuery("ad.co"), "refused", DnsPacketBuilder.EDE_BLOCKED
+        )
+        assertEquals(5, rcode(resp))
+        assertEquals(1, u16(resp, 10))
+    }
+
+    @Test
+    fun `appendEdeOpt on tiny packet returns unchanged`() {
+        val tiny = ByteArray(8)
+        val result = DnsPacketBuilder.appendEdeOpt(tiny, DnsPacketBuilder.EDE_BLOCKED)
+        assertArrayEquals(tiny, result)
+    }
+
     // ── Constants ───────────────────────────────────────────
 
     @Test
@@ -333,6 +411,14 @@ class DnsPacketBuilderTest {
         assertEquals(0, DnsPacketBuilder.RCODE_NOERROR)
         assertEquals(3, DnsPacketBuilder.RCODE_NXDOMAIN)
         assertEquals(5, DnsPacketBuilder.RCODE_REFUSED)
+    }
+
+    @Test
+    fun `EDE constants have expected RFC 8914 values`() {
+        assertEquals(15, DnsPacketBuilder.EDE_BLOCKED)
+        assertEquals(16, DnsPacketBuilder.EDE_CENSORED)
+        assertEquals(17, DnsPacketBuilder.EDE_FILTERED)
+        assertEquals(18, DnsPacketBuilder.EDE_PROHIBITED)
     }
 
     @Test
