@@ -39,9 +39,12 @@ private fun normalizeThreatIpToken(token: String): String? {
 // Downloads and indexes malicious IPs (CIDR prefixes) and domains from
 // curated threat intelligence feeds:
 //   - abuse.ch URLhaus (malware distribution domains)
-//   - Spamhaus DROP / EDROP (hijacked IP ranges)
+//   - Spamhaus DROP (hijacked IP ranges — includes former eDROP data since 2024)
 //   - Emerging Threats (compromised IPs)
 //   - Disconnect Malware (malware domains)
+//
+// All feeds are public, unauthenticated HTTPS endpoints. No API keys required.
+// Refresh cadence is daily (24h) via ThreatIntelWorker with WiFi-only constraint.
 //
 // IPs are stored in a radix trie for O(1) CIDR prefix lookup.
 // Domains are stored in a ConcurrentHashMap for O(1) lookup.
@@ -153,6 +156,22 @@ class ThreatIntelManager @Inject constructor(
     @Volatile var lastUpdated = 0L; private set
 
     // ── Feed Configuration ────────────────────────────────────
+    //
+    // Feed upstream policy notes (2026-06):
+    //
+    // URLhaus: Public hostfile download, no auth, no documented rate limit.
+    //   Refreshed multiple times daily upstream; our 24h cadence is conservative.
+    //
+    // Spamhaus DROP: Public, no auth, no rate limit on the text endpoint.
+    //   Updated roughly every 15 minutes upstream. eDROP was merged into DROP
+    //   in 2024 (see spamhaus.org/faqs/do-not-route-or-peer-drop), so DROP
+    //   alone provides full coverage — eDROP removed as a separate feed.
+    //
+    // Emerging Threats: Public compromised-IP list, no auth required.
+    //   Whitespace-separated tokens with comment lines. Updated daily upstream.
+    //
+    // Disconnect Malware: Public domain list hosted on S3, no auth.
+    //   Updated periodically; cadence not formally documented.
 
     private val feeds = listOf(
         FeedConfig(
@@ -164,12 +183,6 @@ class ThreatIntelManager @Inject constructor(
         FeedConfig(
             name = "Spamhaus DROP",
             url = "https://www.spamhaus.org/drop/drop.txt",
-            type = FeedType.IP_CIDR,
-            parser = ::parseSpamhausDrop
-        ),
-        FeedConfig(
-            name = "Spamhaus EDROP",
-            url = "https://www.spamhaus.org/drop/edrop.txt",
             type = FeedType.IP_CIDR,
             parser = ::parseSpamhausDrop
         ),

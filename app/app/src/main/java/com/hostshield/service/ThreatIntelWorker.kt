@@ -11,8 +11,9 @@ import java.util.concurrent.TimeUnit
 // Threat intelligence feed update worker
 //
 // Runs daily via WorkManager to refresh threat intelligence feeds.
-// Downloads malicious IP ranges and domains from curated sources
+// Downloads malicious IP ranges and domains from curated public sources
 // (Spamhaus DROP, abuse.ch URLhaus, Emerging Threats, Disconnect).
+// All feeds are unauthenticated HTTPS; no API keys required.
 
 @HiltWorker
 class ThreatIntelWorker @AssistedInject constructor(
