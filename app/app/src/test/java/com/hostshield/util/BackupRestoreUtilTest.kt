@@ -46,6 +46,76 @@ class BackupRestoreUtilTest {
     }
 
     @Test
+    fun `v2 preferences serialize correctly`() {
+        val prefs = JSONObject().apply {
+            put("dns_trap_enabled", true)
+            put("block_response_type", "zero_ip")
+            put("ede_enabled", true)
+            put("local_webserver", false)
+            put("dot_enabled", true)
+            put("dot_provider", "quad9")
+            put("doq_enabled", false)
+            put("doq_provider", "adguard")
+            put("custom_upstream_dns", "9.9.9.9")
+            put("dns_only_mode", false)
+            put("captive_portal_handling", true)
+            put("online_geoip_enabled", true)
+            put("threat_intel_enabled", true)
+            put("safe_search_enabled", false)
+            put("content_filter_categories", org.json.JSONArray(listOf("ADULT", "GAMBLING")))
+            put("parental_enabled", false)
+            put("parental_age_profile", "teen")
+            put("wireguard_enabled", false)
+            put("wireguard_endpoint", "wg.example.com:51820")
+            put("wireguard_dns_ip", "10.0.0.1")
+            put("accent_color", "purple")
+            put("high_contrast_amoled", true)
+            put("show_notification", true)
+            put("pinned_domains", org.json.JSONArray(listOf("example.com", "test.org")))
+            put("schedule_enabled", true)
+            put("schedule_start", "22:00")
+            put("schedule_end", "07:00")
+            put("schedule_mode", "disable")
+            put("auto_backup_enabled", true)
+            put("auto_backup_interval_days", 7)
+            put("webdav_url", "https://dav.example.com")
+            put("webdav_username", "user")
+            put("rule_sync_urls", "https://rules.example.com/list.txt")
+            put("blocked_apps", org.json.JSONArray(listOf("com.spam.app")))
+        }
+
+        assertEquals("zero_ip", prefs.getString("block_response_type"))
+        assertTrue(prefs.getBoolean("ede_enabled"))
+        assertTrue(prefs.getBoolean("dot_enabled"))
+        assertEquals("quad9", prefs.getString("dot_provider"))
+        assertTrue(prefs.getBoolean("threat_intel_enabled"))
+        assertEquals(2, prefs.getJSONArray("content_filter_categories").length())
+        assertEquals("ADULT", prefs.getJSONArray("content_filter_categories").getString(0))
+        assertEquals("purple", prefs.getString("accent_color"))
+        assertTrue(prefs.getBoolean("high_contrast_amoled"))
+        assertEquals(2, prefs.getJSONArray("pinned_domains").length())
+        assertTrue(prefs.getBoolean("schedule_enabled"))
+        assertEquals("22:00", prefs.getString("schedule_start"))
+        assertEquals(7, prefs.getInt("auto_backup_interval_days"))
+        assertEquals(1, prefs.getJSONArray("blocked_apps").length())
+    }
+
+    @Test
+    fun `v1 backup missing v2 keys does not crash on optBoolean`() {
+        val v1Prefs = JSONObject().apply {
+            put("block_method", "ROOT_HOSTS")
+            put("ipv4_redirect", "0.0.0.0")
+        }
+
+        assertFalse(v1Prefs.optBoolean("ede_enabled", false))
+        assertEquals("nxdomain", v1Prefs.optString("block_response_type", "nxdomain"))
+        assertFalse(v1Prefs.optBoolean("dot_enabled", false))
+        assertFalse(v1Prefs.optBoolean("threat_intel_enabled", false))
+        assertFalse(v1Prefs.has("content_filter_categories"))
+        assertFalse(v1Prefs.has("pinned_domains"))
+    }
+
+    @Test
     fun `firewall rule serialization roundtrip`() {
         val rule = JSONObject().apply {
             put("uid", 10042)

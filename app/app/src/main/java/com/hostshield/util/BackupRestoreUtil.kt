@@ -52,7 +52,7 @@ class BackupRestoreUtil @Inject constructor(
     suspend fun createBackup(): String = withContext(Dispatchers.IO) {
         val root = JSONObject()
         root.put("app", "HostShield")
-        root.put("backup_version", 1)
+        root.put("backup_version", 2)
         root.put("created_at", System.currentTimeMillis())
 
         // Sources (all, not just enabled)
@@ -136,6 +136,53 @@ class BackupRestoreUtil @Inject constructor(
         prefsObj.put("firewall_mode", prefs.firewallMode.first())
         prefsObj.put("auto_apply_firewall", prefs.autoApplyFirewall.first())
         prefsObj.put("connection_log_enabled", prefs.connectionLogEnabled.first())
+
+        // v2 blocking
+        prefsObj.put("dns_trap_enabled", prefs.dnsTrapEnabled.first())
+        prefsObj.put("block_response_type", prefs.blockResponseType.first())
+        prefsObj.put("ede_enabled", prefs.edeEnabled.first())
+        prefsObj.put("local_webserver", prefs.localWebserver.first())
+
+        // v2 DNS
+        prefsObj.put("dot_enabled", prefs.dotEnabled.first())
+        prefsObj.put("dot_provider", prefs.dotProvider.first())
+        prefsObj.put("doq_enabled", prefs.doqEnabled.first())
+        prefsObj.put("doq_provider", prefs.doqProvider.first())
+        prefsObj.put("custom_upstream_dns", prefs.customUpstreamDns.first())
+        prefsObj.put("dns_only_mode", prefs.dnsOnlyMode.first())
+        prefsObj.put("captive_portal_handling", prefs.captivePortalHandling.first())
+        prefsObj.put("online_geoip_enabled", prefs.onlineGeoIpEnabled.first())
+
+        // v2 security
+        prefsObj.put("threat_intel_enabled", prefs.threatIntelEnabled.first())
+        prefsObj.put("safe_search_enabled", prefs.safeSearchEnabled.first())
+        prefsObj.put("content_filter_categories", JSONArray(prefs.contentFilterCategories.first().toList()))
+        prefsObj.put("parental_enabled", prefs.parentalEnabled.first())
+        prefsObj.put("parental_age_profile", prefs.parentalAgeProfile.first())
+        prefsObj.put("wireguard_enabled", prefs.wireGuardEnabled.first())
+        prefsObj.put("wireguard_endpoint", prefs.wireGuardEndpoint.first())
+        prefsObj.put("wireguard_dns_ip", prefs.wireGuardDnsIp.first())
+
+        // v2 UI
+        prefsObj.put("accent_color", prefs.accentColor.first())
+        prefsObj.put("high_contrast_amoled", prefs.highContrastAmoled.first())
+        prefsObj.put("show_notification", prefs.showNotification.first())
+        prefsObj.put("pinned_domains", JSONArray(prefs.pinnedDomains.first().toList()))
+
+        // v2 sync/schedule
+        prefsObj.put("schedule_enabled", prefs.scheduleEnabled.first())
+        prefsObj.put("schedule_start", prefs.scheduleStart.first())
+        prefsObj.put("schedule_end", prefs.scheduleEnd.first())
+        prefsObj.put("schedule_mode", prefs.scheduleMode.first())
+        prefsObj.put("auto_backup_enabled", prefs.autoBackupEnabled.first())
+        prefsObj.put("auto_backup_interval_days", prefs.autoBackupIntervalDays.first())
+        prefsObj.put("webdav_url", prefs.webdavUrl.first())
+        prefsObj.put("webdav_username", prefs.webdavUsername.first())
+        prefsObj.put("rule_sync_urls", prefs.ruleSyncUrls.first())
+
+        // v2 firewall
+        prefsObj.put("blocked_apps", JSONArray(prefs.blockedApps.first().toList()))
+
         root.put("preferences", prefsObj)
 
         root.toString(2)
@@ -272,6 +319,67 @@ class BackupRestoreUtil @Inject constructor(
             if (p.has("firewall_mode")) prefs.setFirewallMode(p.getString("firewall_mode"))
             if (p.has("auto_apply_firewall")) prefs.setAutoApplyFirewall(p.getBoolean("auto_apply_firewall"))
             if (p.has("connection_log_enabled")) prefs.setConnectionLogEnabled(p.getBoolean("connection_log_enabled"))
+
+            // v2 blocking
+            if (p.has("dns_trap_enabled")) prefs.setDnsTrapEnabled(p.getBoolean("dns_trap_enabled"))
+            if (p.has("block_response_type")) prefs.setBlockResponseType(p.getString("block_response_type"))
+            if (p.has("ede_enabled")) prefs.setEdeEnabled(p.getBoolean("ede_enabled"))
+            if (p.has("local_webserver")) prefs.setLocalWebserver(p.getBoolean("local_webserver"))
+
+            // v2 DNS
+            if (p.has("dot_enabled")) prefs.setDotEnabled(p.getBoolean("dot_enabled"))
+            if (p.has("dot_provider")) prefs.setDotProvider(p.getString("dot_provider"))
+            if (p.has("doq_enabled")) prefs.setDoqEnabled(p.getBoolean("doq_enabled"))
+            if (p.has("doq_provider")) prefs.setDoqProvider(p.getString("doq_provider"))
+            if (p.has("custom_upstream_dns")) prefs.setCustomUpstreamDns(p.getString("custom_upstream_dns"))
+            if (p.has("dns_only_mode")) prefs.setDnsOnlyMode(p.getBoolean("dns_only_mode"))
+            if (p.has("captive_portal_handling")) prefs.setCaptivePortalHandling(p.getBoolean("captive_portal_handling"))
+            if (p.has("online_geoip_enabled")) prefs.setOnlineGeoIpEnabled(p.getBoolean("online_geoip_enabled"))
+
+            // v2 security
+            if (p.has("threat_intel_enabled")) prefs.setThreatIntelEnabled(p.getBoolean("threat_intel_enabled"))
+            if (p.has("safe_search_enabled")) prefs.setSafeSearchEnabled(p.getBoolean("safe_search_enabled"))
+            if (p.has("content_filter_categories")) {
+                val catArr = p.getJSONArray("content_filter_categories")
+                val cats = mutableSetOf<String>()
+                for (i in 0 until catArr.length()) cats.add(catArr.getString(i))
+                prefs.setContentFilterCategories(cats)
+            }
+            if (p.has("parental_enabled")) prefs.setParentalEnabled(p.getBoolean("parental_enabled"))
+            if (p.has("parental_age_profile")) prefs.setParentalAgeProfile(p.getString("parental_age_profile"))
+            if (p.has("wireguard_enabled")) prefs.setWireGuardEnabled(p.getBoolean("wireguard_enabled"))
+            if (p.has("wireguard_endpoint")) prefs.setWireGuardEndpoint(p.getString("wireguard_endpoint"))
+            if (p.has("wireguard_dns_ip")) prefs.setWireGuardDnsIp(p.getString("wireguard_dns_ip"))
+
+            // v2 UI
+            if (p.has("accent_color")) prefs.setAccentColor(p.getString("accent_color"))
+            if (p.has("high_contrast_amoled")) prefs.setHighContrastAmoled(p.getBoolean("high_contrast_amoled"))
+            if (p.has("show_notification")) prefs.setShowNotification(p.getBoolean("show_notification"))
+            if (p.has("pinned_domains")) {
+                val pinArr = p.getJSONArray("pinned_domains")
+                val pins = mutableSetOf<String>()
+                for (i in 0 until pinArr.length()) pins.add(pinArr.getString(i))
+                prefs.setPinnedDomains(pins)
+            }
+
+            // v2 sync/schedule
+            if (p.has("schedule_enabled")) prefs.setScheduleEnabled(p.getBoolean("schedule_enabled"))
+            if (p.has("schedule_start")) prefs.setScheduleStart(p.getString("schedule_start"))
+            if (p.has("schedule_end")) prefs.setScheduleEnd(p.getString("schedule_end"))
+            if (p.has("schedule_mode")) prefs.setScheduleMode(p.getString("schedule_mode"))
+            if (p.has("auto_backup_enabled")) prefs.setAutoBackupEnabled(p.getBoolean("auto_backup_enabled"))
+            if (p.has("auto_backup_interval_days")) prefs.setAutoBackupIntervalDays(p.getInt("auto_backup_interval_days"))
+            if (p.has("webdav_url")) prefs.setWebdavUrl(p.getString("webdav_url"))
+            if (p.has("webdav_username")) prefs.setWebdavUsername(p.getString("webdav_username"))
+            if (p.has("rule_sync_urls")) prefs.setRuleSyncUrls(p.getString("rule_sync_urls"))
+
+            // v2 firewall
+            if (p.has("blocked_apps")) {
+                val blockedArr = p.getJSONArray("blocked_apps")
+                val blocked = mutableSetOf<String>()
+                for (i in 0 until blockedArr.length()) blocked.add(blockedArr.getString(i))
+                prefs.setBlockedApps(blocked)
+            }
         }
 
         BackupResult(sourcesCount, rulesCount, profilesCount, firewallRulesCount)
