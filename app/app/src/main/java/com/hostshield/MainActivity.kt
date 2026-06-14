@@ -151,18 +151,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
 
         lifecycleScope.launch(Dispatchers.IO) {
             SourceHealthWorker.schedule(this@MainActivity, prefs.wifiOnly.first())
@@ -209,6 +210,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                     if (autoEnable) prefs.setEnabled(true)
                                     prefs.setFirstLaunch(false)
+                                    if (autoEnable) requestNotificationPermissionIfNeeded()
                                 }
                             },
                             onRequestVpnPermission = { onResult ->
@@ -359,6 +361,7 @@ private fun HostShieldMainApp(activity: MainActivity) {
                     onNavigateToFirewall = { navController.navigate(SubScreen.FIREWALL) },
                     onNavigateToConnectionLog = { navController.navigate(SubScreen.CONNECTION_LOG) },
                     onRequestVpnPermission = { onResult -> activity.requestVpnPermission(onResult) },
+                    onRequestNotificationPermission = { activity.requestNotificationPermissionIfNeeded() },
                     onNavigateToAppLogs = { pkg -> navController.navigate("${SubScreen.APP_LOGS}?pkg=$pkg") }
                 )
             }

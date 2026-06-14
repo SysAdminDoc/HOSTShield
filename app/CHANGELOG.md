@@ -1,3 +1,23 @@
+# HostShield v6.9.5
+
+**Release Date:** 2026-06-14
+**Version Code:** 87
+
+## First-Run UX Polish
+
+- Notification permission is now requested only after the user chooses to
+  activate protection, instead of covering the first onboarding screen.
+- The onboarding DNS resolver picker now uses a compact accessible selector so
+  Default, Cloudflare, Google, Quad9, and AdGuard are visible with the Continue
+  action on tall phones.
+
+## Verification
+
+- `:app:compileFullReleaseKotlin`
+- connected-device release install and screenshot pass on `com.hostshield`
+
+---
+
 # HostShield v6.9.4
 
 **Release Date:** 2026-06-14

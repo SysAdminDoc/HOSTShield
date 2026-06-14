@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.4-blue)
+![Version](https://img.shields.io/badge/version-6.9.5-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -393,6 +393,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.5** | First-run notification permission is now deferred until protection activation instead of covering onboarding, and the DNS resolver step uses a compact accessible selector so all resolver choices are visible on tall phones. |
 | **6.9.4** | Release signing now fails closed unless real signing credentials are configured or an explicit local debug-signing override is set. Imports, backups, QR config, diagnostics, threat feeds, WebDAV, GeoIP, update checks, and DEX scans now use bounded input and stricter validation. Secondary controls have larger accessible touch targets. |
 | **6.9.3** | Threat-intel feed health dashboard added to Stats with per-feed freshness, HTTP status, entry counts, SHA-256 prefixes, failure state, and manual refresh. Diagnostic exports now include redacted threat-feed health summaries. |
 | **6.9.2** | Embedded Cronet removed and DoH3 disabled while no maintained non-vulnerable Cronet artifact is available. Pinned OkHttp DoH/DoT remains the production encrypted DNS path, and release posture/provenance scripts now record the no-bundled-Cronet state. |

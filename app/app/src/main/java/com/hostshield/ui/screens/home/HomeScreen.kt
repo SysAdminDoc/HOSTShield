@@ -44,6 +44,7 @@ fun HomeScreen(
     onNavigateToFirewall: () -> Unit = {},
     onNavigateToConnectionLog: () -> Unit = {},
     onRequestVpnPermission: ((Boolean) -> Unit) -> Unit = {},
+    onRequestNotificationPermission: () -> Unit = {},
     onNavigateToAppLogs: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,6 +61,7 @@ fun HomeScreen(
     val requestVpnThenApply: () -> Unit = {
         onRequestVpnPermission { granted ->
             viewModel.onVpnPermissionResult(granted)
+            if (granted) onRequestNotificationPermission()
         }
     }
 
@@ -114,6 +116,7 @@ fun HomeScreen(
                     requestVpnThenApply()
                 } else {
                     viewModel.applyRootMode()
+                    onRequestNotificationPermission()
                 }
             }
         )

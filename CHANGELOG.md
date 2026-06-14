@@ -3,6 +3,14 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.5] - 2026-06-14
+
+### UX
+- Deferred Android notification permission until the user activates protection,
+  so fresh installs can read onboarding before the system dialog appears.
+- Tightened the DNS resolver onboarding selector so all resolver options remain
+  visible with the fixed Continue action on tall phones.
+
 ## [v6.9.4] - 2026-06-14
 
 ### Security

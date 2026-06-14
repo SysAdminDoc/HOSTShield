@@ -577,24 +577,24 @@ private fun DnsConfigPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp, vertical = 48.dp),
+            .padding(horizontal = 32.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(4.dp))
 
         Icon(
             imageVector = Icons.Default.Dns,
             contentDescription = null,
             tint = Teal,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(42.dp)
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
         Text(
             "Choose DNS resolver",
             color = TextPrimary,
-            fontSize = 24.sp,
+            fontSize = 23.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
@@ -609,7 +609,7 @@ private fun DnsConfigPage(
             lineHeight = 18.sp
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(18.dp))
 
         Column(
             modifier = Modifier
@@ -636,36 +636,47 @@ private fun DnsConfigPage(
                             stateDescription = if (isSelected) "Selected" else "Not selected"
                         }
                         .clickable { onSelectDns(option.id) }
-                        .padding(14.dp),
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    RadioButton(
-                        selected = isSelected,
-                        onClick = { onSelectDns(option.id) },
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = Teal,
-                            unselectedColor = Surface3
-                        )
-                    )
-                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, if (isSelected) Teal else Surface3, CircleShape)
+                            .background(if (isSelected) Teal.copy(alpha = 0.18f) else Color.Transparent),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(Teal)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             option.name,
                             color = if (isSelected) TextPrimary else TextSecondary,
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
+                            lineHeight = 16.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                         )
                         Text(
                             option.desc,
                             color = TextDim,
-                            fontSize = 11.sp
+                            fontSize = 10.sp,
+                            lineHeight = 13.sp
                         )
                     }
                 }
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
 
         Button(
             onClick = onNext,

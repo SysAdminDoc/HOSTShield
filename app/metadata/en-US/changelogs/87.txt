@@ -1,0 +1,4 @@
+v6.9.5 improves first-run onboarding polish.
+
+- Notification permission now appears only after protection activation instead of covering the first onboarding screen.
+- The DNS resolver step uses a more compact accessible selector so all resolver options stay visible with the Continue action on tall phones.
