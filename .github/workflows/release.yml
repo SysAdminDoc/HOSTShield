@@ -85,7 +85,7 @@ jobs:
             --lockfile=artifacts/release-provenance/hostshield-bom.cdx.json
             --format=json
             --output-file=artifacts/release-provenance/osv-results.json
-            --show-all-vulns
+            --all-vulns
 
       - name: Enforce OSV vulnerability policy
         shell: pwsh
