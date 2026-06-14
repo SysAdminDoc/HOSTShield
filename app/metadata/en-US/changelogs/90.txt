@@ -1,0 +1,5 @@
+v6.9.8
+
+Removed the bottom Home dashboard "Root not detected" banner so non-root DNS filtering keeps the dashboard focused on active protection details.
+Settings "View on GitHub" now explicitly opens the HostShield repository page and no longer crashes when no browser is available.
+Sources now shows only the add-source button in the header, removing the extra shortcut icons.

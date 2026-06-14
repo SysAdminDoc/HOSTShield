@@ -35,7 +35,6 @@ import com.hostshield.data.source.SourceUrlPolicy
 import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
-import com.hostshield.ui.accessibility.accessibilityAction
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilityToggle
@@ -440,8 +439,6 @@ fun SourcesScreen(
     val sourceImpactMsg by viewModel.sourceImpactMessage.collectAsStateWithLifecycle()
     val sourceImpactPreview by viewModel.sourceImpactPreview.collectAsStateWithLifecycle()
     val isChecking by viewModel.isCheckingHealth.collectAsStateWithLifecycle()
-    val isAnalyzingAllowlists by viewModel.isAnalyzingAllowlists.collectAsStateWithLifecycle()
-    val isPreviewingSourceImpact by viewModel.isPreviewingSourceImpact.collectAsStateWithLifecycle()
     val allowlistImpacts by viewModel.allowlistImpacts.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -509,86 +506,17 @@ fun SourcesScreen(
                         color = TextPrimary,
                         modifier = Modifier.accessibilityHeading()
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Teal.copy(alpha = 0.1f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                "${sources.count { it.enabled }} active",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Teal,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        IconButton(
-                            onClick = { viewModel.previewSourceImpact() },
-                            enabled = !isPreviewingSourceImpact,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .accessibilityAction("Preview source update impact", !isPreviewingSourceImpact)
-                        ) {
-                            if (isPreviewingSourceImpact) CircularProgressIndicator(
-                                Modifier.size(14.dp).accessibilityLiveRegion("Previewing source impact"),
-                                color = Blue,
-                                strokeWidth = 2.dp
-                            )
-                            else Icon(Icons.Filled.Visibility, "Preview source impact", tint = TextDim, modifier = Modifier.size(18.dp))
-                        }
-                        IconButton(
-                            onClick = { viewModel.checkAllSourceHealth() },
-                            enabled = !isChecking,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .accessibilityAction("Run source health check", !isChecking)
-                        ) {
-                            if (isChecking) CircularProgressIndicator(
-                                Modifier.size(14.dp).accessibilityLiveRegion("Checking source health"),
-                                color = Teal,
-                                strokeWidth = 2.dp
-                            )
-                            else Icon(Icons.Filled.HealthAndSafety, "Health check", tint = TextDim, modifier = Modifier.size(18.dp))
-                        }
-                        IconButton(
-                            onClick = { viewModel.analyzeAllowlistImpact() },
-                            enabled = !isAnalyzingAllowlists,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .accessibilityAction("Analyze allowlist impact", !isAnalyzingAllowlists)
-                        ) {
-                            if (isAnalyzingAllowlists) CircularProgressIndicator(
-                                Modifier.size(14.dp).accessibilityLiveRegion("Analyzing allowlist impact"),
-                                color = Green,
-                                strokeWidth = 2.dp
-                            )
-                            else Icon(Icons.Filled.CheckCircle, "Analyze allowlist impact", tint = TextDim, modifier = Modifier.size(18.dp))
-                        }
-                        Surface(
-                            onClick = onNavigateToGallery,
-                            shape = RoundedCornerShape(8.dp),
-                            color = Mauve.copy(alpha = 0.12f),
-                            contentColor = Mauve,
-                            modifier = Modifier
-                                .size(40.dp)
-                        ) {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Filled.Explore, "Browse source gallery", modifier = Modifier.size(18.dp))
-                            }
-                        }
-                        Surface(
-                            onClick = { showAddDialog = true },
-                            shape = RoundedCornerShape(8.dp),
-                            color = Teal.copy(alpha = 0.14f),
-                            contentColor = Teal,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .testTag(HostShieldTestTags.Sources.AddButton)
-                        ) {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Filled.Add, "Add source", modifier = Modifier.size(20.dp))
-                            }
+                    Surface(
+                        onClick = { showAddDialog = true },
+                        shape = RoundedCornerShape(8.dp),
+                        color = Teal.copy(alpha = 0.14f),
+                        contentColor = Teal,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .testTag(HostShieldTestTags.Sources.AddButton)
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Filled.Add, "Add source", modifier = Modifier.size(20.dp))
                         }
                     }
                 }

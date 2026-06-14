@@ -1,7 +1,11 @@
 package com.hostshield.ui.screens.settings
 
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.Browser
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -47,6 +51,22 @@ import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
+
+internal const val HOSTSHIELD_GITHUB_REPOSITORY_URL = "https://github.com/SysAdminDoc/HostShield"
+
+internal fun hostShieldGitHubRepositoryIntent(context: Context): Intent =
+    Intent(Intent.ACTION_VIEW, Uri.parse(HOSTSHIELD_GITHUB_REPOSITORY_URL)).apply {
+        addCategory(Intent.CATEGORY_BROWSABLE)
+        putExtra(Browser.EXTRA_APPLICATION_ID, context.packageName)
+    }
+
+internal fun openHostShieldGitHubRepository(context: Context): Boolean =
+    try {
+        context.startActivity(hostShieldGitHubRepositoryIntent(context))
+        true
+    } catch (_: ActivityNotFoundException) {
+        false
+    }
 
 @Composable
 fun SettingsScreen(
@@ -674,8 +694,13 @@ fun SettingsScreen(
             // GitHub link
             Surface(
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/SysAdminDoc/HostShield"))
-                    context.startActivity(intent)
+                    if (!openHostShieldGitHubRepository(context)) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.settings_github_unavailable),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 },
                 shape = RoundedCornerShape(10.dp),
                 color = Surface2,

@@ -70,6 +70,7 @@
     <string name="label_checking">Checking…</string>
     <string name="label_check_for_updates">Check for updates</string>
     <string name="label_view_on_github">View on GitHub</string>
+    <string name="settings_github_unavailable">No browser is available to open GitHub.</string>
 
     <!-- Settings rows — titles -->
     <string name="settings_battery_warning">Battery optimization may stop HostShield in the background</string>

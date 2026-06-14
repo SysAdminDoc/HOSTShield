@@ -3,6 +3,16 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.8] - 2026-06-14
+
+### UI
+- Removed the bottom Home dashboard "Root not detected" banner so non-root DNS
+  filtering keeps the dashboard space focused on active protection details.
+- Made the Settings "View on GitHub" action explicitly open the HostShield
+  repository page without crashing on devices that do not have a browser.
+- Simplified the Sources header to show only the add-source button and removed
+  the extra header shortcuts.
+
 ## [v6.9.7] - 2026-06-14
 
 ### UI

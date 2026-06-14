@@ -1,3 +1,25 @@
+# HostShield v6.9.8
+
+**Release Date:** 2026-06-14
+**Version Code:** 90
+
+## Non-Root Dashboard Cleanup
+
+- Removed the bottom Home dashboard "Root not detected" banner. Root
+  availability is still reflected in the Root mode control without taking
+  persistent dashboard space in VPN/non-root mode.
+- The Settings "View on GitHub" action now explicitly opens the HostShield
+  repository page with a browser-capable URL intent and no longer crashes when
+  the device has no browser handler.
+- Simplified the Sources header so only the add-source button remains next to
+  the title.
+
+## Verification
+
+- `:app:compileFullDebugKotlin`
+
+---
+
 # HostShield v6.9.7
 
 **Release Date:** 2026-06-14

@@ -514,21 +514,6 @@ fun HomeScreen(
             }
         }
 
-        // Root warning
-        if (!state.isRootAvailable) {
-            Spacer(Modifier.height(12.dp))
-            HostShieldStatusBanner(
-                icon = Icons.Filled.Warning,
-                title = stringResource(R.string.home_root_warning_title),
-                message = stringResource(R.string.home_root_warning_message),
-                accent = Yellow,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                announce = false,
-            )
-        }
-
         Spacer(Modifier.height(32.dp))
     }
 
