@@ -42,6 +42,8 @@ class CrashReporter @Inject constructor(
     companion object {
         private const val CRASH_DIR = "crashes"
         private const val MAX_REPORTS = 20
+        private const val MAX_STACK_TRACE_LENGTH = 64_000
+        private const val MAX_REPORT_BYTES = 256L * 1024L
         private const val FILE_EXT = ".json"
     }
 
@@ -99,7 +101,7 @@ class CrashReporter @Inject constructor(
 
                 val json = JSONObject().apply {
                     put("timestamp", timestamp)
-                    put("stackTrace", throwable.stackTraceToString())
+                    put("stackTrace", throwable.stackTraceToString().take(MAX_STACK_TRACE_LENGTH))
                     put("deviceModel", Build.MODEL)
                     put("manufacturer", Build.MANUFACTURER)
                     put("sdkVersion", Build.VERSION.SDK_INT)
@@ -130,7 +132,11 @@ class CrashReporter @Inject constructor(
         crashDir.listFiles { f -> f.extension == "json" }?.toList() ?: emptyList()
 
     private fun parseReport(file: File): CrashReport? = try {
-        val json = JSONObject(file.readText())
+        val json = JSONObject(
+            file.inputStream().use { stream ->
+                BoundedInputReader.readUtf8(stream, MAX_REPORT_BYTES, "Crash report")
+            }
+        )
         CrashReport(
             timestamp = json.getLong("timestamp"),
             stackTrace = json.getString("stackTrace"),

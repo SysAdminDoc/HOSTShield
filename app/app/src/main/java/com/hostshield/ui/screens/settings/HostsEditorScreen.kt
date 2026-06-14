@@ -137,7 +137,7 @@ fun HostsEditorScreen(
             ) {
                 Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(msg, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearMessage() }, modifier = Modifier.size(20.dp)) {
+                    IconButton(onClick = { viewModel.clearMessage() }, modifier = Modifier.size(40.dp)) {
                         Icon(Icons.Filled.Close, "Dismiss hosts editor message", tint = TextDim, modifier = Modifier.size(12.dp))
                     }
                 }

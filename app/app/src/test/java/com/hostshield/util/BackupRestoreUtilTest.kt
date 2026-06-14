@@ -131,4 +131,30 @@ class BackupRestoreUtilTest {
         assertEquals(false, rule.getBoolean("wifi_allowed"))
         assertEquals("com.example.app", rule.getString("package_name"))
     }
+
+    @Test
+    fun `restore validators reject unsafe source and rule fields`() {
+        assertEquals(
+            "https://lists.example.com/hosts.txt",
+            BackupRestoreUtil.normalizeRestoredSourceUrl(" https://lists.example.com/hosts.txt ")
+        )
+        assertNull(BackupRestoreUtil.normalizeRestoredSourceUrl("http://192.168.1.50/hosts.txt"))
+
+        assertEquals("example.com", BackupRestoreUtil.normalizeRestoredHostname(" Example.COM. "))
+        assertEquals("example.com", BackupRestoreUtil.normalizeRestoredHostname("*.example.com", isWildcard = true))
+        assertNull(BackupRestoreUtil.normalizeRestoredHostname("*.example.com", isWildcard = false))
+        assertNull(BackupRestoreUtil.normalizeRestoredHostname("bad host.example"))
+    }
+
+    @Test
+    fun `restore validators reject bad redirect IPs and packages`() {
+        assertTrue(BackupRestoreUtil.isValidRedirectIp("0.0.0.0"))
+        assertTrue(BackupRestoreUtil.isValidRedirectIp("2001:4860:4860::8888"))
+        assertFalse(BackupRestoreUtil.isValidRedirectIp("999.1.1.1"))
+        assertFalse(BackupRestoreUtil.isValidRedirectIp("8.8.8.8; reboot"))
+
+        assertEquals("com.example.app", BackupRestoreUtil.normalizePackageName(" com.example.app "))
+        assertNull(BackupRestoreUtil.normalizePackageName("com.example;rm"))
+        assertNull(BackupRestoreUtil.normalizePackageName("example"))
+    }
 }

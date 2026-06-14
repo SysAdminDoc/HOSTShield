@@ -50,4 +50,15 @@ class ThreatIntelParsersTest {
 
         assertEquals(listOf("10.0.0.0/8" to "Feed"), result)
     }
+
+    @Test
+    fun `domain normalizer rejects URLs wildcards whitespace and malformed labels`() {
+        assertEquals("malware.example.com", normalizeThreatDomainToken(" Malware.Example.Com. "))
+        assertEquals(null, normalizeThreatDomainToken("https://malware.example.com"))
+        assertEquals(null, normalizeThreatDomainToken("*.malware.example.com"))
+        assertEquals(null, normalizeThreatDomainToken("bad domain.example"))
+        assertEquals(null, normalizeThreatDomainToken("bad..example.com"))
+        assertEquals(null, normalizeThreatDomainToken("-bad.example.com"))
+        assertEquals(null, normalizeThreatDomainToken("localhost"))
+    }
 }

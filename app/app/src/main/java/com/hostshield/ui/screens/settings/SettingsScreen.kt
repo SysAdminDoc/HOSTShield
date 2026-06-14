@@ -513,7 +513,7 @@ fun SettingsScreen(
                         shape = RoundedCornerShape(8.dp),
                         color = if (isSelected) color.copy(alpha = 0.2f) else Surface2,
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(40.dp)
                             .semantics {
                                 role = Role.Button
                                 contentDescription = "Set accent color to $key"
@@ -620,7 +620,7 @@ fun SettingsScreen(
                             Text(msg, color = TextPrimary, fontSize = 12.sp, modifier = Modifier.weight(1f))
                             IconButton(
                                 onClick = { viewModel.dismissUpdateMessage() },
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(40.dp)
                             ) {
                                 Icon(Icons.Filled.Close, "Dismiss update message", tint = TextDim, modifier = Modifier.size(12.dp))
                             }

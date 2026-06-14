@@ -723,8 +723,8 @@ class RootDnsLogger @Inject constructor(
     private suspend fun resolveUpstreamDns(): InetAddress {
         // 1. Check user-configured custom DNS
         try {
-            val custom = prefs.customUpstreamDns.first().trim()
-            if (custom.isNotBlank()) {
+            val custom = prefs.getUpstreamDnsList().firstOrNull()
+            if (custom != null) {
                 try { return InetAddress.getByName(custom) } catch (_: Exception) {
                     PrivacyLog.w(TAG, "Invalid custom DNS: $custom, falling back")
                 }

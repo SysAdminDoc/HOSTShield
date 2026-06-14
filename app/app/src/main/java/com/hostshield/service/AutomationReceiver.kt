@@ -14,6 +14,7 @@ import com.hostshield.data.database.ProfileDao
 import com.hostshield.data.model.AutomationAuditEntry
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.util.DnsServerInputPolicy
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -142,8 +143,15 @@ class AutomationReceiver : BroadcastReceiver() {
                             pendingResult.finish()
                             return@launch
                         }
-                        prefs.setCustomUpstreamDns(dnsServers)
-                        PrivacyLog.i(TAG, "Custom DNS set via automation: $dnsServers (caller=$callerPkg)")
+                        val normalizedDnsServers = DnsServerInputPolicy.normalizeServerList(dnsServers)
+                        if (normalizedDnsServers.isBlank()) {
+                            Log.w(TAG, "SET_DNS invalid '${AutomationActionContract.EXTRA_DNS_SERVERS}' extra")
+                            logAudit(action, callerUid, callerPkg, "ERROR_INVALID_EXTRA")
+                            pendingResult.finish()
+                            return@launch
+                        }
+                        prefs.setCustomUpstreamDns(normalizedDnsServers)
+                        PrivacyLog.i(TAG, "Custom DNS set via automation: $normalizedDnsServers (caller=$callerPkg)")
                     }
                     AutomationActionContract.ACTION_PAUSE -> {
                         val durationMinutes = AutomationActionContract.pauseDurationMinutes(

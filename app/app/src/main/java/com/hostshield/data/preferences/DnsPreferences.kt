@@ -2,6 +2,7 @@ package com.hostshield.data.preferences
 
 import android.content.Context
 import androidx.datastore.preferences.core.*
+import com.hostshield.util.DnsServerInputPolicy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -56,13 +57,14 @@ class DnsPreferences @Inject constructor(
     suspend fun setDoqProvider(provider: String) = ds.edit { it[Keys.DOQ_PROVIDER] = provider }
 
     // Custom upstream
-    val customUpstreamDns: Flow<String> = ds.data.map { it[Keys.CUSTOM_UPSTREAM_DNS] ?: "" }
-    suspend fun setCustomUpstreamDns(dns: String) = ds.edit { it[Keys.CUSTOM_UPSTREAM_DNS] = dns }
+    val customUpstreamDns: Flow<String> = ds.data.map {
+        DnsServerInputPolicy.normalizeServerList(it[Keys.CUSTOM_UPSTREAM_DNS] ?: "")
+    }
+    suspend fun setCustomUpstreamDns(dns: String) =
+        ds.edit { it[Keys.CUSTOM_UPSTREAM_DNS] = DnsServerInputPolicy.normalizeServerList(dns) }
 
     suspend fun getUpstreamDnsList(): List<String> {
-        val raw = customUpstreamDns.first()
-        return if (raw.isBlank()) emptyList()
-        else raw.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        return DnsServerInputPolicy.parseServerList(customUpstreamDns.first())
     }
 
     // Remote DoH bypass

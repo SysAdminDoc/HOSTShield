@@ -914,7 +914,7 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
                 fontSize = 18.sp,
                 modifier = Modifier.weight(1f).accessibilityHeading()
             )
-            IconButton(onClick = onTogglePin, modifier = Modifier.size(32.dp)) {
+            IconButton(onClick = onTogglePin, modifier = Modifier.size(40.dp)) {
                 Icon(
                     if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                     if (isPinned) "Unpin" else "Pin",

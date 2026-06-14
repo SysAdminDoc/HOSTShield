@@ -349,7 +349,7 @@ fun QrConfigScreen(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(msg, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearImportResult() }, modifier = Modifier.size(24.dp)) {
+                    IconButton(onClick = { viewModel.clearImportResult() }, modifier = Modifier.size(40.dp)) {
                         Icon(Icons.Filled.Close, stringResource(R.string.qr_dismiss_import_message), tint = TextDim, modifier = Modifier.size(14.dp))
                     }
                 }

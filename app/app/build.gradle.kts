@@ -6,6 +6,27 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+val releaseSigningEnvNames = listOf("KEYSTORE_FILE", "STORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD")
+fun releaseEnv(name: String): String? =
+    providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
+
+val releaseKeystoreFile = releaseEnv("KEYSTORE_FILE")?.let { file(it) }
+val releaseSigningIssue = when {
+    releaseSigningEnvNames.any { releaseEnv(it) == null } -> {
+        val missing = releaseSigningEnvNames.filter { releaseEnv(it) == null }.joinToString(", ")
+        "missing release signing environment variable(s): $missing"
+    }
+    releaseKeystoreFile?.exists() != true -> "KEYSTORE_FILE does not exist: ${releaseKeystoreFile?.path ?: "<unset>"}"
+    else -> null
+}
+val allowDebugReleaseSigning = releaseEnv("HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING") == "true"
+val releaseArtifactTaskRegex = Regex("""^(assemble|bundle|package|sign|validateSigning).*Release$""")
+
+fun releaseSigningFailureMessage(): String =
+    "Release signing is not configured ($releaseSigningIssue). " +
+        "Set KEYSTORE_FILE, STORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD. " +
+        "For local non-distribution release verification only, set HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING=true."
+
 android {
     namespace = "com.hostshield"
     compileSdk = 36
@@ -14,8 +35,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 36
-        versionCode = 85
-        versionName = "6.9.3"
+        versionCode = 86
+        versionName = "6.9.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -28,20 +49,23 @@ android {
 
     signingConfigs {
         create("release") {
-            val ksFile = System.getenv("KEYSTORE_FILE")
-            if (ksFile != null && file(ksFile).exists()) {
-                storeFile = file(ksFile)
-                storePassword = System.getenv("STORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
-            } else {
-                // Fall back to debug keystore for local builds
+            if (releaseSigningIssue == null && releaseKeystoreFile != null) {
+                storeFile = releaseKeystoreFile
+                storePassword = releaseEnv("STORE_PASSWORD")
+                keyAlias = releaseEnv("KEY_ALIAS")
+                keyPassword = releaseEnv("KEY_PASSWORD")
+            } else if (allowDebugReleaseSigning) {
+                // Explicit local-only fallback for non-distribution verification.
                 val debugKs = file("${System.getProperty("user.home")}/.android/debug.keystore")
                 if (debugKs.exists()) {
                     storeFile = debugKs
                     storePassword = "android"
                     keyAlias = "androiddebugkey"
                     keyPassword = "android"
+                } else {
+                    throw GradleException(
+                        "HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING=true was set, but the Android debug keystore was not found."
+                    )
                 }
             }
         }
@@ -105,6 +129,27 @@ android {
             // some system apps may be missing from firewall/exclusion lists.
             // This is a known tradeoff required for Play Store publication.
         }
+    }
+}
+
+tasks.configureEach {
+    val isReleaseArtifactTask = name.matches(releaseArtifactTaskRegex)
+    if (isReleaseArtifactTask) {
+        doFirst {
+            if (releaseSigningIssue != null && !allowDebugReleaseSigning) {
+                throw GradleException(releaseSigningFailureMessage())
+            }
+        }
+    }
+}
+
+gradle.taskGraph.whenReady {
+    if (
+        allTasks.any { releaseArtifactTaskRegex.matches(it.name) } &&
+        releaseSigningIssue != null &&
+        !allowDebugReleaseSigning
+    ) {
+        throw GradleException(releaseSigningFailureMessage())
     }
 }
 

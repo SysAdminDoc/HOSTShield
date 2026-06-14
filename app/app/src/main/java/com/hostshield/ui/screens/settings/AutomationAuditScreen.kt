@@ -221,7 +221,7 @@ private fun CommandCard(entry: CommandEntry, context: Context) {
                         clip.setPrimaryClip(ClipData.newPlainText("command", entry.command))
                         Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
                     },
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(40.dp)
                 ) {
                     Icon(Icons.Filled.ContentCopy, "Copy", tint = Blue, modifier = Modifier.size(16.dp))
                 }

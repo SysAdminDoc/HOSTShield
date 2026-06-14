@@ -25,6 +25,7 @@ class TrackerSignatureDb @Inject constructor(
     companion object {
         private const val TAG = "TrackerSigDb"
         private const val CACHE_MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000 // 7 days
+        private const val MAX_DEX_SCAN_BYTES = 64L * 1024L * 1024L
     }
 
     data class TrackerInfo(
@@ -650,7 +651,13 @@ class TrackerSignatureDb @Inject constructor(
 
                 for (entry in dexEntries) {
                     try {
-                        val bytes = zip.getInputStream(entry).use { it.readBytes() }
+                        if (entry.size > MAX_DEX_SCAN_BYTES) {
+                            Log.w(TAG, "Skipping oversized DEX entry ${entry.name}: ${entry.size} bytes")
+                            continue
+                        }
+                        val bytes = zip.getInputStream(entry).use {
+                            BoundedInputReader.readBytes(it, MAX_DEX_SCAN_BYTES, "DEX entry ${entry.name}")
+                        }
                         val content = String(bytes, Charsets.ISO_8859_1)
                         for (tracker in trackers) {
                             for (sig in tracker.signatures) {

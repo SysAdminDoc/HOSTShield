@@ -5,11 +5,14 @@ import android.net.Uri
 import com.hostshield.data.database.*
 import com.hostshield.data.model.*
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.data.source.SourceUrlPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.Inet6Address
+import java.net.InetAddress
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,6 +36,12 @@ class BackupRestoreUtil @Inject constructor(
     private val prefs: AppPreferences
 ) {
     companion object {
+        const val MAX_BACKUP_BYTES = 25L * 1024L * 1024L
+        private val HOST_LABEL_RE = Regex("""^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$""")
+        private val PACKAGE_NAME_RE = Regex("""^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$""")
+        private val IPV4_RE = Regex("""^(?:\d{1,3}\.){3}\d{1,3}$""")
+        private val IPV6_LITERAL_RE = Regex("""^[0-9a-fA-F:]{2,45}$""")
+
         fun decodeBackupBytes(rawBytes: ByteArray, passphrase: String? = null): String {
             return if (BackupCrypto.isEncrypted(rawBytes)) {
                 if (passphrase.isNullOrEmpty()) {
@@ -44,6 +53,50 @@ class BackupRestoreUtil @Inject constructor(
                 String(rawBytes, Charsets.UTF_8)
             }
         }
+
+        internal fun normalizeRestoredSourceUrl(rawUrl: String): String? {
+            val validation = SourceUrlPolicy.validate(rawUrl)
+            return if (validation.isValid) validation.normalizedUrl else null
+        }
+
+        internal fun normalizeRestoredHostname(rawHostname: String, isWildcard: Boolean = false): String? {
+            val hostname = rawHostname.trim().lowercase().trimEnd('.')
+            if (hostname.isBlank()) return null
+            if (hostname.startsWith("*.") && !isWildcard) return null
+            val bareHostname = hostname.removePrefix("*.")
+            if (!isValidHostname(bareHostname)) return null
+            return bareHostname
+        }
+
+        internal fun normalizePackageName(rawPackageName: String): String? {
+            val packageName = rawPackageName.trim()
+            return if (PACKAGE_NAME_RE.matches(packageName)) packageName else null
+        }
+
+        internal fun isValidRedirectIp(rawIp: String): Boolean {
+            val ip = rawIp.trim()
+            return isValidIpv4(ip) || isValidIpv6(ip)
+        }
+
+        private fun isValidHostname(hostname: String): Boolean =
+            hostname.length in 3..253 &&
+                hostname.contains('.') &&
+                hostname !in setOf("localhost", "localhost.localdomain", "local", "broadcasthost") &&
+                hostname.split('.').all { label -> label.isNotBlank() && HOST_LABEL_RE.matches(label) }
+
+        private fun isValidIpv4(ip: String): Boolean {
+            if (!IPV4_RE.matches(ip)) return false
+            val octets = ip.split(".").map { it.toIntOrNull() ?: return false }
+            return octets.size == 4 && octets.all { it in 0..255 }
+        }
+
+        private fun isValidIpv6(ip: String): Boolean {
+            if (!ip.contains(":") || !IPV6_LITERAL_RE.matches(ip)) return false
+            return runCatching { InetAddress.getByName(ip) is Inet6Address }.getOrDefault(false)
+        }
+
+        private fun boundedText(value: String, maxLength: Int): String =
+            value.trim().take(maxLength)
     }
 
     /**
@@ -223,15 +276,19 @@ class BackupRestoreUtil @Inject constructor(
             val arr = root.getJSONArray("sources")
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
+                val url = normalizeRestoredSourceUrl(obj.optString("url", ""))
+                    ?: continue
+                val label = boundedText(obj.optString("label", ""), 120)
+                    .ifBlank { url.substringAfterLast('/').take(40).ifBlank { "Imported source" } }
                 hostSourceDao.insert(HostSource(
-                    url = obj.getString("url"),
-                    label = obj.getString("label"),
-                    description = obj.optString("description", ""),
+                    url = url,
+                    label = label,
+                    description = boundedText(obj.optString("description", ""), 500),
                     enabled = obj.optBoolean("enabled", true),
                     category = try { SourceCategory.valueOf(obj.optString("category", "CUSTOM")) }
                               catch (_: Exception) { SourceCategory.CUSTOM },
                     isBuiltin = obj.optBoolean("is_builtin", false),
-                    entryCount = obj.optInt("entry_count", 0)
+                    entryCount = obj.optInt("entry_count", 0).coerceAtLeast(0)
                 ))
                 sourcesCount++
             }
@@ -242,14 +299,20 @@ class BackupRestoreUtil @Inject constructor(
             val arr = root.getJSONArray("rules")
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
+                val isWildcard = obj.optBoolean("is_wildcard", false)
+                val hostname = normalizeRestoredHostname(obj.optString("hostname", ""), isWildcard)
+                    ?: continue
+                val type = try { RuleType.valueOf(obj.optString("type", "BLOCK")) }
+                    catch (_: Exception) { RuleType.BLOCK }
+                val redirectIp = obj.optString("redirect_ip", "").trim()
+                if (type == RuleType.REDIRECT && !isValidRedirectIp(redirectIp)) continue
                 userRuleDao.insert(UserRule(
-                    hostname = obj.getString("hostname"),
-                    type = try { RuleType.valueOf(obj.optString("type", "BLOCK")) }
-                           catch (_: Exception) { RuleType.BLOCK },
-                    redirectIp = obj.optString("redirect_ip", ""),
+                    hostname = hostname,
+                    type = type,
+                    redirectIp = if (type == RuleType.REDIRECT) redirectIp else "",
                     enabled = obj.optBoolean("enabled", true),
-                    comment = obj.optString("comment", ""),
-                    isWildcard = obj.optBoolean("is_wildcard", false)
+                    comment = boundedText(obj.optString("comment", ""), 500),
+                    isWildcard = isWildcard
                 ))
                 rulesCount++
             }
@@ -260,13 +323,15 @@ class BackupRestoreUtil @Inject constructor(
             val arr = root.getJSONArray("profiles")
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
+                val name = boundedText(obj.optString("name", ""), 80)
+                if (name.isBlank()) continue
                 profileDao.insert(BlockingProfile(
-                    name = obj.getString("name"),
+                    name = name,
                     isActive = obj.optBoolean("is_active", false),
-                    sourceIds = obj.optString("source_ids", ""),
-                    scheduleStart = obj.optString("schedule_start", ""),
-                    scheduleEnd = obj.optString("schedule_end", ""),
-                    daysOfWeek = obj.optString("days_of_week", "0,1,2,3,4,5,6")
+                    sourceIds = boundedText(obj.optString("source_ids", ""), 500),
+                    scheduleStart = boundedText(obj.optString("schedule_start", ""), 16),
+                    scheduleEnd = boundedText(obj.optString("schedule_end", ""), 16),
+                    daysOfWeek = boundedText(obj.optString("days_of_week", "0,1,2,3,4,5,6"), 32)
                 ))
                 profilesCount++
             }
@@ -278,10 +343,14 @@ class BackupRestoreUtil @Inject constructor(
             val arr = root.getJSONArray("firewall_rules")
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
+                val uid = obj.optInt("uid", -1)
+                val packageName = normalizePackageName(obj.optString("package_name", ""))
+                    ?: continue
+                if (uid < 0) continue
                 firewallRuleDao.insert(FirewallRule(
-                    uid = obj.getInt("uid"),
-                    packageName = obj.getString("package_name"),
-                    appLabel = obj.optString("app_label", ""),
+                    uid = uid,
+                    packageName = packageName,
+                    appLabel = boundedText(obj.optString("app_label", ""), 120),
                     wifiAllowed = obj.optBoolean("wifi_allowed", true),
                     mobileAllowed = obj.optBoolean("mobile_allowed", true),
                     vpnAllowed = obj.optBoolean("vpn_allowed", true),
@@ -399,7 +468,7 @@ class BackupRestoreUtil @Inject constructor(
         passphrase: String? = null
     ): String = withContext(Dispatchers.IO) {
         val rawBytes = context.contentResolver.openInputStream(uri)?.use { stream ->
-            stream.readBytes()
+            BoundedInputReader.readBytes(stream, MAX_BACKUP_BYTES, "Backup file")
         } ?: throw Exception("Cannot open input stream")
 
         decodeBackupBytes(rawBytes, passphrase)

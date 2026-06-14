@@ -76,6 +76,22 @@ class QrConfigSharingTest {
     }
 
     @Test
+    fun `import plan skips invalid DNS settings`() {
+        val plan = QrConfigImportPlanner.buildPlan(
+            config = ShareableConfig(
+                customDns = "dns.google, 999.1.1.1",
+                dohEnabled = true,
+                dohProvider = "unsupported"
+            )
+        )
+
+        assertNull(plan.customDns)
+        assertNull(plan.dohProvider)
+        assertEquals(true, plan.dohEnabled)
+        assertEquals(1, plan.changeCount)
+    }
+
+    @Test
     fun `decode rejects encoded input over four kilobytes`() {
         val sharing = QrConfigSharing()
         val oversized = QrConfigSharing.SCHEME_PREFIX + "A".repeat(QrConfigSharing.MAX_DECODED_QR_CHARS + 1)

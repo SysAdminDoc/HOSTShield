@@ -2,6 +2,7 @@ package com.hostshield.util
 
 import android.content.Context
 import android.net.Uri
+import com.hostshield.data.source.SourceUrlPolicy
 import com.hostshield.data.model.FirewallRule
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
@@ -10,8 +11,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,6 +28,10 @@ data class ImportResult(
 
 @Singleton
 class ImportExportUtil @Inject constructor() {
+    companion object {
+        const val MAX_IMPORT_BYTES = 25L * 1024L * 1024L
+        private val HOST_LABEL_RE = Regex("""^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$""")
+    }
 
     /**
      * Export all rules and sources as JSON.
@@ -103,13 +106,24 @@ class ImportExportUtil @Inject constructor() {
             val arr = root.getJSONArray("rules")
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
+                val isWildcard = obj.optBoolean("is_wildcard", false)
+                val hostname = normalizedRuleHost(obj.optString("hostname", ""), isWildcard)
+                    ?: continue
+                val type = try {
+                    RuleType.valueOf(obj.optString("type", "BLOCK"))
+                } catch (_: Exception) {
+                    continue
+                }
+                val redirectIp = obj.optString("redirect_ip", "")
+                if (type == RuleType.REDIRECT && !isIpLike(redirectIp)) continue
+
                 rules.add(UserRule(
-                    hostname = obj.getString("hostname"),
-                    type = RuleType.valueOf(obj.optString("type", "BLOCK")),
-                    redirectIp = obj.optString("redirect_ip", ""),
+                    hostname = hostname,
+                    type = type,
+                    redirectIp = redirectIp,
                     enabled = obj.optBoolean("enabled", true),
                     comment = obj.optString("comment", ""),
-                    isWildcard = obj.optBoolean("is_wildcard", false)
+                    isWildcard = isWildcard
                 ))
             }
         }
@@ -118,9 +132,11 @@ class ImportExportUtil @Inject constructor() {
             val arr = root.getJSONArray("sources")
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
+                val url = validatedSourceUrl(obj.optString("url", ""))
+                    ?: continue
                 sources.add(HostSource(
-                    url = obj.getString("url"),
-                    label = obj.getString("label"),
+                    url = url,
+                    label = obj.optString("label", url.substringAfterLast("/").take(40)),
                     description = obj.optString("description", ""),
                     category = try {
                         com.hostshield.data.model.SourceCategory.valueOf(obj.optString("category", "CUSTOM"))
@@ -206,7 +222,9 @@ class ImportExportUtil @Inject constructor() {
     suspend fun readUri(context: Context, uri: Uri): String = withContext(Dispatchers.IO) {
         val inputStream = context.contentResolver.openInputStream(uri)
             ?: throw Exception("Cannot open file")
-        BufferedReader(InputStreamReader(inputStream)).use { it.readText() }
+        inputStream.use { stream ->
+            BoundedInputReader.readUtf8(stream, MAX_IMPORT_BYTES, "Import file")
+        }
     }
 
     /**
@@ -276,9 +294,10 @@ class ImportExportUtil @Inject constructor() {
                 val url = obj.optString("url", "")
                 val label = obj.optString("label", url.substringAfterLast("/"))
                 val enabled = obj.optBoolean("enabled", true)
-                if (url.startsWith("http")) {
+                val safeUrl = validatedSourceUrl(url)
+                if (safeUrl != null) {
                     sources.add(HostSource(
-                        url = url, label = label, enabled = enabled,
+                        url = safeUrl, label = label.ifBlank { safeUrl.substringAfterLast("/").take(40) }, enabled = enabled,
                         category = com.hostshield.data.model.SourceCategory.CUSTOM
                     ))
                 }
@@ -334,10 +353,11 @@ class ImportExportUtil @Inject constructor() {
             for (i in 0 until arr.length()) {
                 val obj = arr.optJSONObject(i)
                 val host = (obj?.optString("id", "") ?: arr.optString(i, "")).trim().lowercase()
-                if (host.isNotEmpty() && (isValidHost(host) || host.startsWith("*."))) {
+                val normalized = normalizedRuleHost(host, host.startsWith("*."))
+                if (normalized != null) {
                     block.add(UserRule(
-                        hostname = host, type = RuleType.BLOCK,
-                        isWildcard = host.startsWith("*.")
+                        hostname = normalized, type = RuleType.BLOCK,
+                        isWildcard = normalized.startsWith("*.")
                     ))
                 }
             }
@@ -347,10 +367,11 @@ class ImportExportUtil @Inject constructor() {
             for (i in 0 until arr.length()) {
                 val obj = arr.optJSONObject(i)
                 val host = (obj?.optString("id", "") ?: arr.optString(i, "")).trim().lowercase()
-                if (host.isNotEmpty() && (isValidHost(host) || host.startsWith("*."))) {
+                val normalized = normalizedRuleHost(host, host.startsWith("*."))
+                if (normalized != null) {
                     allow.add(UserRule(
-                        hostname = host, type = RuleType.ALLOW,
-                        isWildcard = host.startsWith("*.")
+                        hostname = normalized, type = RuleType.ALLOW,
+                        isWildcard = normalized.startsWith("*.")
                     ))
                 }
             }
@@ -468,8 +489,10 @@ class ImportExportUtil @Inject constructor() {
     private fun isBlockingIp(s: String): Boolean =
         s == "0.0.0.0" || s == "127.0.0.1" || s == "::" || s == "::1"
 
-    private fun isIpLike(s: String): Boolean =
-        s.matches(Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"""))
+    private fun isIpLike(s: String): Boolean {
+        val octets = s.split(".").map { it.toIntOrNull() ?: return false }
+        return octets.size == 4 && octets.all { it in 0..255 }
+    }
 
     /**
      * Import from Pi-hole teleporter backup (SQLite gravity.db export or domainlist CSV).
@@ -505,10 +528,11 @@ class ImportExportUtil @Inject constructor() {
                 // adlist CSV format: address,enabled,...
                 val url = parts[0].trim().removeSurrounding("\"")
                 val enabled = parts.getOrNull(1)?.trim() != "0"
-                if (url.startsWith("http")) {
+                val safeUrl = validatedSourceUrl(url)
+                if (safeUrl != null) {
                     sources.add(HostSource(
-                        url = url,
-                        label = url.substringAfterLast("/").take(40),
+                        url = safeUrl,
+                        label = safeUrl.substringAfterLast("/").take(40),
                         enabled = enabled,
                         category = com.hostshield.data.model.SourceCategory.CUSTOM
                     ))
@@ -526,6 +550,25 @@ class ImportExportUtil @Inject constructor() {
     }
 
     private fun isValidHost(s: String): Boolean =
-        s.length in 3..253 && s.contains('.') &&
-        s !in setOf("localhost", "localhost.localdomain", "local", "broadcasthost")
+        s.length in 3..253 &&
+            s.contains('.') &&
+            s !in setOf("localhost", "localhost.localdomain", "local", "broadcasthost") &&
+            s.split('.').all { label -> label.isNotBlank() && HOST_LABEL_RE.matches(label) }
+
+    private fun normalizedRuleHost(raw: String, isWildcard: Boolean): String? {
+        val host = raw.trim().lowercase().trimEnd('.')
+        if (host.isBlank()) return null
+        if (host.startsWith("*.") && !isWildcard) return null
+        val bareHost = if (host.startsWith("*.")) host.removePrefix("*.") else host
+        if (!isValidHost(bareHost)) return null
+        if (isWildcard) {
+            return if (host.startsWith("*.")) host else bareHost
+        }
+        return bareHost
+    }
+
+    private fun validatedSourceUrl(raw: String): String? {
+        val validation = SourceUrlPolicy.validate(raw)
+        return if (validation.isValid) validation.normalizedUrl else null
+    }
 }

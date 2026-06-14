@@ -1014,7 +1014,7 @@ private fun SourceItem(
             Spacer(Modifier.width(8.dp))
 
             if (!source.isBuiltin) {
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
                     Icon(Icons.Filled.Delete, "Delete ${source.label}", tint = Red.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
                 }
             }

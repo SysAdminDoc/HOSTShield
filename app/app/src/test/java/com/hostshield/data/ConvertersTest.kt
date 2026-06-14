@@ -30,6 +30,18 @@ class ConvertersTest {
     }
 
     @Test
+    fun `SourceCategory unknown fallback`() {
+        val result = converters.toSourceCategory("INVALID_VALUE")
+        assertEquals(SourceCategory.CUSTOM, result)
+    }
+
+    @Test
+    fun `RuleType unknown fallback`() {
+        val result = converters.toRuleType("INVALID_VALUE")
+        assertEquals(RuleType.BLOCK, result)
+    }
+
+    @Test
     fun `SourceHealth round trip`() {
         for (health in SourceHealth.values()) {
             val str = converters.fromSourceHealth(health)

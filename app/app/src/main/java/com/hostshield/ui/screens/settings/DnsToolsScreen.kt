@@ -45,6 +45,32 @@ import kotlinx.coroutines.withContext
 import java.net.InetAddress
 import javax.inject.Inject
 
+private val NETWORK_DIAGNOSTIC_HOSTNAME = Regex(
+    """^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$"""
+)
+private val NETWORK_DIAGNOSTIC_IPV4 = Regex("""^(?:\d{1,3}\.){3}\d{1,3}$""")
+private val NETWORK_DIAGNOSTIC_IPV6 = Regex("""^[0-9a-fA-F:]{2,45}$""")
+
+internal fun normalizeNetworkDiagnosticTarget(rawTarget: String): String? {
+    val target = rawTarget.trim().trimEnd('.')
+    if (target.isBlank() || target.length > 253) return null
+    if (target.any { it.isWhitespace() }) return null
+    if (target.any { it !in 'a'..'z' && it !in 'A'..'Z' && it !in '0'..'9' && it != '-' && it != '.' && it != ':' }) {
+        return null
+    }
+
+    if (NETWORK_DIAGNOSTIC_IPV4.matches(target)) {
+        val octets = target.split(".").map { it.toIntOrNull() ?: return null }
+        return if (octets.size == 4 && octets.all { it in 0..255 }) target else null
+    }
+
+    if (target.contains(":") && NETWORK_DIAGNOSTIC_IPV6.matches(target)) {
+        return target
+    }
+
+    return if (NETWORK_DIAGNOSTIC_HOSTNAME.matches(target)) target.lowercase() else null
+}
+
 data class DnsToolsState(
     val lookupDomain: String = "",
     val lookupResults: List<LookupResult> = emptyList(),
@@ -307,12 +333,16 @@ class DnsToolsViewModel @Inject constructor(
 
     /** Run ping to a domain/IP. */
     fun runPing(target: String) {
-        if (target.isBlank()) return
+        val safeTarget = normalizeNetworkDiagnosticTarget(target)
+        if (safeTarget == null) {
+            _state.update { it.copy(pingResult = "Enter a valid hostname or IP address.") }
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             _state.update { it.copy(isPinging = true, pingResult = "") }
             try {
                 val result = withContext(Dispatchers.IO) {
-                    val proc = Runtime.getRuntime().exec(arrayOf("ping", "-c", "4", "-W", "3", target.trim()))
+                    val proc = Runtime.getRuntime().exec(arrayOf("ping", "-c", "4", "-W", "3", safeTarget))
                     val output = proc.inputStream.bufferedReader().readText()
                     if (!proc.waitFor(15, java.util.concurrent.TimeUnit.SECONDS)) {
                         proc.destroyForcibly()
@@ -328,15 +358,19 @@ class DnsToolsViewModel @Inject constructor(
 
     /** Run traceroute (uses tracepath, available without root). */
     fun runTraceroute(target: String) {
-        if (target.isBlank()) return
+        val safeTarget = normalizeNetworkDiagnosticTarget(target)
+        if (safeTarget == null) {
+            _state.update { it.copy(pingResult = "Enter a valid hostname or IP address.") }
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             _state.update { it.copy(isPinging = true, pingResult = "") }
             try {
                 val result = withContext(Dispatchers.IO) {
                     val proc = try {
-                        Runtime.getRuntime().exec(arrayOf("tracepath", "-m", "15", target.trim()))
+                        Runtime.getRuntime().exec(arrayOf("tracepath", "-m", "15", safeTarget))
                     } catch (_: Exception) {
-                        Runtime.getRuntime().exec(arrayOf("su", "-c", "traceroute -m 15 -w 2 ${target.trim()}"))
+                        Runtime.getRuntime().exec(arrayOf("su", "-c", "traceroute -m 15 -w 2 $safeTarget"))
                     }
                     val output = proc.inputStream.bufferedReader().readText()
                     if (!proc.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)) {

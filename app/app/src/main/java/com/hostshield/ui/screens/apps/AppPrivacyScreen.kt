@@ -193,7 +193,7 @@ private fun AppReportCard(report: AppPrivacyScorer.AppReport) {
                 }
                 IconButton(
                     onClick = { expanded = !expanded },
-                    modifier = Modifier.size(28.dp).accessibilityAction(
+                    modifier = Modifier.size(40.dp).accessibilityAction(
                         if (expanded) "Collapse privacy report for ${report.appLabel.ifEmpty { report.packageName }}"
                         else "Expand privacy report for ${report.appLabel.ifEmpty { report.packageName }}"
                     )

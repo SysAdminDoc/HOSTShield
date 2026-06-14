@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.3-blue)
+![Version](https://img.shields.io/badge/version-6.9.4-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -214,7 +214,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\check-cronet-posture.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 ```
 
-**Signing**: Set env vars `KEYSTORE_FILE`, `STORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` or falls back to debug keystore.
+**Signing**: Release artifacts require `KEYSTORE_FILE`, `STORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`. For local non-distribution release verification only, set `HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING=true` to use the Android debug keystore.
 
 **CI/CD**: `.github/workflows/release.yml` triggers on tag push (`v*`) — builds, signs, and uploads APK to GitHub Releases.
 
@@ -393,6 +393,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.4** | Release signing now fails closed unless real signing credentials are configured or an explicit local debug-signing override is set. Imports, backups, QR config, diagnostics, threat feeds, WebDAV, GeoIP, update checks, and DEX scans now use bounded input and stricter validation. Secondary controls have larger accessible touch targets. |
 | **6.9.3** | Threat-intel feed health dashboard added to Stats with per-feed freshness, HTTP status, entry counts, SHA-256 prefixes, failure state, and manual refresh. Diagnostic exports now include redacted threat-feed health summaries. |
 | **6.9.2** | Embedded Cronet removed and DoH3 disabled while no maintained non-vulnerable Cronet artifact is available. Pinned OkHttp DoH/DoT remains the production encrypted DNS path, and release posture/provenance scripts now record the no-bundled-Cronet state. |
 | **6.9.1** | Debug pseudolocales enabled, RTL/pseudo-expanded Compose layout scaffold added, Home/Settings/QR strings moved through resources, and QR config import/export validation kept covered by JVM tests. |

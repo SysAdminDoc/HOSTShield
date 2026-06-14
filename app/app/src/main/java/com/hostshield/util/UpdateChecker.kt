@@ -2,6 +2,7 @@ package com.hostshield.util
 
 import android.util.Log
 import com.hostshield.BuildConfig
+import com.hostshield.data.source.BoundedResponseReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -19,7 +20,8 @@ class UpdateChecker @Inject constructor() {
     companion object {
         private const val TAG = "UpdateChecker"
         private const val RELEASES_URL =
-            "https://api.github.com/repos/SysAdminDoc/HostShield/releases"
+            "https://api.github.com/repos/SysAdminDoc/HostShield/releases?per_page=10"
+        private const val MAX_RELEASES_RESPONSE_BYTES = 512L * 1024L
     }
 
     data class UpdateInfo(
@@ -48,17 +50,17 @@ class UpdateChecker @Inject constructor() {
                 .header("Accept", "application/vnd.github+json")
                 .build()
 
-            val response = client.newCall(request).execute()
-            val body: String
-            try {
+            val body = client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     return@withContext Result.failure(
                         Exception("GitHub API returned ${response.code}")
                     )
                 }
-                body = response.body.string()
-            } finally {
-                response.close()
+                BoundedResponseReader.readUtf8(
+                    response,
+                    MAX_RELEASES_RESPONSE_BYTES,
+                    "GitHub releases response"
+                ).content
             }
 
             val releases = JSONArray(body)

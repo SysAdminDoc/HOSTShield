@@ -315,7 +315,7 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
                     Icon(Icons.Filled.Error, null, tint = Red, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(error ?: "", color = Red, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(24.dp)) {
+                    IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(40.dp)) {
                         Icon(Icons.Filled.Close, "Dismiss", tint = Red, modifier = Modifier.size(14.dp))
                     }
                 }
@@ -753,7 +753,7 @@ private fun ContextFirewallTab(
                 // Screen Off toggle
                 IconButton(
                     onClick = { viewModel.toggleBlockScreenOff(rule.uid, !rule.blockScreenOff) },
-                    modifier = Modifier.size(38.dp).accessibilityToggle("${rule.appLabel} screen-off blocking", rule.blockScreenOff)
+                    modifier = Modifier.size(40.dp).accessibilityToggle("${rule.appLabel} screen-off blocking", rule.blockScreenOff)
                 ) {
                     Icon(
                         if (rule.blockScreenOff) Icons.Filled.DarkMode else Icons.Filled.LightMode,
@@ -766,7 +766,7 @@ private fun ContextFirewallTab(
                 // Background toggle
                 IconButton(
                     onClick = { viewModel.toggleBlockBackground(rule.uid, !rule.blockBackground) },
-                    modifier = Modifier.size(38.dp).accessibilityToggle("${rule.appLabel} background blocking", rule.blockBackground)
+                    modifier = Modifier.size(40.dp).accessibilityToggle("${rule.appLabel} background blocking", rule.blockBackground)
                 ) {
                     Icon(
                         if (rule.blockBackground) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
@@ -779,7 +779,7 @@ private fun ContextFirewallTab(
                 // Metered toggle
                 IconButton(
                     onClick = { viewModel.toggleBlockMetered(rule.uid, !rule.blockMetered) },
-                    modifier = Modifier.size(38.dp).accessibilityToggle("${rule.appLabel} metered-network blocking", rule.blockMetered)
+                    modifier = Modifier.size(40.dp).accessibilityToggle("${rule.appLabel} metered-network blocking", rule.blockMetered)
                 ) {
                     Icon(
                         if (rule.blockMetered) Icons.Filled.MoneyOff else Icons.Filled.AttachMoney,

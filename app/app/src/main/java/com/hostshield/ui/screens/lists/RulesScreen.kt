@@ -300,7 +300,7 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
                     Text(rule.comment, color = TextDim, fontSize = 11.sp, maxLines = 1)
                 }
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+            IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
                 Icon(Icons.Filled.Delete, "Delete ${rule.hostname}", tint = Red.copy(alpha = 0.5f), modifier = Modifier.size(15.dp))
             }
             Spacer(Modifier.width(4.dp))

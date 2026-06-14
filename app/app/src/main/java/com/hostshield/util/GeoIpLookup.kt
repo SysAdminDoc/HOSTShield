@@ -1,6 +1,7 @@
 package com.hostshield.util
 
 import android.util.Log
+import com.hostshield.data.source.BoundedResponseReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -25,6 +26,7 @@ class GeoIpLookup @Inject constructor() {
         private const val MAX_REQUESTS_PER_MINUTE = 28 // Stay under ipapi.co ~30/min limit
         private const val WINDOW_MS = 60_000L
         private const val MAX_BACKOFF_MS = 120_000L
+        private const val MAX_GEOIP_RESPONSE_BYTES = 32L * 1024L
     }
 
     data class GeoInfo(
@@ -94,9 +96,7 @@ class GeoIpLookup @Inject constructor() {
                 val request = Request.Builder()
                     .url("https://ipapi.co/$ip/json/")
                     .build()
-                val response = client.newCall(request).execute()
-                val body: String
-                try {
+                val body = client.newCall(request).execute().use { response ->
                     if (response.code == 429) {
                         applyBackoff()
                         return@withContext null
@@ -105,9 +105,11 @@ class GeoIpLookup @Inject constructor() {
                     // Successful response resets backoff
                     consecutiveBackoffs.set(0)
 
-                    body = response.body.string()
-                } finally {
-                    response.close()
+                    BoundedResponseReader.readUtf8(
+                        response,
+                        MAX_GEOIP_RESPONSE_BYTES,
+                        "GeoIP response"
+                    ).content
                 }
                 val json = JSONObject(body)
                 if (json.has("error")) return@withContext null

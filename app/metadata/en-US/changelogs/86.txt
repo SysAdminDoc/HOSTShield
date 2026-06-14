@@ -1,0 +1,6 @@
+v6.9.4 hardens release signing and audit-critical input paths.
+
+- Release artifacts now fail closed unless signing credentials are configured; debug-keystore release signing requires an explicit local-only override.
+- Imports, backups, QR config, automation DNS, WebDAV, threat intel, GeoIP/RDAP/update checks, diagnostics, crash reports, and DEX scans now enforce tighter validation and size bounds.
+- DNS diagnostic targets are sanitized before process launch.
+- Secondary controls now provide larger touch targets for dismiss, delete, refresh, copy, and toggle actions.

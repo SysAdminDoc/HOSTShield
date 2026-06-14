@@ -2,6 +2,8 @@ package com.hostshield.service
 
 import android.content.Context
 import android.util.Log
+import com.hostshield.data.source.BoundedResponseReader
+import com.hostshield.util.BoundedInputReader
 import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -14,6 +16,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private val THREAT_IPV4_TOKEN = Regex("""(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?(?![\d.])""")
+private val THREAT_DOMAIN_LABEL = Regex("""^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$""")
 
 internal fun parseThreatIpCidrs(body: String, source: String): List<Pair<String, String>> {
     val cidrs = LinkedHashSet<Pair<String, String>>()
@@ -33,6 +36,19 @@ private fun normalizeThreatIpToken(token: String): String? {
     val prefixLength = parts.getOrNull(1)?.toIntOrNull() ?: 32
     if (prefixLength !in 8..32) return null
     return "${octets.joinToString(".")}/$prefixLength"
+}
+
+internal fun normalizeThreatDomainToken(token: String): String? {
+    val domain = token.trim().trimEnd('.').lowercase()
+    if (domain.length !in 3..253) return null
+    if (domain.startsWith("*.") || domain.startsWith(".") || domain.contains("://")) return null
+    if (domain.any { it.isWhitespace() }) return null
+    if (domain in setOf("localhost", "localhost.localdomain", "local", "broadcasthost")) return null
+
+    val labels = domain.split('.')
+    if (labels.size < 2) return null
+    if (labels.any { it.isEmpty() || it.length > 63 || !THREAT_DOMAIN_LABEL.matches(it) }) return null
+    return domain
 }
 
 // Threat intelligence feed engine
@@ -64,6 +80,8 @@ class ThreatIntelManager @Inject constructor(
         private const val CACHE_KEY_FEEDS = "feeds"
         private const val CACHE_KEY_LAST_UPDATED = "last_updated"
         private const val CACHE_KEY_FEED_HEALTH = "feed_health"
+        private const val MAX_THREAT_FEED_BYTES = 10L * 1024L * 1024L
+        private const val MAX_THREAT_CACHE_BYTES = 25L * 1024L * 1024L
     }
 
     // ── Data classes ──────────────────────────────────────────
@@ -229,7 +247,11 @@ class ThreatIntelManager @Inject constructor(
         try {
             val file = File(context.filesDir, CACHE_FILE)
             if (!file.exists()) return
-            val json = JSONObject(file.readText())
+            val json = JSONObject(
+                file.inputStream().use { stream ->
+                    BoundedInputReader.readUtf8(stream, MAX_THREAT_CACHE_BYTES, "Threat intel cache")
+                }
+            )
 
             val newTrie = IpRadixTrie()
             val newDomains = ConcurrentHashMap<String, String>()
@@ -338,8 +360,8 @@ class ThreatIntelManager @Inject constructor(
             // Format: "127.0.0.1 malware.example.com" or "0.0.0.0 malware.example.com"
             val parts = trimmed.split("\\s+".toRegex())
             if (parts.size >= 2 && (parts[0] == "127.0.0.1" || parts[0] == "0.0.0.0")) {
-                val domain = parts[1].lowercase()
-                if (domain != "localhost" && domain.contains(".")) {
+                val domain = normalizeThreatDomainToken(parts[1])
+                if (domain != null) {
                     domains.add(domain to source)
                 }
             }
@@ -370,8 +392,8 @@ class ThreatIntelManager @Inject constructor(
         for (line in body.lineSequence()) {
             val trimmed = line.trim()
             if (trimmed.isEmpty() || trimmed.startsWith("#")) continue
-            val domain = trimmed.lowercase()
-            if (domain.contains(".") && !domain.contains(" ")) {
+            val domain = normalizeThreatDomainToken(trimmed)
+            if (domain != null) {
                 domains.add(domain to source)
             }
         }
@@ -385,8 +407,12 @@ class ThreatIntelManager @Inject constructor(
             val request = Request.Builder().url(url).build()
             okHttpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
-                    val body = response.body.string()
-                    DownloadResult(body = body, httpStatus = response.code, bytesDownloaded = body.length.toLong())
+                    val body = BoundedResponseReader.readUtf8(
+                        response,
+                        MAX_THREAT_FEED_BYTES,
+                        "threat feed"
+                    )
+                    DownloadResult(body = body.content, httpStatus = response.code, bytesDownloaded = body.sizeBytes)
                 } else {
                     Log.w(TAG, "HTTP ${response.code} for $url")
                     DownloadResult(httpStatus = response.code, error = "HTTP ${response.code}")

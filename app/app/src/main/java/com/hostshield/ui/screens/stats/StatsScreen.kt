@@ -830,7 +830,7 @@ private fun ThreatIntelFeedHealthCard(
                 IconButton(
                     onClick = onRefresh,
                     enabled = !state.isRefreshingThreatIntel,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(40.dp)
                 ) {
                     if (state.isRefreshingThreatIntel) {
                         CircularProgressIndicator(color = Teal, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))

@@ -23,6 +23,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import javax.inject.Inject
@@ -52,6 +53,8 @@ class DiagnosticExporter @Inject constructor(
 ) {
     companion object {
         private const val TAG = "DiagExport"
+        private const val DIAGNOSTIC_COMMAND_TIMEOUT_MS = 2_000L
+        private const val MAX_DIAGNOSTIC_COMMAND_OUTPUT_BYTES = 64L * 1024L
     }
 
     /**
@@ -198,8 +201,7 @@ class DiagnosticExporter @Inject constructor(
         // ── VPN Interface ──
         sb.appendLine("── VPN Interface ───────────────────────────────────")
         try {
-            val proc = Runtime.getRuntime().exec(arrayOf("cat", "/proc/net/if_inet6"))
-            val output = proc.inputStream.bufferedReader().readText()
+            val output = runDiagnosticCommand(arrayOf("cat", "/proc/net/if_inet6"))
             if (output.contains("tun")) {
                 sb.appendLine("TUN interface found:")
                 output.lines().filter { it.contains("tun") }.forEach { sb.appendLine("  $it") }
@@ -214,10 +216,8 @@ class DiagnosticExporter @Inject constructor(
         // ── System DNS ──
         sb.appendLine("── System DNS Servers ──────────────────────────────")
         try {
-            val prop = Runtime.getRuntime().exec(arrayOf("getprop", "net.dns1"))
-            sb.appendLine("net.dns1: ${prop.inputStream.bufferedReader().readText().trim()}")
-            val prop2 = Runtime.getRuntime().exec(arrayOf("getprop", "net.dns2"))
-            sb.appendLine("net.dns2: ${prop2.inputStream.bufferedReader().readText().trim()}")
+            sb.appendLine("net.dns1: ${runDiagnosticCommand(arrayOf("getprop", "net.dns1")).trim()}")
+            sb.appendLine("net.dns2: ${runDiagnosticCommand(arrayOf("getprop", "net.dns2")).trim()}")
         } catch (e: Exception) {
             sb.appendLine("DNS property check error: ${e.message}")
         }
@@ -337,6 +337,31 @@ class DiagnosticExporter @Inject constructor(
 
     private fun countCsvValues(value: String): Int =
         value.split(",").count { it.trim().isNotBlank() }
+
+    private fun runDiagnosticCommand(command: Array<String>): String {
+        val label = command.joinToString(" ")
+        return try {
+            val proc = Runtime.getRuntime().exec(command)
+            val completed = proc.waitFor(DIAGNOSTIC_COMMAND_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            if (!completed) {
+                proc.destroyForcibly()
+                proc.waitFor(500, TimeUnit.MILLISECONDS)
+            }
+            val output = proc.inputStream.use {
+                BoundedInputReader.readUtf8(it, MAX_DIAGNOSTIC_COMMAND_OUTPUT_BYTES, label)
+            }.trim()
+            val error = proc.errorStream.use {
+                BoundedInputReader.readUtf8(it, MAX_DIAGNOSTIC_COMMAND_OUTPUT_BYTES, "$label stderr")
+            }.trim()
+            when {
+                !completed -> "$label timed out"
+                output.isNotBlank() -> output
+                else -> error
+            }
+        } catch (e: Exception) {
+            "$label failed: ${e.message ?: e.javaClass.simpleName}"
+        }
+    }
 
     private fun diagnosticFeedStatus(feed: ThreatIntelManager.FeedHealth): String {
         val now = System.currentTimeMillis()

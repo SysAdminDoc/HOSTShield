@@ -1,6 +1,7 @@
 package com.hostshield.util
 
 import android.util.Log
+import com.hostshield.data.source.BoundedResponseReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -18,6 +19,7 @@ class DomainAgeChecker @Inject constructor() {
 
     companion object {
         private const val TAG = "DomainAge"
+        private const val MAX_RDAP_RESPONSE_BYTES = 64L * 1024L
     }
 
     data class DomainAge(
@@ -46,18 +48,18 @@ class DomainAgeChecker @Inject constructor() {
                 .header("Accept", "application/rdap+json")
                 .build()
 
-            val response = client.newCall(request).execute()
-            val body: String?
-            try {
+            val body = client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     return@withContext DomainAge(domain, error = "RDAP lookup failed (${response.code})")
                 }
-                body = response.body.string().take(10_000)
-            } finally {
-                response.close()
+                BoundedResponseReader.readUtf8(
+                    response,
+                    MAX_RDAP_RESPONSE_BYTES,
+                    "RDAP response"
+                ).content.take(10_000)
             }
 
-            if (body.isNullOrBlank()) return@withContext DomainAge(domain, error = "Empty response")
+            if (body.isBlank()) return@withContext DomainAge(domain, error = "Empty response")
 
             // Parse registration date from RDAP JSON
             val regDate = extractDate(body, "registration")

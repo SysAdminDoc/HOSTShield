@@ -1,5 +1,6 @@
 package com.hostshield.util
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -60,6 +61,33 @@ class ImportExportUtilTest {
         assertEquals(1, allowed.size)
         assertTrue(blocked.contains("ads.example.com"))
         assertTrue(allowed.contains("allowed.com"))
+    }
+
+    @Test
+    fun `HostShield JSON import skips invalid rules and non-HTTPS sources`() = runBlocking {
+        val content = """
+            {
+              "app": "HostShield",
+              "rules": [
+                {"hostname": "Ads.Example.COM.", "type": "BLOCK", "enabled": true},
+                {"hostname": "bad domain.example", "type": "BLOCK"},
+                {"hostname": "example.org", "type": "NOT_A_RULE"},
+                {"hostname": "*.wild.example", "type": "ALLOW", "is_wildcard": true},
+                {"hostname": "redirect.example", "type": "REDIRECT", "redirect_ip": "999.1.1.1"}
+              ],
+              "sources": [
+                {"url": "https://lists.example.com/hosts.txt", "label": "Safe"},
+                {"url": "http://insecure.example.com/hosts.txt", "label": "Unsafe"}
+              ]
+            }
+        """.trimIndent()
+
+        val result = ImportExportUtil().importJson(content)
+
+        assertEquals(listOf("ads.example.com"), result.blocklist.map { it.hostname })
+        assertEquals(listOf("*.wild.example"), result.allowlist.map { it.hostname })
+        assertEquals(emptyList<String>(), result.redirects.map { it.hostname })
+        assertEquals(listOf("https://lists.example.com/hosts.txt"), result.sources.map { it.url })
     }
 
     // Helper that mimics the hosts file parsing logic

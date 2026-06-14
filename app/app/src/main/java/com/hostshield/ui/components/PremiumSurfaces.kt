@@ -257,7 +257,7 @@ fun HostShieldStatusBanner(
             }
             if (onDismiss != null) {
                 Spacer(Modifier.width(8.dp))
-                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
                     Icon(Icons.Filled.Close, contentDescription = "Dismiss $title", tint = TextDim, modifier = Modifier.size(16.dp))
                 }
             }

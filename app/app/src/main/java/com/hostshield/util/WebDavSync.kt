@@ -1,5 +1,6 @@
 package com.hostshield.util
 
+import com.hostshield.data.source.BoundedResponseReader
 import okhttp3.Credentials as OkHttpCredentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -24,7 +25,6 @@ import javax.inject.Singleton
 class WebDavSync @Inject constructor(
     private val httpClient: OkHttpClient
 ) {
-
     // ── Data classes ────────────────────────────────────────────
 
     data class Credentials(
@@ -91,7 +91,13 @@ class WebDavSync @Inject constructor(
             .build()
         return try {
             httpClient.newCall(request).execute().use { response ->
-                if (response.isSuccessful) response.body.bytes() else null
+                if (response.isSuccessful) {
+                    response.body.byteStream().use { stream ->
+                        BoundedInputReader.readBytes(stream, MAX_WEBDAV_DOWNLOAD_BYTES, "WebDAV download")
+                    }
+                } else {
+                    null
+                }
             }
         } catch (_: Exception) {
             null
@@ -128,7 +134,11 @@ class WebDavSync @Inject constructor(
         return try {
             httpClient.newCall(request).execute().use { response ->
                 if (response.code == 207 || response.isSuccessful) {
-                    val xml = response.body.string()
+                    val xml = BoundedResponseReader.readUtf8(
+                        response,
+                        MAX_WEBDAV_PROPFIND_BYTES,
+                        "WebDAV PROPFIND"
+                    ).content
                     parsePropfindResponse(xml, remotePath)
                 } else {
                     null
@@ -303,7 +313,11 @@ class WebDavSync @Inject constructor(
             httpClient.newCall(request).execute().use { response ->
                 val result = mapResponseToResult(response.code)
                 if (result is SyncResult.Success || response.code == 207) {
-                    val xml = response.body.string()
+                    val xml = BoundedResponseReader.readUtf8(
+                        response,
+                        MAX_WEBDAV_PROPFIND_BYTES,
+                        "WebDAV PROPFIND"
+                    ).content
                     val files = parsePropfindResponse(xml, BACKUPS_DIR)
                         .filter { !it.isDirectory && it.name.endsWith(".json") }
                     Pair(SyncResult.Success, files)
@@ -421,5 +435,7 @@ class WebDavSync @Inject constructor(
     companion object {
         private const val SYNC_ROOT = "/HostShield"
         private const val BACKUPS_DIR = "/HostShield/backups"
+        private const val MAX_WEBDAV_DOWNLOAD_BYTES = 25L * 1024L * 1024L
+        private const val MAX_WEBDAV_PROPFIND_BYTES = 1L * 1024L * 1024L
     }
 }

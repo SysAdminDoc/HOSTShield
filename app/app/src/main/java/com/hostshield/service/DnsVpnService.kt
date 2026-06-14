@@ -564,11 +564,8 @@ class DnsVpnService : VpnService() {
             edeEnabled = prefs.edeEnabled.first()
 
             // Resolve custom upstream DNS
-            val customDns = prefs.customUpstreamDns.first().trim()
-            upstreamDnsServers = if (customDns.isNotBlank()) {
-                val servers = customDns.split(",", ";", " ").map { it.trim() }.filter { it.isNotBlank() }
-                if (servers.isNotEmpty()) servers else UPSTREAM_DNS.toList()
-            } else UPSTREAM_DNS.toList()
+            val customDns = prefs.getUpstreamDnsList()
+            upstreamDnsServers = if (customDns.isNotEmpty()) customDns else UPSTREAM_DNS.toList()
 
             if (blocklist.domainCount == 0) rebuildBlocklist()
 

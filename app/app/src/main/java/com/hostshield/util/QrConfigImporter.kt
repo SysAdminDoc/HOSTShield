@@ -44,6 +44,7 @@ interface QrImportSink {
 
 object QrConfigImportPlanner {
     private const val MAX_SETTING_LENGTH = 512
+    private val VALID_DOH_PROVIDERS = setOf("cloudflare", "google", "quad9", "nextdns", "adguard")
 
     fun buildPlan(
         config: ShareableConfig,
@@ -94,8 +95,11 @@ object QrConfigImportPlanner {
             )
         }
 
-        val customDns = config.customDns.cleanSetting()
+        val customDns = DnsServerInputPolicy.normalizeServerList(config.customDns)
+            .ifBlank { null }
         val dohProvider = config.dohProvider.cleanSetting()
+            ?.lowercase()
+            ?.takeIf { it in VALID_DOH_PROVIDERS }
         val dohEnabled = if (config.dohEnabled) true else null
 
         return QrImportPlan(
