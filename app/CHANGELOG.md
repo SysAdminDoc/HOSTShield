@@ -1,3 +1,22 @@
+# HostShield v6.9.10
+
+**Release Date:** 2026-06-14
+**Version Code:** 92
+
+## Encrypted DNS Fixes (GitHub #1)
+
+- Fixed DNS-over-HTTPS, which never connected for any provider due to incorrect
+  certificate pins plus a response-read bug (`readByteArray` threw EOFException
+  on every normal-sized response). DoH now works and is device-verified; pins
+  target each provider's real intermediate + root CA so routine leaf-cert
+  rotations no longer break them.
+- Encrypted DNS now fails closed: when DoH/DoT/DoQ/WireGuard is enabled and the
+  encrypted resolver fails, resolution fails (stale cache or SERVFAIL) instead of
+  silently leaking to plaintext UDP against a public resolver.
+- DNS provider and custom upstream changes now apply immediately while protection
+  is running, without restarting the VPN.
+- The context-aware screen-state receiver now registers as `RECEIVER_NOT_EXPORTED`.
+
 # HostShield v6.9.9
 
 **Release Date:** 2026-06-14
