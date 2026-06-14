@@ -63,9 +63,19 @@ jobs:
 
       - name: Generate CycloneDX SBOM
         run: |
-          ./gradlew cyclonedxBom
+          # --rerun-tasks: the CycloneDX task does not track includeConfigs as an
+          # input, so Gradle's build cache (restored across CI runs) would serve a
+          # stale SBOM that still includes test/build-only deps (netty et al.) and
+          # fail the OSV gate. Force a fresh generation so the SBOM matches the
+          # scoped config in app/build.gradle.kts.
+          ./gradlew cyclonedxBom --rerun-tasks
           mkdir -p ../artifacts/release-provenance
           cp build/reports/cyclonedx/hostshield-bom.cdx.json ../artifacts/release-provenance/hostshield-bom.cdx.json
+          # Fail loudly if scoping regressed — netty (a test-only transitive) must
+          # never appear in a shipped-deps SBOM.
+          if grep -qi netty ../artifacts/release-provenance/hostshield-bom.cdx.json; then
+            echo "ERROR: SBOM unexpectedly contains netty (scoping regressed)"; exit 1
+          fi
 
       - name: Run OSV vulnerability scan
         uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
