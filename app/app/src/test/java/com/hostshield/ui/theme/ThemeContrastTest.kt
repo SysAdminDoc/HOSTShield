@@ -43,13 +43,24 @@ class ThemeContrastTest {
     @Test
     fun highContrastMaterialSchemeMirrorsPaletteTokens() {
         val palette = hostShieldPalette(highContrastAmoled = true)
-        val scheme = hostShieldColorScheme(palette)
+        val scheme = hostShieldColorScheme(palette, highContrastAmoled = true)
 
         assertThat(scheme.background).isEqualTo(Color.Black)
         assertThat(scheme.surface).isEqualTo(palette.surface0)
         assertThat(scheme.onSurface).isEqualTo(palette.textPrimary)
         assertThat(scheme.error).isEqualTo(palette.red)
         assertThat(contrastRatio(scheme.onSurfaceVariant, scheme.surfaceVariant)).isAtLeast(8.0)
+    }
+
+    @Test
+    fun accentColorReplacesPrimaryTokensWithoutChangingSemanticColors() {
+        val standard = hostShieldPalette(highContrastAmoled = false)
+        val blueAccent = hostShieldPalette(highContrastAmoled = false, accentColor = "blue")
+
+        assertThat(blueAccent.teal).isEqualTo(standard.blue)
+        assertThat(blueAccent.tealGlow).isEqualTo(standard.blue)
+        assertThat(blueAccent.red).isEqualTo(standard.red)
+        assertThat(blueAccent.green).isEqualTo(standard.green)
     }
 
     private fun contrastRatio(foreground: Color, background: Color): Double {

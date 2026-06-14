@@ -148,8 +148,47 @@ var TextDim by mutableStateOf(StandardHostShieldPalette.textDim)
 
 val LocalHighContrastAmoled = staticCompositionLocalOf { false }
 
-internal fun hostShieldPalette(highContrastAmoled: Boolean): HostShieldPalette =
-    if (highContrastAmoled) HighContrastAmoledPalette else StandardHostShieldPalette
+internal fun hostShieldPalette(
+    highContrastAmoled: Boolean,
+    accentColor: String = "teal"
+): HostShieldPalette {
+    val base = if (highContrastAmoled) HighContrastAmoledPalette else StandardHostShieldPalette
+    return base.withAccent(accentColor)
+}
+
+private fun HostShieldPalette.withAccent(accentColor: String): HostShieldPalette = when (accentColor.lowercase()) {
+    "blue" -> copy(
+        teal = blue,
+        tealBright = sky,
+        tealDim = Color(0xFF5F86D8),
+        tealGlow = blue,
+    )
+    "purple" -> copy(
+        teal = mauve,
+        tealBright = flamingo,
+        tealDim = mauveDim,
+        tealGlow = mauve,
+    )
+    "green" -> copy(
+        teal = green,
+        tealBright = Color(0xFFD5FFD0),
+        tealDim = Color(0xFF6FAF67),
+        tealGlow = green,
+    )
+    "pink" -> copy(
+        teal = red,
+        tealBright = Color(0xFFFFC4D6),
+        tealDim = Color(0xFFC65D7D),
+        tealGlow = red,
+    )
+    "peach" -> copy(
+        teal = peach,
+        tealBright = Color(0xFFFFD6B0),
+        tealDim = Color(0xFFC67E52),
+        tealGlow = peach,
+    )
+    else -> this
+}
 
 private fun applyHostShieldPalette(palette: HostShieldPalette) {
     Black = palette.black
@@ -176,20 +215,23 @@ private fun applyHostShieldPalette(palette: HostShieldPalette) {
     TextDim = palette.textDim
 }
 
-internal fun hostShieldColorScheme(palette: HostShieldPalette) = darkColorScheme(
+internal fun hostShieldColorScheme(
+    palette: HostShieldPalette,
+    highContrastAmoled: Boolean = false
+) = darkColorScheme(
     primary = palette.teal,
     onPrimary = palette.black,
-    primaryContainer = palette.tealDim.copy(alpha = if (palette == HighContrastAmoledPalette) 0.28f else 0.15f),
+    primaryContainer = palette.tealDim.copy(alpha = if (highContrastAmoled) 0.28f else 0.15f),
     onPrimaryContainer = palette.teal,
     secondary = palette.mauve,
     onSecondary = palette.black,
-    secondaryContainer = palette.mauveDim.copy(alpha = if (palette == HighContrastAmoledPalette) 0.28f else 0.15f),
+    secondaryContainer = palette.mauveDim.copy(alpha = if (highContrastAmoled) 0.28f else 0.15f),
     onSecondaryContainer = palette.mauve,
     tertiary = palette.peach,
     onTertiary = palette.black,
     error = palette.red,
     onError = palette.black,
-    errorContainer = palette.red.copy(alpha = if (palette == HighContrastAmoledPalette) 0.28f else 0.15f),
+    errorContainer = palette.red.copy(alpha = if (highContrastAmoled) 0.28f else 0.15f),
     onErrorContainer = palette.red,
     background = palette.black,
     onBackground = palette.textPrimary,
@@ -283,9 +325,10 @@ private val HostShieldShapes = Shapes(
 @Composable
 fun HostShieldTheme(
     highContrastAmoled: Boolean = false,
+    accentColor: String = "teal",
     content: @Composable () -> Unit
 ) {
-    val palette = hostShieldPalette(highContrastAmoled)
+    val palette = hostShieldPalette(highContrastAmoled, accentColor)
     SideEffect {
         applyHostShieldPalette(palette)
     }
@@ -307,7 +350,7 @@ fun HostShieldTheme(
 
     CompositionLocalProvider(LocalHighContrastAmoled provides highContrastAmoled) {
         MaterialTheme(
-            colorScheme = hostShieldColorScheme(palette),
+            colorScheme = hostShieldColorScheme(palette, highContrastAmoled),
             typography = HostShieldTypography,
             shapes = HostShieldShapes,
             content = content

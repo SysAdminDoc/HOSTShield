@@ -1,3 +1,24 @@
+# HostShield v6.9.6
+
+**Release Date:** 2026-06-14
+**Version Code:** 88
+
+## Live Activity and Accent Theme Fixes
+
+- Live DNS activity rows now restyle to the blocked/red state when a matching
+  enabled user block rule is added from the DNS log.
+- Accent color selections now drive the active theme palette across the app
+  while preserving semantic red/green status colors.
+- Blocklist rebuilds now avoid duplicating exact domains into trie nodes,
+  reducing memory pressure during app resume on devices with 256 MB heaps.
+
+## Verification
+
+- `:app:testFullDebugUnitTest --tests com.hostshield.ui.screens.home.HomeDnsLogUiTest --tests com.hostshield.ui.theme.ThemeContrastTest`
+- `:app:testFullDebugUnitTest --tests com.hostshield.domain.BlocklistHolderTest`
+
+---
+
 # HostShield v6.9.5
 
 **Release Date:** 2026-06-14

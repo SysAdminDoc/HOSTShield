@@ -176,7 +176,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val highContrastAmoled by prefs.highContrastAmoled.collectAsState(initial = false)
-            HostShieldTheme(highContrastAmoled = highContrastAmoled) {
+            val accentColor by prefs.accentColor.collectAsState(initial = "teal")
+            HostShieldTheme(
+                highContrastAmoled = highContrastAmoled,
+                accentColor = accentColor,
+            ) {
                 val isFirstLaunch by prefs.isFirstLaunch.collectAsState(initial = true)
                 var isRootAvailable by remember { mutableStateOf<Boolean?>(null) }
 

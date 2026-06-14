@@ -1,0 +1,5 @@
+v6.9.6
+
+Live DNS activity rows now turn red when their hostname is manually blocked from the DNS log.
+Accent color choices now apply to the app theme across screens instead of only changing the Settings swatch.
+Blocklist rebuilds use less memory on resume by avoiding duplicate exact-domain trie allocation.

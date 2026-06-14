@@ -560,8 +560,11 @@ fun ModuleCard(
 // ── Live Log Row ────────────────────────────────────────────
 
 @Composable
-fun LiveLogRow(entry: com.hostshield.data.model.DnsLogEntry) {
-    val dotColor = if (entry.blocked) Red else Green
+fun LiveLogRow(
+    entry: com.hostshield.data.model.DnsLogEntry,
+    blocked: Boolean = entry.blocked
+) {
+    val dotColor = if (blocked) Red else Green
     val timeStr = remember(entry.timestamp) {
         try {
             java.time.Instant.ofEpochMilli(entry.timestamp)
@@ -574,7 +577,7 @@ fun LiveLogRow(entry: com.hostshield.data.model.DnsLogEntry) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(6.dp))
-            .background(if (entry.blocked) Red.copy(alpha = 0.04f) else Color.Transparent)
+            .background(if (blocked) Red.copy(alpha = 0.04f) else Color.Transparent)
             .padding(horizontal = 6.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -584,7 +587,7 @@ fun LiveLogRow(entry: com.hostshield.data.model.DnsLogEntry) {
         Spacer(Modifier.width(8.dp))
         Text(
             text = entry.hostname,
-            color = if (entry.blocked) Red.copy(alpha = 0.85f) else TextSecondary,
+            color = if (blocked) Red.copy(alpha = 0.85f) else TextSecondary,
             fontSize = 11.sp,
             maxLines = 1,
             modifier = Modifier.weight(1f),

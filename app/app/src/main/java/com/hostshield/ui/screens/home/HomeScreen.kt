@@ -49,6 +49,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val liveLogs by viewModel.liveLogs.collectAsStateWithLifecycle()
+    val enabledBlockRules by viewModel.enabledBlockRules.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -314,7 +315,10 @@ fun HomeScreen(
                         val recentEntries = liveLogs.take(8)
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             for (entry in recentEntries) {
-                                LiveLogRow(entry)
+                                LiveLogRow(
+                                    entry = entry,
+                                    blocked = dnsLogDisplayBlocked(entry, enabledBlockRules)
+                                )
                             }
                         }
                     }

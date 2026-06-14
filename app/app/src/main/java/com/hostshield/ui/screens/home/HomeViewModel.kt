@@ -12,6 +12,7 @@ import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.SourceHealth
+import com.hostshield.data.model.UserRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
@@ -129,6 +130,11 @@ class HomeViewModel @Inject constructor(
 
     /** Live DNS log feed for the dashboard — last 50 entries from database, auto-updates. */
     val liveLogs: StateFlow<List<DnsLogEntry>> = dnsLogDao.getRecentLogs(50)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Enabled user block rules that can restyle existing DNS rows after manual blocking. */
+    val enabledBlockRules: StateFlow<List<UserRule>> = repository.getRulesByType(RuleType.BLOCK)
+        .map { rules -> rules.filter { it.enabled } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /**

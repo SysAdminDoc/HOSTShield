@@ -52,7 +52,6 @@ class BlocklistHolder @Inject constructor() {
 
     private class TrieNode {
         val children = HashMap<String, TrieNode>(4)
-        var terminal = false
         var wildcardBlock = false
         var wildcardAllow = false
     }
@@ -247,7 +246,6 @@ class BlocklistHolder @Inject constructor() {
 
         for (domain in newDomains) {
             val lower = domain.lowercase()
-            insertDomain(newRoot, lower, terminal = true)
             newExactSet.add(lower)
         }
         val normalizedSourceWildcardBlocks = sourceWildcardBlocks
@@ -267,7 +265,6 @@ class BlocklistHolder @Inject constructor() {
         }
         // Always block DoH bypass domains (exact match)
         for (domain in dohBypassDomains) {
-            insertDomain(newRoot, domain, terminal = true)
             newExactSet.add(domain)
         }
         // Always block DoH bypass wildcards (catches subdomains like *.dns.nextdns.io)
@@ -375,12 +372,9 @@ class BlocklistHolder @Inject constructor() {
             decisionCache.remove(h)
             return
         }
-        // Mutate copies, then swap atomically.
-        val newRoot = current.root // trie mutation is structural-only; readers see new terminal flag through volatile snapshot swap below
-        insertDomain(newRoot, h, terminal = true)
         val newSet = HashSet(current.exactBlockSet).apply { add(h) }
         snapshot = Snapshot(
-            root = newRoot,
+            root = current.root,
             exactBlockSet = newSet,
             wildcardRules = current.wildcardRules,
             regexBlockRules = current.regexBlockRules,
@@ -400,15 +394,12 @@ class BlocklistHolder @Inject constructor() {
     fun removeDomain(hostname: String) {
         val h = hostname.lowercase()
         val current = snapshot
-        val wasPresent = h in current.exactBlockSet ||
-            removeDomainFromTrie(current.root, h)
+        val wasPresent = h in current.exactBlockSet
         if (!wasPresent) {
             // Don't drop the counter for domains we never had.
             decisionCache.remove(h)
             return
         }
-        // If the entry came from exactBlockSet, also clear the trie terminal.
-        if (h in current.exactBlockSet) removeDomainFromTrie(current.root, h)
         val newSet = HashSet(current.exactBlockSet).apply { remove(h) }
         snapshot = Snapshot(
             root = current.root,
@@ -485,8 +476,9 @@ class BlocklistHolder @Inject constructor() {
             )
         }
 
-        // Trie walk over a stable snapshot — gathers wildcard allow/block and
-        // exact-match signal in one traversal.
+        // Trie walk over a stable snapshot gathers wildcard allow/block signals.
+        // Exact blocks are hash-set only so large lists are not duplicated as
+        // trie nodes on low-memory devices.
         val labels = lower.split('.').reversed()
         var node = snap.root
         var wildcardBlockMatch = ""
@@ -517,8 +509,7 @@ class BlocklistHolder @Inject constructor() {
         }
 
         val exactBlocked = lower in snap.exactBlockSet
-        val trieExact = depth == labels.size && node.terminal
-        val blocked = exactBlocked || trieExact || wildcardBlockMatch.isNotEmpty()
+        val blocked = exactBlocked || wildcardBlockMatch.isNotEmpty()
 
         if (blocked) {
             snap.regexAllowRules.firstOrNull { it.containsMatchIn(lower) }?.let { regex ->
@@ -530,7 +521,7 @@ class BlocklistHolder @Inject constructor() {
                     precedence = "regex allow overrides blocklist match"
                 )
             }
-            if (exactBlocked || trieExact) {
+            if (exactBlocked) {
                 val origin = snap.exactBlockOrigins[lower].orEmpty()
                 return blockedDecision(
                     reason = origin.toBlockReason(default = "source_list"),
@@ -607,7 +598,6 @@ class BlocklistHolder @Inject constructor() {
 
     private fun insertDomain(
         trieRoot: TrieNode, domain: String,
-        terminal: Boolean = false,
         wildcardBlock: Boolean = false,
         wildcardAllow: Boolean = false
     ) {
@@ -616,24 +606,7 @@ class BlocklistHolder @Inject constructor() {
         for (label in labels) {
             node = node.children.getOrPut(label) { TrieNode() }
         }
-        if (terminal) node.terminal = true
         if (wildcardBlock) node.wildcardBlock = true
         if (wildcardAllow) node.wildcardAllow = true
-    }
-
-    /**
-     * Walks the trie and clears the [TrieNode.terminal] flag for [domain].
-     * Returns true if the domain was actually present (terminal was set).
-     * Used by [removeDomain] to decide whether to decrement the domain count.
-     */
-    private fun removeDomainFromTrie(trieRoot: TrieNode, domain: String): Boolean {
-        val labels = domain.split('.').reversed()
-        var node = trieRoot
-        for (label in labels) {
-            node = node.children[label] ?: return false
-        }
-        val was = node.terminal
-        node.terminal = false
-        return was
     }
 }

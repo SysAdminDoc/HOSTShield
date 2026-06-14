@@ -3,6 +3,18 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.6] - 2026-06-14
+
+### UI
+- Live DNS activity rows now turn red when their hostname is manually blocked
+  from the DNS log, even if the original query was allowed.
+- Accent color preferences now apply to the active app theme instead of only
+  updating the selected swatch in Settings.
+
+### Reliability
+- Reduced blocklist rebuild memory use by keeping exact domains in the hash-set
+  fast path only, avoiding duplicate trie allocation on low-memory devices.
+
 ## [v6.9.5] - 2026-06-14
 
 ### UX
