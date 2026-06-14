@@ -13,6 +13,7 @@ import com.hostshield.domain.BlocklistHolder
 import com.hostshield.service.DnsCache
 import com.hostshield.service.DohPinManifest
 import com.hostshield.service.IptablesManager
+import com.hostshield.service.ThreatIntelManager
 import com.hostshield.util.PrivateDnsDetector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -46,7 +47,8 @@ class DiagnosticExporter @Inject constructor(
     private val dnsLogDao: DnsLogDao,
     private val connectionLogDao: ConnectionLogDao,
     private val privateDnsDetector: PrivateDnsDetector,
-    private val diagnosticEventStore: DiagnosticEventStore
+    private val diagnosticEventStore: DiagnosticEventStore,
+    private val threatIntelManager: ThreatIntelManager
 ) {
     companion object {
         private const val TAG = "DiagExport"
@@ -122,6 +124,27 @@ class DiagnosticExporter @Inject constructor(
         sb.appendLine("── Blocklist ───────────────────────────────────────")
         sb.appendLine("Domains loaded: ${blocklist.domainCount}")
         sb.appendLine("Blocked count: ${blocklist.getBlockedCount()}")
+        sb.appendLine()
+
+        // -- Threat Intelligence --
+        sb.appendLine("-- Threat Intelligence ----------------------------")
+        try {
+            threatIntelManager.loadCached()
+            val feeds = threatIntelManager.getFeedHealthSnapshot()
+            sb.appendLine("Threat domains: ${threatIntelManager.domainCount}")
+            sb.appendLine("Threat IP CIDRs: ${threatIntelManager.ipCidrCount}")
+            sb.appendLine("Last complete update: ${diagnosticAge(threatIntelManager.lastUpdated)}")
+            feeds.forEach { feed ->
+                sb.appendLine(
+                    "Feed ${feed.name}: ${diagnosticFeedStatus(feed)}, entries=${feed.entryCount}, http=${if (feed.httpStatus > 0) feed.httpStatus else "-"}, failures=${feed.consecutiveFailures}, last_success=${diagnosticAge(feed.lastSuccess)}, sha256=${feed.sha256.take(12).ifBlank { "-" }}"
+                )
+                if (feed.lastError.isNotBlank()) {
+                    sb.appendLine("  Last error: ${feed.lastError}")
+                }
+            }
+        } catch (e: Exception) {
+            sb.appendLine("Threat intel summary error: ${e.message}")
+        }
         sb.appendLine()
 
         // ── DNS Cache ──
@@ -245,6 +268,7 @@ class DiagnosticExporter @Inject constructor(
         val remoteDohVersion = prefs.getRemoteDohVersion()
         val remoteDohDomainCount = countCsvValues(prefs.getRemoteDohDomains())
         val remoteDohWildcardCount = countCsvValues(prefs.getRemoteDohWildcards())
+        val threatFeeds = threatIntelManager.getFeedHealthSnapshot()
         val dir = File(context.cacheDir, "diagnostics")
         dir.mkdirs()
 
@@ -264,6 +288,10 @@ class DiagnosticExporter @Inject constructor(
                     .put("remote_doh_bypass_version", remoteDohVersion)
                     .put("remote_doh_bypass_domain_count", remoteDohDomainCount)
                     .put("remote_doh_bypass_wildcard_count", remoteDohWildcardCount)
+                    .put("threat_intel_domain_count", threatIntelManager.domainCount)
+                    .put("threat_intel_ip_cidr_count", threatIntelManager.ipCidrCount)
+                    .put("threat_intel_feed_count", threatFeeds.size)
+                    .put("threat_intel_degraded_feed_count", threatFeeds.count { it.consecutiveFailures > 0 })
                     .toString(2)
             )
         }
@@ -309,4 +337,27 @@ class DiagnosticExporter @Inject constructor(
 
     private fun countCsvValues(value: String): Int =
         value.split(",").count { it.trim().isNotBlank() }
+
+    private fun diagnosticFeedStatus(feed: ThreatIntelManager.FeedHealth): String {
+        val now = System.currentTimeMillis()
+        return when {
+            feed.lastSuccess == 0L && feed.lastFailure == 0L -> "no_cache"
+            feed.lastSuccess == 0L -> "failed"
+            feed.consecutiveFailures > 0 && feed.lastFailure >= feed.lastSuccess -> "degraded"
+            now - feed.lastSuccess > 48 * 60 * 60 * 1000L -> "stale"
+            else -> "fresh"
+        }
+    }
+
+    private fun diagnosticAge(timestampMs: Long): String {
+        if (timestampMs <= 0L) return "never"
+        val ageMs = (System.currentTimeMillis() - timestampMs).coerceAtLeast(0L)
+        val minutes = ageMs / 60_000L
+        return when {
+            minutes < 1 -> "just_now"
+            minutes < 60 -> "${minutes}m_ago"
+            minutes < 48 * 60 -> "${minutes / 60}h_ago"
+            else -> "${minutes / (24 * 60)}d_ago"
+        }
+    }
 }

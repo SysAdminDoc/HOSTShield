@@ -27,6 +27,7 @@ Firewall and diagnostics:
 
 - Root per-app firewall controls for Wi-Fi, mobile data, and VPN paths.
 - Connection logging, DNS query logs, app attribution, traffic summaries, and local statistics.
+- Threat-intel feed health dashboard with freshness, status, entry counts, and redacted diagnostic summaries.
 - Quick Settings tile, home-screen widget, scheduling, profiles, and Tasker/MacroDroid automation broadcasts.
 - Local diagnostic ZIP export with structured event logs.
 - Classic PCAP export for synthetic DNS/connection evidence.

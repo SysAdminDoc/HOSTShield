@@ -1,0 +1,5 @@
+v6.9.3 - Threat-intel feed health dashboard
+
+- Added a Stats dashboard panel for URLhaus, Spamhaus DROP, Emerging Threats, and Disconnect Malware feed health.
+- Shows freshness, HTTP status, entry counts, SHA-256 prefixes, byte counts, failure counts, and manual refresh state.
+- Diagnostic exports now include redacted threat-feed health summaries without raw IOC details.

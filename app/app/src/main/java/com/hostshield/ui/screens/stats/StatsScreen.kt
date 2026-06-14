@@ -38,6 +38,7 @@ import com.hostshield.data.database.TopApp
 import com.hostshield.data.database.TopHostname
 import com.hostshield.data.model.BlockStats
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.service.ThreatIntelManager
 import com.hostshield.ui.components.HostShieldCompactState
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -75,13 +76,70 @@ data class StatsUiState(
     val vpnRebuilds: Int = 0,
     val vpnFdErrors: Int = 0,
     val vpnDroppedQueries: Int = 0,
-    val vpnTotalQueries: Int = 0
+    val vpnTotalQueries: Int = 0,
+    val threatIntelFeeds: List<ThreatIntelFeedHealthUi> = emptyList(),
+    val threatIntelDomainCount: Int = 0,
+    val threatIntelIpCidrCount: Int = 0,
+    val threatIntelLastUpdated: Long = 0L,
+    val isRefreshingThreatIntel: Boolean = false,
+    val threatIntelRefreshMessage: String? = null
 )
+
+enum class ThreatIntelFeedStatus {
+    HEALTHY,
+    STALE,
+    DEGRADED,
+    FAILED,
+    NEVER_REFRESHED
+}
+
+data class ThreatIntelFeedHealthUi(
+    val name: String,
+    val status: ThreatIntelFeedStatus,
+    val lastSuccess: Long,
+    val lastFailure: Long,
+    val httpStatus: Int,
+    val entryCount: Int,
+    val bytesDownloaded: Long,
+    val sha256Short: String,
+    val consecutiveFailures: Int,
+    val lastError: String
+) {
+    companion object {
+        private const val STALE_AFTER_MS = 48 * 60 * 60 * 1000L
+
+        fun fromHealth(
+            health: ThreatIntelManager.FeedHealth,
+            nowMs: Long = System.currentTimeMillis()
+        ): ThreatIntelFeedHealthUi {
+            val status = when {
+                health.lastSuccess == 0L && health.lastFailure == 0L -> ThreatIntelFeedStatus.NEVER_REFRESHED
+                health.lastSuccess == 0L -> ThreatIntelFeedStatus.FAILED
+                health.consecutiveFailures > 0 && health.lastFailure >= health.lastSuccess -> ThreatIntelFeedStatus.DEGRADED
+                nowMs - health.lastSuccess > STALE_AFTER_MS -> ThreatIntelFeedStatus.STALE
+                else -> ThreatIntelFeedStatus.HEALTHY
+            }
+            return ThreatIntelFeedHealthUi(
+                name = health.name,
+                status = status,
+                lastSuccess = health.lastSuccess,
+                lastFailure = health.lastFailure,
+                httpStatus = health.httpStatus,
+                entryCount = health.entryCount,
+                bytesDownloaded = health.bytesDownloaded,
+                sha256Short = health.sha256.take(12),
+                consecutiveFailures = health.consecutiveFailures,
+                lastError = health.lastError
+            )
+        }
+    }
+}
 
 @HiltViewModel
 class StatsViewModel @Inject constructor(
     private val repository: HostShieldRepository,
-    private val vpnStabilityDao: com.hostshield.data.database.VpnStabilityDao
+    private val vpnStabilityDao: com.hostshield.data.database.VpnStabilityDao,
+    private val threatIntelManager: ThreatIntelManager
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(StatsUiState())
     val uiState: StateFlow<StatsUiState> = _uiState.asStateFlow()
@@ -113,6 +171,7 @@ class StatsViewModel @Inject constructor(
         viewModelScope.launch { repository.getQueryTypeDistribution(weekStart).collect { d -> _uiState.update { it.copy(queryTypeDistribution = d) } } }
         pollCacheStats()
         loadVpnStability()
+        loadThreatIntelHealth()
     }
 
     /** Poll DNS cache stats from DnsVpnService every 5 seconds. */
@@ -155,6 +214,49 @@ class StatsViewModel @Inject constructor(
                     vpnTotalQueries = agg.totalQueries
                 ) }
             } catch (_: Exception) { }
+        }
+    }
+
+    private fun loadThreatIntelHealth() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            threatIntelManager.loadCached()
+            syncThreatIntelHealth()
+        }
+    }
+
+    fun refreshThreatIntelFeeds() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            _uiState.update {
+                it.copy(
+                    isRefreshingThreatIntel = true,
+                    threatIntelRefreshMessage = "Refreshing threat feeds..."
+                )
+            }
+            val success = threatIntelManager.refreshFeedsAndPersist()
+            syncThreatIntelHealth()
+            _uiState.update {
+                it.copy(
+                    isRefreshingThreatIntel = false,
+                    threatIntelRefreshMessage = if (success) {
+                        "Threat feeds refreshed."
+                    } else {
+                        "Threat feed refresh degraded; check failed feeds."
+                    }
+                )
+            }
+        }
+    }
+
+    private fun syncThreatIntelHealth() {
+        val now = System.currentTimeMillis()
+        _uiState.update {
+            it.copy(
+                threatIntelFeeds = threatIntelManager.getFeedHealthSnapshot()
+                    .map { health -> ThreatIntelFeedHealthUi.fromHealth(health, now) },
+                threatIntelDomainCount = threatIntelManager.domainCount,
+                threatIntelIpCidrCount = threatIntelManager.ipCidrCount,
+                threatIntelLastUpdated = threatIntelManager.lastUpdated
+            )
         }
     }
 }
@@ -405,6 +507,14 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     }
                 }
             }
+        }
+
+        item {
+            ThreatIntelFeedHealthCard(
+                state = state,
+                numberFormat = nf,
+                onRefresh = viewModel::refreshThreatIntelFeeds
+            )
         }
 
         // 7-Day Trend Line Chart
@@ -668,6 +778,166 @@ private fun HourlyBarChart(data: List<HourlyStat>, modifier: Modifier) {
             }
         }
     }
+}
+
+@Composable
+private fun ThreatIntelFeedHealthCard(
+    state: StatsUiState,
+    numberFormat: NumberFormat,
+    onRefresh: () -> Unit
+) {
+    val failedCount = state.threatIntelFeeds.count {
+        it.status == ThreatIntelFeedStatus.FAILED || it.status == ThreatIntelFeedStatus.DEGRADED
+    }
+    val staleCount = state.threatIntelFeeds.count { it.status == ThreatIntelFeedStatus.STALE }
+    val statusColor = when {
+        failedCount > 0 -> Red
+        staleCount > 0 -> Yellow
+        state.threatIntelFeeds.any { it.status == ThreatIntelFeedStatus.HEALTHY } -> Green
+        else -> TextDim
+    }
+    val statusText = when {
+        failedCount > 0 -> "$failedCount degraded"
+        staleCount > 0 -> "$staleCount stale"
+        state.threatIntelFeeds.any { it.status == ThreatIntelFeedStatus.HEALTHY } -> "Fresh"
+        else -> "No cache"
+    }
+
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(statusColor.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.HealthAndSafety, null, tint = statusColor, modifier = Modifier.size(14.dp))
+                }
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Threat Feed Health", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text(
+                        "${numberFormat.format(state.threatIntelDomainCount)} domains, ${numberFormat.format(state.threatIntelIpCidrCount)} IP ranges",
+                        color = TextDim,
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp
+                    )
+                }
+                Text(statusText, color = statusColor, fontWeight = FontWeight.Medium, fontSize = 12.sp)
+                Spacer(Modifier.width(4.dp))
+                IconButton(
+                    onClick = onRefresh,
+                    enabled = !state.isRefreshingThreatIntel,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    if (state.isRefreshingThreatIntel) {
+                        CircularProgressIndicator(color = Teal, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
+                    } else {
+                        Icon(Icons.Filled.Refresh, "Refresh threat feeds", tint = Teal, modifier = Modifier.size(17.dp))
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Last complete update: ${formatThreatIntelTimestamp(state.threatIntelLastUpdated)}",
+                color = TextDim,
+                fontSize = 11.sp,
+                lineHeight = 15.sp
+            )
+            state.threatIntelRefreshMessage?.let { message ->
+                Spacer(Modifier.height(4.dp))
+                Text(message, color = TextSecondary, fontSize = 11.sp, lineHeight = 15.sp)
+            }
+
+            Spacer(Modifier.height(10.dp))
+            if (state.threatIntelFeeds.isEmpty()) {
+                HostShieldCompactState(
+                    icon = Icons.Filled.HealthAndSafety,
+                    title = "No threat feed state yet",
+                    message = "Feed health appears after the first cache load or manual refresh.",
+                    accent = statusColor,
+                )
+            } else {
+                state.threatIntelFeeds.forEachIndexed { index, feed ->
+                    ThreatIntelFeedHealthRow(feed, numberFormat)
+                    if (index != state.threatIntelFeeds.lastIndex) {
+                        HorizontalDivider(color = Surface3.copy(alpha = 0.6f), thickness = 1.dp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThreatIntelFeedHealthRow(feed: ThreatIntelFeedHealthUi, numberFormat: NumberFormat) {
+    val color = threatIntelStatusColor(feed.status)
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(7.dp).clip(RoundedCornerShape(4.dp)).background(color))
+            Spacer(Modifier.width(8.dp))
+            Text(feed.name, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, modifier = Modifier.weight(1f))
+            Text(threatIntelStatusLabel(feed.status), color = color, fontWeight = FontWeight.Medium, fontSize = 11.sp)
+        }
+        Spacer(Modifier.height(3.dp))
+        Text(
+            "Entries ${numberFormat.format(feed.entryCount)} | Last success ${formatThreatIntelTimestamp(feed.lastSuccess)} | HTTP ${if (feed.httpStatus > 0) feed.httpStatus else "-"}",
+            color = TextDim,
+            fontSize = 10.sp,
+            lineHeight = 14.sp
+        )
+        Spacer(Modifier.height(2.dp))
+        val bytes = formatThreatIntelBytes(feed.bytesDownloaded)
+        val hash = feed.sha256Short.ifBlank { "-" }
+        Text(
+            "Bytes $bytes | SHA-256 $hash | Failures ${feed.consecutiveFailures}",
+            color = TextDim,
+            fontSize = 10.sp,
+            lineHeight = 14.sp
+        )
+        if (feed.lastError.isNotBlank()) {
+            Spacer(Modifier.height(2.dp))
+            Text(feed.lastError, color = Red.copy(alpha = 0.85f), fontSize = 10.sp, lineHeight = 14.sp, maxLines = 2)
+        }
+    }
+}
+
+private fun threatIntelStatusLabel(status: ThreatIntelFeedStatus): String = when (status) {
+    ThreatIntelFeedStatus.HEALTHY -> "Fresh"
+    ThreatIntelFeedStatus.STALE -> "Stale"
+    ThreatIntelFeedStatus.DEGRADED -> "Degraded"
+    ThreatIntelFeedStatus.FAILED -> "Failed"
+    ThreatIntelFeedStatus.NEVER_REFRESHED -> "No cache"
+}
+
+private fun threatIntelStatusColor(status: ThreatIntelFeedStatus): Color = when (status) {
+    ThreatIntelFeedStatus.HEALTHY -> Green
+    ThreatIntelFeedStatus.STALE -> Yellow
+    ThreatIntelFeedStatus.DEGRADED -> Peach
+    ThreatIntelFeedStatus.FAILED -> Red
+    ThreatIntelFeedStatus.NEVER_REFRESHED -> TextDim
+}
+
+private fun formatThreatIntelTimestamp(timestampMs: Long): String {
+    if (timestampMs <= 0L) return "never"
+    val ageMs = (System.currentTimeMillis() - timestampMs).coerceAtLeast(0L)
+    val minutes = ageMs / 60_000L
+    return when {
+        minutes < 1 -> "just now"
+        minutes < 60 -> "${minutes}m ago"
+        minutes < 48 * 60 -> "${minutes / 60}h ago"
+        else -> "${minutes / (24 * 60)}d ago"
+    }
+}
+
+private fun formatThreatIntelBytes(bytes: Long): String = when {
+    bytes <= 0L -> "-"
+    bytes < 1024L -> "${bytes} B"
+    bytes < 1024L * 1024L -> "${bytes / 1024L} KiB"
+    else -> "${bytes / (1024L * 1024L)} MiB"
 }
 
 @Composable

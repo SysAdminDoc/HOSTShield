@@ -323,6 +323,11 @@ class ThreatIntelManager @Inject constructor(
             (System.currentTimeMillis() - health.lastSuccess) > thresholdMs
     }
 
+    fun getFeedHealthSnapshot(): List<FeedHealth> {
+        val current = feedHealthMap
+        return feeds.map { feed -> current[feed.name] ?: FeedHealth(name = feed.name) }
+    }
+
     // ── Feed Parsers ──────────────────────────────────────────
 
     private fun parseHostsFile(body: String, source: String): ParseResult {
