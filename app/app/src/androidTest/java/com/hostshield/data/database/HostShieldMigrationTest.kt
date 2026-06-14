@@ -111,7 +111,7 @@ class HostShieldMigrationTest {
         assertColumn(db, "firewall_rules", "blocked_countries")
         assertColumn(db, "firewall_rules", "lan_allowed")
         assertColumn(db, "app_dns_rules", "created_at")
-        assertIndex(db, "index_dns_logs_app_blocked_ts")
+        assertIndex(db, "index_dns_logs_app_package_blocked_timestamp")
         assertIndex(db, "index_host_sources_enabled")
         assertIndex(db, "index_host_sources_category")
         assertIndex(db, "index_user_rules_enabled_type")
@@ -119,10 +119,18 @@ class HostShieldMigrationTest {
 
     private fun assertSeedDataSurvived(db: SupportSQLiteDatabase, version: Int) {
         assertEquals(1, db.queryInt("SELECT COUNT(*) FROM host_sources WHERE url = 'https://fixture.hostshield.test/hosts.txt'"))
+        assertEquals(1, db.queryInt("SELECT enabled FROM host_sources WHERE label = 'AdAway Default'"))
+        assertEquals(1, db.queryInt("SELECT enabled FROM host_sources WHERE label = 'StevenBlack Unified'"))
         assertEquals(1, db.queryInt("SELECT COUNT(*) FROM user_rules WHERE hostname = 'ads.fixture.test'"))
         assertEquals(1, db.queryInt("SELECT COUNT(*) FROM dns_logs WHERE hostname = 'ads.fixture.test'"))
-        assertEquals("", db.queryString("SELECT decision_reason FROM dns_logs WHERE hostname = 'ads.fixture.test'"))
-        assertEquals("", db.queryString("SELECT decision_source FROM dns_logs WHERE hostname = 'ads.fixture.test'"))
+        assertEquals(
+            if (version >= 16) "source_list" else "",
+            db.queryString("SELECT decision_reason FROM dns_logs WHERE hostname = 'ads.fixture.test'")
+        )
+        assertEquals(
+            if (version >= 16) "Fixture Hosts" else "",
+            db.queryString("SELECT decision_source FROM dns_logs WHERE hostname = 'ads.fixture.test'")
+        )
         assertEquals(0, db.queryInt("SELECT last_http_status FROM host_sources WHERE url = 'https://fixture.hostshield.test/hosts.txt'"))
 
         if (version >= 2) {
@@ -246,31 +254,42 @@ class HostShieldMigrationTest {
                 "last_error",
                 "consecutive_failures"
             )
-            val values = mutableListOf(
-                "'https://fixture.hostshield.test/hosts.txt'",
-                "'Fixture Hosts'",
-                "'migration fixture'",
-                "1",
-                "'ADS'",
-                "42",
-                "1800000000000",
-                "'Sat, 17 May 2026 12:00:00 GMT'",
-                "'fixture-etag'",
-                "1",
-                "2048",
-                "'OK'",
-                "''",
-                "0"
-            )
             if (version >= 7) {
                 insertColumns += listOf("prev_entry_count", "domains_added", "domains_removed")
-                values += listOf("40", "2", "0")
             }
             if (version >= 15) {
                 insertColumns += "last_http_status"
-                values += "0"
             }
-            db.execSQL("INSERT INTO host_sources (${insertColumns.joinToString(", ")}) VALUES (${values.joinToString(", ")})")
+
+            fun insertHostSource(url: String, label: String, enabled: Int) {
+                val values = mutableListOf(
+                    "'$url'",
+                    "'$label'",
+                    "'migration fixture'",
+                    enabled.toString(),
+                    "'ADS'",
+                    "42",
+                    "1800000000000",
+                    "'Sat, 17 May 2026 12:00:00 GMT'",
+                    "'fixture-etag'",
+                    "1",
+                    "2048",
+                    "'OK'",
+                    "''",
+                    "0"
+                )
+                if (version >= 7) {
+                    values += listOf("40", "2", "0")
+                }
+                if (version >= 15) {
+                    values += "0"
+                }
+                db.execSQL("INSERT INTO host_sources (${insertColumns.joinToString(", ")}) VALUES (${values.joinToString(", ")})")
+            }
+
+            insertHostSource("https://fixture.hostshield.test/hosts.txt", "Fixture Hosts", 1)
+            insertHostSource("https://adaway.org/hosts.txt", "AdAway Default", 0)
+            insertHostSource("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "StevenBlack Unified", 0)
         }
 
         private fun createUserRules(db: SupportSQLiteDatabase, version: Int) {
@@ -320,10 +339,10 @@ class HostShieldMigrationTest {
                 columns += "tracker_owner TEXT NOT NULL"
             }
             if (version >= 16) {
-                columns += "decision_reason TEXT NOT NULL"
-                columns += "decision_source TEXT NOT NULL"
-                columns += "matched_value TEXT NOT NULL"
-                columns += "decision_precedence TEXT NOT NULL"
+                columns += "decision_reason TEXT NOT NULL DEFAULT ''"
+                columns += "decision_source TEXT NOT NULL DEFAULT ''"
+                columns += "matched_value TEXT NOT NULL DEFAULT ''"
+                columns += "decision_precedence TEXT NOT NULL DEFAULT ''"
             }
             db.execSQL("CREATE TABLE dns_logs (${columns.joinToString(", ")})")
             db.execSQL("CREATE INDEX index_dns_logs_timestamp ON dns_logs (timestamp)")
@@ -332,7 +351,9 @@ class HostShieldMigrationTest {
                 db.execSQL("CREATE INDEX index_dns_logs_hostname ON dns_logs (hostname)")
                 db.execSQL("CREATE INDEX index_dns_logs_app_package ON dns_logs (app_package)")
             }
-            if (version >= 13) db.execSQL("CREATE INDEX index_dns_logs_app_blocked_ts ON dns_logs (app_package, blocked, timestamp)")
+            if (version >= 13) {
+                db.execSQL("CREATE INDEX index_dns_logs_app_package_blocked_timestamp ON dns_logs (app_package, blocked, timestamp)")
+            }
 
             val insertColumns = mutableListOf("hostname", "blocked", "timestamp")
             val values = mutableListOf("'ads.fixture.test'", "1", "1800000000000")

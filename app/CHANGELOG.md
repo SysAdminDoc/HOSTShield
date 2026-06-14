@@ -1,3 +1,27 @@
+# HostShield v6.9.9
+
+**Release Date:** 2026-06-14
+**Version Code:** 91
+
+## Launcher Icon Refresh
+
+- Replaced the app launcher icon with the new HostShield shield artwork across
+  legacy and adaptive Android icon densities.
+- Updated the adaptive icon background to a matching near-black so transparent
+  corners render cleanly on Android launchers.
+- Enabled the built-in AdAway Default and StevenBlack Unified host sources by
+  default, with a one-time database migration so existing installs receive the
+  same default without overriding later user changes.
+
+## Verification
+
+- `:app:compileFullDebugKotlin`
+- `:app:connectedFullDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.hostshield.data.database.HostShieldMigrationTest`
+- `:app:assembleFullRelease`
+- Installed v6.9.9 on device `R5CT139QJ5F`.
+
+---
+
 # HostShield v6.9.8
 
 **Release Date:** 2026-06-14

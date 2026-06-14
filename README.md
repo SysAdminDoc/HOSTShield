@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.8-blue)
+![Version](https://img.shields.io/badge/version-6.9.9-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -8,6 +8,18 @@
 ![Status](https://img.shields.io/badge/status-active-success)
 
 > System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, DoH with certificate pinning, offline GeoIP, and a professional AMOLED dark UI with an optional high-contrast AMOLED mode.
+
+---
+
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/dashboard.png" alt="HostShield dashboard showing active protection" width="180">
+  <img src="assets/screenshots/sources.png" alt="HostShield sources list with default sources enabled" width="180">
+  <img src="assets/screenshots/rules.png" alt="HostShield rules screen" width="180">
+  <img src="assets/screenshots/stats.png" alt="HostShield statistics screen" width="180">
+  <img src="assets/screenshots/settings.png" alt="HostShield settings screen" width="180">
+</p>
 
 ---
 
@@ -118,6 +130,7 @@
 | Feature | Description |
 |---------|-------------|
 | **Curated Gallery** | 50+ categorized blocklists with tier, size, and breakage warnings for aggressive packs |
+| **Enabled Defaults** | AdAway Default and StevenBlack Unified are enabled on fresh installs and upgraded existing installs |
 | **Source Categories** | ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM |
 | **Allowlist Sources** | Subscribed allowlists (Anudeep, HaGeZi) override blocklist entries and can show neutralized-domain examples |
 | **Overlap Analysis** | Identify redundant domains across enabled sources to optimize subscriptions |
@@ -224,7 +237,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 
 ### Blocklist Sources
 
-Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Add custom URL sources via Settings > Sources in hosts, domains-only, or DNS adblock syntax.
+Ships with curated defaults. AdAway Default and StevenBlack Unified are enabled out of the box; OISD, HaGeZi, 1Hosts, and other sources remain available from the gallery for stricter filtering. Add custom URL sources via Settings > Sources in hosts, domains-only, or DNS adblock syntax.
 
 **Source categories**: ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM. Allowlist sources override block entries during updates, including adblock `@@||` exception lists.
 
@@ -393,6 +406,10 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.9** | New launcher icon assets across Android icon densities, README screenshots, and AdAway Default plus StevenBlack Unified enabled by default with an upgrade migration for existing installs. |
+| **6.9.8** | Removed the non-root "Root not detected" Home banner, fixed Settings > View on GitHub so it opens the repository in a browser, and simplified the Sources header to keep only the add-source action. |
+| **6.9.7** | Animated the active protection orb with a rotating arc, trailing sweep, and breathing halo so the dashboard visibly communicates active protection. |
+| **6.9.6** | Manual blocks now turn matching live DNS activity rows red, accent color preferences apply to the active app theme, and blocklist rebuilds use less memory. |
 | **6.9.5** | First-run notification permission is now deferred until protection activation instead of covering onboarding, and the DNS resolver step uses a compact accessible selector so all resolver choices are visible on tall phones. |
 | **6.9.4** | Release signing now fails closed unless real signing credentials are configured or an explicit local debug-signing override is set. Imports, backups, QR config, diagnostics, threat feeds, WebDAV, GeoIP, update checks, and DEX scans now use bounded input and stricter validation. Secondary controls have larger accessible touch targets. |
 | **6.9.3** | Threat-intel feed health dashboard added to Stats with per-feed freshness, HTTP status, entry counts, SHA-256 prefixes, failure state, and manual refresh. Diagnostic exports now include redacted threat-feed health summaries. |

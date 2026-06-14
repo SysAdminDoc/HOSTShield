@@ -3,6 +3,14 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.9] - 2026-06-14
+
+### UI
+- Replaced the launcher icon assets with the new HostShield shield artwork
+  across legacy and adaptive Android icon densities.
+- Enabled the built-in AdAway Default and StevenBlack Unified host sources by
+  default, including a one-time upgrade migration for existing installs.
+
 ## [v6.9.8] - 2026-06-14
 
 ### UI

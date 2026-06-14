@@ -1,0 +1,5 @@
+v6.9.9
+
+Updated the installed app launcher icon with the new HostShield shield artwork across legacy and adaptive Android icon densities.
+Adjusted the adaptive icon background so transparent icon corners render cleanly on supported launchers.
+AdAway Default and StevenBlack Unified are now enabled by default, including for existing installs during upgrade.

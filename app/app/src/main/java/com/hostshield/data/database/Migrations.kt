@@ -21,6 +21,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - v14: Added index on host_sources.category
  * - v15: Added host_sources.last_http_status for source failure feedback
  * - v16: Added dns_logs decision provenance columns
+ * - v17: Enable default AdAway and StevenBlack Unified built-in sources
  */
 object Migrations {
 
@@ -251,6 +252,32 @@ object Migrations {
         }
     }
 
+    val MIGRATION_16_17 = object : Migration(16, 17) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("DROP INDEX IF EXISTS index_dns_logs_app_blocked_ts")
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_dns_logs_app_package_blocked_timestamp
+                ON dns_logs (app_package, blocked, timestamp)
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                UPDATE host_sources
+                SET enabled = 1
+                WHERE is_builtin = 1
+                  AND (
+                    label IN ('AdAway Default', 'StevenBlack Unified')
+                    OR url IN (
+                        'https://adaway.org/hosts.txt',
+                        'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
+                    )
+                  )
+                """.trimIndent()
+            )
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
     val ALL = arrayOf(
         MIGRATION_1_2,
@@ -267,6 +294,7 @@ object Migrations {
         MIGRATION_12_13,
         MIGRATION_13_14,
         MIGRATION_14_15,
-        MIGRATION_15_16
+        MIGRATION_15_16,
+        MIGRATION_16_17
     )
 }
