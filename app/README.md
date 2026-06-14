@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.1-blue)
+![Version](https://img.shields.io/badge/version-6.9.2-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -8,7 +8,7 @@
 
 > System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, offline GeoIP, and a professional AMOLED dark UI with an optional high-contrast mode.
 
-Current module baseline: v6.9.1, versionCode 83.
+Current module baseline: v6.9.2, versionCode 84.
 
 ## Quick Start
 
@@ -28,6 +28,7 @@ Current module baseline: v6.9.1, versionCode 83.
 | **Root Mode** | iptables DNS redirection and per-app firewall support for rooted devices |
 | **Per-App Firewall** | Block Wi-Fi, mobile data, or VPN per-app with iptables (root) |
 | **DoH (DNS-over-HTTPS)** | Cloudflare, Google, Quad9, NextDNS, AdGuard, Mullvad, CleanBrowsing — with fail-closed SHA-256 certificate pinning |
+| **DoH3** | Disabled until a maintained non-vulnerable embedded Cronet artifact is available; pinned OkHttp DoH remains the production path |
 | **DoH Bypass Prevention** | Blocks 65+ known DoH provider domains + wildcard patterns to prevent apps bypassing DNS filtering |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through the VPN tunnel |
 | **TCP DNS Handling** | Full TCP DNS support for responses >512 bytes |

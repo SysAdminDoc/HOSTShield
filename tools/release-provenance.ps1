@@ -146,6 +146,9 @@ $agpVersion = Get-GradleSetting $rootBuild 'com\.android\.application"\)\s+versi
 $kotlinVersion = Get-GradleSetting $rootBuild 'org\.jetbrains\.kotlin\.(?:android|plugin\.compose)"\)\s+version\s+"([^"]+)"' "Kotlin version"
 $gradleVersion = Get-GradleSetting $wrapperProperties 'gradle-([0-9][^-]+)-bin\.zip' "Gradle version"
 $cronetEmbeddedVersion = Get-GradleDependencyVersion $appBuild 'org.chromium.net:cronet-embedded'
+if ($cronetEmbeddedVersion -eq "unknown") {
+    $cronetEmbeddedVersion = "not bundled (embedded DoH3 disabled; pinned OkHttp DoH active)"
+}
 
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
 $status = (& git -C $repoRoot status --short).Trim()

@@ -8,7 +8,9 @@ $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path (Join-Path $scriptRoot "..")
 $appBuildPath = Join-Path $repoRoot "app/app/build.gradle.kts"
+$doh3ResolverPath = Join-Path $repoRoot "app/app/src/main/java/com/hostshield/service/Doh3Resolver.kt"
 $appBuild = Get-Content -Raw -LiteralPath $appBuildPath
+$doh3Resolver = Get-Content -Raw -LiteralPath $doh3ResolverPath
 
 $declaredMatch = [regex]::Match(
     $appBuild,
@@ -16,7 +18,15 @@ $declaredMatch = [regex]::Match(
 )
 
 if (-not $declaredMatch.Success) {
-    throw "Unable to find org.chromium.net:cronet-embedded dependency in app/app/build.gradle.kts."
+    if (
+        $doh3Resolver -match 'EMBEDDED_CRONET_ENABLED\s*=\s*false' -and
+        $doh3Resolver -notmatch 'org\.chromium\.net'
+    ) {
+        Write-Host "Cronet embedded posture OK: dependency is absent and embedded DoH3 transport is disabled."
+        exit 0
+    }
+
+    throw "Unable to find org.chromium.net:cronet-embedded dependency and DoH3 resolver is not explicitly disabled."
 }
 
 $declaredVersion = $declaredMatch.Groups[1].Value

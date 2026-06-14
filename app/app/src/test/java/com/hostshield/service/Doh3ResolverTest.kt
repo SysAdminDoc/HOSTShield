@@ -1,7 +1,9 @@
 package com.hostshield.service
 
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -34,5 +36,15 @@ class Doh3ResolverTest {
         assertFalse(Doh3Resolver.isHttp3Protocol(""))
         assertFalse(Doh3Resolver.isHttp3Protocol("h2"))
         assertFalse(Doh3Resolver.isHttp3Protocol("http/1.1"))
+    }
+
+    @Test
+    fun `embedded Cronet transport remains disabled when artifact is unavailable`() = runTest {
+        val resolver = Doh3Resolver()
+
+        assertFalse(resolver.isAvailable)
+        assertNull(resolver.getFastestProvider())
+        assertTrue(resolver.getLatencyStats().isEmpty())
+        assertNull(resolver.resolve(ByteArray(12)))
     }
 }

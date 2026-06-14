@@ -144,15 +144,17 @@ class DohResolver @Inject constructor(
     ): DohResponse? = withContext(Dispatchers.IO) {
         val preferredProvider = getFastestProvider() ?: provider
 
-        doh3Resolver.resolve(dnsQuery, Doh3Resolver.Provider.fromDohProvider(preferredProvider))?.let { doh3 ->
-            updateLatency(doh3.provider.dohProvider, doh3.latencyMs)
-            recordHealth(preferredProvider, Transport.DOH3, success = true)
-            return@withContext DohResponse(
-                response = doh3.response,
-                provider = doh3.provider.dohProvider,
-                transport = Transport.DOH3,
-                negotiatedProtocol = doh3.negotiatedProtocol
-            )
+        if (doh3Resolver.isAvailable) {
+            doh3Resolver.resolve(dnsQuery, Doh3Resolver.Provider.fromDohProvider(preferredProvider))?.let { doh3 ->
+                updateLatency(doh3.provider.dohProvider, doh3.latencyMs)
+                recordHealth(preferredProvider, Transport.DOH3, success = true)
+                return@withContext DohResponse(
+                    response = doh3.response,
+                    provider = doh3.provider.dohProvider,
+                    transport = Transport.DOH3,
+                    negotiatedProtocol = doh3.negotiatedProtocol
+                )
+            }
         }
 
         val result = doResolve(dnsQuery, preferredProvider, client)

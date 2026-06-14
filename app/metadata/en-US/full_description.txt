@@ -18,7 +18,7 @@ DNS and blocking features:
 Encrypted DNS and bypass defense:
 
 - DNS-over-HTTPS with fail-closed certificate pinning from a local pin manifest.
-- Embedded-Cronet HTTP/3/QUIC path for DoH3 where supported, with pinned OkHttp DoH fallback.
+- Pinned OkHttp DoH remains the production encrypted-DNS path; embedded-Cronet DoH3 is disabled until a maintained non-vulnerable Cronet artifact is available.
 - DNS-over-TLS support with SNI and hostname verification.
 - Experimental DoQ and WireGuard DNS engines are clearly labeled and stay out of production defaults.
 - DoH bypass prevention, DNS trap routing for hardcoded public resolvers, and Private DNS warnings.

@@ -1,0 +1,5 @@
+v6.9.2 - Embedded Cronet DoH3 disabled
+
+- Removed the embedded Cronet dependency while no maintained non-vulnerable Cronet artifact is available.
+- DoH3 now remains disabled and encrypted DNS continues through fail-closed pinned OkHttp DoH/DoT paths.
+- Updated release posture and provenance tooling to record the no-bundled-Cronet state.

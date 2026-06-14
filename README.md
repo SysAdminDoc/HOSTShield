@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.1-blue)
+![Version](https://img.shields.io/badge/version-6.9.2-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -75,8 +75,8 @@
 |---------|-------------|
 | **DNS-over-HTTPS (DoH)** | RFC 8484 POST+GET. Cloudflare, Google, Quad9, NextDNS, AdGuard, Mullvad, CleanBrowsing |
 | **DNS-over-TLS (DoT)** | RFC 7858, TLSv1.3, SNI + hostname verification. Cloudflare, Google, Quad9, AdGuard |
-| **DNS-over-QUIC (DoQ)** | Experimental simplified engine, not a full QUIC/TLS 1.3 stack. Falls back to DoT; production defaults remain pinned DoH/DoH3/DoT |
-| **DNS-over-WireGuard** | Experimental DNS-only simplified engine, not a full WireGuard tunnel. Production defaults remain pinned DoH/DoH3/DoT |
+| **DNS-over-QUIC (DoQ)** | Experimental simplified engine, not a full QUIC/TLS 1.3 stack. Falls back to DoT; production defaults remain pinned DoH/DoT |
+| **DNS-over-WireGuard** | Experimental DNS-only simplified engine, not a full WireGuard tunnel. Production defaults remain pinned DoH/DoT |
 | **Certificate Pinning** | Fail-closed SHA-256 pin validation per provider from a versioned local manifest with primary/backup pins and review/expiry diagnostics |
 | **Smart Latency Failover** | EMA-based latency tracking per provider, auto-selects fastest, falls back through all on failure |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through VPN tunnel to prevent bypass |
@@ -277,7 +277,7 @@ Public actions are protected by HostShield's signature-level automation permissi
 | Database | Room (11 entities, explicit v1-v15 migrations) |
 | Preferences | DataStore |
 | Async | Coroutines + Flow, ViewModels + StateFlow |
-| Networking | OkHttp 5 (source downloads, DoH resolver) |
+| Networking | OkHttp 5 (source downloads, pinned DoH resolver) |
 | Root | libsu (topjohnwu) |
 | GeoIP | MaxMind GeoIP2 (GeoLite2-Country + ASN) |
 | Build | Gradle KTS, AGP 9.2, KSP, Android SDK 36 compile / targetSdk 36, minSdk 26 |
@@ -393,6 +393,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.2** | Embedded Cronet removed and DoH3 disabled while no maintained non-vulnerable Cronet artifact is available. Pinned OkHttp DoH/DoT remains the production encrypted DNS path, and release posture/provenance scripts now record the no-bundled-Cronet state. |
 | **6.9.1** | Debug pseudolocales enabled, RTL/pseudo-expanded Compose layout scaffold added, Home/Settings/QR strings moved through resources, and QR config import/export validation kept covered by JVM tests. |
 | **6.9.0** | AdGuard `$dnsrewrite` import support. NXDOMAIN/REFUSED/null-IP rewrites imported as block rules. A/AAAA IP rewrites parsed as redirect rules. 3-part form (`NOERROR;A;1.2.3.4`) supported. Unsupported CNAME rewrites counted in diagnostics. |
 | **6.8.0** | Threat-intel feed health tracking. Per-feed HTTP status, SHA-256, entry counts, staleness detection, and consecutive failure tracking with full cache persistence. Compile-warning deprecation cleanup: removed dead NetworkChangeReceiver, migrated clipboard API, updated MaxMind accessors. ZXing/Room 3.0/Accrescent evaluations documented. |
