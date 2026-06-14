@@ -3,6 +3,23 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.10] - 2026-06-13
+
+### Fixed
+- **Encrypted DNS no longer leaks to plaintext (GitHub #1).** When DoH, DoT,
+  DoQ, or WireGuard is enabled, a resolver failure now fails closed — serving a
+  stale cached answer if available, otherwise returning SERVFAIL — instead of
+  silently falling back to plaintext UDP against the hardcoded public upstream
+  (8.8.8.8/1.1.1.1). Previously an enabled-but-failing DoH provider (e.g. Quad9)
+  would leak queries in the clear to Google, which is what `dnscheck.tools`
+  reported. DoQ/DoT/WireGuard still chain to DoH when it is enabled (remaining
+  encrypted); only the terminal plaintext fallback was removed.
+- **DNS provider and upstream changes now apply without restarting protection
+  (GitHub #1).** `DnsVpnService` observes the DoH/DoT/DoQ enable flags,
+  providers, and custom upstream servers and reloads them live (flushing the DNS
+  cache), so changing the resolver in Settings takes effect immediately instead
+  of appearing stuck on whatever was selected when protection started.
+
 ## [v6.9.9] - 2026-06-14
 
 ### UI

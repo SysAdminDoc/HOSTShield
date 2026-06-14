@@ -44,7 +44,11 @@ import com.hostshield.util.PrivacyLog
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import java.io.FileOutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -261,12 +265,15 @@ class DnsVpnService : VpnService() {
     @Volatile private var blockedApps = setOf<String>()
     // Context-aware firewall: maps package_name -> FirewallRule for apps with context rules
     @Volatile private var contextRules = mapOf<String, com.hostshield.data.model.FirewallRule>()
-    private var useDoH = false
-    private var dohProvider = DohResolver.Provider.CLOUDFLARE
-    private var useDoT = false
-    private var dotProvider = DotResolver.Provider.CLOUDFLARE
-    private var useDoQ = false
-    private var doqProvider = DoqResolver.Provider.ADGUARD
+    // DNS transport config — @Volatile because startDnsConfigObserver() updates
+    // these live (off the forwarding threads) so provider/upstream changes apply
+    // without restarting protection (GitHub issue #1).
+    @Volatile private var useDoH = false
+    @Volatile private var dohProvider = DohResolver.Provider.CLOUDFLARE
+    @Volatile private var useDoT = false
+    @Volatile private var dotProvider = DotResolver.Provider.CLOUDFLARE
+    @Volatile private var useDoQ = false
+    @Volatile private var doqProvider = DoqResolver.Provider.ADGUARD
     private var useWireGuard = false
     private var dnsTrapEnabled = true
     @Volatile private var threatIntelEnabled = false
@@ -276,8 +283,9 @@ class DnsVpnService : VpnService() {
     // Block response: "nxdomain", "zero_ip", "refused"
     private var blockResponseType = "nxdomain"
     private var edeEnabled = false
-    // Custom upstream DNS resolved at start
-    private var upstreamDnsServers = UPSTREAM_DNS.toList()
+    // Custom upstream DNS — updated live by startDnsConfigObserver()
+    @Volatile private var upstreamDnsServers = UPSTREAM_DNS.toList()
+    private var dnsConfigJob: Job? = null
 
     private var writeChannel = Channel<ByteArray>(WRITE_CHANNEL_CAPACITY)
     private val blockedCount = AtomicInteger(0)
@@ -699,6 +707,7 @@ class DnsVpnService : VpnService() {
             scheduleWatchdog()
             startTunnelHeartbeat()
             startVpnRecoveryMonitor()
+            startDnsConfigObserver()
 
             // Captive portal handling
             serviceScope.launch {
@@ -762,6 +771,7 @@ class DnsVpnService : VpnService() {
         cancelTunnelHeartbeat()
         cancelVpnRecoveryMonitor()
         unregisterNetworkCallback()
+        dnsConfigJob?.cancel(); dnsConfigJob = null
         logFlushJob?.cancel(); logFlushJob = null
         stabilityFlushJob?.cancel(); stabilityFlushJob = null
         // Flush remaining logs SYNCHRONOUSLY — serviceScope dies with the service,
@@ -2192,6 +2202,81 @@ class DnsVpnService : VpnService() {
         }
     }
 
+    /**
+     * Fail closed when an explicitly-enabled encrypted DNS transport (DoH/DoT/
+     * DoQ/WireGuard) cannot complete a query.
+     *
+     * Critically, this NEVER falls back to plaintext UDP. Doing so would send
+     * the query in the clear to a hardcoded public resolver (UPSTREAM_DNS,
+     * i.e. 8.8.8.8/1.1.1.1), leaking it and silently overriding the user's
+     * choice of encrypted DNS — the defect reported in GitHub issue #1
+     * ("enable DoH Quad9, dnsleaktest shows Google DNS"). Instead we serve a
+     * stale cached answer when one exists, otherwise return SERVFAIL so the
+     * client fails fast.
+     */
+    private fun failClosedEncrypted(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
+                                    transport: String, wrapV6: Boolean = false, v6Hdr: Int = 0) {
+        val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
+        val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
+        val stale = dnsCache.getStale(domain, qtypeNum, txId)
+        if (stale != null) {
+            PrivacyLog.i(TAG, "FAIL-CLOSED $transport $domain — serving stale cache (no plaintext fallback)")
+            if (wrapV6) wrapResponseV6(orig, v6Hdr, stale)?.let { sendToTun(it) }
+            else wrapResponseV4(orig, ihl, stale)?.let { sendToTun(it) }
+            return
+        }
+        PrivacyLog.w(TAG, "FAIL-CLOSED $transport $domain — SERVFAIL (encrypted DNS failed, refusing plaintext fallback)")
+        val servfail = DnsPacketBuilder.buildServfail(dns)
+        if (wrapV6) wrapResponseV6(orig, v6Hdr, servfail)?.let { sendToTun(it) }
+        else wrapResponseV4(orig, ihl, servfail)?.let { sendToTun(it) }
+    }
+
+    /**
+     * Observe DNS-transport preferences and apply changes live while protection
+     * is running. Without this, config is only read once in startVpn(), so
+     * changing the DoH provider or upstream servers in Settings appeared to do
+     * nothing until the user stopped and restarted protection — the second half
+     * of GitHub issue #1 ("unable to change custom dns ... always default to
+     * 9.9.9.9"). WireGuard is intentionally excluded (a live key/endpoint change
+     * requires a tunnel reconnect via restart).
+     */
+    private fun startDnsConfigObserver() {
+        dnsConfigJob?.cancel()
+        dnsConfigJob = serviceScope.launch {
+            combine(
+                prefs.dohEnabled.map { it.toString() },
+                prefs.dohProvider,
+                prefs.dotEnabled.map { it.toString() },
+                prefs.dotProvider,
+                prefs.doqEnabled.map { it.toString() },
+                prefs.doqProvider,
+                prefs.customUpstreamDns
+            ) { values -> values.joinToString("|") }
+                .distinctUntilChanged()
+                .drop(1) // startVpn() already loaded the initial config
+                .collect { applyLiveDnsConfig() }
+        }
+    }
+
+    private suspend fun applyLiveDnsConfig() {
+        useDoH = prefs.dohEnabled.first()
+        dohProvider = DohResolver.Provider.fromId(prefs.dohProvider.first())
+        useDoT = prefs.dotEnabled.first()
+        dotProvider = DotResolver.Provider.fromId(prefs.dotProvider.first())
+        useDoQ = prefs.doqEnabled.first()
+        doqProvider = DoqResolver.Provider.fromId(prefs.doqProvider.first())
+        val customDns = prefs.getUpstreamDnsList()
+        upstreamDnsServers = if (customDns.isNotEmpty()) customDns else UPSTREAM_DNS.toList()
+        // Flush cache so subsequent queries use the newly selected resolver
+        // instead of answers cached from the previous one.
+        dnsCache.clear()
+        PrivacyLog.i(TAG, "DNS config reloaded live: " +
+            "DoH=${if (useDoH) dohProvider.name else "off"}, " +
+            "DoT=${if (useDoT) dotProvider.name else "off"}, " +
+            "DoQ=${if (useDoQ) doqProvider.name else "off"}, " +
+            "upstream=${upstreamDnsServers.joinToString(",")}")
+    }
+
     private suspend fun forwardDoH(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                     app: Pair<String, String> = Pair("", ""),
                                     wrapV6: Boolean = false, v6Hdr: Int = 0) {
@@ -2219,18 +2304,18 @@ class DnsVpnService : VpnService() {
                 else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
             }
             else {
-                if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
-                else forwardUdp(dns, domain, orig, ihl, app)
+                // DoH was explicitly enabled — fail closed, never leak to plaintext UDP.
+                failClosedEncrypted(dns, domain, orig, ihl, "DoH", wrapV6, v6Hdr)
             }
-        } catch (_: Exception) {
-            if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
-            else forwardUdp(dns, domain, orig, ihl, app)
+        } catch (e: Exception) {
+            PrivacyLog.w(TAG, "DoH forward failed for $domain (${e.javaClass.simpleName}) — failing closed")
+            failClosedEncrypted(dns, domain, orig, ihl, "DoH", wrapV6, v6Hdr)
         }
     }
 
     /**
      * Forward DNS query via DNS-over-QUIC (RFC 9250).
-     * Falls back to DoH, then plaintext UDP on failure.
+     * Falls back to DoH (still encrypted) when enabled, otherwise fails closed.
      */
     private suspend fun forwardDoQ(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                     app: Pair<String, String> = Pair("", ""),
@@ -2255,21 +2340,20 @@ class DnsVpnService : VpnService() {
                 else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
             } else {
                 // DoQ returned null (server requires full QUIC handshake) — fall back
+                // to DoH if enabled (still encrypted), otherwise fail closed.
                 if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-                else if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
-                else forwardUdp(dns, domain, orig, ihl, app)
+                else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr)
             }
         } catch (_: Exception) {
-            // DoQ failed — fall back to DoH or UDP
+            // DoQ failed — fall back to DoH (encrypted) or fail closed. Never plaintext.
             if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            else if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
-            else forwardUdp(dns, domain, orig, ihl, app)
+            else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr)
         }
     }
 
     /**
      * Forward DNS query via WireGuard tunnel.
-     * Falls back to DoQ, DoH, or plaintext UDP on failure.
+     * Falls back to DoQ or DoH (still encrypted) when enabled, otherwise fails closed.
      */
     private suspend fun forwardWireGuard(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                           app: Pair<String, String> = Pair("", ""),
@@ -2293,17 +2377,16 @@ class DnsVpnService : VpnService() {
                 if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { sendToTun(it) }
                 else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
             } else {
-                // WireGuard returned null — fall through
+                // WireGuard returned null — fall through to another encrypted
+                // transport when enabled, otherwise fail closed. Never plaintext.
                 if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
                 else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-                else if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
-                else forwardUdp(dns, domain, orig, ihl, app)
+                else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr)
             }
         } catch (_: Exception) {
             if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
             else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            else if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
-            else forwardUdp(dns, domain, orig, ihl, app)
+            else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr)
         }
     }
 
@@ -2313,7 +2396,7 @@ class DnsVpnService : VpnService() {
      */
     /**
      * Forward DNS query via DNS-over-TLS (RFC 7858).
-     * Falls back to DoH, then plaintext UDP on failure.
+     * Falls back to DoH (still encrypted) when enabled, otherwise fails closed.
      */
     private suspend fun forwardDoT(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                     app: Pair<String, String> = Pair("", ""),
@@ -2337,19 +2420,21 @@ class DnsVpnService : VpnService() {
                 if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { sendToTun(it) }
                 else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
             } else {
-                // DoT returned null — fall back to plaintext UDP
-                if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
-                else forwardUdp(dns, domain, orig, ihl, app)
+                // DoT returned null — fall back to DoH if enabled (still encrypted),
+                // otherwise fail closed. Never plaintext UDP.
+                if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
+                else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr)
             }
         } catch (_: Exception) {
-            if (wrapV6) forwardUdpV6(dns, domain, orig, v6Hdr, app)
-            else forwardUdp(dns, domain, orig, ihl, app)
+            if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
+            else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr)
         }
     }
 
     /**
      * Dispatch DNS query to the best available encrypted transport.
-     * Priority: WireGuard > DoQ > DoT > DoH > plaintext UDP.
+     * Priority: WireGuard > DoQ > DoT > DoH. Falls back to plaintext UDP only
+     * when no encrypted transport is enabled; enabled transports fail closed.
      */
     private suspend fun forwardEncrypted(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                           app: Pair<String, String> = Pair("", ""),

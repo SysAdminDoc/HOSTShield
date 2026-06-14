@@ -10,6 +10,10 @@ artifacts/
 CLAUDE.md
 app/build/
 
+# JVM fatal-error / replay dumps from Gradle/KSP crashes
+hs_err_pid*.log
+replay_pid*.log
+
 # Markdown files local-only (except README)
 *.md
 !README.md

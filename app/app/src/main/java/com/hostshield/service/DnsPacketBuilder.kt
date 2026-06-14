@@ -17,6 +17,7 @@ object DnsPacketBuilder {
 
     // DNS constants
     const val RCODE_NOERROR = 0
+    const val RCODE_SERVFAIL = 2
     const val RCODE_NXDOMAIN = 3
     const val RCODE_REFUSED = 5
 
@@ -152,6 +153,18 @@ object DnsPacketBuilder {
      */
     fun buildRefused(queryDns: ByteArray): ByteArray {
         return buildResponseWithRcode(queryDns, RCODE_REFUSED, includeSoa = false)
+    }
+
+    /**
+     * Build a SERVFAIL response (RCODE=2).
+     *
+     * Used to fail closed when an explicitly-enabled encrypted DNS transport
+     * cannot resolve a query. Returning SERVFAIL lets the client fail fast
+     * instead of hanging, without ever leaking the query to a plaintext
+     * upstream resolver.
+     */
+    fun buildServfail(queryDns: ByteArray): ByteArray {
+        return buildResponseWithRcode(queryDns, RCODE_SERVFAIL, includeSoa = false)
     }
 
     /**
