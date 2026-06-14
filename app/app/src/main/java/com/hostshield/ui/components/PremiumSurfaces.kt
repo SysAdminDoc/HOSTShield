@@ -48,6 +48,82 @@ import com.hostshield.ui.theme.TextDim
 import com.hostshield.ui.theme.TextPrimary
 import com.hostshield.ui.theme.TextSecondary
 
+data class HostShieldSegmentOption<T>(
+    val value: T,
+    val label: String,
+    val accent: Color,
+    val icon: ImageVector? = null,
+)
+
+@Composable
+fun <T> HostShieldSegmentedTabs(
+    options: List<HostShieldSegmentOption<T>>,
+    selected: T,
+    onSelected: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    semanticsLabel: String = "Segmented control",
+) {
+    if (options.isEmpty()) return
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = Surface1.copy(alpha = 0.86f),
+        border = BorderStroke(1.dp, Surface3.copy(alpha = 0.58f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            options.forEach { option ->
+                val isSelected = option.value == selected
+                Surface(
+                    onClick = { onSelected(option.value) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 38.dp)
+                        .semantics {
+                            role = Role.Button
+                            contentDescription = "$semanticsLabel: ${option.label}${if (isSelected) ", selected" else ""}"
+                        },
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isSelected) option.accent.copy(alpha = 0.16f) else Color.Transparent,
+                    border = if (isSelected) {
+                        BorderStroke(1.dp, option.accent.copy(alpha = 0.24f))
+                    } else {
+                        BorderStroke(1.dp, Color.Transparent)
+                    },
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        option.icon?.let { icon ->
+                            Icon(
+                                icon,
+                                contentDescription = null,
+                                tint = if (isSelected) option.accent else TextDim,
+                                modifier = Modifier.size(15.dp),
+                            )
+                            Spacer(Modifier.width(5.dp))
+                        }
+                        Text(
+                            option.label,
+                            color = if (isSelected) option.accent else TextDim,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun HostShieldPanelHeader(
     icon: ImageVector,

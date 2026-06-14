@@ -38,7 +38,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.compose.ui.res.stringResource
 import com.hostshield.BuildConfig
+import com.hostshield.R
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.HostShieldTestTags
@@ -127,13 +129,13 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
-            "Settings",
+            stringResource(R.string.screen_settings),
             style = MaterialTheme.typography.headlineMedium,
             color = TextPrimary,
             modifier = Modifier.accessibilityHeading()
         )
         Text(
-            "Tune protection, DNS routing, backups, diagnostics, and sharing.",
+            stringResource(R.string.screen_settings_subtitle),
             color = TextSecondary,
             style = MaterialTheme.typography.bodySmall,
             lineHeight = 16.sp
@@ -200,7 +202,7 @@ fun SettingsScreen(
 
         // Battery Optimization — only show when exemption has NOT been granted
         if (state.batteryOptimized) {
-            SettingsSection("Battery", Icons.Filled.BatteryAlert, Yellow) {
+            SettingsSection(stringResource(R.string.section_battery), Icons.Filled.BatteryAlert, Yellow) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
@@ -213,7 +215,7 @@ fun SettingsScreen(
                         Icon(Icons.Filled.Warning, null, tint = Yellow, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Battery optimization may stop HostShield in the background",
+                            stringResource(R.string.settings_battery_warning),
                             color = Yellow,
                             fontSize = 11.sp,
                             lineHeight = 14.sp,
@@ -223,8 +225,8 @@ fun SettingsScreen(
                 }
                 Spacer(Modifier.height(6.dp))
                 SettingsRow(
-                    "Disable battery optimization",
-                    "Prevents Android from killing HostShield",
+                    stringResource(R.string.settings_disable_battery_opt),
+                    stringResource(R.string.settings_disable_battery_opt_sub),
                     Icons.Filled.BatteryChargingFull
                 ) {
                     viewModel.requestBatteryExemption(context)
@@ -253,9 +255,9 @@ fun SettingsScreen(
         }
 
         // Scheduled Blocking
-        SettingsSection("Schedule", Icons.Filled.Schedule, Sky) {
+        SettingsSection(stringResource(R.string.section_schedule), Icons.Filled.Schedule, Sky) {
             SettingsToggle(
-                "Scheduled blocking", "Auto-enable/disable at set times",
+                stringResource(R.string.settings_scheduled_blocking), stringResource(R.string.settings_scheduled_blocking_sub),
                 Icons.Filled.Timer, state.scheduleEnabled
             ) { viewModel.setScheduleEnabled(it) }
             if (state.scheduleEnabled) {
@@ -280,12 +282,12 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("Start", color = TextDim, fontSize = 10.sp)
+                        Text(stringResource(R.string.label_start), color = TextDim, fontSize = 10.sp)
                         Text(state.scheduleStart, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = TextDim, modifier = Modifier.padding(top = 12.dp).size(16.dp))
                     Column {
-                        Text("End", color = TextDim, fontSize = 10.sp)
+                        Text(stringResource(R.string.label_end), color = TextDim, fontSize = 10.sp)
                         Text(state.scheduleEnd, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                 }
@@ -299,86 +301,86 @@ fun SettingsScreen(
         }
 
         // Hosts Configuration
-        SettingsSection("Configuration", Icons.Filled.Tune, Yellow) {
-            SettingsToggle("Include IPv6", "Block domains on IPv6 as well", Icons.Filled.Language, state.includeIpv6) {
+        SettingsSection(stringResource(R.string.section_configuration), Icons.Filled.Tune, Yellow) {
+            SettingsToggle(stringResource(R.string.settings_include_ipv6), stringResource(R.string.settings_include_ipv6_sub), Icons.Filled.Language, state.includeIpv6) {
                 viewModel.setIncludeIpv6(it)
             }
             Spacer(Modifier.height(4.dp))
-            SettingsToggle("DNS logging", "Record DNS queries for stats", Icons.Filled.Analytics, state.dnsLogging) {
+            SettingsToggle(stringResource(R.string.settings_dns_logging), stringResource(R.string.settings_dns_logging_sub), Icons.Filled.Analytics, state.dnsLogging) {
                 viewModel.setDnsLogging(it)
             }
             Spacer(Modifier.height(4.dp))
-            SettingsToggle("Online IP lookup", "Use ipapi.co when offline GeoIP is unavailable", Icons.Filled.Public, state.onlineGeoIpEnabled) {
+            SettingsToggle(stringResource(R.string.settings_online_ip_lookup), stringResource(R.string.settings_online_ip_lookup_sub), Icons.Filled.Public, state.onlineGeoIpEnabled) {
                 viewModel.setOnlineGeoIpEnabled(it)
             }
         }
 
         // Tools
-        SettingsSection("Tools", Icons.Filled.Build, Peach) {
-            SettingsRow("View hosts file", "Inspect current blocking rules", Icons.Filled.Description, onClick = onNavigateToHostsDiff)
+        SettingsSection(stringResource(R.string.section_tools), Icons.Filled.Build, Peach) {
+            SettingsRow(stringResource(R.string.settings_view_hosts), stringResource(R.string.settings_view_hosts_sub), Icons.Filled.Description, onClick = onNavigateToHostsDiff)
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Edit hosts file", "Direct editor for /etc/hosts (root)", Icons.Filled.Edit, onClick = onNavigateToHostsEditor)
+            SettingsRow(stringResource(R.string.settings_edit_hosts), stringResource(R.string.settings_edit_hosts_sub), Icons.Filled.Edit, onClick = onNavigateToHostsEditor)
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Overlap analysis", "Find redundant domains across sources", Icons.AutoMirrored.Filled.CompareArrows, onClick = onNavigateToOverlapAnalysis)
+            SettingsRow(stringResource(R.string.settings_overlap_analysis), stringResource(R.string.settings_overlap_analysis_sub), Icons.AutoMirrored.Filled.CompareArrows, onClick = onNavigateToOverlapAnalysis)
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Rule tester", "Test if domains match your rules", Icons.Filled.Science, onClick = onNavigateToRuleTest)
+            SettingsRow(stringResource(R.string.settings_rule_tester), stringResource(R.string.settings_rule_tester_sub), Icons.Filled.Science, onClick = onNavigateToRuleTest)
             Spacer(Modifier.height(4.dp))
-            SettingsRow("App privacy report", "Grade each app's tracking behavior", Icons.Filled.PrivacyTip, onClick = onNavigateToAppPrivacy)
+            SettingsRow(stringResource(R.string.settings_app_privacy), stringResource(R.string.settings_app_privacy_sub), Icons.Filled.PrivacyTip, onClick = onNavigateToAppPrivacy)
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Automation audit log", "View commands from Tasker, ADB, etc", Icons.AutoMirrored.Filled.ReceiptLong, onClick = onNavigateToAutomationAudit)
+            SettingsRow(stringResource(R.string.settings_automation_audit), stringResource(R.string.settings_automation_audit_sub), Icons.AutoMirrored.Filled.ReceiptLong, onClick = onNavigateToAutomationAudit)
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Export firewall rules", "Save per-app network rules as JSON", Icons.Filled.Shield) {
+            SettingsRow(stringResource(R.string.settings_export_firewall), stringResource(R.string.settings_export_firewall_sub), Icons.Filled.Shield) {
                 viewModel.exportFirewallRules()
             }
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Import rules", "From JSON or hosts file", Icons.Filled.FileUpload) {
+            SettingsRow(stringResource(R.string.settings_import_rules), stringResource(R.string.settings_import_rules_sub), Icons.Filled.FileUpload) {
                 importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
             }
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Export rules", "Save rules as JSON", Icons.Filled.FileDownload) {
+            SettingsRow(stringResource(R.string.settings_export_rules), stringResource(R.string.settings_export_rules_sub), Icons.Filled.FileDownload) {
                 exportLauncher.launch("hostshield_rules.json")
             }
         }
 
         // Backup
-        SettingsSection("Backup", Icons.Filled.Backup, Mauve) {
-            SettingsRow("Create backup", "Sources, rules, profiles, preferences", Icons.Filled.SaveAlt) {
+        SettingsSection(stringResource(R.string.section_backup), Icons.Filled.Backup, Mauve) {
+            SettingsRow(stringResource(R.string.settings_create_backup), stringResource(R.string.settings_create_backup_sub), Icons.Filled.SaveAlt) {
                 viewModel.showBackupExportChoice()
             }
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Restore backup", "Restore from previous backup", Icons.Filled.RestorePage) {
+            SettingsRow(stringResource(R.string.settings_restore_backup), stringResource(R.string.settings_restore_backup_sub), Icons.Filled.RestorePage) {
                 restoreLauncher.launch(arrayOf("application/json", "application/octet-stream", "*/*"))
             }
             Spacer(Modifier.height(4.dp))
-            SettingsRow("WebDAV sync", "Sync backups to Nextcloud, ownCloud", Icons.Filled.Cloud, onClick = onNavigateToWebDavSync)
+            SettingsRow(stringResource(R.string.settings_webdav), stringResource(R.string.settings_webdav_sub), Icons.Filled.Cloud, onClick = onNavigateToWebDavSync)
             Spacer(Modifier.height(4.dp))
-            SettingsRow("QR config sharing", "Share config via QR code", Icons.Filled.QrCode2, onClick = onNavigateToQrConfig)
+            SettingsRow(stringResource(R.string.settings_qr_config), stringResource(R.string.settings_qr_config_sub), Icons.Filled.QrCode2, onClick = onNavigateToQrConfig)
         }
 
         // Migration from other blockers
-        SettingsSection("Import From", Icons.Filled.SwapHoriz, Flamingo) {
-            SettingsRow("AdAway backup", "Import hosts, sources, and rules", Icons.Filled.ImportExport) {
+        SettingsSection(stringResource(R.string.section_import_from), Icons.Filled.SwapHoriz, Flamingo) {
+            SettingsRow(stringResource(R.string.import_adaway), stringResource(R.string.import_adaway_sub), Icons.Filled.ImportExport) {
                 importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
             }
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Blokada / NextDNS config", "Auto-detects format on import", Icons.Filled.CloudDownload) {
+            SettingsRow(stringResource(R.string.import_blokada), stringResource(R.string.import_blokada_sub), Icons.Filled.CloudDownload) {
                 importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
             }
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Hosts file", "Standard hosts format from any blocker", Icons.Filled.Description) {
+            SettingsRow(stringResource(R.string.import_hosts_file), stringResource(R.string.import_hosts_file_sub), Icons.Filled.Description) {
                 importLauncher.launch(arrayOf("text/plain", "*/*"))
             }
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Pi-hole teleporter", "domainlist CSV or gravity list export", Icons.Filled.Dns) {
+            SettingsRow(stringResource(R.string.import_pihole), stringResource(R.string.import_pihole_sub), Icons.Filled.Dns) {
                 importLauncher.launch(arrayOf("text/csv", "text/plain", "*/*"))
             }
         }
 
         // Export shareable
-        SettingsSection("Share", Icons.Filled.Share, Blue) {
+        SettingsSection(stringResource(R.string.section_share), Icons.Filled.Share, Blue) {
             SettingsRow(
-                "Export shareable blocklist",
-                "Hosts file format \u2014 share on GitHub or use as source URL",
+                stringResource(R.string.share_export_blocklist),
+                stringResource(R.string.share_export_blocklist_sub),
                 Icons.Filled.FileUpload
             ) {
                 viewModel.exportShareableBlocklist()
@@ -386,20 +388,20 @@ fun SettingsScreen(
         }
 
         // Diagnostics & Export
-        SettingsSection("Diagnostics & Export", Icons.Filled.BugReport, Yellow) {
+        SettingsSection(stringResource(R.string.section_diagnostics), Icons.Filled.BugReport, Yellow) {
             val diagState = state.diagnosticExport
             when (diagState) {
                 DiagnosticExportState.Idle -> {
                     SettingsRow(
-                        "Generate diagnostic package",
-                        "Device info, config, logs, event log ZIP",
+                        stringResource(R.string.settings_generate_diagnostic),
+                        stringResource(R.string.settings_generate_diagnostic_sub),
                         Icons.Filled.Description
                     ) { viewModel.generateDiagnosticReport() }
                 }
                 DiagnosticExportState.Generating -> {
                     SettingsRow(
-                        "Generating diagnostic package…",
-                        "Building ZIP with device info, config, logs",
+                        stringResource(R.string.settings_generating_diagnostic),
+                        stringResource(R.string.settings_generating_diagnostic_sub),
                         Icons.Filled.HourglassTop
                     ) {}
                 }
@@ -417,7 +419,7 @@ fun SettingsScreen(
                         ) {
                             Icon(Icons.Filled.Share, null, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Share (${sizeKb} KB)", fontSize = 10.sp)
+                            Text("${stringResource(R.string.action_share)} (${sizeKb} KB)", fontSize = 10.sp)
                         }
                         OutlinedButton(
                             onClick = { viewModel.dismissDiagnosticExport() },
@@ -427,22 +429,22 @@ fun SettingsScreen(
                         ) {
                             Icon(Icons.Filled.Close, null, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Discard", fontSize = 10.sp)
+                            Text(stringResource(R.string.action_discard), fontSize = 10.sp)
                         }
                     }
                 }
                 is DiagnosticExportState.Failed -> {
                     SettingsRow(
-                        "Export failed",
+                        stringResource(R.string.settings_export_failed),
                         diagState.error,
                         Icons.Filled.Error
                     ) { viewModel.generateDiagnosticReport() }
                 }
             }
             Spacer(Modifier.height(4.dp))
-            SettingsRow("Crash reports", "View stored crash logs", Icons.Filled.BugReport, onClick = onNavigateToCrashReports)
+            SettingsRow(stringResource(R.string.settings_crash_reports), stringResource(R.string.settings_crash_reports_sub), Icons.Filled.BugReport, onClick = onNavigateToCrashReports)
             Spacer(Modifier.height(4.dp))
-            SettingsRow("TLS fingerprints", "JA3/JA4 per-app TLS library identification", Icons.Filled.Fingerprint, onClick = onNavigateToTlsFingerprints)
+            SettingsRow(stringResource(R.string.settings_tls_fingerprints), stringResource(R.string.settings_tls_fingerprints_sub), Icons.Filled.Fingerprint, onClick = onNavigateToTlsFingerprints)
             Spacer(Modifier.height(4.dp))
 
             val csvMessage by viewModel.csvMessage.collectAsStateWithLifecycle()
@@ -473,7 +475,7 @@ fun SettingsScreen(
                     if (isExportingCsv) CircularProgressIndicator(Modifier.size(12.dp), color = Yellow, strokeWidth = 1.5.dp)
                     else Icon(Icons.Filled.TableChart, null, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Export CSV", fontSize = 10.sp)
+                    Text(stringResource(R.string.action_export_csv), fontSize = 10.sp)
                 }
             }
             csvMessage?.let { msg ->
@@ -482,10 +484,10 @@ fun SettingsScreen(
         }
 
         // Appearance
-        SettingsSection("Appearance", Icons.Filled.Visibility, Mauve) {
+        SettingsSection(stringResource(R.string.section_appearance), Icons.Filled.Visibility, Mauve) {
             SettingsToggle(
-                "High-contrast AMOLED",
-                "Pure-black surfaces, brighter text, and stronger warning states",
+                stringResource(R.string.settings_high_contrast),
+                stringResource(R.string.settings_high_contrast_sub),
                 Icons.Filled.Visibility,
                 state.highContrastAmoled
             ) {
@@ -493,7 +495,7 @@ fun SettingsScreen(
             }
 
             Spacer(Modifier.height(12.dp))
-            Text("Accent color", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
+            Text(stringResource(R.string.label_accent_color), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val colors = listOf(
@@ -534,12 +536,12 @@ fun SettingsScreen(
         }
 
         // About
-        SettingsSection("About", Icons.Filled.Info, TextSecondary) {
+        SettingsSection(stringResource(R.string.section_about), Icons.Filled.Info, TextSecondary) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Version", color = TextSecondary, fontSize = 13.sp)
+                Text(stringResource(R.string.label_version), color = TextSecondary, fontSize = 13.sp)
                 Text(BuildConfig.VERSION_NAME, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             }
             if (state.isRootAvailable) {
@@ -547,8 +549,8 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Root", color = TextSecondary, fontSize = 13.sp)
-                    Text("Available", color = Green, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.label_root), color = TextSecondary, fontSize = 13.sp)
+                    Text(stringResource(R.string.label_available), color = Green, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 }
             }
 
@@ -576,7 +578,7 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        if (state.isCheckingUpdate) "Checking..." else "Check for updates",
+                        if (state.isCheckingUpdate) stringResource(R.string.label_checking) else stringResource(R.string.label_check_for_updates),
                         color = TextPrimary,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
@@ -685,7 +687,7 @@ fun SettingsScreen(
                 ) {
                     Icon(Icons.Filled.Code, null, tint = TextSecondary, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(10.dp))
-                    Text("View on GitHub", color = TextSecondary, fontSize = 13.sp)
+                    Text(stringResource(R.string.label_view_on_github), color = TextSecondary, fontSize = 13.sp)
                 }
             }
         }
@@ -696,7 +698,7 @@ fun SettingsScreen(
             val isError = msg.contains("fail", ignoreCase = true) || msg.contains("error", ignoreCase = true)
             HostShieldStatusBanner(
                 icon = if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
-                title = if (isError) "Settings action failed" else "Settings action complete",
+                title = if (isError) stringResource(R.string.status_action_failed) else stringResource(R.string.status_action_complete),
                 message = msg,
                 accent = if (isError) Red else Teal,
                 onDismiss = {
@@ -726,8 +728,8 @@ fun SettingsScreen(
         }
         is BackupDialogState.ExportPassphrase -> {
             BackupPassphraseDialog(
-                title = "Encrypt Backup",
-                confirmLabel = "Export",
+                title = stringResource(R.string.backup_encrypt_title),
+                confirmLabel = stringResource(R.string.action_export),
                 showConfirmField = true,
                 error = null,
                 onConfirm = { passphrase ->
@@ -739,8 +741,8 @@ fun SettingsScreen(
         }
         is BackupDialogState.ImportPassphrase -> {
             BackupPassphraseDialog(
-                title = "Encrypted Backup",
-                confirmLabel = "Restore",
+                title = stringResource(R.string.backup_encrypted),
+                confirmLabel = stringResource(R.string.action_restore),
                 showConfirmField = false,
                 error = dialog.error,
                 onConfirm = { passphrase ->
@@ -763,16 +765,16 @@ private fun BackupExportChoiceDialog(
         containerColor = Surface0,
         titleContentColor = TextPrimary,
         textContentColor = TextSecondary,
-        title = { Text("Create Backup") },
-        text = { Text("Choose whether to encrypt the backup with a passphrase.") },
+        title = { Text(stringResource(R.string.backup_dialog_title)) },
+        text = { Text(stringResource(R.string.backup_dialog_message)) },
         confirmButton = {
             TextButton(onClick = onEncrypted) {
-                Text("Encrypted", color = Teal)
+                Text(stringResource(R.string.backup_encrypted), color = Teal)
             }
         },
         dismissButton = {
             TextButton(onClick = onPlaintext) {
-                Text("Plaintext", color = TextSecondary)
+                Text(stringResource(R.string.backup_plaintext), color = TextSecondary)
             }
         }
     )
@@ -808,7 +810,7 @@ private fun BackupPassphraseDialog(
                 OutlinedTextField(
                     value = passphrase,
                     onValueChange = { passphrase = it },
-                    label = { Text("Passphrase") },
+                    label = { Text(stringResource(R.string.backup_passphrase)) },
                     singleLine = true,
                     visualTransformation = if (visible)
                         androidx.compose.ui.text.input.VisualTransformation.None
@@ -838,11 +840,11 @@ private fun BackupPassphraseDialog(
                     OutlinedTextField(
                         value = confirmPassphrase,
                         onValueChange = { confirmPassphrase = it },
-                        label = { Text("Confirm passphrase") },
+                        label = { Text(stringResource(R.string.backup_confirm_passphrase)) },
                         singleLine = true,
                         isError = mismatch,
                         supportingText = if (mismatch) {
-                            { Text("Passphrases do not match", color = Red) }
+                            { Text(stringResource(R.string.backup_passphrase_mismatch), color = Red) }
                         } else null,
                         visualTransformation = if (visible)
                             androidx.compose.ui.text.input.VisualTransformation.None
@@ -872,7 +874,7 @@ private fun BackupPassphraseDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondary)
+                Text(stringResource(R.string.action_cancel), color = TextSecondary)
             }
         }
     )

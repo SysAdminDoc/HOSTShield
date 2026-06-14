@@ -1,0 +1,6 @@
+v6.9.1 - Pseudolocale and RTL layout scaffolding
+
+- Debug builds now generate Android pseudolocales for layout-safety checks.
+- Added an RTL pseudo-expanded Compose scaffold for reusable HostShield surfaces.
+- Moved touched Home, Settings, Protection, and QR configuration copy through string resources.
+- Kept QR config export/import validation covered by focused JVM tests.

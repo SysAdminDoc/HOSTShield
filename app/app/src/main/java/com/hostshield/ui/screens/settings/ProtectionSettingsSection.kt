@@ -10,7 +10,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.hostshield.R
 import com.hostshield.ui.theme.*
 
 @Composable
@@ -34,43 +36,43 @@ fun ProtectionSettingsSection(
     onDismissPcap: () -> Unit
 ) {
     // VPN Settings
-    SettingsSection("VPN", Icons.Filled.VpnLock, Teal) {
-        SettingsRow("App exclusions", "Bypass VPN for specific apps", Icons.Filled.AppBlocking, onClick = onNavigateToAppExclusions)
+    SettingsSection(stringResource(R.string.section_vpn), Icons.Filled.VpnLock, Teal) {
+        SettingsRow(stringResource(R.string.protection_app_exclusions), stringResource(R.string.protection_app_exclusions_sub), Icons.Filled.AppBlocking, onClick = onNavigateToAppExclusions)
         Spacer(Modifier.height(4.dp))
         SettingsRow(
-            "Per-app firewall",
-            if (firewalledApps > 0) "$firewalledApps apps firewalled" else "Block all DNS for specific apps",
+            stringResource(R.string.protection_per_app_firewall),
+            if (firewalledApps > 0) stringResource(R.string.protection_apps_firewalled, firewalledApps) else stringResource(R.string.protection_per_app_firewall_sub),
             Icons.Filled.Block,
             onClick = onNavigateToFirewall
         )
     }
 
     // Content Protection
-    SettingsSection("Protection", Icons.Filled.FilterList, Mauve) {
-        SettingsRow("Content filtering", "Block categories: adult, gambling, social, etc.", Icons.Filled.FilterList, onClick = onNavigateToContentFilter)
+    SettingsSection(stringResource(R.string.section_protection), Icons.Filled.FilterList, Mauve) {
+        SettingsRow(stringResource(R.string.protection_content_filtering), stringResource(R.string.protection_content_filtering_sub), Icons.Filled.FilterList, onClick = onNavigateToContentFilter)
         Spacer(Modifier.height(4.dp))
-        SettingsRow("Parental controls", "Age profiles with PIN lock", Icons.Filled.AdminPanelSettings, onClick = onNavigateToParentalControls)
+        SettingsRow(stringResource(R.string.protection_parental_controls), stringResource(R.string.protection_parental_controls_sub), Icons.Filled.AdminPanelSettings, onClick = onNavigateToParentalControls)
     }
 
     // Network Firewall (iptables)
-    SettingsSection("Network Firewall", Icons.Filled.Security, Red) {
+    SettingsSection(stringResource(R.string.section_network_firewall), Icons.Filled.Security, Red) {
         SettingsRow(
-            "Connection log",
-            "View blocked connections from iptables",
+            stringResource(R.string.protection_connection_log),
+            stringResource(R.string.protection_connection_log_sub),
             Icons.AutoMirrored.Filled.List,
             onClick = onNavigateToConnectionLog
         )
         Spacer(Modifier.height(4.dp))
         SettingsRow(
-            "DNS tools",
-            "DNS cache, lookup, diagnostics",
+            stringResource(R.string.protection_dns_tools),
+            stringResource(R.string.protection_dns_tools_sub),
             Icons.Filled.Dns,
             onClick = onNavigateToDnsTools
         )
         Spacer(Modifier.height(4.dp))
         SettingsRow(
-            "Network usage",
-            "Per-app data usage since boot",
+            stringResource(R.string.protection_network_usage),
+            stringResource(R.string.protection_network_usage_sub),
             Icons.Filled.DataUsage,
             onClick = onNavigateToNetworkStats
         )
@@ -91,7 +93,7 @@ fun ProtectionSettingsSection(
                     ) {
                         Icon(Icons.Filled.SaveAlt, null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Export PCAP", fontSize = 10.sp)
+                        Text(stringResource(R.string.action_export_pcap), fontSize = 10.sp)
                     }
                 }
             }
@@ -102,13 +104,13 @@ fun ProtectionSettingsSection(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     CircularProgressIndicator(Modifier.size(14.dp), color = Teal, strokeWidth = 1.5.dp)
-                    Text("Generating PCAP…", color = TextDim, fontSize = 11.sp)
+                    Text(stringResource(R.string.pcap_generating), color = TextDim, fontSize = 11.sp)
                 }
             }
             is PcapExportState.Ready -> {
                 val sizeKb = pcapExport.sizeBytes / 1024
                 Text(
-                    "Contains DNS hostnames and connection destinations",
+                    stringResource(R.string.pcap_privacy_warning),
                     color = Peach,
                     fontSize = 10.sp,
                     modifier = Modifier.padding(vertical = 2.dp)
@@ -125,7 +127,7 @@ fun ProtectionSettingsSection(
                     ) {
                         Icon(Icons.Filled.Share, null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Share (${sizeKb} KB)", fontSize = 10.sp)
+                        Text("${stringResource(R.string.action_share)} (${sizeKb} KB)", fontSize = 10.sp)
                     }
                     OutlinedButton(
                         onClick = onSavePcap,
@@ -135,7 +137,7 @@ fun ProtectionSettingsSection(
                     ) {
                         Icon(Icons.Filled.Save, null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Save As", fontSize = 10.sp)
+                        Text(stringResource(R.string.action_save_as), fontSize = 10.sp)
                     }
                     OutlinedButton(
                         onClick = onDismissPcap,
@@ -147,7 +149,7 @@ fun ProtectionSettingsSection(
                 }
             }
             PcapExportState.Empty -> {
-                Text("No blocked entries to export", color = TextDim, fontSize = 10.sp, modifier = Modifier.padding(vertical = 4.dp))
+                Text(stringResource(R.string.pcap_empty), color = TextDim, fontSize = 10.sp, modifier = Modifier.padding(vertical = 4.dp))
             }
             is PcapExportState.Failed -> {
                 Text(pcapExport.error, color = Red, fontSize = 10.sp, modifier = Modifier.padding(vertical = 4.dp))
@@ -157,7 +159,7 @@ fun ProtectionSettingsSection(
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
                     ) {
-                        Text("Retry", fontSize = 10.sp)
+                        Text(stringResource(R.string.action_retry), fontSize = 10.sp)
                     }
                 }
             }

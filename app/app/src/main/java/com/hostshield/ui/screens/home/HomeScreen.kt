@@ -27,6 +27,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.hostshield.ui.components.HostShieldCompactState
 import com.hostshield.ui.components.HostShieldPanelHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
+import androidx.compose.ui.res.stringResource
+import com.hostshield.R
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.theme.*
@@ -194,7 +196,7 @@ fun HomeScreen(
         // ── Protection Modules ──────────────────────────────
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
             Text(
-                "Protection Modules",
+                stringResource(R.string.home_protection_modules),
                 style = MaterialTheme.typography.titleSmall,
                 color = TextSecondary,
                 fontWeight = FontWeight.SemiBold,
@@ -208,10 +210,10 @@ fun HomeScreen(
                 ModuleCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.Storage,
-                    title = "Hosts",
+                    title = stringResource(R.string.module_hosts),
                     status = if (state.isEnabled && state.blockMethod == com.hostshield.data.model.BlockMethod.ROOT_HOSTS)
-                        "Active" else "Off",
-                    detail = "${formatCompact(state.totalDomainsBlocked)} rules",
+                        stringResource(R.string.status_active) else stringResource(R.string.status_off),
+                    detail = stringResource(R.string.home_rules_count, formatCompact(state.totalDomainsBlocked)),
                     accent = Teal,
                     isActive = state.isEnabled && state.blockMethod == com.hostshield.data.model.BlockMethod.ROOT_HOSTS,
                     onClick = {
@@ -227,10 +229,10 @@ fun HomeScreen(
                 ModuleCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.VpnLock,
-                    title = "VPN",
+                    title = stringResource(R.string.module_vpn),
                     status = if (state.isEnabled && state.blockMethod == com.hostshield.data.model.BlockMethod.VPN)
-                        "Active" else "Off",
-                    detail = if (state.dohEnabled) "DoH on" else "DNS filter",
+                        stringResource(R.string.status_active) else stringResource(R.string.status_off),
+                    detail = if (state.dohEnabled) stringResource(R.string.home_doh_on) else stringResource(R.string.home_dns_filter),
                     accent = Blue,
                     isActive = state.isEnabled && state.blockMethod == com.hostshield.data.model.BlockMethod.VPN,
                     onClick = {
@@ -246,10 +248,10 @@ fun HomeScreen(
                 ModuleCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.LocalFireDepartment,
-                    title = "Firewall",
-                    status = if (state.networkFirewallActive) "Active" else "Off",
+                    title = stringResource(R.string.module_firewall),
+                    status = if (state.networkFirewallActive) stringResource(R.string.status_active) else stringResource(R.string.status_off),
                     detail = if (state.networkFirewallActive)
-                        "${state.networkFirewallRules} rules" else "iptables",
+                        stringResource(R.string.home_rules_count, state.networkFirewallRules.toString()) else stringResource(R.string.home_iptables),
                     accent = Peach,
                     isActive = state.networkFirewallActive,
                     onClick = onNavigateToFirewall
@@ -265,8 +267,8 @@ fun HomeScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     HostShieldPanelHeader(
                         icon = Icons.Filled.Dns,
-                        title = "Live DNS Activity",
-                        subtitle = if (state.dnsLoggingEnabled) "Newest resolver decisions" else "Logging is paused",
+                        title = stringResource(R.string.home_live_dns_activity),
+                        subtitle = if (state.dnsLoggingEnabled) stringResource(R.string.home_newest_decisions) else stringResource(R.string.home_logging_is_paused),
                         accent = Blue,
                     ) {
                         Surface(
@@ -275,7 +277,7 @@ fun HomeScreen(
                             color = Surface2,
                         ) {
                             Text(
-                                "View all",
+                                stringResource(R.string.action_view_all),
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 color = Teal,
                                 fontSize = 11.sp,
@@ -289,19 +291,19 @@ fun HomeScreen(
                     if (!state.dnsLoggingEnabled) {
                         HostShieldStatusBanner(
                             icon = Icons.Filled.Warning,
-                            title = "Logging paused",
-                            message = "Enable DNS logging in Settings to review app activity, resolver latency, and blocked domains.",
+                            title = stringResource(R.string.home_logging_paused),
+                            message = stringResource(R.string.home_logging_paused_message),
                             accent = Yellow,
                             announce = false,
                         )
                     } else if (liveLogs.isEmpty()) {
                         HostShieldCompactState(
                             icon = Icons.Filled.HourglassEmpty,
-                            title = if (state.isEnabled) "Waiting for DNS traffic" else "Protection is paused",
+                            title = if (state.isEnabled) stringResource(R.string.home_waiting_dns) else stringResource(R.string.home_protection_paused),
                             message = if (state.isEnabled) {
-                                "Recent queries will stream here as apps resolve domains."
+                                stringResource(R.string.home_waiting_dns_message)
                             } else {
-                                "Activate protection to start collecting resolver activity."
+                                stringResource(R.string.home_paused_message)
                             },
                             accent = Blue,
                         )
@@ -325,7 +327,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                "Tools",
+                stringResource(R.string.home_tools),
                 style = MaterialTheme.typography.titleSmall,
                 color = TextSecondary,
                 fontWeight = FontWeight.SemiBold,
@@ -338,8 +340,8 @@ fun HomeScreen(
                 FeatureAccessCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.Dns,
-                    title = "DNS Logs",
-                    subtitle = "${formatCompact(state.blockedToday)} blocked today",
+                    title = stringResource(R.string.home_dns_logs),
+                    subtitle = stringResource(R.string.home_blocked_today, formatCompact(state.blockedToday)),
                     accent = Blue,
                     gradientEnd = Teal,
                     onClick = onNavigateToLogs
@@ -347,8 +349,8 @@ fun HomeScreen(
                 FeatureAccessCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.LocalFireDepartment,
-                    title = "Firewall Log",
-                    subtitle = "${formatCompact(state.firewallBlockedConnections)} blocked",
+                    title = stringResource(R.string.home_firewall_log),
+                    subtitle = stringResource(R.string.home_blocked_count, formatCompact(state.firewallBlockedConnections)),
                     accent = Peach,
                     gradientEnd = Red,
                     onClick = onNavigateToConnectionLog
@@ -361,8 +363,8 @@ fun HomeScreen(
                 FeatureAccessCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.Apps,
-                    title = "App Activity",
-                    subtitle = "Per-app DNS queries",
+                    title = stringResource(R.string.home_app_activity),
+                    subtitle = stringResource(R.string.home_app_activity_sub),
                     accent = Mauve,
                     gradientEnd = Flamingo,
                     onClick = onNavigateToApps
@@ -370,8 +372,8 @@ fun HomeScreen(
                 FeatureAccessCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.Security,
-                    title = "Firewall Rules",
-                    subtitle = "${state.firewalledApps} apps firewalled",
+                    title = stringResource(R.string.home_firewall_rules),
+                    subtitle = stringResource(R.string.home_apps_firewalled, state.firewalledApps),
                     accent = Red,
                     gradientEnd = Peach,
                     onClick = onNavigateToFirewall
@@ -398,7 +400,7 @@ fun HomeScreen(
                         }
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            "Blocking Mode",
+                            stringResource(R.string.home_blocking_mode),
                             style = MaterialTheme.typography.titleSmall,
                             color = TextPrimary,
                             fontWeight = FontWeight.SemiBold,
@@ -408,7 +410,7 @@ fun HomeScreen(
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         ModeChip(
-                            label = "Root",
+                            label = stringResource(R.string.mode_root),
                             icon = Icons.Filled.AdminPanelSettings,
                             selected = state.blockMethod == com.hostshield.data.model.BlockMethod.ROOT_HOSTS,
                             enabled = state.isRootAvailable,
@@ -420,7 +422,7 @@ fun HomeScreen(
                             }
                         )
                         ModeChip(
-                            label = "VPN",
+                            label = stringResource(R.string.module_vpn),
                             icon = Icons.Filled.VpnLock,
                             selected = state.blockMethod == com.hostshield.data.model.BlockMethod.VPN,
                             enabled = true,
@@ -438,7 +440,7 @@ fun HomeScreen(
                             Icon(Icons.Filled.Schedule, null, tint = TextDim, modifier = Modifier.size(13.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                "Applied ${formatLastApply(state.lastApplyTime)}",
+                                stringResource(R.string.home_applied, formatLastApply(state.lastApplyTime)),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = TextDim
                             )
@@ -464,7 +466,7 @@ fun HomeScreen(
                         }
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            "Quick Actions",
+                            stringResource(R.string.home_quick_actions),
                             style = MaterialTheme.typography.titleSmall,
                             color = TextPrimary,
                             fontWeight = FontWeight.SemiBold,
@@ -474,8 +476,8 @@ fun HomeScreen(
                     Spacer(Modifier.height(12.dp))
                     ActionRow(
                         icon = Icons.Filled.Refresh,
-                        label = "Update and apply",
-                        subtitle = "Download latest sources and apply",
+                        label = stringResource(R.string.home_update_apply),
+                        subtitle = stringResource(R.string.home_update_apply_sub),
                         color = Teal,
                         enabled = !state.isApplying,
                         onClick = {
@@ -510,8 +512,8 @@ fun HomeScreen(
             Spacer(Modifier.height(12.dp))
             HostShieldStatusBanner(
                 icon = Icons.Filled.Warning,
-                title = "Root not detected",
-                message = "Use VPN mode for system-wide DNS filtering, or grant root permission to write the hosts file.",
+                title = stringResource(R.string.home_root_warning_title),
+                message = stringResource(R.string.home_root_warning_message),
                 accent = Yellow,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -563,8 +565,8 @@ private fun PauseTimerSection(
         val seconds = ((remainingMs % 60_000) / 1_000).coerceAtLeast(0)
         ActionRow(
             icon = Icons.Filled.PlayArrow,
-            label = "Resume protection",
-            subtitle = if (remainingMs > 0) "Auto-resumes in ${minutes}m ${seconds}s" else "Resuming…",
+            label = stringResource(R.string.home_resume_protection),
+            subtitle = if (remainingMs > 0) stringResource(R.string.home_auto_resumes_in, minutes, seconds) else stringResource(R.string.home_resuming),
             color = Teal,
             enabled = remainingMs > 0 && !isApplying,
             onClick = onResume
@@ -572,8 +574,8 @@ private fun PauseTimerSection(
     } else if (!isEnabled) {
         ActionRow(
             icon = Icons.Filled.RestartAlt,
-            label = "Protection disabled",
-            subtitle = "Tap the shield to re-enable",
+            label = stringResource(R.string.home_protection_disabled),
+            subtitle = stringResource(R.string.home_protection_disabled_sub),
             color = TextSecondary,
             enabled = false,
             onClick = {}
@@ -581,8 +583,8 @@ private fun PauseTimerSection(
     } else {
         ActionRow(
             icon = Icons.Filled.Timer,
-            label = "Pause protection",
-            subtitle = "Temporarily disable blocking",
+            label = stringResource(R.string.home_pause_protection),
+            subtitle = stringResource(R.string.home_pause_protection_sub),
             color = TextSecondary,
             enabled = !isApplying,
             onClick = { showDurationPicker = true }
@@ -625,17 +627,22 @@ private fun PauseDurationSheet(
                 .padding(horizontal = 24.dp, vertical = 8.dp)
         ) {
             Text(
-                "Pause for…",
+                stringResource(R.string.home_pause_for),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-            val durations = listOf(5 to "5 minutes", 15 to "15 minutes", 30 to "30 minutes", 60 to "1 hour")
+            val durations = listOf(
+                5 to stringResource(R.string.home_pause_duration_5),
+                15 to stringResource(R.string.home_pause_duration_15),
+                30 to stringResource(R.string.home_pause_duration_30),
+                60 to stringResource(R.string.home_pause_duration_60),
+            )
             durations.forEach { (mins, label) ->
                 ActionRow(
                     icon = Icons.Filled.Timer,
                     label = label,
-                    subtitle = "Auto-resumes after $label",
+                    subtitle = stringResource(R.string.home_auto_resumes_after, label),
                     color = Teal,
                     enabled = true,
                     onClick = { onSelect(mins) }
@@ -644,8 +651,8 @@ private fun PauseDurationSheet(
             }
             ActionRow(
                 icon = Icons.Filled.PauseCircle,
-                label = "Until manually resumed",
-                subtitle = "Disable blocking indefinitely",
+                label = stringResource(R.string.home_until_manually_resumed),
+                subtitle = stringResource(R.string.home_disable_indefinitely),
                 color = TextSecondary,
                 enabled = true,
                 onClick = onIndefinite

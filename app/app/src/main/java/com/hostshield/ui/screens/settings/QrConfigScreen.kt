@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,23 +27,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
-import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.R
+import com.hostshield.util.QrConfigImporter
+import com.hostshield.util.QrImportPlan
 import com.hostshield.util.QrConfigSharing
-import com.hostshield.util.RuleEntry
-import com.hostshield.util.ShareableConfig
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class QrConfigViewModel @Inject constructor(
-    private val prefs: AppPreferences,
     private val qrSharing: QrConfigSharing,
+    private val importer: QrConfigImporter,
 ) : ViewModel() {
 
     var qrBitmap by mutableStateOf<Bitmap?>(null)
@@ -55,55 +55,90 @@ class QrConfigViewModel @Inject constructor(
         private set
     var importResult by mutableStateOf<String?>(null)
         private set
+    var pendingImportPlan by mutableStateOf<QrImportPlan?>(null)
+        private set
+    var isApplyingImport by mutableStateOf(false)
+        private set
 
     fun generateQr() {
         if (isGenerating) return
         viewModelScope.launch {
             isGenerating = true
-            val config = withContext(Dispatchers.IO) { buildCurrentConfig() }
-            val encoded = qrSharing.encodeConfig(config)
-            encodedString = encoded
+            try {
+                val config = withContext(Dispatchers.IO) { importer.buildCurrentConfig() }
+                val encoded = qrSharing.encodeConfig(config)
+                encodedString = encoded
 
-            val ruleCount = config.userRules.size
-            val sourceCount = config.sourceUrls.size
-            configSummary = buildString {
-                append("$ruleCount rules, $sourceCount sources")
-                if (config.dohEnabled) append(", DoH: ${config.dohProvider}")
-                if (config.customDns.isNotEmpty()) append(", DNS: ${config.customDns}")
-                append(" (${encoded.length} bytes)")
+                val ruleCount = config.userRules.size
+                val sourceCount = config.sourceUrls.size
+                configSummary = buildString {
+                    append("$ruleCount rules, $sourceCount sources")
+                    if (config.dohEnabled) append(", DoH: ${config.dohProvider}")
+                    if (config.customDns.isNotEmpty()) append(", DNS: ${config.customDns}")
+                    append(" (${encoded.length} bytes)")
+                }
+
+                qrBitmap = withContext(Dispatchers.Default) { renderQr(encoded) }
+            } catch (e: Exception) {
+                importResult = "QR export failed: ${e.message ?: e.javaClass.simpleName}"
+            } finally {
+                isGenerating = false
             }
-
-            qrBitmap = withContext(Dispatchers.Default) { renderQr(encoded) }
-            isGenerating = false
         }
     }
 
     fun importFromString(input: String) {
+        if (isApplyingImport) return
         viewModelScope.launch {
             val config = qrSharing.decodeConfig(input.trim())
             if (config == null) {
                 importResult = "Invalid QR data — must start with HS:"
+                pendingImportPlan = null
                 return@launch
             }
-            importResult = "Decoded: ${config.userRules.size} rules, ${config.sourceUrls.size} sources, " +
-                "DNS=${config.customDns.ifEmpty { "default" }}, DoH=${config.dohEnabled}"
+            val plan = withContext(Dispatchers.IO) { importer.preview(config) }
+            pendingImportPlan = if (plan.hasChanges) plan else null
+            importResult = importPreviewMessage(plan)
         }
     }
 
-    fun clearImportResult() { importResult = null }
+    fun applyPendingImport() {
+        val plan = pendingImportPlan ?: return
+        if (isApplyingImport) return
+        viewModelScope.launch {
+            isApplyingImport = true
+            try {
+                val result = withContext(Dispatchers.IO) { importer.apply(plan) }
+                pendingImportPlan = null
+                importResult = "Imported ${result.rulesAdded} rules, ${result.sourcesAdded} sources, " +
+                    "${result.settingsUpdated} DNS setting updates"
+            } catch (e: Exception) {
+                importResult = "Import failed: ${e.message ?: e.javaClass.simpleName}"
+            } finally {
+                isApplyingImport = false
+            }
+        }
+    }
 
-    private suspend fun buildCurrentConfig(): ShareableConfig {
-        val customDns = prefs.customUpstreamDns.first()
-        val dohEnabled = prefs.dohEnabled.first()
-        val dohProvider = prefs.dohProvider.first()
-        // Get user rules from repository (simplified — uses custom DNS as proxy)
-        return ShareableConfig(
-            version = 1,
-            customDns = customDns,
-            dohEnabled = dohEnabled,
-            dohProvider = dohProvider,
-            profileName = "HostShield Config",
-        )
+    fun clearImportResult() {
+        importResult = null
+    }
+
+    fun clearPendingImport() {
+        pendingImportPlan = null
+    }
+
+    private fun importPreviewMessage(plan: QrImportPlan): String {
+        val skipped = buildString {
+            if (plan.skippedRules > 0) append(", skipped ${plan.skippedRules} rules")
+            if (plan.skippedSources > 0) append(", skipped ${plan.skippedSources} sources")
+        }
+        return if (plan.hasChanges) {
+            "Preview: add ${plan.rulesToAdd.size} rules, ${plan.sourcesToAdd.size} HTTPS sources, " +
+                "${listOfNotNull(plan.customDns, plan.dohEnabled, plan.dohProvider).size} DNS setting updates$skipped"
+        } else {
+            "No new importable changes found$skipped"
+        }
     }
 
     private fun renderQr(data: String): Bitmap? {
@@ -131,6 +166,7 @@ fun QrConfigScreen(
     viewModel: QrConfigViewModel = hiltViewModel(),
 ) {
     var importInput by remember { mutableStateOf("") }
+    val hasPendingImport = viewModel.pendingImportPlan != null
 
     Column(
         modifier = Modifier
@@ -142,13 +178,13 @@ fun QrConfigScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back), tint = TextPrimary)
             }
-            Text("QR Config Sharing", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+            Text(stringResource(R.string.qr_screen_title), style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         }
 
         Text(
-            "Share your HostShield configuration via QR code. The recipient can scan it to import your DNS settings, custom rules, and sources.",
+            stringResource(R.string.qr_screen_description),
             color = TextDim, fontSize = 12.sp, lineHeight = 16.sp,
             modifier = Modifier.padding(horizontal = 4.dp),
         )
@@ -162,7 +198,7 @@ fun QrConfigScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.QrCode2, null, tint = Teal, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Export Configuration", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.qr_export_configuration), color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
                 Spacer(Modifier.height(12.dp))
 
@@ -176,11 +212,11 @@ fun QrConfigScreen(
                     if (viewModel.isGenerating) {
                         CircularProgressIndicator(Modifier.size(16.dp), color = Color.Black, strokeWidth = 2.dp)
                         Spacer(Modifier.width(8.dp))
-                        Text("Generating...", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.qr_generating), fontWeight = FontWeight.SemiBold)
                     } else {
                         Icon(Icons.Filled.QrCode, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Generate QR Code", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.qr_generate_code), fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -194,7 +230,7 @@ fun QrConfigScreen(
                     ) {
                         Image(
                             bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "QR Code",
+                            contentDescription = stringResource(R.string.qr_code_content_description),
                             modifier = Modifier.padding(16.dp),
                         )
                     }
@@ -211,7 +247,7 @@ fun QrConfigScreen(
         if (viewModel.encodedString.isNotEmpty()) {
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Encoded String", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.qr_encoded_string), color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(6.dp))
                     Surface(
                         shape = RoundedCornerShape(8.dp),
@@ -237,19 +273,22 @@ fun QrConfigScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.QrCodeScanner, null, tint = Blue, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Import Configuration", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.qr_import_configuration), color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Paste a HostShield config string (HS:...) to preview before importing.",
+                    stringResource(R.string.qr_import_hint),
                     color = TextDim, fontSize = 11.sp,
                 )
                 Spacer(Modifier.height(8.dp))
 
                 OutlinedTextField(
                     value = importInput,
-                    onValueChange = { importInput = it },
-                    placeholder = { Text("HS:...", color = TextDim, fontSize = 12.sp) },
+                    onValueChange = {
+                        importInput = it
+                        viewModel.clearPendingImport()
+                    },
+                    placeholder = { Text(stringResource(R.string.qr_placeholder), color = TextDim, fontSize = 12.sp) },
                     singleLine = false,
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth(),
@@ -263,13 +302,34 @@ fun QrConfigScreen(
 
                 OutlinedButton(
                     onClick = { viewModel.importFromString(importInput) },
-                    enabled = importInput.isNotBlank(),
+                    enabled = importInput.isNotBlank() && !viewModel.isApplyingImport,
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Blue),
                 ) {
                     Icon(Icons.Filled.Download, null, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Decode & Preview", fontSize = 12.sp)
+                    Text(stringResource(R.string.qr_decode_preview), fontSize = 12.sp)
+                }
+
+                if (hasPendingImport) {
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = { viewModel.applyPendingImport() },
+                        enabled = !viewModel.isApplyingImport,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color.Black),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        if (viewModel.isApplyingImport) {
+                            CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.qr_importing), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        } else {
+                            Icon(Icons.Filled.Check, null, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.qr_apply_import), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
                 }
             }
         }
@@ -290,7 +350,7 @@ fun QrConfigScreen(
                     Spacer(Modifier.width(8.dp))
                     Text(msg, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
                     IconButton(onClick = { viewModel.clearImportResult() }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Filled.Close, "Dismiss QR import message", tint = TextDim, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.Close, stringResource(R.string.qr_dismiss_import_message), tint = TextDim, modifier = Modifier.size(14.dp))
                     }
                 }
             }

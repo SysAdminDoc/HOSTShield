@@ -36,11 +36,11 @@ Privacy and portability:
 - No remote telemetry or hosted account model.
 - Local-only preferences with encrypted secret storage through Android Keystore.
 - Backup and restore support, including encrypted backup compatibility.
-- Tracker SDK scanner with 405 signatures and offline GeoIP-first lookup via MaxMind GeoLite2 databases with optional online fallback.
+- Tracker SDK scanner with 405 signatures and offline GeoIP-first lookup via MaxMind GeoLite2 databases with optional ipapi.co online fallback.
 
 Release and platform notes:
 
 - Android 8+ supported.
 - Built with Kotlin 2.3, Android SDK 36, Android Gradle Plugin 9.2, Material 3 Compose, Room, WorkManager, and Hilt.
 - Full APK releases include QUERY_ALL_PACKAGES for complete local app firewall visibility. Play flavor artifacts remove that permission and use limited package visibility.
-- The project is licensed under GPL-3.0.
+- The project is licensed under GPL-3.0 after resolving the prior license-publication conflict.

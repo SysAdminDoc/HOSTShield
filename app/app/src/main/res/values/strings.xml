@@ -9,4 +9,223 @@
     <string name="shortcut_logs">Logs</string>
     <string name="shortcut_logs_long">View DNS Logs</string>
     <string name="stats_widget_description">Blocking statistics dashboard</string>
+
+    <!-- Screen titles -->
+    <string name="screen_settings">Settings</string>
+    <string name="screen_settings_subtitle">Tune protection, DNS routing, backups, diagnostics, and sharing.</string>
+    <string name="screen_sources">Sources</string>
+    <string name="screen_dns_logs">DNS Logs</string>
+    <string name="screen_automation">Automation</string>
+
+    <!-- Settings section headers -->
+    <string name="section_battery">Battery</string>
+    <string name="section_schedule">Schedule</string>
+    <string name="section_configuration">Configuration</string>
+    <string name="section_tools">Tools</string>
+    <string name="section_backup">Backup</string>
+    <string name="section_import_from">Import From</string>
+    <string name="section_share">Share</string>
+    <string name="section_diagnostics">Diagnostics &amp; Export</string>
+    <string name="section_appearance">Appearance</string>
+    <string name="section_about">About</string>
+    <string name="section_vpn">VPN</string>
+    <string name="section_protection">Protection</string>
+    <string name="section_network_firewall">Network Firewall</string>
+
+    <!-- Home screen headings -->
+    <string name="home_protection_modules">Protection Modules</string>
+    <string name="home_live_dns_activity">Live DNS Activity</string>
+    <string name="home_tools">Tools</string>
+    <string name="home_blocking_mode">Blocking Mode</string>
+    <string name="home_quick_actions">Quick Actions</string>
+
+    <!-- Module and mode labels -->
+    <string name="module_hosts">Hosts</string>
+    <string name="module_vpn">VPN</string>
+    <string name="module_firewall">Firewall</string>
+    <string name="mode_root">Root</string>
+    <string name="status_active">Active</string>
+    <string name="status_off">Off</string>
+
+    <!-- Common actions -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_share">Share</string>
+    <string name="action_save_as">Save As</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_export_pcap">Export PCAP</string>
+    <string name="action_export_csv">Export CSV</string>
+    <string name="action_view_all">View all</string>
+    <string name="action_export">Export</string>
+    <string name="action_restore">Restore</string>
+    <string name="action_back">Back</string>
+
+    <!-- Common labels -->
+    <string name="label_version">Version</string>
+    <string name="label_root">Root</string>
+    <string name="label_available">Available</string>
+    <string name="label_start">Start</string>
+    <string name="label_end">End</string>
+    <string name="label_accent_color">Accent color</string>
+    <string name="label_checking">Checking…</string>
+    <string name="label_check_for_updates">Check for updates</string>
+    <string name="label_view_on_github">View on GitHub</string>
+
+    <!-- Settings rows — titles -->
+    <string name="settings_battery_warning">Battery optimization may stop HostShield in the background</string>
+    <string name="settings_disable_battery_opt">Disable battery optimization</string>
+    <string name="settings_disable_battery_opt_sub">Prevents Android from killing HostShield</string>
+    <string name="settings_scheduled_blocking">Scheduled blocking</string>
+    <string name="settings_scheduled_blocking_sub">Auto-enable/disable at set times</string>
+    <string name="settings_include_ipv6">Include IPv6</string>
+    <string name="settings_include_ipv6_sub">Block domains on IPv6 as well</string>
+    <string name="settings_dns_logging">DNS logging</string>
+    <string name="settings_dns_logging_sub">Record DNS queries for stats</string>
+    <string name="settings_online_ip_lookup">Online IP lookup</string>
+    <string name="settings_online_ip_lookup_sub">Use ipapi.co when offline GeoIP is unavailable</string>
+    <string name="settings_view_hosts">View hosts file</string>
+    <string name="settings_view_hosts_sub">Inspect current blocking rules</string>
+    <string name="settings_edit_hosts">Edit hosts file</string>
+    <string name="settings_edit_hosts_sub">Direct editor for /etc/hosts (root)</string>
+    <string name="settings_overlap_analysis">Overlap analysis</string>
+    <string name="settings_overlap_analysis_sub">Find redundant domains across sources</string>
+    <string name="settings_rule_tester">Rule tester</string>
+    <string name="settings_rule_tester_sub">Test if domains match your rules</string>
+    <string name="settings_app_privacy">App privacy report</string>
+    <string name="settings_app_privacy_sub">Grade each app\'s tracking behavior</string>
+    <string name="settings_automation_audit">Automation audit log</string>
+    <string name="settings_automation_audit_sub">View commands from Tasker, ADB, etc</string>
+    <string name="settings_export_firewall">Export firewall rules</string>
+    <string name="settings_export_firewall_sub">Save per-app network rules as JSON</string>
+    <string name="settings_import_rules">Import rules</string>
+    <string name="settings_import_rules_sub">From JSON or hosts file</string>
+    <string name="settings_export_rules">Export rules</string>
+    <string name="settings_export_rules_sub">Save rules as JSON</string>
+    <string name="settings_create_backup">Create backup</string>
+    <string name="settings_create_backup_sub">Sources, rules, profiles, preferences</string>
+    <string name="settings_restore_backup">Restore backup</string>
+    <string name="settings_restore_backup_sub">Restore from previous backup</string>
+    <string name="settings_webdav">WebDAV sync</string>
+    <string name="settings_webdav_sub">Sync backups to Nextcloud, ownCloud</string>
+    <string name="settings_qr_config">QR config sharing</string>
+    <string name="settings_qr_config_sub">Share config via QR code</string>
+    <string name="settings_high_contrast">High-contrast AMOLED</string>
+    <string name="settings_high_contrast_sub">Pure-black surfaces, brighter text, and stronger warning states</string>
+    <string name="settings_crash_reports">Crash reports</string>
+    <string name="settings_crash_reports_sub">View stored crash logs</string>
+    <string name="settings_tls_fingerprints">TLS fingerprints</string>
+    <string name="settings_tls_fingerprints_sub">JA3/JA4 per-app TLS library identification</string>
+    <string name="settings_generate_diagnostic">Generate diagnostic package</string>
+    <string name="settings_generate_diagnostic_sub">Device info, config, logs, event log ZIP</string>
+    <string name="settings_generating_diagnostic">Generating diagnostic package…</string>
+    <string name="settings_generating_diagnostic_sub">Building ZIP with device info, config, logs</string>
+    <string name="settings_export_failed">Export failed</string>
+
+    <!-- Import from other blockers -->
+    <string name="import_adaway">AdAway backup</string>
+    <string name="import_adaway_sub">Import hosts, sources, and rules</string>
+    <string name="import_blokada">Blokada / NextDNS config</string>
+    <string name="import_blokada_sub">Auto-detects format on import</string>
+    <string name="import_hosts_file">Hosts file</string>
+    <string name="import_hosts_file_sub">Standard hosts format from any blocker</string>
+    <string name="import_pihole">Pi-hole teleporter</string>
+    <string name="import_pihole_sub">domainlist CSV or gravity list export</string>
+
+    <!-- Share section -->
+    <string name="share_export_blocklist">Export shareable blocklist</string>
+    <string name="share_export_blocklist_sub">Hosts file format — share on GitHub or use as source URL</string>
+
+    <!-- Protection settings rows -->
+    <string name="protection_app_exclusions">App exclusions</string>
+    <string name="protection_app_exclusions_sub">Bypass VPN for specific apps</string>
+    <string name="protection_per_app_firewall">Per-app firewall</string>
+    <string name="protection_apps_firewalled">%1$d apps firewalled</string>
+    <string name="protection_per_app_firewall_sub">Block all DNS for specific apps</string>
+    <string name="protection_content_filtering">Content filtering</string>
+    <string name="protection_content_filtering_sub">Block categories: adult, gambling, social, etc.</string>
+    <string name="protection_parental_controls">Parental controls</string>
+    <string name="protection_parental_controls_sub">Age profiles with PIN lock</string>
+    <string name="protection_connection_log">Connection log</string>
+    <string name="protection_connection_log_sub">View blocked connections from iptables</string>
+    <string name="protection_dns_tools">DNS tools</string>
+    <string name="protection_dns_tools_sub">DNS cache, lookup, diagnostics</string>
+    <string name="protection_network_usage">Network usage</string>
+    <string name="protection_network_usage_sub">Per-app data usage since boot</string>
+
+    <!-- PCAP export -->
+    <string name="pcap_generating">Generating PCAP…</string>
+    <string name="pcap_privacy_warning">Contains DNS hostnames and connection destinations</string>
+    <string name="pcap_empty">No blocked entries to export</string>
+
+    <!-- Backup dialogs -->
+    <string name="backup_dialog_title">Create Backup</string>
+    <string name="backup_dialog_message">Choose whether to encrypt the backup with a passphrase.</string>
+    <string name="backup_encrypted">Encrypted</string>
+    <string name="backup_plaintext">Plaintext</string>
+    <string name="backup_encrypt_title">Encrypt Backup</string>
+    <string name="backup_passphrase">Passphrase</string>
+    <string name="backup_confirm_passphrase">Confirm passphrase</string>
+    <string name="backup_passphrase_mismatch">Passphrases do not match</string>
+
+    <!-- Home screen -->
+    <string name="home_dns_logs">DNS Logs</string>
+    <string name="home_firewall_log">Firewall Log</string>
+    <string name="home_app_activity">App Activity</string>
+    <string name="home_app_activity_sub">Per-app DNS queries</string>
+    <string name="home_firewall_rules">Firewall Rules</string>
+    <string name="home_rules_count">%1$s rules</string>
+    <string name="home_doh_on">DoH on</string>
+    <string name="home_dns_filter">DNS filter</string>
+    <string name="home_iptables">iptables</string>
+    <string name="home_blocked_today">%1$s blocked today</string>
+    <string name="home_blocked_count">%1$s blocked</string>
+    <string name="home_apps_firewalled">%1$d apps firewalled</string>
+    <string name="home_update_apply">Update and apply</string>
+    <string name="home_update_apply_sub">Download latest sources and apply</string>
+    <string name="home_root_warning_title">Root not detected</string>
+    <string name="home_root_warning_message">Use VPN mode for system-wide DNS filtering, or grant root permission to write the hosts file.</string>
+    <string name="home_logging_paused">Logging paused</string>
+    <string name="home_logging_paused_message">Enable DNS logging in Settings to review app activity, resolver latency, and blocked domains.</string>
+    <string name="home_waiting_dns">Waiting for DNS traffic</string>
+    <string name="home_protection_paused">Protection is paused</string>
+    <string name="home_waiting_dns_message">Recent queries will stream here as apps resolve domains.</string>
+    <string name="home_paused_message">Activate protection to start collecting resolver activity.</string>
+    <string name="home_newest_decisions">Newest resolver decisions</string>
+    <string name="home_logging_is_paused">Logging is paused</string>
+    <string name="home_resume_protection">Resume protection</string>
+    <string name="home_auto_resumes_in">Auto-resumes in %1$dm %2$ds</string>
+    <string name="home_resuming">Resuming...</string>
+    <string name="home_protection_disabled">Protection disabled</string>
+    <string name="home_protection_disabled_sub">Tap the shield to re-enable</string>
+    <string name="home_pause_protection">Pause protection</string>
+    <string name="home_pause_protection_sub">Temporarily disable blocking</string>
+    <string name="home_pause_for">Pause for…</string>
+    <string name="home_until_manually_resumed">Until manually resumed</string>
+    <string name="home_disable_indefinitely">Disable blocking indefinitely</string>
+    <string name="home_pause_duration_5">5 minutes</string>
+    <string name="home_pause_duration_15">15 minutes</string>
+    <string name="home_pause_duration_30">30 minutes</string>
+    <string name="home_pause_duration_60">1 hour</string>
+    <string name="home_auto_resumes_after">Auto-resumes after %1$s</string>
+    <string name="home_applied">Applied %1$s</string>
+
+    <!-- QR config sharing -->
+    <string name="qr_screen_title">QR Config Sharing</string>
+    <string name="qr_screen_description">Share your HostShield configuration via QR code. The recipient can scan it to import your DNS settings, custom rules, and sources.</string>
+    <string name="qr_export_configuration">Export Configuration</string>
+    <string name="qr_generating">Generating...</string>
+    <string name="qr_generate_code">Generate QR Code</string>
+    <string name="qr_code_content_description">QR Code</string>
+    <string name="qr_encoded_string">Encoded String</string>
+    <string name="qr_import_configuration">Import Configuration</string>
+    <string name="qr_import_hint">Paste a HostShield config string (HS:...) to preview before importing.</string>
+    <string name="qr_placeholder">HS:...</string>
+    <string name="qr_decode_preview">Decode &amp; Preview</string>
+    <string name="qr_importing">Importing...</string>
+    <string name="qr_apply_import">Apply Import</string>
+    <string name="qr_dismiss_import_message">Dismiss QR import message</string>
+
+    <!-- Status messages -->
+    <string name="status_action_failed">Settings action failed</string>
+    <string name="status_action_complete">Settings action complete</string>
 </resources>

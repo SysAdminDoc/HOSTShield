@@ -1,10 +1,10 @@
 package com.hostshield.util
 
-import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.util.Base64
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import javax.inject.Inject
@@ -57,6 +57,12 @@ class QrConfigSharing @Inject constructor() {
          * that limit.  2 KB keeps the code scannable on most cameras.
          */
         const val MAX_QR_BYTES = 2048
+
+        /** Hard ceiling for scanned/pasted QR strings before Base64 decoding. */
+        const val MAX_DECODED_QR_CHARS = 4096
+
+        /** Maximum JSON size after GZIP decompression. */
+        const val MAX_DECOMPRESSED_BYTES = 64 * 1024
     }
 
     // ── Encoding ────────────────────────────────────────────────
@@ -98,10 +104,12 @@ class QrConfigSharing @Inject constructor() {
      *         or does not carry the `HS:` prefix.
      */
     fun decodeConfig(qrData: String): ShareableConfig? {
-        if (!qrData.startsWith(SCHEME_PREFIX)) return null
+        val data = qrData.trim()
+        if (data.length > MAX_DECODED_QR_CHARS) return null
+        if (!data.startsWith(SCHEME_PREFIX)) return null
 
         return try {
-            val payload = qrData.removePrefix(SCHEME_PREFIX)
+            val payload = data.removePrefix(SCHEME_PREFIX)
             val json = decompress(payload)
             fromJson(json)
         } catch (_: Exception) {
@@ -180,14 +188,35 @@ class QrConfigSharing @Inject constructor() {
         GZIPOutputStream(bos).use { gz ->
             gz.write(data.toByteArray(Charsets.UTF_8))
         }
-        return Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP or Base64.URL_SAFE)
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bos.toByteArray())
     }
 
     private fun decompress(encoded: String): String {
-        val compressed = Base64.decode(encoded, Base64.NO_WRAP or Base64.URL_SAFE)
+        val compressed = Base64.getUrlDecoder().decode(padBase64(encoded))
         val bis = ByteArrayInputStream(compressed)
-        return GZIPInputStream(bis).use { gz ->
-            gz.bufferedReader(Charsets.UTF_8).readText()
+        val out = ByteArrayOutputStream()
+        GZIPInputStream(bis).use { gz ->
+            val buffer = ByteArray(8192)
+            var total = 0
+            while (true) {
+                val read = gz.read(buffer)
+                if (read == -1) break
+                total += read
+                if (total > MAX_DECOMPRESSED_BYTES) {
+                    throw IllegalArgumentException("QR payload exceeds decompressed size limit")
+                }
+                out.write(buffer, 0, read)
+            }
+        }
+        return out.toString(Charsets.UTF_8.name())
+    }
+
+    private fun padBase64(encoded: String): String {
+        return when (encoded.length % 4) {
+            0 -> encoded
+            2 -> encoded + "=="
+            3 -> encoded + "="
+            else -> throw IllegalArgumentException("Invalid Base64 length")
         }
     }
 
