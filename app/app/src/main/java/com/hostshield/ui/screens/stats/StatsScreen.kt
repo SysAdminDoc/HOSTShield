@@ -46,6 +46,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
+import java.util.Locale
 import javax.inject.Inject
 
 data class StatsUiState(
@@ -502,7 +503,7 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     if (state.vpnTotalQueries > 0) {
                         Spacer(Modifier.height(6.dp))
                         val dropRate = state.vpnDroppedQueries.toFloat() / state.vpnTotalQueries * 100
-                        Text("${nf.format(state.vpnTotalQueries)} total queries, ${String.format("%.2f", dropRate)}% drop rate",
+                        Text("${nf.format(state.vpnTotalQueries)} total queries, ${String.format(Locale.US, "%.2f", dropRate)}% drop rate",
                             color = TextDim, fontSize = 11.sp)
                     }
                 }

@@ -29,6 +29,9 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   new issues fail) and a new `ci.yml` workflow that runs unit tests + lint on
   every push to `main` and every pull request — previously CI ran only on
   release tags.
+- Pinned compact number formatting in the Stats screen and Glance widget to
+  `Locale.US` so query/percentage displays don't break under locales with
+  comma decimal separators.
 
 ## [v6.9.9] - 2026-06-14
 

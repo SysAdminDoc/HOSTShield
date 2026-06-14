@@ -2,39 +2,6 @@
 <issues format="6" by="lint 9.2.1" type="baseline" client="gradle" dependencies="false" name="AGP (9.2.1)" variant="all" version="9.2.1">
 
     <issue
-        id="DefaultLocale"
-        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
-        errorLine1="    count >= 1_000_000 -> String.format(&quot;%.1fM&quot;, count / 1_000_000.0)"
-        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/hostshield/ui/widget/HostShieldGlanceWidget.kt"
-            line="263"
-            column="27"/>
-    </issue>
-
-    <issue
-        id="DefaultLocale"
-        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
-        errorLine1="    count >= 1_000 -> String.format(&quot;%.1fK&quot;, count / 1_000.0)"
-        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/hostshield/ui/widget/HostShieldGlanceWidget.kt"
-            line="264"
-            column="23"/>
-    </issue>
-
-    <issue
-        id="DefaultLocale"
-        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
-        errorLine1="                        Text(&quot;${nf.format(state.vpnTotalQueries)} total queries, ${String.format(&quot;%.2f&quot;, dropRate)}% drop rate&quot;,"
-        errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/hostshield/ui/screens/stats/StatsScreen.kt"
-            line="505"
-            column="84"/>
-    </issue>
-
-    <issue
         id="NewApi"
         message="Call requires API level 29 (current min is 26): `android.net.VpnService#isAlwaysOn`"
         errorLine1="            alwaysOn = try { isAlwaysOn() } catch (_: Exception) { false },"
@@ -378,7 +345,7 @@
         errorLine2="                                  ~~~~~~">
         <location
             file="src/main/java/com/hostshield/ui/screens/stats/StatsScreen.kt"
-            line="750"
+            line="751"
             column="35"/>
     </issue>
 
@@ -389,7 +356,7 @@
         errorLine2="                                  ~~~~~~">
         <location
             file="src/main/java/com/hostshield/ui/screens/stats/StatsScreen.kt"
-            line="974"
+            line="975"
             column="35"/>
     </issue>
 
@@ -400,7 +367,7 @@
         errorLine2="                                 ~~~~~~">
         <location
             file="src/main/java/com/hostshield/ui/screens/stats/StatsScreen.kt"
-            line="975"
+            line="976"
             column="34"/>
     </issue>
 

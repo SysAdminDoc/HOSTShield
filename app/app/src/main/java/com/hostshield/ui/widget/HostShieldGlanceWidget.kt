@@ -1,6 +1,7 @@
 package com.hostshield.ui.widget
 
 import android.content.Context
+import java.util.Locale
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -260,7 +261,7 @@ class HostShieldStatsGlanceReceiver : GlanceAppWidgetReceiver() {
 // ---------- Utility ----------
 
 private fun formatCount(count: Long): String = when {
-    count >= 1_000_000 -> String.format("%.1fM", count / 1_000_000.0)
-    count >= 1_000 -> String.format("%.1fK", count / 1_000.0)
+    count >= 1_000_000 -> String.format(Locale.US, "%.1fM", count / 1_000_000.0)
+    count >= 1_000 -> String.format(Locale.US, "%.1fK", count / 1_000.0)
     else -> count.toString()
 }
