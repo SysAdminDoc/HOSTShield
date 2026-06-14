@@ -1,3 +1,20 @@
+# HostShield v6.9.7
+
+**Release Date:** 2026-06-14
+**Version Code:** 89
+
+## Animated Protection Orb
+
+- The active dashboard protection orb now has a clear rotating arc, trailing
+  sweep, breathing halo, and accent-colored orbit particles while protection
+  is running.
+
+## Verification
+
+- `:app:testFullDebugUnitTest --tests com.hostshield.ui.theme.ThemeContrastTest`
+
+---
+
 # HostShield v6.9.6
 
 **Release Date:** 2026-06-14

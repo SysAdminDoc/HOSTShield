@@ -3,6 +3,12 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.7] - 2026-06-14
+
+### UI
+- Added a clear rotating arc, trailing sweep, and breathing halo to the active
+  protection orb so the dashboard visibly communicates that protection is running.
+
 ## [v6.9.6] - 2026-06-14
 
 ### UI

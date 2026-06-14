@@ -1,0 +1,3 @@
+v6.9.7
+
+The active dashboard protection orb now has a clear rotating arc, trailing sweep, breathing halo, and accent-colored orbit particles while protection is running.

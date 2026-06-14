@@ -94,6 +94,17 @@ fun ShieldOrb(
         animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart),
         label = "spinner"
     )
+    var activeFrameNanos by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(isEnabled, isApplying) {
+        if (isEnabled && !isApplying) {
+            val startNanos = withFrameNanos { it }
+            while (true) {
+                activeFrameNanos = withFrameNanos { it - startNanos }
+            }
+        } else {
+            activeFrameNanos = 0L
+        }
+    }
 
     val orbScale by animateFloatAsState(
         if (isApplying) 0.95f else 1f, spring(dampingRatio = 0.6f), label = "scale"
@@ -104,6 +115,9 @@ fun ShieldOrb(
     val accentColor by animateColorAsState(
         if (isEnabled) TealGlow else TextDim, tween(500), label = "accent"
     )
+    val activeSeconds = activeFrameNanos / 1_000_000_000f
+    val activeRotation = (activeSeconds * 92f) % 360f
+    val activePulse = ((activeSeconds % 1.55f) / 1.55f).coerceIn(0f, 1f)
 
     val orbSizeDp = 164.dp
     val totalSizeDp = orbSizeDp + 48.dp
@@ -171,6 +185,39 @@ fun ShieldOrb(
                 )
             }
 
+            if (isEnabled && !isApplying) {
+                val activeRingR = orbRadius + 10.dp.toPx()
+                val haloR = activeRingR + (activePulse * 12.dp.toPx())
+                drawCircle(
+                    color = accentColor.copy(alpha = (1f - activePulse) * 0.32f),
+                    radius = haloR,
+                    center = Offset(cx, cy),
+                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
+                )
+                rotate(activeRotation, pivot = Offset(cx, cy)) {
+                    drawArc(
+                        color = accentColor.copy(alpha = 0.9f),
+                        startAngle = -28f,
+                        sweepAngle = 118f,
+                        useCenter = false,
+                        style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round),
+                        topLeft = Offset(cx - activeRingR, cy - activeRingR),
+                        size = androidx.compose.ui.geometry.Size(activeRingR * 2, activeRingR * 2)
+                    )
+                }
+                rotate(activeRotation + 184f, pivot = Offset(cx, cy)) {
+                    drawArc(
+                        color = accentColor.copy(alpha = 0.38f),
+                        startAngle = -18f,
+                        sweepAngle = 64f,
+                        useCenter = false,
+                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
+                        topLeft = Offset(cx - activeRingR, cy - activeRingR),
+                        size = androidx.compose.ui.geometry.Size(activeRingR * 2, activeRingR * 2)
+                    )
+                }
+            }
+
             // Secondary counter-rotating ring
             rotate(-ringRotation * 0.6f, pivot = Offset(cx, cy)) {
                 val ringR2 = orbRadius + 2.dp.toPx()
@@ -198,6 +245,45 @@ fun ShieldOrb(
                 radius = orbRadius,
                 center = Offset(cx, cy)
             )
+
+            if (isEnabled && !isApplying) {
+                val pulseRadius = orbRadius * (0.72f + activePulse * 0.24f)
+                val pulseAlpha = (1f - activePulse) * 0.18f
+                drawCircle(
+                    color = accentColor.copy(alpha = pulseAlpha),
+                    radius = pulseRadius,
+                    center = Offset(cx, cy),
+                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                )
+
+                rotate(activeRotation * 0.85f, pivot = Offset(cx, cy)) {
+                    drawCircle(
+                        brush = Brush.sweepGradient(
+                            0f to Color.Transparent,
+                            0.58f to Color.Transparent,
+                            0.74f to accentColor.copy(alpha = 0.18f),
+                            0.9f to Color.Transparent,
+                            1f to Color.Transparent,
+                            center = Offset(cx, cy)
+                        ),
+                        radius = orbRadius * 0.92f,
+                        center = Offset(cx, cy)
+                    )
+                }
+
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            accentColor.copy(alpha = 0.10f + glowPulse * 0.12f),
+                            Color.Transparent
+                        ),
+                        center = Offset(cx, cy),
+                        radius = orbRadius * 0.68f
+                    ),
+                    radius = orbRadius * 0.68f,
+                    center = Offset(cx, cy)
+                )
+            }
 
             // Orb border
             drawCircle(
@@ -233,14 +319,14 @@ fun ShieldOrb(
             if (isEnabled && !isApplying) {
                 val particleAngles = floatArrayOf(0f, 72f, 144f, 216f, 288f)
                 particleAngles.forEachIndexed { i, baseAngle ->
-                    val angle = baseAngle + ringRotation * (0.3f + i * 0.1f)
+                    val angle = baseAngle + activeRotation * (0.3f + i * 0.1f)
                     val pRadius = orbRadius + 7.dp.toPx()
                     val rad = Math.toRadians(angle.toDouble())
                     val px = cx + (cos(rad) * pRadius).toFloat()
                     val py = cy + (sin(rad) * pRadius).toFloat()
                     val dotR = (1.5f + (i % 2) * 0.5f).dp.toPx()
                     drawCircle(
-                        color = Teal.copy(alpha = 0.45f + (i % 3) * 0.15f),
+                        color = accentColor.copy(alpha = 0.45f + (i % 3) * 0.15f),
                         radius = dotR,
                         center = Offset(px, py)
                     )
