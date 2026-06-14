@@ -11,8 +11,8 @@ import java.time.LocalDate
  * explicit review and expiry dates for release diagnostics.
  */
 object DohPinManifest {
-    const val VERSION = 1
-    const val ISSUED_ON = "2026-05-17"
+    const val VERSION = 2
+    const val ISSUED_ON = "2026-06-13"
 
     enum class PinRole {
         PRIMARY,
@@ -67,55 +67,63 @@ object DohPinManifest {
         )
     }
 
+    // Pins target the INTERMEDIATE CA (primary) and ROOT CA (backup) of each
+    // provider's served chain, NOT the leaf certificate. Leaf certs rotate every
+    // ~90 days; pinning them silently broke DoH for every provider (the manifest
+    // v1 pins also named the wrong CAs entirely). Intermediates are stable for
+    // years and roots for ~decades, and OkHttp's CertificatePinner passes if ANY
+    // pinned SPKI appears in the verified chain — so leaf rotation no longer
+    // breaks pinning. Values verified against the live chains on 2026-06-13
+    // (openssl s_client + on-device OkHttp verified-chain logging).
     val providers: List<ProviderPins> = listOf(
         ProviderPins(
             providerId = "CLOUDFLARE",
             hostname = "cloudflare-dns.com",
-            reviewAfter = "2026-08-17",
-            expiresAfter = "2026-11-17",
+            reviewAfter = "2026-12-13",
+            expiresAfter = "2027-06-13",
             pins = listOf(
-                Pin(PinRole.PRIMARY, "sha256/eLbhBSJjPiGMb5eySMPmFpibkWIGxabkr3kda0ALqjw=", "DigiCert Global G2"),
-                Pin(PinRole.BACKUP, "sha256/jQJTbIh0grw0/1TkHSumWb+Fs0Ggogr621gT3PvPKG0=", "Baltimore CyberTrust")
+                Pin(PinRole.PRIMARY, "sha256/zGgA4OU4DjJdvpRYUqbi5Vh2g9W5Oc/PgKihy9mkLsE=", "SSL.com SSL Intermediate CA ECC R2"),
+                Pin(PinRole.BACKUP, "sha256/oyD01TTXvpfBro3QSZc1vIlcMjrdLTiL/M9mLCPX+Zo=", "SSL.com Root Certification Authority ECC")
             )
         ),
         ProviderPins(
             providerId = "GOOGLE",
             hostname = "dns.google",
-            reviewAfter = "2026-08-17",
-            expiresAfter = "2026-11-17",
+            reviewAfter = "2026-12-13",
+            expiresAfter = "2027-06-13",
             pins = listOf(
-                Pin(PinRole.PRIMARY, "sha256/hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=", "GTS Root R1"),
-                Pin(PinRole.BACKUP, "sha256/jQJTbIh0grw0/1TkHSumWb+Fs0Ggogr621gT3PvPKG0=", "GlobalSign/Baltimore")
+                Pin(PinRole.PRIMARY, "sha256/YPtHaftLw6/0vnc2BnNKGF54xiCA28WFcccjkA4ypCM=", "Google Trust Services WR2"),
+                Pin(PinRole.BACKUP, "sha256/hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=", "GTS Root R1")
             )
         ),
         ProviderPins(
             providerId = "QUAD9",
             hostname = "dns.quad9.net",
-            reviewAfter = "2026-08-17",
-            expiresAfter = "2026-11-17",
+            reviewAfter = "2026-12-13",
+            expiresAfter = "2027-06-13",
             pins = listOf(
-                Pin(PinRole.PRIMARY, "sha256/eLbhBSJjPiGMb5eySMPmFpibkWIGxabkr3kda0ALqjw=", "DigiCert Global G2"),
-                Pin(PinRole.BACKUP, "sha256/RRM1dGqnDFsCJXBTHky16vi1obOlCgFFn/yOhI/y+ho=", "DigiCert ECC")
+                Pin(PinRole.PRIMARY, "sha256/qBRjZmOmkSNJL0p70zek7odSIzqs/muR4Jk9xYyCP+E=", "DigiCert Global G3 TLS ECC SHA384 2020 CA1"),
+                Pin(PinRole.BACKUP, "sha256/uUwZgwDOxcBXrQcntwu+kYFpkiVkOaezL0WYEZ3anJc=", "DigiCert Global Root G3")
             )
         ),
         ProviderPins(
             providerId = "NEXTDNS",
             hostname = "dns.nextdns.io",
-            reviewAfter = "2026-08-17",
-            expiresAfter = "2026-11-17",
+            reviewAfter = "2026-12-13",
+            expiresAfter = "2027-06-13",
             pins = listOf(
-                Pin(PinRole.PRIMARY, "sha256/C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=", "ISRG Root X1"),
-                Pin(PinRole.BACKUP, "sha256/jQJTbIh0grw0/1TkHSumWb+Fs0Ggogr621gT3PvPKG0=", "Baltimore CyberTrust")
+                Pin(PinRole.PRIMARY, "sha256/xwyjb5aN7tSRWj02XSZa2cKGLxXLdKHUBfLT/7twjhQ=", "ZeroSSL ECC DV SSL CA 2"),
+                Pin(PinRole.BACKUP, "sha256/sLVjNUaFYfW7n6EtgBeEpjOlcnBdNPMrZDRF36iwBdE=", "Sectigo Public Server Authentication Root E46")
             )
         ),
         ProviderPins(
             providerId = "ADGUARD",
             hostname = "dns.adguard-dns.com",
-            reviewAfter = "2026-08-17",
-            expiresAfter = "2026-11-17",
+            reviewAfter = "2026-12-13",
+            expiresAfter = "2027-06-13",
             pins = listOf(
-                Pin(PinRole.PRIMARY, "sha256/eLbhBSJjPiGMb5eySMPmFpibkWIGxabkr3kda0ALqjw=", "DigiCert Global G2"),
-                Pin(PinRole.BACKUP, "sha256/RRM1dGqnDFsCJXBTHky16vi1obOlCgFFn/yOhI/y+ho=", "DigiCert ECC")
+                Pin(PinRole.PRIMARY, "sha256/3fLLVjRIWnCqDqIETU2OcnMP7EzmN/Z3Q/jQ8cIaAoc=", "ZeroSSL ECC Domain Secure Site CA"),
+                Pin(PinRole.BACKUP, "sha256/ICGRfpgmOUXIWcQ/HXPLQTkFPEFPoDyjvH7ohhQpjzs=", "USERTrust ECC Certification Authority")
             )
         )
     )

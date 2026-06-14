@@ -260,11 +260,17 @@ class DohResolver @Inject constructor(
             return null
         }
         val src = body.source()
-        val read = src.readByteArray((MAX_DOH_RESPONSE + 1).toLong())
-        if (read.size > MAX_DOH_RESPONSE) {
+        // request() buffers UP TO cap+1 bytes and returns false when the stream
+        // ends first — it does NOT throw on a short stream. The previous
+        // readByteArray(cap+1) read EXACTLY cap+1 bytes and threw EOFException on
+        // every normal-sized DoH response (~100 bytes), which silently broke DoH
+        // for all providers and forced the plaintext fallback. If cap+1 bytes ARE
+        // available the response is over the limit and we reject it.
+        if (src.request((MAX_DOH_RESPONSE + 1).toLong())) {
             Log.w(TAG, "DoH response exceeded $MAX_DOH_RESPONSE-byte cap")
             return null
         }
+        val read = src.readByteArray()
         if (read.size < MIN_DNS_MESSAGE) return null
         return read
     }

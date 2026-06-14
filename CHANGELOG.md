@@ -6,6 +6,21 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 ## [v6.9.10] - 2026-06-13
 
 ### Fixed
+- **DNS-over-HTTPS now actually works (GitHub #1 root cause).** Two stacked bugs
+  made DoH fail for *every* provider, so the app silently fell back to plaintext —
+  which is why enabling DoH still showed a plaintext resolver on leak tests:
+  1. **Stale/incorrect certificate pins.** `DohPinManifest` pinned the wrong CAs
+     entirely (e.g. DigiCert G2 for Cloudflare, which actually uses SSL.com), so
+     every provider failed pinning with `SSLPeerUnverifiedException`. Pins now
+     target each provider's real **intermediate + root CA** (verified against the
+     live chains), which also survive the ~90-day leaf-cert rotation that would
+     otherwise re-break pinning. Manifest bumped to v2.
+  2. **Broken response read.** `readBoundedBody` used `readByteArray(cap+1)`, which
+     reads *exactly* that many bytes and threw `EOFException` on every normal
+     (~100-byte) DoH response. Replaced with a bounded `request()`/`readByteArray()`
+     that reads *at most* the cap without throwing on short streams.
+  Verified on-device (Galaxy S22 Ultra, Android 16): queries now resolve via
+  `DoH:CLOUDFLARE` instead of plaintext `8.8.8.8`.
 - **Encrypted DNS no longer leaks to plaintext (GitHub #1).** When DoH, DoT,
   DoQ, or WireGuard is enabled, a resolver failure now fails closed — serving a
   stale cached answer if available, otherwise returning SERVFAIL — instead of
