@@ -98,6 +98,22 @@ android {
         buildConfig = true
     }
 
+    lint {
+        // Fail the build on lint errors so CI gates regressions. Existing issues
+        // are captured in lint-baseline.xml so only NEW problems break the build.
+        abortOnError = true
+        checkReleaseBuilds = true
+        warningsAsErrors = false
+        baseline = file("lint-baseline.xml")
+        // Security checks we never want to slip silently (a TLS/DNS app must
+        // not regress certificate or hostname verification).
+        fatal += listOf("TrustAllX509TrustManager", "BadHostnameVerifier", "UnsafeImplicitIntentLaunch")
+        htmlReport = true
+        xmlReport = true
+        sarifReport = true
+        textReport = true
+    }
+
     sourceSets {
         getByName("androidTest").assets.directories.add("$projectDir/schemas")
     }

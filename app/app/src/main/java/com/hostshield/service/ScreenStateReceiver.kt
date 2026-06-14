@@ -10,6 +10,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.PowerManager
 import android.util.Log
+import androidx.core.content.ContextCompat
 
 // Context-aware firewall state receiver
 // Tracks screen state, foreground app, and network metered status.
@@ -30,7 +31,12 @@ object ContextState {
             addAction(Intent.ACTION_SCREEN_OFF)
         }
         try {
-            context.registerReceiver(screenReceiver, filter)
+            // SCREEN_ON/OFF are protected system broadcasts — register NOT_EXPORTED.
+            // ContextCompat applies the Android 13+ (API 33) export-flag requirement
+            // while remaining correct on the minSdk-26 floor.
+            ContextCompat.registerReceiver(
+                context, screenReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED
+            )
         } catch (_: Exception) { /* already registered */ }
 
         updateMeteredState(context)

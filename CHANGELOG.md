@@ -19,6 +19,16 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   providers, and custom upstream servers and reloads them live (flushing the DNS
   cache), so changing the resolver in Settings takes effect immediately instead
   of appearing stuck on whatever was selected when protection started.
+- **Screen-state receiver now registers as `RECEIVER_NOT_EXPORTED`.** The
+  context-aware firewall's screen on/off receiver was registered without an
+  export flag; it is now explicitly not-exported (via `ContextCompat`),
+  satisfying the Android 13+ requirement and closing an unnecessary IPC surface.
+
+### Internal
+- Added Android lint as a build gate (`lint {}` with `lint-baseline.xml` so only
+  new issues fail) and a new `ci.yml` workflow that runs unit tests + lint on
+  every push to `main` and every pull request — previously CI ran only on
+  release tags.
 
 ## [v6.9.9] - 2026-06-14
 
