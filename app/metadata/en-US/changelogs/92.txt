@@ -1,4 +1,5 @@
 v6.9.10
 
-Fixed an encrypted-DNS leak (GitHub #1): when DoH/DoT/DoQ/WireGuard is enabled and the encrypted resolver fails, HostShield now fails closed (serves cached answer or returns SERVFAIL) instead of quietly falling back to plaintext DNS against a public resolver.
-DNS provider and custom upstream changes now take effect immediately while protection is running, without stopping and restarting the VPN.
+Fixed DNS-over-HTTPS, which previously never connected (wrong certificate pins plus a response-read bug) and silently fell back to plaintext — so leak tests showed a plaintext resolver even with DoH enabled. DoH now works and is verified on-device.
+Encrypted DNS now fails closed: if it can't reach an encrypted resolver it stops resolving instead of leaking to plaintext.
+DNS provider and custom upstream changes now apply immediately while protection is running, no restart needed.

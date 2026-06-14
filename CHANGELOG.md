@@ -3,7 +3,7 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
-## [v6.9.10] - 2026-06-13
+## [v6.9.10] - 2026-06-14
 
 ### Fixed
 - **DNS-over-HTTPS now actually works (GitHub #1 root cause).** Two stacked bugs
