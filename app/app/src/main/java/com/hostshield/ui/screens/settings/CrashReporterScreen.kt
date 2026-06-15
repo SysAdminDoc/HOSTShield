@@ -117,7 +117,7 @@ fun CrashReporterScreen(
                 if (viewModel.reports.isNotEmpty()) {
                     IconButton(
                         onClick = { showClearReportsDialog = true },
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
                         Icon(Icons.Filled.DeleteSweep, "Clear crash reports", tint = Red, modifier = Modifier.size(18.dp))
                     }

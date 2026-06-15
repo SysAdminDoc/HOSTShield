@@ -1,0 +1,7 @@
+v6.9.15
+
+- Blocklist Gallery now has explicit loading, unavailable, and empty states.
+- Gallery add failures now show an error banner and preserve details in logs.
+- Gallery success/failure messages now use the shared accessible status banner.
+- Home warning, automation copy, TLS/crash clear, parental dismiss, and app privacy expand controls have larger touch targets.
+- App privacy and content filter rows now truncate long labels and descriptions safely.

@@ -3,6 +3,24 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.15] - 2026-06-15
+
+### Fixed
+- Blocklist Gallery now handles loading, unavailable, and empty states instead
+  of rendering a silent blank list while curated sources load or fail.
+- Blocklist Gallery add failures now log the underlying error and show a clear
+  error state instead of being indistinguishable from success messaging.
+
+### UX
+- Blocklist Gallery success and failure messages now use the shared status
+  banner surface for consistent dark-mode, accessibility, and dismissal
+  behavior.
+- Home warning dismiss controls, the VPN recovery restart action, automation
+  command copy, TLS/crash clear actions, parental message dismissal, and app
+  privacy expand controls now use larger touch targets.
+- App privacy and content filter rows now truncate long labels/descriptions
+  safely around badges, switches, and action buttons.
+
 ## [v6.9.14] - 2026-06-15
 
 ### Fixed

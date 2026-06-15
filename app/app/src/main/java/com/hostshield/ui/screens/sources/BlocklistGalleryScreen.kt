@@ -3,8 +3,6 @@ package com.hostshield.ui.screens.sources
 import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -32,6 +29,9 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldLoadingState
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -57,7 +57,10 @@ data class GalleryState(
     val lists: Map<SourceCategory, List<CuratedList>> = emptyMap(),
     val existingUrls: Set<String> = emptySet(),
     val addedUrls: Set<String> = emptySet(),
-    val message: String? = null
+    val isLoading: Boolean = true,
+    val errorMessage: String? = null,
+    val message: String? = null,
+    val messageIsError: Boolean = false
 )
 
 @HiltViewModel
@@ -72,52 +75,84 @@ class BlocklistGalleryViewModel @Inject constructor(
 
     private fun load() {
         viewModelScope.launch(Dispatchers.IO) {
-            val json = context.assets.open("curated_blocklists.json").bufferedReader().readText()
-            val categories = JSONArray(json)
-            val lists = mutableMapOf<SourceCategory, List<CuratedList>>()
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
+            try {
+                val json = context.assets.open("curated_blocklists.json").bufferedReader().readText()
+                val categories = JSONArray(json)
+                val lists = mutableMapOf<SourceCategory, List<CuratedList>>()
 
-            for (i in 0 until categories.length()) {
-                val catObj = categories.getJSONObject(i)
-                val catName = catObj.getString("category")
-                val category = try { SourceCategory.valueOf(catName) } catch (_: Exception) { continue }
-                val items = catObj.getJSONArray("lists")
-                val catLists = mutableListOf<CuratedList>()
-                for (j in 0 until items.length()) {
-                    val item = items.getJSONObject(j)
-                    catLists.add(CuratedList(
-                        label = item.getString("label"),
-                        url = item.getString("url"),
-                        description = item.getString("description"),
-                        entries = item.getString("entries"),
-                        recommended = item.optBoolean("recommended", false),
-                        category = category,
-                        warning = item.optString("warning").ifBlank { null },
-                        tier = item.optString("tier").ifBlank { null }
-                    ))
+                for (i in 0 until categories.length()) {
+                    val catObj = categories.getJSONObject(i)
+                    val catName = catObj.getString("category")
+                    val category = try { SourceCategory.valueOf(catName) } catch (_: Exception) { continue }
+                    val items = catObj.getJSONArray("lists")
+                    val catLists = mutableListOf<CuratedList>()
+                    for (j in 0 until items.length()) {
+                        val item = items.getJSONObject(j)
+                        catLists.add(CuratedList(
+                            label = item.getString("label"),
+                            url = item.getString("url"),
+                            description = item.getString("description"),
+                            entries = item.getString("entries"),
+                            recommended = item.optBoolean("recommended", false),
+                            category = category,
+                            warning = item.optString("warning").ifBlank { null },
+                            tier = item.optString("tier").ifBlank { null }
+                        ))
+                    }
+                    lists[category] = catLists
                 }
-                lists[category] = catLists
+
+                // Get existing source URLs to show "already added" state
+                val existing = repository.getAllSources().first().map { it.url }.toSet()
+
+                _state.update {
+                    it.copy(
+                        lists = lists,
+                        existingUrls = existing,
+                        isLoading = false,
+                        errorMessage = null
+                    )
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("BlocklistGallery", "Failed to load curated blocklists", e)
+                _state.update {
+                    it.copy(
+                        lists = emptyMap(),
+                        isLoading = false,
+                        errorMessage = "Could not load curated blocklists. Try again."
+                    )
+                }
             }
-
-            // Get existing source URLs to show "already added" state
-            val existing = repository.getAllSources().first().map { it.url }.toSet()
-
-            _state.update { it.copy(lists = lists, existingUrls = existing) }
         }
     }
 
+    fun retryLoad() = load()
+
     fun addList(list: CuratedList) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.addSource(HostSource(
-                url = list.url,
-                label = list.label,
-                description = list.description,
-                category = list.category,
-                isBuiltin = false
-            ))
-            _state.update { it.copy(
-                addedUrls = it.addedUrls + list.url,
-                message = "Added ${list.label}"
-            ) }
+            try {
+                repository.addSource(HostSource(
+                    url = list.url,
+                    label = list.label,
+                    description = list.description,
+                    category = list.category,
+                    isBuiltin = false
+                ))
+                _state.update { it.copy(
+                    addedUrls = it.addedUrls + list.url,
+                    message = "Added ${list.label}",
+                    messageIsError = false
+                ) }
+            } catch (e: Exception) {
+                android.util.Log.e("BlocklistGallery", "Failed to add curated blocklist ${list.url}", e)
+                _state.update {
+                    it.copy(
+                        message = "Could not add ${list.label}. Try again.",
+                        messageIsError = true
+                    )
+                }
+            }
         }
     }
 
@@ -192,43 +227,76 @@ fun BlocklistGalleryScreen(
 
         // Snackbar-style message
         AnimatedVisibility(visible = state.message != null) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
-                    .clip(RoundedCornerShape(8.dp)).background(Green.copy(alpha = 0.1f))
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                Text(state.message ?: "", color = Green, fontSize = 12.sp)
-            }
+            HostShieldStatusBanner(
+                icon = if (state.messageIsError) Icons.Filled.Error else Icons.Filled.CheckCircle,
+                title = if (state.messageIsError) "Gallery action failed" else "Gallery updated",
+                message = state.message ?: "",
+                accent = if (state.messageIsError) Red else Green,
+                onDismiss = { viewModel.clearMessage() },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
         }
 
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            val categories = if (selectedCategory != null) {
-                state.lists.filter { it.key == selectedCategory }
-            } else state.lists
+        val galleryError = state.errorMessage
+        when {
+            state.isLoading -> {
+                HostShieldLoadingState(
+                    title = "Loading blocklists",
+                    message = "Preparing curated source recommendations.",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+            galleryError != null -> {
+                HostShieldEmptyState(
+                    icon = Icons.Filled.CloudOff,
+                    title = "Gallery unavailable",
+                    message = galleryError,
+                    accent = Red,
+                    primaryActionLabel = "Retry",
+                    onPrimaryAction = { viewModel.retryLoad() },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+            state.lists.isEmpty() -> {
+                HostShieldEmptyState(
+                    icon = Icons.Filled.FilterAltOff,
+                    title = "No curated lists",
+                    message = "Curated source recommendations are not available in this build.",
+                    accent = Teal,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+            else -> {
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val categories = if (selectedCategory != null) {
+                        state.lists.filter { it.key == selectedCategory }
+                    } else state.lists
 
-            categories.forEach { (category, lists) ->
-                item {
-                    Text(
-                        category.name.lowercase().replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = galleryCategoryColor(category),
-                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
-                        letterSpacing = 0.sp
-                    )
-                }
-                items(lists, key = { it.url }) { list ->
-                    val isExisting = list.url in state.existingUrls || list.url in state.addedUrls
-                    GalleryListItem(
-                        list = list,
-                        isAdded = isExisting,
-                        onAdd = { viewModel.addList(list) }
-                    )
+                    categories.forEach { (category, lists) ->
+                        item {
+                            Text(
+                                category.name.lowercase().replaceFirstChar { it.uppercase() },
+                                style = MaterialTheme.typography.labelLarge,
+                                color = galleryCategoryColor(category),
+                                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                                letterSpacing = 0.sp
+                            )
+                        }
+                        items(lists, key = { it.url }) { list ->
+                            val isExisting = list.url in state.existingUrls || list.url in state.addedUrls
+                            GalleryListItem(
+                                list = list,
+                                isAdded = isExisting,
+                                onAdd = { viewModel.addList(list) }
+                            )
+                        }
+                    }
+                    item { Spacer(Modifier.height(24.dp)) }
                 }
             }
-            item { Spacer(Modifier.height(24.dp)) }
         }
     }
 }

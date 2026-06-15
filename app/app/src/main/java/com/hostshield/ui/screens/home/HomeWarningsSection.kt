@@ -109,7 +109,7 @@ fun HomeWarningsSection(
                 }
                 IconButton(
                     onClick = onDismissPrivateDns,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(Icons.Filled.Close, "Dismiss Private DNS warning", tint = TextDim, modifier = Modifier.size(14.dp))
                 }
@@ -161,7 +161,7 @@ fun HomeWarningsSection(
                 }
                 IconButton(
                     onClick = onDismissBattery,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(Icons.Filled.Close, "Dismiss battery optimization warning", tint = TextDim, modifier = Modifier.size(14.dp))
                 }
@@ -213,7 +213,7 @@ fun HomeWarningsSection(
                     }
                     IconButton(
                         onClick = onDismissVpnRecovery,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(Icons.Filled.Close, "Dismiss VPN recovery advisory", tint = TextDim, modifier = Modifier.size(14.dp))
                     }
@@ -226,6 +226,7 @@ fun HomeWarningsSection(
                         color = Red.copy(alpha = 0.18f),
                         modifier = Modifier
                             .align(Alignment.End)
+                            .heightIn(min = 44.dp)
                             .semantics {
                                 role = Role.Button
                                 contentDescription = "Restart device to recover the VPN stack"
@@ -283,7 +284,7 @@ fun HomeWarningsSection(
                 }
                 IconButton(
                     onClick = onDismissPrivateSpace,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(Icons.Filled.Close, "Dismiss Private Space warning", tint = TextDim, modifier = Modifier.size(14.dp))
                 }

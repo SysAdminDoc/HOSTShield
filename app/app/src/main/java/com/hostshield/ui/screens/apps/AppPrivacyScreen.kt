@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -187,13 +188,25 @@ private fun AppReportCard(report: AppPrivacyScorer.AppReport) {
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(report.appLabel.ifEmpty { report.packageName }, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    Text("${report.totalQueries} queries, ${report.blockedQueries} blocked (${(report.blockRate * 100).toInt()}%)",
-                        color = TextDim, fontSize = 10.sp)
+                    Text(
+                        report.appLabel.ifEmpty { report.packageName },
+                        color = TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        "${report.totalQueries} queries, ${report.blockedQueries} blocked (${(report.blockRate * 100).toInt()}%)",
+                        color = TextDim,
+                        fontSize = 10.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
                 IconButton(
                     onClick = { expanded = !expanded },
-                    modifier = Modifier.size(40.dp).accessibilityAction(
+                    modifier = Modifier.size(48.dp).accessibilityAction(
                         if (expanded) "Collapse privacy report for ${report.appLabel.ifEmpty { report.packageName }}"
                         else "Expand privacy report for ${report.appLabel.ifEmpty { report.packageName }}"
                     )

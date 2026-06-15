@@ -1,3 +1,35 @@
+# HostShield v6.9.15
+
+**Release Date:** 2026-06-15
+**Version Code:** 97
+
+## Gallery State and Touch Polish
+
+### Fixed
+- Blocklist Gallery now shows explicit loading, unavailable, and empty states
+  instead of silently rendering a blank list while curated source data loads or
+  fails.
+- Blocklist Gallery add failures now preserve details in Logcat and show an
+  error banner instead of using the success-only snackbar style.
+
+### UX and Accessibility
+- Gallery success and failure messages now use the shared status banner
+  component for consistent dark-mode styling, live-region behavior, and
+  dismissal.
+- Home warning dismiss controls and the VPN recovery restart action now reserve
+  larger touch targets.
+- Automation command copy, TLS/crash clear actions, parental message dismissal,
+  and app privacy expand controls now use larger touch targets.
+- App privacy and content filter rows now truncate long labels/descriptions
+  safely around badges, switches, and action buttons.
+
+### Verification
+- `tools/check-release-docs.ps1`
+- `:app:testFullDebugUnitTest`
+- `:app:lintFullDebug`
+- `:app:assembleFullDebug`
+- `HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING=true :app:assembleFullRelease`
+
 # HostShield v6.9.14
 
 **Release Date:** 2026-06-15

@@ -112,11 +112,11 @@ fun TlsFingerprintScreen(
                     )
                 }
                 Row {
-                    IconButton(onClick = { viewModel.refresh() }, modifier = Modifier.size(40.dp)) {
+                    IconButton(onClick = { viewModel.refresh() }, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Filled.Refresh, "Refresh fingerprints", tint = Teal, modifier = Modifier.size(18.dp))
                     }
                     if (viewModel.fingerprints.isNotEmpty()) {
-                        IconButton(onClick = { showClearFingerprintsDialog = true }, modifier = Modifier.size(40.dp)) {
+                        IconButton(onClick = { showClearFingerprintsDialog = true }, modifier = Modifier.size(48.dp)) {
                             Icon(Icons.Filled.DeleteSweep, "Clear fingerprints", tint = Red, modifier = Modifier.size(18.dp))
                         }
                     }
