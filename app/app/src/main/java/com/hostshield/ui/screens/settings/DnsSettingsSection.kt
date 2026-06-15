@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hostshield.BuildConfig
 import com.hostshield.util.ExperimentalEngineDisclosure
 import com.hostshield.ui.theme.*
 
@@ -63,25 +64,26 @@ fun DnsSettingsSection(
             Spacer(Modifier.height(6.dp))
             DotProviderSelector(dotProvider) { onDotProviderChange(it) }
         }
-        Spacer(Modifier.height(8.dp))
-        SettingsToggle("DNS-over-QUIC (experimental)", ExperimentalEngineDisclosure.DOQ_UI, Icons.Filled.Bolt, doqEnabled) {
-            onDoqEnabledChange(it)
-        }
-        if (doqEnabled) {
-            Spacer(Modifier.height(6.dp))
-            ExperimentalEngineNote(ExperimentalEngineDisclosure.DOQ_LABEL)
-            Spacer(Modifier.height(6.dp))
-            DoqProviderSelector(doqProvider) { onDoqProviderChange(it) }
-        }
-        Spacer(Modifier.height(8.dp))
-        SettingsToggle("WireGuard DNS (experimental)", ExperimentalEngineDisclosure.WIREGUARD_UI, Icons.Filled.VpnKey, wireGuardEnabled) {
-            onWireGuardEnabledChange(it)
-        }
-        if (wireGuardEnabled) {
-            Spacer(Modifier.height(6.dp))
-            ExperimentalEngineNote(ExperimentalEngineDisclosure.WIREGUARD_LABEL)
-            Spacer(Modifier.height(6.dp))
-            var wgEndpoint by remember { mutableStateOf(wireGuardEndpoint) }
+        if (BuildConfig.DEBUG) {
+            Spacer(Modifier.height(8.dp))
+            SettingsToggle("DNS-over-QUIC (experimental)", ExperimentalEngineDisclosure.DOQ_UI, Icons.Filled.Bolt, doqEnabled) {
+                onDoqEnabledChange(it)
+            }
+            if (doqEnabled) {
+                Spacer(Modifier.height(6.dp))
+                ExperimentalEngineNote(ExperimentalEngineDisclosure.DOQ_LABEL)
+                Spacer(Modifier.height(6.dp))
+                DoqProviderSelector(doqProvider) { onDoqProviderChange(it) }
+            }
+            Spacer(Modifier.height(8.dp))
+            SettingsToggle("WireGuard DNS (experimental)", ExperimentalEngineDisclosure.WIREGUARD_UI, Icons.Filled.VpnKey, wireGuardEnabled) {
+                onWireGuardEnabledChange(it)
+            }
+            if (wireGuardEnabled) {
+                Spacer(Modifier.height(6.dp))
+                ExperimentalEngineNote(ExperimentalEngineDisclosure.WIREGUARD_LABEL)
+                Spacer(Modifier.height(6.dp))
+                var wgEndpoint by remember { mutableStateOf(wireGuardEndpoint) }
             LaunchedEffect(wireGuardEndpoint) { wgEndpoint = wireGuardEndpoint }
             OutlinedTextField(
                 value = wgEndpoint,
@@ -129,6 +131,7 @@ fun DnsSettingsSection(
             Spacer(Modifier.height(4.dp))
             Text("Configure keys in WireGuard settings", color = TextDim, fontSize = 10.sp)
         }
+        } // end BuildConfig.DEBUG gate for DoQ/WireGuard
         Spacer(Modifier.height(8.dp))
         SettingsToggle(
             "DNS Trap",

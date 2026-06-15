@@ -529,9 +529,9 @@ class DnsVpnService : VpnService() {
             dohProvider = DohResolver.Provider.fromId(prefs.dohProvider.first())
             useDoT = prefs.dotEnabled.first()
             dotProvider = DotResolver.Provider.fromId(prefs.dotProvider.first())
-            useDoQ = prefs.doqEnabled.first()
+            useDoQ = if (com.hostshield.BuildConfig.DEBUG) prefs.doqEnabled.first() else false
             doqProvider = DoqResolver.Provider.fromId(prefs.doqProvider.first())
-            useWireGuard = prefs.wireGuardEnabled.first()
+            useWireGuard = if (com.hostshield.BuildConfig.DEBUG) prefs.wireGuardEnabled.first() else false
             // Initialize WireGuard proxy if enabled
             if (useWireGuard) {
                 val wgEndpoint = prefs.wireGuardEndpoint.first()
@@ -1928,7 +1928,7 @@ class DnsVpnService : VpnService() {
         dohProvider = DohResolver.Provider.fromId(prefs.dohProvider.first())
         useDoT = prefs.dotEnabled.first()
         dotProvider = DotResolver.Provider.fromId(prefs.dotProvider.first())
-        useDoQ = prefs.doqEnabled.first()
+        useDoQ = if (com.hostshield.BuildConfig.DEBUG) prefs.doqEnabled.first() else false
         doqProvider = DoqResolver.Provider.fromId(prefs.doqProvider.first())
         val customDns = prefs.getUpstreamDnsList()
         upstreamDnsServers = if (customDns.isNotEmpty()) customDns else UPSTREAM_DNS.toList()
