@@ -433,4 +433,33 @@ class DnsPacketBuilderTest {
         assertEquals(64, DnsPacketBuilder.TYPE_SVCB)
         assertEquals(65, DnsPacketBuilder.TYPE_HTTPS)
     }
+
+    // ── buildServfail (fail-closed encrypted DNS path) ─────
+
+    @Test
+    fun `buildServfail returns RCODE 2 response`() {
+        val query = buildQuery("blocked.example.com")
+        val resp = DnsPacketBuilder.buildServfail(query)
+        assertTrue("Must be a response", isResponse(resp))
+        assertEquals("RCODE must be SERVFAIL (2)", 2, rcode(resp))
+        assertEquals("Transaction ID must match query", u16(query, 0), u16(resp, 0))
+    }
+
+    @Test
+    fun `buildServfail preserves query QDCOUNT`() {
+        val query = buildQuery("test.example.org", qtype = 28)
+        val resp = DnsPacketBuilder.buildServfail(query)
+        assertEquals("QDCOUNT must be 1", 1, u16(resp, 4))
+        assertEquals("ANCOUNT must be 0", 0, u16(resp, 6))
+    }
+
+    @Test
+    fun `buildServfail on minimum-size DNS header does not crash`() {
+        val minQuery = ByteArray(12).apply {
+            this[0] = 0xAB.toByte(); this[1] = 0xCD.toByte()
+        }
+        val resp = DnsPacketBuilder.buildServfail(minQuery)
+        assertTrue(resp.size >= 12)
+        assertEquals(2, rcode(resp))
+    }
 }
