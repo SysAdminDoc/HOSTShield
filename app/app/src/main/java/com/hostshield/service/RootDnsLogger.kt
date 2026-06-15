@@ -164,16 +164,18 @@ class RootDnsLogger @Inject constructor(
         try { proxySocket6?.close() } catch (_: Exception) { }
         proxySocket = null
         proxySocket6 = null
-        // Flush remaining stats synchronously before teardown
-        try {
-            kotlinx.coroutines.runBlocking(Dispatchers.IO) {
-                flushStats()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Final stats flush failed: ${e.message}")
-        }
         hostnameUidMap.clear()
         pendingUidLookup.clear()
+        // Flush remaining stats OFF the main thread to avoid ANR — stop() is called
+        // from the service main thread. scope outlives stop(), so the flush completes.
+        scope.launch {
+            try {
+                withTimeoutOrNull(3000L) { flushStats() }
+                    ?: Log.w(TAG, "Final stats flush timed out after 3s")
+            } catch (e: Exception) {
+                Log.e(TAG, "Final stats flush failed: ${e.message}")
+            }
+        }
         scope.launch {
             removeIptablesRules()
             // Restore route_localnet to default (0) and remove compensating INPUT rules
