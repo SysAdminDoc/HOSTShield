@@ -3,6 +3,25 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.14] - 2026-06-15
+
+### Fixed
+- Home protection, DNS tools, DNS leak test, hosts editor/diff, firewall sync,
+  backup/import/export, and update-check failures now use stable recovery copy
+  instead of raw exception text.
+- DNS tools lookup, batch lookup, ping, and traceroute failures now preserve
+  details in Logcat while showing concise user-facing result text.
+- Hosts editor/diff and firewall sync failures now preserve diagnostic details
+  in Logcat and keep visible messages actionable.
+
+### UX
+- Shared status-banner actions and empty-state actions now reserve larger hit
+  targets.
+- Repeated firewall Wi-Fi, mobile, screen-off, background, and metered controls
+  now use larger touch targets in dense app rows.
+- Blocklist gallery add buttons now use larger touch targets, and gallery card
+  labels/descriptions truncate safely on small screens.
+
 ## [v6.9.13] - 2026-06-15
 
 ### Fixed

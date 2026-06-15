@@ -72,7 +72,8 @@ class HostsDiffViewModel @Inject constructor(private val rootUtil: RootUtil) : V
                 val blockCount = lines.count { it.trim().startsWith("0.0.0.0") || it.trim().startsWith("::") }
                 _uiState.update { it.copy(isLoading = false, currentLineCount = lines.size, diffLines = diffLines, addedCount = blockCount) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                android.util.Log.e("HostsDiff", "Failed to read hosts file", e)
+                _uiState.update { it.copy(isLoading = false, error = "Could not read the hosts file. Check root access and try again.") }
             }
         }
     }

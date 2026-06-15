@@ -65,7 +65,8 @@ class HostsEditorViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, message = "Failed to read: ${e.message}") }
+                android.util.Log.e("HostsEditor", "Failed to read hosts file", e)
+                _state.update { it.copy(isLoading = false, message = "Read failed. Check root access and try again.") }
             }
         }
     }
@@ -85,7 +86,8 @@ class HostsEditorViewModel @Inject constructor(
                 rootUtil.writeHostsFile(_state.value.content)
                 _state.update { it.copy(isSaving = false, isEdited = false, message = "Hosts file saved") }
             } catch (e: Exception) {
-                _state.update { it.copy(isSaving = false, message = "Save failed: ${e.message}") }
+                android.util.Log.e("HostsEditor", "Failed to save hosts file", e)
+                _state.update { it.copy(isSaving = false, message = "Save failed. Check root access and try again.") }
             }
         }
     }
@@ -137,7 +139,7 @@ fun HostsEditorScreen(
             ) {
                 Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(msg, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearMessage() }, modifier = Modifier.size(40.dp)) {
+                    IconButton(onClick = { viewModel.clearMessage() }, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Filled.Close, "Dismiss hosts editor message", tint = TextDim, modifier = Modifier.size(12.dp))
                     }
                 }

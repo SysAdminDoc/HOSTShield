@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.13-blue)
+![Version](https://img.shields.io/badge/version-6.9.14-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -404,6 +404,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.14** | Public-release polish for shared status surfaces, Home protection errors, DNS tools, hosts utilities, firewall controls, and the blocklist gallery: user-facing failures no longer expose raw exception text, repeated firewall controls and gallery add actions use larger touch targets, shared status/empty actions reserve larger hit areas, and gallery cards handle long labels/descriptions safely. |
 | **6.9.13** | Stricter release polish for Rules, Sources, and DNS Logs: redirect rules now validate IPv4/IPv6 targets, regex errors no longer expose parser text, source/log failures use user-facing copy with detailed logs preserved, long rule/source/log text truncates safely, DNS log query-type filters wrap on narrow screens, and key icon/selection controls have larger touch targets. |
 | **6.9.12** | Second-pass release polish for Settings-adjacent flows: WebDAV now preserves saved passwords when the password field is left blank, QR sharing fits narrow screens and uses accessible status banners, rule testing has keyboard submit behavior and long-domain handling, and diagnostic/PCAP/CSV export states use clearer touch targets and user-facing failure copy. |
 | **6.9.11** | DoH now honors the user-selected provider as the primary resolver while using latency only for failover ordering. Gradle versions moved to `libs.versions.toml`, Settings PCAP export exposes all/DNS/firewall modes with visible share failure feedback, and release-doc checks now catch stale FGS, DoH3, GeoIP, and version metadata claims. |

@@ -129,7 +129,8 @@ class DnsLeakTestViewModel @Inject constructor(
                 results.add(LeakTestResult("connectivitycheck.gstatic.com", addrs, isLeaking = false, latencyMs = latency))
             } catch (e: Exception) {
                 val latency = (System.nanoTime() - start) / 1_000_000L
-                results.add(LeakTestResult("connectivitycheck.gstatic.com", listOf("FAILED: ${e.message?.take(30)}"), isLeaking = true, latencyMs = latency))
+                android.util.Log.w("DnsLeakTest", "Connectivity DNS check failed", e)
+                results.add(LeakTestResult("connectivitycheck.gstatic.com", listOf("Connectivity check failed"), isLeaking = true, latencyMs = latency))
             }
 
             val leaking = results.any { it.isLeaking }

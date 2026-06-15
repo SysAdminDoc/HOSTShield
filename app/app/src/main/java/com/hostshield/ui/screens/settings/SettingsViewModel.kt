@@ -458,7 +458,8 @@ class SettingsViewModel @Inject constructor(
                 }
                 _uiState.update { it.copy(importMessage = "Exported ${rules.size} rules") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(importMessage = "Export failed: ${e.message}") }
+                android.util.Log.e("SettingsViewModel", "Rules export failed", e)
+                _uiState.update { it.copy(importMessage = "Export failed. Choose another location and try again.") }
             }
         }
     }
@@ -475,7 +476,8 @@ class SettingsViewModel @Inject constructor(
                     _uiState.update { it.copy(exportResult = null, importMessage = "Shareable blocklist saved") }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(exportResult = null, importMessage = "Export failed: ${e.message}") }
+                android.util.Log.e("SettingsViewModel", "Shareable blocklist export failed", e)
+                _uiState.update { it.copy(exportResult = null, importMessage = "Export failed. Choose another location and try again.") }
             }
         }
     }
@@ -493,7 +495,8 @@ class SettingsViewModel @Inject constructor(
                 val count = allRules.size + result.sources.size
                 _uiState.update { it.copy(importMessage = "Imported $count items (${result.format})") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(importMessage = "Import failed: ${e.message}") }
+                android.util.Log.e("SettingsViewModel", "Rules import failed", e)
+                _uiState.update { it.copy(importMessage = "Import failed. Check the selected file and try again.") }
             }
         }
     }
@@ -536,7 +539,8 @@ class SettingsViewModel @Inject constructor(
                 val json = importExport.exportFirewallJson(rules)
                 _uiState.update { it.copy(exportResult = json) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(importMessage = "Firewall export failed: ${e.message}") }
+                android.util.Log.e("SettingsViewModel", "Firewall export failed", e)
+                _uiState.update { it.copy(importMessage = "Firewall export failed. Try again.") }
             }
         }
     }
@@ -554,7 +558,8 @@ class SettingsViewModel @Inject constructor(
                 val suffix = if (!passphrase.isNullOrEmpty()) " (encrypted)" else ""
                 _uiState.update { it.copy(backupMessage = "Backup saved successfully$suffix") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(backupMessage = "Backup failed: ${e.message}") }
+                android.util.Log.e("SettingsViewModel", "Backup export failed", e)
+                _uiState.update { it.copy(backupMessage = "Backup failed. Choose another location and try again.") }
             }
         }
     }
@@ -594,7 +599,8 @@ class SettingsViewModel @Inject constructor(
                     "Backup restore failed",
                     mapOf("error" to (e.message ?: e.javaClass.simpleName))
                 )
-                _uiState.update { it.copy(backupMessage = "Restore failed: ${e.message}") }
+                android.util.Log.e("SettingsViewModel", "Backup restore failed", e)
+                _uiState.update { it.copy(backupMessage = "Restore failed. Check the selected backup and try again.") }
             }
         }
     }
@@ -708,10 +714,11 @@ class SettingsViewModel @Inject constructor(
                     }
                 },
                 onFailure = { err ->
+                    android.util.Log.w("SettingsViewModel", "Update check failed", err)
                     _uiState.update {
                         it.copy(
                             isCheckingUpdate = false,
-                            updateMessage = "Update check failed: ${err.message}"
+                            updateMessage = "Update check failed. Try again later."
                         )
                     }
                 }

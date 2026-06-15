@@ -120,7 +120,8 @@ class FirewallViewModel @Inject constructor(
             try {
                 iptablesManager.syncInstalledApps()
             } catch (e: Exception) {
-                _error.value = "Failed to sync apps: ${e.message}"
+                android.util.Log.e("FirewallViewModel", "Failed to sync installed apps", e)
+                _error.value = "Could not sync installed apps. Check app permissions and try again."
             } finally {
                 _isSyncing.value = false
                 _isLoading.value = false
@@ -315,7 +316,7 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
                     Icon(Icons.Filled.Error, null, tint = Red, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(error ?: "", color = Red, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(40.dp)) {
+                    IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Filled.Close, "Dismiss", tint = Red, modifier = Modifier.size(14.dp))
                     }
                 }
@@ -657,7 +658,7 @@ private fun NetworkFirewallTab(
                 // WiFi toggle
                 IconButton(
                     onClick = { viewModel.toggleWifi(rule.uid, !rule.wifiAllowed) },
-                    modifier = Modifier.size(40.dp).accessibilityToggle("${rule.appLabel} WiFi access", rule.wifiAllowed)
+                    modifier = Modifier.size(48.dp).accessibilityToggle("${rule.appLabel} WiFi access", rule.wifiAllowed)
                 ) {
                     Icon(
                         Icons.Filled.Wifi,
@@ -670,7 +671,7 @@ private fun NetworkFirewallTab(
                 // Mobile data toggle
                 IconButton(
                     onClick = { viewModel.toggleMobile(rule.uid, !rule.mobileAllowed) },
-                    modifier = Modifier.size(40.dp).accessibilityToggle("${rule.appLabel} mobile data access", rule.mobileAllowed)
+                    modifier = Modifier.size(48.dp).accessibilityToggle("${rule.appLabel} mobile data access", rule.mobileAllowed)
                 ) {
                     Icon(
                         Icons.Filled.SignalCellularAlt,
@@ -753,7 +754,7 @@ private fun ContextFirewallTab(
                 // Screen Off toggle
                 IconButton(
                     onClick = { viewModel.toggleBlockScreenOff(rule.uid, !rule.blockScreenOff) },
-                    modifier = Modifier.size(40.dp).accessibilityToggle("${rule.appLabel} screen-off blocking", rule.blockScreenOff)
+                    modifier = Modifier.size(48.dp).accessibilityToggle("${rule.appLabel} screen-off blocking", rule.blockScreenOff)
                 ) {
                     Icon(
                         if (rule.blockScreenOff) Icons.Filled.DarkMode else Icons.Filled.LightMode,
@@ -766,7 +767,7 @@ private fun ContextFirewallTab(
                 // Background toggle
                 IconButton(
                     onClick = { viewModel.toggleBlockBackground(rule.uid, !rule.blockBackground) },
-                    modifier = Modifier.size(40.dp).accessibilityToggle("${rule.appLabel} background blocking", rule.blockBackground)
+                    modifier = Modifier.size(48.dp).accessibilityToggle("${rule.appLabel} background blocking", rule.blockBackground)
                 ) {
                     Icon(
                         if (rule.blockBackground) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
@@ -779,7 +780,7 @@ private fun ContextFirewallTab(
                 // Metered toggle
                 IconButton(
                     onClick = { viewModel.toggleBlockMetered(rule.uid, !rule.blockMetered) },
-                    modifier = Modifier.size(40.dp).accessibilityToggle("${rule.appLabel} metered-network blocking", rule.blockMetered)
+                    modifier = Modifier.size(48.dp).accessibilityToggle("${rule.appLabel} metered-network blocking", rule.blockMetered)
                 ) {
                     Icon(
                         if (rule.blockMetered) Icons.Filled.MoneyOff else Icons.Filled.AttachMoney,

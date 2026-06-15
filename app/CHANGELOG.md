@@ -1,3 +1,37 @@
+# HostShield v6.9.14
+
+**Release Date:** 2026-06-15
+**Version Code:** 96
+
+## Public-Release Polish
+
+### Fixed
+- Home protection failures now show recovery-oriented copy for root DNS, VPN,
+  blocklist rebuild, and reboot actions while preserving detailed errors in
+  Logcat.
+- DNS tools lookup, batch lookup, ping, and traceroute failures now show stable
+  user-facing result text instead of exception fragments.
+- DNS leak test connectivity failures now show concise result text without raw
+  exception details.
+- Hosts editor, hosts diff, firewall sync, backup/import/export, and update
+  check failures now use actionable product copy with detailed errors logged.
+
+### UX and Accessibility
+- Shared status-banner actions and empty-state actions now reserve larger touch
+  targets.
+- Firewall Wi-Fi, mobile, screen-off, background, and metered controls now use
+  larger touch targets in dense per-app rows.
+- Blocklist gallery add buttons now use larger touch targets.
+- Gallery list labels and descriptions truncate safely around badges and action
+  buttons.
+
+### Verification
+- `tools/check-release-docs.ps1`
+- `:app:testFullDebugUnitTest`
+- `:app:lintFullDebug`
+- `:app:assembleFullDebug`
+- `HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING=true :app:assembleFullRelease`
+
 # HostShield v6.9.13
 
 **Release Date:** 2026-06-15

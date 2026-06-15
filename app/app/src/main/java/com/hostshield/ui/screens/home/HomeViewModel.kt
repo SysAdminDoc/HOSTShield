@@ -303,8 +303,11 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             val result = rootUtil.rebootDeviceForVpnRecovery()
             if (result.isFailure) {
+                result.exceptionOrNull()?.let { error ->
+                    android.util.Log.e("HomeViewModel", "VPN recovery reboot failed", error)
+                }
                 _uiState.update {
-                    it.copy(errorMessage = result.exceptionOrNull()?.message ?: "Unable to restart device")
+                    it.copy(errorMessage = "Unable to restart device. Check root access and try again.")
                 }
             }
         }
@@ -766,8 +769,13 @@ class HomeViewModel @Inject constructor(
                 )
             }
         } catch (e: Exception) {
+            android.util.Log.e("HomeViewModel", "Root protection apply failed", e)
             _uiState.update {
-                it.copy(isApplying = false, errorMessage = e.message, progressMessage = "")
+                it.copy(
+                    isApplying = false,
+                    errorMessage = "Could not start root DNS protection. Check root access and source connectivity.",
+                    progressMessage = ""
+                )
             }
         }
     }
@@ -881,8 +889,13 @@ class HomeViewModel @Inject constructor(
                 )
             }
         } catch (e: Exception) {
+            android.util.Log.e("HomeViewModel", "VPN protection apply failed", e)
             _uiState.update {
-                it.copy(isApplying = false, errorMessage = e.message, progressMessage = "")
+                it.copy(
+                    isApplying = false,
+                    errorMessage = "Could not start VPN protection. Check VPN permission and enabled sources.",
+                    progressMessage = ""
+                )
             }
         }
     }
@@ -1100,7 +1113,7 @@ class HomeViewModel @Inject constructor(
             }
         } catch (e: Exception) {
             android.util.Log.e("HomeViewModel", "Blocklist build failed: ${e.message}", e)
-            _uiState.update { it.copy(errorMessage = "Failed to build blocklist: ${e.message}") }
+            _uiState.update { it.copy(errorMessage = "Could not rebuild the blocklist. Check network connectivity and enabled sources.") }
         }
     }
 }

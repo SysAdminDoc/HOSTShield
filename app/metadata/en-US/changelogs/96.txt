@@ -1,0 +1,7 @@
+v6.9.14
+
+- Home, DNS tools, DNS leak test, hosts, firewall, backup/import/export, and update-check failures now use clearer recovery copy.
+- Detailed exception information is preserved in logs or diagnostics instead of being shown in the UI.
+- Shared status and empty-state actions now reserve larger touch targets.
+- Firewall per-app controls and gallery add buttons now use larger touch targets.
+- Blocklist gallery labels and descriptions truncate safely on small screens.

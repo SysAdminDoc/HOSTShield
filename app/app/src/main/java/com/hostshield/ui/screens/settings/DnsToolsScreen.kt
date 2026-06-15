@@ -182,7 +182,8 @@ class DnsToolsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 val latency = (System.nanoTime() - start) / 1_000_000L
-                val result = LookupResult(domain, emptyList(), isBlocked, latency, e.message ?: "Failed")
+                android.util.Log.w("DnsTools", "DNS lookup failed for $domain", e)
+                val result = LookupResult(domain, emptyList(), isBlocked, latency, lookupFailureMessage(e))
                 _state.update {
                     it.copy(
                         isLookingUp = false,
@@ -324,7 +325,8 @@ class DnsToolsViewModel @Inject constructor(
                     results.add(LookupResult(domain, addrs, isBlocked, latency))
                 } catch (e: Exception) {
                     val latency = (System.nanoTime() - start) / 1_000_000L
-                    results.add(LookupResult(domain, emptyList(), isBlocked, latency, e.message ?: "Failed"))
+                    android.util.Log.w("DnsTools", "Batch DNS lookup failed for $domain", e)
+                    results.add(LookupResult(domain, emptyList(), isBlocked, latency, lookupFailureMessage(e)))
                 }
             }
             _state.update { it.copy(isBatchRunning = false, batchResults = results) }
@@ -351,7 +353,8 @@ class DnsToolsViewModel @Inject constructor(
                 }
                 _state.update { it.copy(isPinging = false, pingResult = result) }
             } catch (e: Exception) {
-                _state.update { it.copy(isPinging = false, pingResult = "Ping failed: ${e.message}") }
+                android.util.Log.w("DnsTools", "Ping failed for $safeTarget", e)
+                _state.update { it.copy(isPinging = false, pingResult = "Ping could not complete. Check the target and network connection.") }
             }
         }
     }
@@ -382,11 +385,19 @@ class DnsToolsViewModel @Inject constructor(
                 }
                 _state.update { it.copy(isPinging = false, pingResult = result) }
             } catch (e: Exception) {
-                _state.update { it.copy(isPinging = false, pingResult = "Traceroute failed: ${e.message}") }
+                android.util.Log.w("DnsTools", "Traceroute failed for $safeTarget", e)
+                _state.update { it.copy(isPinging = false, pingResult = "Traceroute could not complete. Check the target and network connection.") }
             }
         }
     }
 }
+
+private fun lookupFailureMessage(error: Exception): String =
+    when (error) {
+        is java.net.UnknownHostException -> "DNS lookup failed. Check the domain or network connection."
+        is SecurityException -> "DNS lookup blocked by device policy."
+        else -> "DNS lookup failed. Try again."
+    }
 
 @Composable
 fun DnsToolsScreen(

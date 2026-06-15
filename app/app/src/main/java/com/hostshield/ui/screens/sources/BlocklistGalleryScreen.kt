@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -250,7 +251,10 @@ private fun GalleryListItem(
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = TextPrimary,
-                        fontSize = 13.sp
+                        fontSize = 13.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     if (list.recommended) {
                         Spacer(Modifier.width(6.dp))
@@ -266,7 +270,14 @@ private fun GalleryListItem(
                     }
                 }
                 Spacer(Modifier.height(2.dp))
-                Text(list.description, color = TextSecondary, fontSize = 11.sp, lineHeight = 15.sp)
+                Text(
+                    list.description,
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(list.entries + " entries", color = TextDim, fontSize = 10.sp)
@@ -311,7 +322,7 @@ private fun GalleryListItem(
             } else {
                 FilledIconButton(
                     onClick = onAdd,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(48.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = Teal.copy(alpha = 0.15f),
                         contentColor = Teal

@@ -238,7 +238,7 @@ fun HostShieldStatusBanner(
                         shape = RoundedCornerShape(8.dp),
                         color = accent.copy(alpha = 0.14f),
                         modifier = Modifier
-                            .heightIn(min = 36.dp)
+                            .heightIn(min = 44.dp)
                             .semantics {
                                 role = Role.Button
                                 contentDescription = actionLabel
@@ -257,7 +257,7 @@ fun HostShieldStatusBanner(
             }
             if (onDismiss != null) {
                 Spacer(Modifier.width(8.dp))
-                IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
+                IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Filled.Close, contentDescription = "Dismiss $title", tint = TextDim, modifier = Modifier.size(16.dp))
                 }
             }
@@ -384,7 +384,7 @@ fun HostShieldEmptyState(
                         onClick = onPrimaryAction,
                         shape = RoundedCornerShape(8.dp),
                         color = accent.copy(alpha = 0.16f),
-                        modifier = Modifier.heightIn(min = 40.dp),
+                        modifier = Modifier.heightIn(min = 44.dp),
                     ) {
                         Text(
                             primaryActionLabel,
@@ -399,7 +399,7 @@ fun HostShieldEmptyState(
                             onClick = onSecondaryAction,
                             shape = RoundedCornerShape(8.dp),
                             color = Surface2,
-                            modifier = Modifier.heightIn(min = 40.dp),
+                            modifier = Modifier.heightIn(min = 44.dp),
                         ) {
                             Text(
                                 secondaryActionLabel,
