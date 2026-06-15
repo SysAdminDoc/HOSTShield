@@ -55,6 +55,7 @@ class DnsCache(
     }
     companion object {
         private const val TAG = "DnsCache"
+        private const val TYPE_NXNAME = 128 // RFC 9824 Compact Denial of Existence
     }
 
     data class CacheKey(val domain: String, val qtype: Int)
@@ -231,10 +232,29 @@ class DnsCache(
         val key = CacheKey(domain.lowercase(), qtype)
 
         when (rcode) {
-            0 -> { // NOERROR — positive cache
+            0 -> { // NOERROR — positive cache (or NXNAME compact denial)
+                // RFC 9824: NXNAME (type 128) in the answer section signals
+                // name non-existence via Compact Denial. Treat as negative cache.
+                if (containsNxnameAnswer(response)) {
+                    val soaTtl = extractSoaMinTtl(response)
+                    if (soaTtl == 0) return
+                    val ttlMs = if (soaTtl != null) {
+                        (soaTtl * 1000L).coerceIn(minTtlMs, negativeTtlMs * 5)
+                    } else {
+                        negativeTtlMs
+                    }
+                    val entry = CacheEntry(
+                        response = response.copyOf(),
+                        expiresAt = now + ttlMs,
+                        originalTtlMs = ttlMs,
+                        insertedAt = now,
+                        lastAccess = now
+                    )
+                    if (negativeCache.size >= maxNegativeEntries) evictLru(negativeCache, (maxNegativeEntries / 5).coerceAtLeast(1))
+                    negativeCache[key] = entry
+                    return
+                }
                 val ttl = extractMinTtl(response)
-                // ttl==0 indicates parse failure or server-mandated TTL=0 — either
-                // way, do not cache (mostly applies to dynamic CDN responses).
                 if (ttl <= 0) return
                 val ttlMs = (ttl * 1000L).coerceIn(minTtlMs, maxTtlMs)
                 val entry = CacheEntry(
@@ -367,6 +387,29 @@ class DnsCache(
     )
 
     // ── Internal ─────────────────────────────────────────────
+
+    private fun containsNxnameAnswer(response: ByteArray): Boolean {
+        try {
+            val anCount = ((response[6].toInt() and 0xFF) shl 8) or (response[7].toInt() and 0xFF)
+            if (anCount == 0) return false
+            var off = 12
+            val qdCount = ((response[4].toInt() and 0xFF) shl 8) or (response[5].toInt() and 0xFF)
+            for (i in 0 until qdCount) {
+                off = skipName(response, off)
+                off += 4
+            }
+            for (i in 0 until anCount.coerceAtMost(20)) {
+                if (off >= response.size) break
+                off = skipName(response, off)
+                if (off + 10 > response.size) break
+                val rrType = ((response[off].toInt() and 0xFF) shl 8) or (response[off + 1].toInt() and 0xFF)
+                if (rrType == TYPE_NXNAME) return true
+                val rdLen = ((response[off + 8].toInt() and 0xFF) shl 8) or (response[off + 9].toInt() and 0xFF)
+                off += 10 + rdLen
+            }
+        } catch (_: Exception) { }
+        return false
+    }
 
     /**
      * Extract minimum TTL from all answer/authority/additional records.

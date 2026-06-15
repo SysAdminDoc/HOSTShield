@@ -411,4 +411,61 @@ class DnsCacheTest {
         val stats = cache.getStats()
         assertEquals(2, stats.size)
     }
+
+    // ── RFC 9824 NXNAME (Compact Denial of Existence) ───────
+
+    private fun buildNxnameResponse(txId: Int = 0x1234, ttl: Int = 120): ByteArray {
+        val header = ByteArray(12)
+        header[0] = (txId shr 8).toByte()
+        header[1] = (txId and 0xFF).toByte()
+        header[2] = 0x80.toByte() // QR=1, RCODE=0 (NOERROR)
+        header[3] = 0x00
+        header[4] = 0; header[5] = 1 // QDCOUNT=1
+        header[6] = 0; header[7] = 1 // ANCOUNT=1 (the NXNAME RR)
+        val question = byteArrayOf(
+            7, 101, 120, 97, 109, 112, 108, 101, 3, 99, 111, 109, 0, 0, 1, 0, 1
+        )
+        // Answer: NXNAME RR (type 128) with RDLENGTH=0
+        val answer = ByteArray(12)
+        answer[0] = 0xC0.toByte(); answer[1] = 12       // NAME pointer
+        answer[2] = 0; answer[3] = 128.toByte()          // TYPE=NXNAME (128)
+        answer[4] = 0; answer[5] = 1                     // CLASS=IN
+        answer[6] = (ttl shr 24).toByte()
+        answer[7] = (ttl shr 16).toByte()
+        answer[8] = (ttl shr 8).toByte()
+        answer[9] = (ttl and 0xFF).toByte()
+        answer[10] = 0; answer[11] = 0                   // RDLENGTH=0
+        return header + question + answer
+    }
+
+    @Test
+    fun `NXNAME response is cached as negative entry`() {
+        val response = buildNxnameResponse(ttl = 60)
+        cache.put("nxname.example.com", 1, response)
+
+        // Should be retrievable (negative cache serves it)
+        val result = cache.get("nxname.example.com", 1, txId(0xAAAA))
+        assertNotNull("NXNAME response should be cached", result)
+    }
+
+    @Test
+    fun `NXNAME response does not go to positive cache`() {
+        val response = buildNxnameResponse(ttl = 300)
+        cache.put("nxname2.example.com", 1, response)
+
+        // Advance past the negative TTL window to confirm it expires like NXDOMAIN
+        fakeClock.advance(400_000)
+        val result = cache.get("nxname2.example.com", 1, txId(0xBBBB))
+        assertNull("NXNAME entry should have expired from negative cache", result)
+    }
+
+    @Test
+    fun `normal NOERROR response without NXNAME goes to positive cache`() {
+        val response = buildDnsResponse(ttl = 300)
+        cache.put("normal.example.com", 1, response)
+
+        val result = cache.get("normal.example.com", 1, txId(0xCCCC))
+        assertNotNull(result)
+        assertFalse(result!!.isStale)
+    }
 }

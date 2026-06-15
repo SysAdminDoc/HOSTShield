@@ -39,6 +39,7 @@ object DnsPacketBuilder {
     const val TYPE_OPT: Int = 41       // EDNS(0) pseudo-record
     const val TYPE_SVCB: Int = 64      // v5.0: RFC 9460 — Service Binding
     const val TYPE_HTTPS: Int = 65     // v5.0: RFC 9460 — HTTPS Service Binding
+    const val TYPE_NXNAME: Int = 128   // RFC 9824 — Compact Denial of Existence
     private const val CLASS_IN: Short = 1
 
     /**
