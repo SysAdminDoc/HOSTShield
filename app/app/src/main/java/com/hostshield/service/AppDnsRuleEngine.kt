@@ -44,7 +44,8 @@ class AppDnsRuleEngine @Inject constructor(
     )
 
     // packageName -> list of compiled rules  (hot-path reads, rare writes)
-    private val ruleCache = ConcurrentHashMap<String, List<CompiledRule>>()
+    @Volatile
+    private var ruleCache: Map<String, List<CompiledRule>> = emptyMap()
 
     // ──────────────────────────────────────────────────────────────
     // Public API
@@ -65,10 +66,7 @@ class AppDnsRuleEngine @Inject constructor(
             for ((pkg, rules) in grouped) {
                 newCache[pkg] = rules.map { compile(it) }
             }
-            // Atomic swap: clear old + putAll in rapid succession to minimize
-            // the window where hot-path reads see stale data
-            ruleCache.clear()
-            ruleCache.putAll(newCache)
+            ruleCache = newCache
             Log.d(TAG, "Loaded rules for ${ruleCache.size} apps")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load app DNS rules", e)
@@ -107,7 +105,7 @@ class AppDnsRuleEngine @Inject constructor(
     /**
      * Returns the set of package names that have at least one cached rule.
      */
-    fun getAppsWithCachedRules(): Set<String> = ruleCache.keys.toSet()
+    fun getAppsWithCachedRules(): Set<String> = ruleCache.keys
 
     /**
      * Invalidate cache for a single app (after rule edit).
@@ -116,11 +114,13 @@ class AppDnsRuleEngine @Inject constructor(
     suspend fun reloadForApp(packageName: String) {
         try {
             val rules = appDnsRuleDao.getRulesForApp(packageName).first()
+            val current = ruleCache.toMutableMap()
             if (rules.isEmpty()) {
-                ruleCache.remove(packageName)
+                current.remove(packageName)
             } else {
-                ruleCache[packageName] = rules.map { compile(it) }
+                current[packageName] = rules.map { compile(it) }
             }
+            ruleCache = current
         } catch (e: Exception) {
             PrivacyLog.e(TAG, "Failed to reload rules for $packageName", e)
         }

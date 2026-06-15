@@ -143,14 +143,14 @@ interface DnsLogDao {
 
     // Hourly breakdown for charts: returns hour (0-23) and count
     @Query("""
-        SELECT CAST((timestamp / 3600000) % 24 AS INTEGER) as hour, COUNT(*) as cnt
+        SELECT CAST(strftime('%H', timestamp / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour, COUNT(*) as cnt
         FROM dns_logs WHERE blocked = 1 AND timestamp > :since
         GROUP BY hour ORDER BY hour
     """)
     fun getHourlyBlocked(since: Long): Flow<List<HourlyStat>>
 
     @Query("""
-        SELECT CAST((timestamp / 3600000) % 24 AS INTEGER) as hour, COUNT(*) as cnt
+        SELECT CAST(strftime('%H', timestamp / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour, COUNT(*) as cnt
         FROM dns_logs WHERE timestamp > :since
         GROUP BY hour ORDER BY hour
     """)
@@ -243,7 +243,7 @@ interface DnsLogDao {
 
     /** Average DNS response time per hour (for latency chart). */
     @Query("""
-        SELECT CAST((timestamp / 3600000) % 24 AS INTEGER) as hour,
+        SELECT CAST(strftime('%H', timestamp / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour,
             AVG(response_time_ms) as avgMs,
             MAX(response_time_ms) as maxMs,
             COUNT(*) as cnt

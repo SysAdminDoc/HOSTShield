@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <cache-path name="cache" path="." />
-    <files-path name="files" path="." />
+    <cache-path name="diagnostics" path="diagnostics/" />
+    <cache-path name="pcap" path="." />
+    <files-path name="crashes" path="crashes/" />
     <files-path name="backups" path="auto_backups/" />
-    <external-files-path name="external" path="." />
 </paths>

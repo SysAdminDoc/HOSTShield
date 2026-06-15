@@ -1,0 +1,13 @@
+Deep engineering audit with 12 correctness, reliability, and security fixes:
+- Fixed blocklist data loss when periodic refresh gets all HTTP 304s
+- Fixed regex rules missing from VPN service blocklist rebuild
+- Fixed per-app DNS rule cache torn-state race during reload
+- Fixed DNS cache overcapping all TTLs at 5 minutes
+- Fixed hourly chart using UTC instead of local timezone
+- Fixed threat-intel domain swap race during feed refresh
+- Fixed GeoIP cache growing without bound
+- Fixed VPN restart leaking coroutines on network changes
+- Fixed stability metrics lost on database write failure
+- Fixed JSON injection in EDE extra-text
+- Added legacy backup rules for Android 8-11 devices
+- Restricted FileProvider paths, cleaned ProGuard rules

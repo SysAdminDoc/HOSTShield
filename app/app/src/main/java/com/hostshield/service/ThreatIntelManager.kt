@@ -187,7 +187,8 @@ class ThreatIntelManager @Inject constructor(
     // ── State ─────────────────────────────────────────────────
 
     @Volatile private var ipTrie = IpRadixTrie()
-    private val domainThreats = ConcurrentHashMap<String, String>()  // domain -> feedName
+    @Volatile
+    private var domainThreats = ConcurrentHashMap<String, String>()  // domain -> feedName
 
     @Volatile var feedCount = 0; private set
     @Volatile var domainCount = 0; private set
@@ -295,11 +296,11 @@ class ThreatIntelManager @Inject constructor(
                 }
             }
 
-            // Atomic swap
+            val swappedDomains = ConcurrentHashMap<String, String>(newDomains.size)
+            swappedDomains.putAll(newDomains)
             synchronized(this) {
                 ipTrie = newTrie
-                domainThreats.clear()
-                domainThreats.putAll(newDomains)
+                domainThreats = swappedDomains
                 feedCount = json.optInt(CACHE_KEY_FEEDS, 0)
                 lastUpdated = json.optLong(CACHE_KEY_LAST_UPDATED, 0L)
                 domainCount = domainThreats.size
@@ -504,11 +505,11 @@ class ThreatIntelManager @Inject constructor(
                 return false
             }
 
-            // Atomic swap
+            val swappedDomains = ConcurrentHashMap<String, String>(newDomains.size)
+            swappedDomains.putAll(newDomains)
             synchronized(this) {
                 ipTrie = newTrie
-                domainThreats.clear()
-                domainThreats.putAll(newDomains)
+                domainThreats = swappedDomains
                 feedCount = successCount
                 lastUpdated = System.currentTimeMillis()
                 domainCount = domainThreats.size

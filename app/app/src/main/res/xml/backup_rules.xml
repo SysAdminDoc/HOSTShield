@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Legacy fullBackupContent rules for API 26-30.
+    Cloud backup fully disabled (matches data_extraction_rules.xml).
+-->
+<full-backup-content>
+    <exclude domain="root" path="." />
+</full-backup-content>

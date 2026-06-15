@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.15-blue)
+![Version](https://img.shields.io/badge/version-6.9.16-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -404,6 +404,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.16** | Deep engineering audit: fixed blocklist data loss on all-304 periodic refresh, missing regex rules in VPN rebuild, per-app DNS rule cache torn-state, DNS cache TTL overcapping, hourly chart UTC mismatch, threat-intel domain swap race, GeoIP cache unbounded growth, VPN restart coroutine leaks, stability metric loss on DB failure, EDE JSON injection. Added legacy backup rules for API 26-30, restricted FileProvider paths, cleaned ProGuard dead rules. |
 | **6.9.15** | Additional release-state polish: Blocklist Gallery now has explicit loading, unavailable, empty, success, and add-failure states using shared status surfaces; gallery add failures are logged and shown as errors instead of green success messages; Home warning dismiss/restart actions, automation copy, TLS/crash clear actions, parental message dismiss, and app privacy expand controls have larger touch targets; app privacy and content filter rows truncate long text safely. |
 | **6.9.14** | Public-release polish for shared status surfaces, Home protection errors, DNS tools, hosts utilities, firewall controls, and the blocklist gallery: user-facing failures no longer expose raw exception text, repeated firewall controls and gallery add actions use larger touch targets, shared status/empty actions reserve larger hit areas, and gallery cards handle long labels/descriptions safely. |
 | **6.9.13** | Stricter release polish for Rules, Sources, and DNS Logs: redirect rules now validate IPv4/IPv6 targets, regex errors no longer expose parser text, source/log failures use user-facing copy with detailed logs preserved, long rule/source/log text truncates safely, DNS log query-type filters wrap on narrow screens, and key icon/selection controls have larger touch targets. |

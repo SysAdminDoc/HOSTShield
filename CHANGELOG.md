@@ -3,6 +3,49 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.16] - 2026-06-15
+
+### Fixed
+- Periodic blocklist refresh no longer silently empties the blocklist when all
+  sources return HTTP 304 Not Modified; the rebuild is skipped entirely when
+  nothing changed upstream.
+- VPN service blocklist rebuild now includes user regex rules, matching the
+  periodic worker behavior. Previously regex block/allow rules were silently
+  ignored until the next background worker run.
+- Per-app DNS rule engine now uses atomic reference swap instead of
+  clear-then-putAll, eliminating a brief window where all per-app rules were
+  dropped during cache reload.
+- EDE (Extended DNS Error) extra-text JSON is now properly escaped so block
+  reasons containing quotes or backslashes produce valid JSON.
+- VPN stability metrics (dropped queries, fd errors, rebuild count) are now
+  restored to their counters when the database write fails instead of being
+  silently lost.
+- VPN restart on network change now cancels the recovery monitor and DNS config
+  observer coroutines before restarting, preventing accumulated leaked
+  coroutines on repeated network transitions.
+- DNS cache now honors upstream TTLs above 300 seconds instead of silently
+  capping all records to 5 minutes; the 300-second default is only used as a
+  fallback when no TTL could be parsed from the response.
+- Hourly blocked/total/latency chart queries now use SQLite `localtime` instead
+  of raw UTC arithmetic so hour labels match the user's timezone.
+- Threat-intel domain map now uses atomic reference swap instead of
+  clear-then-putAll, eliminating a brief window during refresh where all
+  domain-based threat-intel blocking was bypassed.
+- GeoIP lookup cache now evicts entries when the cache exceeds 4096 IPs instead
+  of growing without bound for the lifetime of the VPN service.
+
+### Security
+- Added legacy `fullBackupContent` rules for API 26-30 devices so cloud backup
+  exclusions (blocklists, DNS logs, credentials) apply on Android 11 and below,
+  not just Android 12+.
+- Restricted FileProvider paths from entire `cache`/`files`/`external` trees to
+  only the subdirectories actually used (diagnostics, pcap, crashes, backups).
+
+### Build
+- Removed dead ProGuard keep rule for non-existent `NetworkChangeReceiver`.
+- Removed overly broad Compose R8 keep rules that prevented tree-shaking;
+  Compose ships its own consumer ProGuard rules.
+
 ## [v6.9.15] - 2026-06-15
 
 ### Fixed

@@ -823,6 +823,8 @@ class DnsVpnService : VpnService() {
             shutdownPipeRead = null; shutdownPipeWrite = null
             cancelWatchdog()
             cancelTunnelHeartbeat()
+            cancelVpnRecoveryMonitor()
+            dnsConfigJob?.cancel(); dnsConfigJob = null
             unregisterNetworkCallback()
             // Flush buffered logs before restart — don't lose entries
             logFlushJob?.cancel(); logFlushJob = null
@@ -1001,6 +1003,7 @@ class DnsVpnService : VpnService() {
             blocklist.updateAsync(
                 allDomains,
                 repository.getEnabledWildcards(),
+                repository.getEnabledRegexRules(),
                 sourceWildcardBlocks = sourceWildcardBlocks,
                 sourceWildcardAllows = sourceWildcardAllows,
                 exactBlockOrigins = exactBlockOrigins,
@@ -1484,13 +1487,13 @@ class DnsVpnService : VpnService() {
 
     /** Flush VPN stability metrics to Room. */
     private suspend fun flushStability() {
+        val dropped = droppedQueries.getAndSet(0)
+        val queries = totalQueriesCount.getAndSet(0)
+        val rebuilds = rebuildCount.getAndSet(0)
+        val errors = fdErrorCount.getAndSet(0)
         try {
             val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
             val uptimeMs = if (vpnStartTime > 0) System.currentTimeMillis() - vpnStartTime else 0L
-            val dropped = droppedQueries.getAndSet(0)
-            val queries = totalQueriesCount.getAndSet(0)
-            val rebuilds = rebuildCount.getAndSet(0)
-            val errors = fdErrorCount.getAndSet(0)
 
             val existing = vpnStabilityDao.getByDate(today)
                 ?: com.hostshield.data.model.VpnStabilityEntry(date = today)
@@ -1509,6 +1512,10 @@ class DnsVpnService : VpnService() {
             // Reset start time for next interval
             vpnStartTime = System.currentTimeMillis()
         } catch (e: Exception) {
+            droppedQueries.addAndGet(dropped)
+            totalQueriesCount.addAndGet(queries)
+            rebuildCount.addAndGet(rebuilds)
+            fdErrorCount.addAndGet(errors)
             Log.e(TAG, "Stability flush failed: ${e.message}")
         }
     }

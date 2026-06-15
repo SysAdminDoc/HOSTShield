@@ -41,6 +41,7 @@ class GeoIpLookup @Inject constructor() {
     )
 
     private val cache = ConcurrentHashMap<String, GeoInfo>(128)
+    private val MAX_CACHE_SIZE = 4096
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(3, TimeUnit.SECONDS)
@@ -125,6 +126,10 @@ class GeoIpLookup @Inject constructor() {
                     asn = json.optString("asn", ""),
                     flag = countryCodeToFlag(countryCode)
                 )
+                if (cache.size >= MAX_CACHE_SIZE) {
+                    val oldest = cache.keys.firstOrNull()
+                    if (oldest != null) cache.remove(oldest)
+                }
                 cache[ip] = info
                 info
             } catch (e: Exception) {

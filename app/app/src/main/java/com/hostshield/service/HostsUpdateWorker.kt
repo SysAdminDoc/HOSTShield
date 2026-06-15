@@ -131,11 +131,13 @@ class HostsUpdateWorker @AssistedInject constructor(
                     // is stale (silent swallow used to make this look like the lists
                     // were fresh when they were actually 404'ing for weeks).
                     val failedSources = mutableListOf<SourceFailureNotice>()
+                    var anySourceChanged = false
                     for (source in blockSources) {
                         downloader.download(source)
                             .onSuccess { dl ->
                                 repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
                                 if (!dl.notModified) {
+                                    anySourceChanged = true
                                     val parsed = HostsParser.parseForBlocking(dl.content)
                                     allDomains.addAll(parsed.blockDomains)
                                     parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
@@ -330,6 +332,11 @@ class HostsUpdateWorker @AssistedInject constructor(
                         exactBlockOrigins,
                         wildcardBlockOrigins
                     )
+
+                    if (!anySourceChanged && failedSources.isEmpty() && syncUrls.isEmpty()) {
+                        Log.i(TAG, "All sources returned 304 Not Modified — skipping blocklist rebuild")
+                        return Result.success()
+                    }
 
                     val wildcards = repository.getEnabledWildcards()
                     val regexRules = repository.getEnabledRegexRules()

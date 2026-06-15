@@ -430,7 +430,7 @@ class DnsCache(
                 off += 4 // QTYPE + QCLASS
             }
 
-            var minTtl = 300 // default 5 min
+            var minTtl = Int.MAX_VALUE
             // Cap raised from 20 → 100 to cover large CNAME chains and multi-A
             // round-robin sets. Real-world maximum we have seen is ~80 RRs in
             // CDN responses.
@@ -451,7 +451,7 @@ class DnsCache(
                 if (rrType != 41 && ttl in 1 until minTtl) minTtl = ttl
                 off += 10 + rdLen
             }
-            return minTtl
+            return if (minTtl == Int.MAX_VALUE) 300 else minTtl
         } catch (_: Exception) {
             // On parse failure, return 0 so the response is *not* cached rather
             // than being pinned at 5 minutes regardless of what the server said.

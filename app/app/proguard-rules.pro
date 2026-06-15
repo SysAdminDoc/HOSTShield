@@ -50,7 +50,6 @@
 
 # ── BroadcastReceivers ───────────────────────────────────────
 -keep class com.hostshield.service.BootReceiver { *; }
--keep class com.hostshield.service.NetworkChangeReceiver { *; }
 -keep class com.hostshield.service.HostShieldWidgetProvider { *; }
 -keep class com.hostshield.service.AutomationReceiver { *; }
 
@@ -191,12 +190,5 @@
 -keep class com.hostshield.service.BlockNotificationService { *; }
 -keep class com.hostshield.service.BlockingScheduleWorker { *; }
 
-# --- Jetpack Compose (v6.3) ---
+# Compose ships its own consumer R8 rules — blanket keeps removed in v6.9.16.
 -dontwarn androidx.compose.**
--keep class androidx.compose.runtime.** { *; }
--keepclassmembers class androidx.compose.runtime.** { *; }
--keep class androidx.compose.ui.** { *; }
--keep @androidx.compose.runtime.Composable class * { *; }
--keepclasseswithmembers class * {
-    @androidx.compose.runtime.Composable <methods>;
-}

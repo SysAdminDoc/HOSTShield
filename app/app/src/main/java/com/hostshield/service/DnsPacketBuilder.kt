@@ -237,7 +237,8 @@ object DnsPacketBuilder {
     }
 
     private fun buildEdeExtraText(reason: String): ByteArray {
-        val json = """{"j":"$reason","o":"HostShield"}"""
+        val escaped = reason.replace("\\", "\\\\").replace("\"", "\\\"")
+        val json = """{"j":"$escaped","o":"HostShield"}"""
         return json.toByteArray(Charsets.UTF_8)
     }
 
