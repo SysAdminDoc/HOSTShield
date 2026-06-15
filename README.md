@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.11-blue)
+![Version](https://img.shields.io/badge/version-6.9.12-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -404,6 +404,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.12** | Second-pass release polish for Settings-adjacent flows: WebDAV now preserves saved passwords when the password field is left blank, QR sharing fits narrow screens and uses accessible status banners, rule testing has keyboard submit behavior and long-domain handling, and diagnostic/PCAP/CSV export states use clearer touch targets and user-facing failure copy. |
 | **6.9.11** | DoH now honors the user-selected provider as the primary resolver while using latency only for failover ordering. Gradle versions moved to `libs.versions.toml`, Settings PCAP export exposes all/DNS/firewall modes with visible share failure feedback, and release-doc checks now catch stale FGS, DoH3, GeoIP, and version metadata claims. |
 | **6.9.9** | New launcher icon assets across Android icon densities, README screenshots, and AdAway Default plus StevenBlack Unified enabled by default with an upgrade migration for existing installs. |
 | **6.9.8** | Removed the non-root "Root not detected" Home banner, fixed Settings > View on GitHub so it opens the repository in a browser, and simplified the Sources header to keep only the add-source action. |

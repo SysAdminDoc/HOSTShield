@@ -1,0 +1,6 @@
+v6.9.12
+
+- WebDAV Sync preserves an existing saved password when the password field is left blank.
+- QR config sharing now fits generated QR codes on narrow screens and uses the shared accessible status banner for results.
+- Rule Tester adds keyboard search submission, stronger empty-action handling, and safer long-domain rendering.
+- Settings diagnostic, CSV, and PCAP export states have larger action targets and clearer user-facing failure messages.

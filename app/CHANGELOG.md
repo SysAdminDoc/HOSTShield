@@ -1,3 +1,37 @@
+# HostShield v6.9.12
+
+**Release Date:** 2026-06-15
+**Version Code:** 94
+
+## Second-Pass Release Polish
+
+### Fixed
+- WebDAV Sync now keeps the saved password when users save server settings with
+  the password field left blank, and connection tests can reuse that saved
+  password without displaying it.
+- QR config sharing no longer overflows narrow cards when a QR code is
+  generated, and import/export result messages now use the shared accessible
+  status banner.
+- Rule Tester now labels input fields, supports the keyboard search action,
+  disables empty single-domain tests, and truncates long domains and match
+  descriptions to protect result layout.
+- Settings diagnostic, CSV, and PCAP export controls now have larger action
+  targets, better small-screen wrapping, rounded KB display, and clearer
+  user-facing failure messages.
+
+### Accessibility
+- Added IME padding to Settings, WebDAV Sync, QR Config Sharing, and Rule
+  Tester flows.
+- Added screen-reader result summaries to Rule Tester rows.
+
+### Verification
+- `tools/check-release-docs.ps1`
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest`
+- `:app:lintFullDebug`
+- `:app:assembleFullDebug`
+- `HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING=true :app:assembleFullRelease`
+
 # HostShield v6.9.11
 
 **Release Date:** 2026-06-15

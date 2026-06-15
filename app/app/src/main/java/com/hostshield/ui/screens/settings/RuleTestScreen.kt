@@ -3,9 +3,11 @@ package com.hostshield.ui.screens.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -15,8 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -129,6 +136,7 @@ fun RuleTestScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val canTestSingle = state.testDomain.isNotBlank() && !state.isTesting
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         Row(
@@ -143,6 +151,7 @@ fun RuleTestScreen(
         }
 
         LazyColumn(
+            modifier = Modifier.fillMaxSize().imePadding(),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -151,16 +160,27 @@ fun RuleTestScreen(
                 OutlinedTextField(
                     value = state.testDomain,
                     onValueChange = { viewModel.setTestDomain(it) },
+                    label = { Text("Domain") },
                     placeholder = { Text("ads.example.com", color = TextDim) },
                     leadingIcon = { Icon(Icons.Filled.Dns, null, tint = TextDim) },
                     trailingIcon = {
                         if (state.isTesting) CircularProgressIndicator(Modifier.size(20.dp), color = Teal, strokeWidth = 2.dp)
-                        else IconButton(onClick = { viewModel.testDomain() }) {
+                        else IconButton(
+                            onClick = { viewModel.testDomain() },
+                            enabled = canTestSingle
+                        ) {
                             Icon(Icons.Filled.PlayArrow, "Test", tint = Teal)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true, shape = RoundedCornerShape(12.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Search,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSearch = { if (canTestSingle) viewModel.testDomain() },
+                    ),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Teal, unfocusedBorderColor = Surface3,
                         cursorColor = Teal, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
@@ -169,7 +189,10 @@ fun RuleTestScreen(
             }
 
             // Single results
-            items(state.results) { result ->
+            itemsIndexed(
+                state.results,
+                key = { index, result -> "single-$index-${result.domain}-${result.matchedBy}" },
+            ) { _, result ->
                 ResultRow(result)
             }
 
@@ -181,8 +204,10 @@ fun RuleTestScreen(
                 OutlinedTextField(
                     value = state.batchInput,
                     onValueChange = { viewModel.setBatchInput(it) },
+                    label = { Text("Batch domains") },
                     placeholder = { Text("One domain per line...", color = TextDim) },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp, max = 140.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     maxLines = 10, shape = RoundedCornerShape(8.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Teal, unfocusedBorderColor = Surface3,
@@ -194,7 +219,8 @@ fun RuleTestScreen(
                     onClick = { viewModel.testBatch() },
                     enabled = !state.isTesting && state.batchInput.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = Teal),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 ) { Text("Test All", fontSize = 12.sp) }
             }
 
@@ -204,7 +230,10 @@ fun RuleTestScreen(
                     val blocked = state.batchResults.count { it.isBlocked }
                     Text("$blocked/${state.batchResults.size} blocked", color = TextDim, fontSize = 11.sp)
                 }
-                items(state.batchResults) { result -> ResultRow(result) }
+                itemsIndexed(
+                    state.batchResults,
+                    key = { index, result -> "batch-$index-${result.domain}-${result.matchedBy}" },
+                ) { _, result -> ResultRow(result) }
             }
 
             item { Spacer(Modifier.height(24.dp)) }
@@ -215,7 +244,12 @@ fun RuleTestScreen(
 @Composable
 private fun ResultRow(result: RuleTestResult) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                val status = if (result.isBlocked) "Blocked" else "Allowed"
+                contentDescription = "${result.domain}. $status. ${result.matchedBy}"
+            },
         shape = RoundedCornerShape(10.dp),
         color = if (result.isBlocked) Red.copy(alpha = 0.06f) else Surface2
     ) {
@@ -224,8 +258,21 @@ private fun ResultRow(result: RuleTestResult) {
                 .background(if (result.isBlocked) Red else Green))
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(result.domain, color = TextPrimary, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
-                Text(result.matchedBy, color = TextDim, fontSize = 10.sp)
+                Text(
+                    result.domain,
+                    color = TextPrimary,
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    result.matchedBy,
+                    color = TextDim,
+                    fontSize = 10.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
             Surface(
                 shape = RoundedCornerShape(4.dp),

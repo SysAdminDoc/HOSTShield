@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,9 +16,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.ViewModel
@@ -32,6 +37,8 @@ import com.hostshield.util.WebDavSync
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -51,48 +58,84 @@ class WebDavSyncViewModel @Inject constructor(
         private set
     var remoteFiles by mutableStateOf<List<WebDavSync.RemoteFile>>(emptyList())
         private set
+    var hasSavedPassword by mutableStateOf(false)
+        private set
+
+    init {
+        viewModelScope.launch {
+            prefs.webdavPassword.collect { hasSavedPassword = it.isNotBlank() }
+        }
+    }
 
     fun saveCredentials(url: String, user: String, pass: String) {
         viewModelScope.launch {
-            prefs.setWebdavUrl(url)
-            prefs.setWebdavUsername(user)
-            prefs.setWebdavPassword(pass)
-            message = "Credentials saved"
+            prefs.setWebdavUrl(url.trim())
+            prefs.setWebdavUsername(user.trim())
+            if (pass.isNotBlank()) {
+                prefs.setWebdavPassword(pass)
+                hasSavedPassword = true
+                message = "Credentials saved"
+            } else {
+                message = if (hasSavedPassword) {
+                    "Settings saved. Existing password kept."
+                } else {
+                    "Server settings saved. Add a password before syncing."
+                }
+            }
         }
     }
 
     fun testConnection(url: String, user: String, pass: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            isSyncing = true
-            val creds = WebDavSync.Credentials(user, pass)
-            val files = webDavSync.listFiles(url, creds, "/")
-            if (files != null) {
-                remoteFiles = files
-                message = if (files.isEmpty()) {
-                    "Connected — no remote files found"
-                } else {
-                    "Connected — ${files.size} items found"
-                }
-            } else {
-                message = "Connection failed — check URL and credentials"
+            val password = resolvePassword(pass)
+            if (password.isBlank()) {
+                message = "Enter a WebDAV password or app token"
+                return@launch
             }
-            isSyncing = false
+            isSyncing = true
+            try {
+                val creds = WebDavSync.Credentials(user.trim(), password)
+                val files = webDavSync.listFiles(url.trim(), creds, "/")
+                if (files != null) {
+                    remoteFiles = files
+                    message = if (files.isEmpty()) {
+                        "Connected - no remote files found"
+                    } else {
+                        "Connected - ${files.size} items found"
+                    }
+                } else {
+                    message = "Connection failed - check URL and credentials"
+                }
+            } finally {
+                isSyncing = false
+            }
         }
     }
 
     fun syncBackup(url: String, user: String, pass: String, data: ByteArray) {
         viewModelScope.launch(Dispatchers.IO) {
+            val password = resolvePassword(pass)
+            if (password.isBlank()) {
+                message = "Enter a WebDAV password or app token"
+                return@launch
+            }
             isSyncing = true
-            val creds = WebDavSync.Credentials(user, pass)
-            val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-            val remotePath = "/hostshield_backup_$ts.json"
-            val success = webDavSync.upload(url, creds, remotePath, data)
-            message = if (success) "Backup uploaded to $remotePath" else "Upload failed"
-            isSyncing = false
+            try {
+                val creds = WebDavSync.Credentials(user.trim(), password)
+                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
+                val remotePath = "/hostshield_backup_$ts.json"
+                val success = webDavSync.upload(url.trim(), creds, remotePath, data)
+                message = if (success) "Backup uploaded to $remotePath" else "Upload failed"
+            } finally {
+                isSyncing = false
+            }
         }
     }
 
     fun clearMessage() { message = null }
+
+    private suspend fun resolvePassword(input: String): String =
+        input.ifBlank { prefs.webdavPassword.first() }
 }
 
 @Composable
@@ -106,12 +149,15 @@ fun WebDavSyncScreen(
     var url by remember(savedUrl) { mutableStateOf(savedUrl) }
     var user by remember(savedUser) { mutableStateOf(savedUser) }
     var pass by remember { mutableStateOf("") }
+    val urlIsValid = isValidWebDavUrl(url)
+    val hasUsablePassword = pass.isNotBlank() || viewModel.hasSavedPassword
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
             .verticalScroll(rememberScrollState())
+            .imePadding()
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -145,10 +191,19 @@ fun WebDavSyncScreen(
                     label = { Text("Server URL", color = TextDim, fontSize = 12.sp) },
                     placeholder = { Text("https://cloud.example.com/remote.php/dav/files/user", color = TextDim, fontSize = 11.sp) },
                     singleLine = true,
+                    isError = url.isNotBlank() && !urlIsValid,
+                    supportingText = if (url.isNotBlank() && !urlIsValid) {
+                        { Text("Use a complete http:// or https:// WebDAV URL.", color = Red, fontSize = 11.sp) }
+                    } else null,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Next,
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Blue, unfocusedBorderColor = Surface3,
+                        errorBorderColor = Red, errorLabelColor = Red, errorCursorColor = Red,
                         cursorColor = Blue, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
                     ),
                 )
@@ -160,6 +215,7 @@ fun WebDavSyncScreen(
                         onValueChange = { user = it },
                         label = { Text("Username", color = TextDim, fontSize = 12.sp) },
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -173,6 +229,13 @@ fun WebDavSyncScreen(
                         label = { Text("Password", color = TextDim, fontSize = 12.sp) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
+                        supportingText = if (viewModel.hasSavedPassword && pass.isBlank()) {
+                            { Text("Leave blank to keep the saved password.", color = TextDim, fontSize = 11.sp) }
+                        } else null,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done,
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -186,8 +249,8 @@ fun WebDavSyncScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = { viewModel.saveCredentials(url, user, pass) },
-                        enabled = url.isNotBlank() && user.isNotBlank(),
-                        modifier = Modifier.weight(1f),
+                        enabled = urlIsValid && user.isNotBlank(),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal),
                     ) {
@@ -197,8 +260,8 @@ fun WebDavSyncScreen(
                     }
                     OutlinedButton(
                         onClick = { viewModel.testConnection(url, user, pass) },
-                        enabled = url.isNotBlank() && !viewModel.isSyncing,
-                        modifier = Modifier.weight(1f),
+                        enabled = urlIsValid && user.isNotBlank() && hasUsablePassword && !viewModel.isSyncing,
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Blue),
                     ) {
@@ -231,7 +294,14 @@ fun WebDavSyncScreen(
                                 modifier = Modifier.size(16.dp),
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text(file.name, color = TextPrimary, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                            Text(
+                                file.name,
+                                color = TextPrimary,
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
                             if (!file.isDirectory && file.size > 0) {
                                 Text(
                                     formatSize(file.size),
@@ -264,4 +334,10 @@ private fun formatSize(bytes: Long): String = when {
     bytes < 1024 -> "${bytes}B"
     bytes < 1024 * 1024 -> "${bytes / 1024}KB"
     else -> "${"%.1f".format(bytes / (1024.0 * 1024.0))}MB"
+}
+
+private fun isValidWebDavUrl(value: String): Boolean {
+    val parsed = value.trim().toUri()
+    val scheme = parsed.scheme?.lowercase()
+    return (scheme == "https" || scheme == "http") && !parsed.host.isNullOrBlank()
 }

@@ -145,6 +145,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(Color.Black)
             .verticalScroll(rememberScrollState())
+            .imePadding()
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -426,30 +427,30 @@ fun SettingsScreen(
                     ) {}
                 }
                 is DiagnosticExportState.Ready -> {
-                    val sizeKb = diagState.sizeBytes / 1024
+                    val sizeKb = (diagState.sizeBytes + 1023) / 1024
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         OutlinedButton(
                             onClick = { viewModel.shareDiagnosticReport() },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).heightIn(min = 44.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
                         ) {
-                            Icon(Icons.Filled.Share, null, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Filled.Share, null, modifier = Modifier.size(15.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("${stringResource(R.string.action_share)} (${sizeKb} KB)", fontSize = 10.sp)
+                            Text("${stringResource(R.string.action_share)} (${sizeKb} KB)", fontSize = 11.sp)
                         }
                         OutlinedButton(
                             onClick = { viewModel.dismissDiagnosticExport() },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).heightIn(min = 44.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim)
                         ) {
-                            Icon(Icons.Filled.Close, null, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Filled.Close, null, modifier = Modifier.size(15.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(stringResource(R.string.action_discard), fontSize = 10.sp)
+                            Text(stringResource(R.string.action_discard), fontSize = 11.sp)
                         }
                     }
                 }
@@ -488,18 +489,25 @@ fun SettingsScreen(
                 OutlinedButton(
                     onClick = { viewModel.exportStatsCsv() },
                     enabled = !isExportingCsv,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).heightIn(min = 44.dp),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Yellow)
                 ) {
-                    if (isExportingCsv) CircularProgressIndicator(Modifier.size(12.dp), color = Yellow, strokeWidth = 1.5.dp)
-                    else Icon(Icons.Filled.TableChart, null, modifier = Modifier.size(14.dp))
+                    if (isExportingCsv) CircularProgressIndicator(Modifier.size(14.dp), color = Yellow, strokeWidth = 1.5.dp)
+                    else Icon(Icons.Filled.TableChart, null, modifier = Modifier.size(15.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.action_export_csv), fontSize = 10.sp)
+                    Text(stringResource(R.string.action_export_csv), fontSize = 11.sp)
                 }
             }
             csvMessage?.let { msg ->
-                Text(msg, color = TextDim, fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
+                val isError = msg.contains("failed", ignoreCase = true)
+                Text(
+                    msg,
+                    color = if (isError) Red else TextDim,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
             }
         }
 

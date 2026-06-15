@@ -227,7 +227,6 @@
     <string name="qr_decode_preview">Decode &amp; Preview</string>
     <string name="qr_importing">Importing...</string>
     <string name="qr_apply_import">Apply Import</string>
-    <string name="qr_dismiss_import_message">Dismiss QR import message</string>
 
     <!-- Status messages -->
     <string name="status_action_failed">Settings action failed</string>

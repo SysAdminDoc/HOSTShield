@@ -3,6 +3,25 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.12] - 2026-06-15
+
+### Fixed
+- WebDAV credential saving no longer clears an existing saved password when the
+  password field is left blank; connection tests also reuse the saved password
+  without exposing it in the UI.
+- QR configuration sharing now fits generated codes inside narrow cards and
+  reports import/export results through the shared accessible status banner.
+- Rule testing now supports keyboard search submission, disables empty test
+  actions, and truncates long domains/match details instead of crowding result
+  badges.
+- PCAP, diagnostic, and CSV export states now use larger action targets, rounded
+  file-size display, clearer error coloring, and user-facing failure messages.
+
+### Accessibility
+- Added IME padding to Settings, WebDAV, QR sharing, and rule testing flows.
+- Added result-row semantics for rule-test outcomes and improved text-field
+  labels/keyboard options in form-heavy polish screens.
+
 ## [v6.9.11] - 2026-06-15
 
 ### Fixed

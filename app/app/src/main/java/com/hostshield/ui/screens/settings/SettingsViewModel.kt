@@ -618,8 +618,9 @@ class SettingsViewModel @Inject constructor(
                     _uiState.update { it.copy(pcapExport = PcapExportState.Empty) }
                 }
             } catch (e: Exception) {
+                android.util.Log.e("SettingsViewModel", "PCAP export failed", e)
                 _uiState.update {
-                    it.copy(pcapExport = PcapExportState.Failed(e.message ?: "Unknown error"))
+                    it.copy(pcapExport = PcapExportState.Failed("PCAP export failed. Try again."))
                 }
             }
         }
@@ -647,7 +648,7 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 android.util.Log.e("Settings", "PCAP share failed: ${e.message}", e)
                 _uiState.update {
-                    it.copy(pcapExport = PcapExportState.Failed("Share failed: ${e.message ?: e.javaClass.simpleName}"))
+                    it.copy(pcapExport = PcapExportState.Failed("PCAP share failed. Choose another share target."))
                 }
             }
         }
@@ -666,8 +667,9 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(pcapExport = PcapExportState.Idle) }
                 _uiState.update { it.copy(backupMessage = "PCAP saved to chosen location") }
             } catch (e: Exception) {
+                android.util.Log.e("SettingsViewModel", "PCAP save failed", e)
                 _uiState.update {
-                    it.copy(pcapExport = PcapExportState.Failed("Save failed: ${e.message}"))
+                    it.copy(pcapExport = PcapExportState.Failed("PCAP save failed. Choose another location."))
                 }
             }
         }
@@ -802,7 +804,8 @@ class SettingsViewModel @Inject constructor(
                 _pendingCsv.value = sb.toString()
                 _csvMessage.value = "CSV ready (${stats.size} days, ${topBlocked.size} domains, ${topApps.size} apps)"
             } catch (e: Exception) {
-                _csvMessage.value = "Export failed: ${e.message}"
+                android.util.Log.e("SettingsViewModel", "CSV export failed", e)
+                _csvMessage.value = "Export failed. Try again after reopening Settings."
             } finally {
                 _isExportingCsv.value = false
             }
@@ -821,7 +824,8 @@ class SettingsViewModel @Inject constructor(
                     _csvMessage.value = "Stats CSV saved"
                 }
             } catch (e: Exception) {
-                _csvMessage.value = "Save failed: ${e.message}"
+                android.util.Log.e("SettingsViewModel", "CSV save failed", e)
+                _csvMessage.value = "Save failed. Choose another location."
             }
         }
     }
@@ -839,9 +843,10 @@ class SettingsViewModel @Inject constructor(
                     ))
                 }
             } catch (e: Exception) {
+                android.util.Log.e("SettingsViewModel", "Diagnostic export failed", e)
                 _uiState.update {
                     it.copy(diagnosticExport = DiagnosticExportState.Failed(
-                        e.message ?: "Unknown error"
+                        "Diagnostic package could not be created. Try again."
                     ))
                 }
             }
@@ -872,7 +877,7 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         diagnosticExport = DiagnosticExportState.Failed(
-                            "Share failed: ${e.message ?: e.javaClass.simpleName}"
+                            "Diagnostic package share failed. Choose another share target."
                         )
                     )
                 }

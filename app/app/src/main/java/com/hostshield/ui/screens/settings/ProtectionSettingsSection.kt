@@ -85,8 +85,8 @@ fun ProtectionSettingsSection(
                 Text(
                     stringResource(R.string.pcap_privacy_warning),
                     color = Peach,
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
                     modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
                 )
                 FlowRow(
@@ -110,46 +110,48 @@ fun ProtectionSettingsSection(
                 }
             }
             is PcapExportState.Ready -> {
-                val sizeKb = pcapExport.sizeBytes / 1024
+                val sizeKb = (pcapExport.sizeBytes + 1023) / 1024
                 Text(
                     stringResource(R.string.pcap_ready_summary, pcapExport.mode, pcapExport.fileName),
                     color = TextSecondary,
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
                 Text(
                     stringResource(R.string.pcap_privacy_warning),
                     color = Peach,
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     OutlinedButton(
                         onClick = onSharePcap,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.heightIn(min = 44.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
                     ) {
-                        Icon(Icons.Filled.Share, null, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.Share, null, modifier = Modifier.size(15.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("${stringResource(R.string.action_share)} (${sizeKb} KB)", fontSize = 10.sp)
+                        Text("${stringResource(R.string.action_share)} (${sizeKb} KB)", fontSize = 11.sp)
                     }
                     OutlinedButton(
                         onClick = onSavePcap,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.heightIn(min = 44.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Blue)
                     ) {
-                        Icon(Icons.Filled.Save, null, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.Save, null, modifier = Modifier.size(15.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.action_save_as), fontSize = 10.sp)
+                        Text(stringResource(R.string.action_save_as), fontSize = 11.sp)
                     }
                     OutlinedButton(
                         onClick = onDismissPcap,
+                        modifier = Modifier.heightIn(min = 44.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim),
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
@@ -163,34 +165,38 @@ fun ProtectionSettingsSection(
                 }
             }
             PcapExportState.Empty -> {
-                Text(stringResource(R.string.pcap_empty), color = TextDim, fontSize = 10.sp, modifier = Modifier.padding(vertical = 4.dp))
+                Text(stringResource(R.string.pcap_empty), color = TextDim, fontSize = 11.sp, modifier = Modifier.padding(vertical = 4.dp))
                 OutlinedButton(
                     onClick = onDismissPcap,
+                    modifier = Modifier.heightIn(min = 44.dp),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim)
                 ) {
-                    Text(stringResource(R.string.action_discard), fontSize = 10.sp)
+                    Text(stringResource(R.string.action_discard), fontSize = 11.sp)
                 }
             }
             is PcapExportState.Failed -> {
-                Text(pcapExport.error, color = Red, fontSize = 10.sp, modifier = Modifier.padding(vertical = 4.dp))
-                Row(
+                Text(pcapExport.error, color = Red, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.padding(vertical = 4.dp))
+                FlowRow(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     OutlinedButton(
                         onClick = { onExportPcap("all") },
+                        modifier = Modifier.heightIn(min = 44.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
                     ) {
-                        Text(stringResource(R.string.action_retry), fontSize = 10.sp)
+                        Text(stringResource(R.string.action_retry), fontSize = 11.sp)
                     }
                     OutlinedButton(
                         onClick = onDismissPcap,
+                        modifier = Modifier.heightIn(min = 44.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim)
                     ) {
-                        Text(stringResource(R.string.action_discard), fontSize = 10.sp)
+                        Text(stringResource(R.string.action_discard), fontSize = 11.sp)
                     }
                 }
             }
@@ -206,12 +212,13 @@ private fun PcapExportButton(
 ) {
     OutlinedButton(
         onClick = { onExportPcap(mode) },
+        modifier = Modifier.heightIn(min = 44.dp),
         shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
     ) {
-        Icon(Icons.Filled.SaveAlt, null, modifier = Modifier.size(14.dp))
+        Icon(Icons.Filled.SaveAlt, null, modifier = Modifier.size(15.dp))
         Spacer(Modifier.width(4.dp))
-        Text(label, fontSize = 10.sp)
+        Text(label, fontSize = 11.sp)
     }
 }
