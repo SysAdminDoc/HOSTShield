@@ -193,28 +193,38 @@ object DnsPacketBuilder {
      * @param responseType One of "nxdomain", "zero_ip", "refused"
      * @return DNS response bytes
      */
-    fun buildBlockResponse(queryDns: ByteArray, responseType: String, edeInfoCode: Int = -1): ByteArray {
+    fun buildBlockResponse(queryDns: ByteArray, responseType: String, edeInfoCode: Int = -1,
+                            blockReason: String? = null): ByteArray {
         val resp = when (responseType) {
             "zero_ip" -> buildZeroIp(queryDns)
             "refused" -> buildRefused(queryDns)
             else -> buildNxdomain(queryDns)
         }
         if (edeInfoCode < 0 || resp.size < 12) return resp
-        return appendEdeOpt(resp, edeInfoCode)
+        val extraText = if (blockReason != null) buildEdeExtraText(blockReason) else null
+        return appendEdeOpt(resp, edeInfoCode, extraText)
     }
 
-    fun appendEdeOpt(response: ByteArray, infoCode: Int): ByteArray {
+    fun appendEdeOpt(response: ByteArray, infoCode: Int, extraText: ByteArray? = null): ByteArray {
         if (response.size < 12) return response
-        val opt = ByteArray(17)
+        val textLen = extraText?.size ?: 0
+        val optionLen = 2 + textLen // INFO-CODE(2) + EXTRA-TEXT
+        val rdLen = 4 + optionLen   // OPTION-CODE(2) + OPTION-LENGTH(2) + option data
+        val optSize = 11 + rdLen    // root(1) + TYPE(2) + CLASS(2) + TTL(4) + RDLENGTH(2) + rdata
+
+        val opt = ByteArray(optSize)
         opt[0] = 0x00                          // NAME: root
         opt[1] = 0x00; opt[2] = 0x29           // TYPE = OPT (41)
         opt[3] = 0x04; opt[4] = 0x00           // CLASS = UDP payload 1024
         // opt[5..8] = 0 — extended RCODE, version, flags
-        opt[9] = 0x00; opt[10] = 0x06          // RDLENGTH = 6
+        opt[9] = ((rdLen shr 8) and 0xFF).toByte()
+        opt[10] = (rdLen and 0xFF).toByte()
         opt[11] = 0x00; opt[12] = 0x0F         // OPTION-CODE = 15 (EDE)
-        opt[13] = 0x00; opt[14] = 0x02         // OPTION-LENGTH = 2
+        opt[13] = ((optionLen shr 8) and 0xFF).toByte()
+        opt[14] = (optionLen and 0xFF).toByte()
         opt[15] = (infoCode shr 8).toByte()
         opt[16] = (infoCode and 0xFF).toByte()
+        if (extraText != null) System.arraycopy(extraText, 0, opt, 17, textLen)
 
         val result = ByteArray(response.size + opt.size)
         System.arraycopy(response, 0, result, 0, response.size)
@@ -224,6 +234,11 @@ object DnsPacketBuilder {
         result[10] = (newAr shr 8).toByte()
         result[11] = (newAr and 0xFF).toByte()
         return result
+    }
+
+    private fun buildEdeExtraText(reason: String): ByteArray {
+        val json = """{"j":"$reason","o":"HostShield"}"""
+        return json.toByteArray(Charsets.UTF_8)
     }
 
     // ── Internal builders ─────────────────────────────────────

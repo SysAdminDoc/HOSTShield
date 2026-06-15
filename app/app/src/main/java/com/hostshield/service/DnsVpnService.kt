@@ -1135,7 +1135,7 @@ class DnsVpnService : VpnService() {
                 matchedValue = app.first,
                 precedence = "per-app firewall runs before DNS policy"
             ))
-            sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
+            sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "app_firewall")
             return
         }
 
@@ -1149,7 +1149,7 @@ class DnsVpnService : VpnService() {
                     matchedValue = app.first,
                     precedence = "context firewall runs before DNS policy"
                 ))
-                sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
+                sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "context_firewall")
                 return
             }
         }
@@ -1182,7 +1182,7 @@ class DnsVpnService : VpnService() {
                     matchedValue = app.first,
                     precedence = "per-app block rule runs before shared blocklist"
                 ))
-                sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
+                sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "app_rule")
                 return
             }
             if (ruleAction == AppDnsRuleEngine.RuleAction.ALLOW) {
@@ -1213,7 +1213,7 @@ class DnsVpnService : VpnService() {
                     matchedValue = domain,
                     precedence = "content category policy runs before shared blocklist"
                 ))
-            sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
+            sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "content_filter")
             return
         }
 
@@ -1229,7 +1229,7 @@ class DnsVpnService : VpnService() {
                     matchedValue = cat,
                     precedence = "parental profile runs before shared blocklist"
                 ))
-            sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
+            sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "parental_control")
             return
         }
 
@@ -1247,7 +1247,7 @@ class DnsVpnService : VpnService() {
                     matchedValue = domain,
                     precedence = "threat intel runs after blocklist miss"
                 ))
-                sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
+                sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "threat_intel")
                 return
             }
         }
@@ -1255,7 +1255,7 @@ class DnsVpnService : VpnService() {
         if (blocked) {
             logAsync(domain, true, app, qtype, blockDecision)
             PrivacyLog.d(TAG, "BLOCKED $domain ($qtype) [${app.second.ifEmpty { "system" }}]")
-            sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
+            sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "blocklist")
         } else {
             val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
             val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
@@ -1302,8 +1302,8 @@ class DnsVpnService : VpnService() {
      * Send a block response (NXDOMAIN, 0.0.0.0/::, or REFUSED) for a DNS packet.
      * The response type is controlled by the blockResponseType preference.
      */
-    private suspend fun sendBlockResponse(dns: ByteArray, packet: ByteArray, headerOffset: Int, isV6: Boolean, qtype: String) {
-        val resp = buildBlockResponse(dns, qtype) ?: return
+    private suspend fun sendBlockResponse(dns: ByteArray, packet: ByteArray, headerOffset: Int, isV6: Boolean, qtype: String, reason: String? = null) {
+        val resp = buildBlockResponse(dns, qtype, reason) ?: return
         val wrapped = if (isV6) wrapResponseV6(packet, headerOffset, resp)
                       else wrapResponseV4(packet, headerOffset, resp)
         wrapped?.let { sendToTun(it) } ?: return
@@ -1328,9 +1328,9 @@ class DnsVpnService : VpnService() {
      * - "refused": RCODE=5. Strong signal to the client but some apps
      *   interpret this as a server error and retry.
      */
-    private fun buildBlockResponse(dns: ByteArray, qtype: String): ByteArray? {
+    private fun buildBlockResponse(dns: ByteArray, qtype: String, reason: String? = null): ByteArray? {
         val edeCode = if (edeEnabled) DnsPacketBuilder.EDE_BLOCKED else -1
-        return DnsPacketBuilder.buildBlockResponse(dns, blockResponseType, edeCode)
+        return DnsPacketBuilder.buildBlockResponse(dns, blockResponseType, edeCode, if (edeEnabled) reason else null)
     }
 
     private fun logAsync(

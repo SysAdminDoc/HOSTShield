@@ -462,4 +462,37 @@ class DnsPacketBuilderTest {
         assertTrue(resp.size >= 12)
         assertEquals(2, rcode(resp))
     }
+
+    // ── EDE EXTRA-TEXT (Structured DNS Errors) ─────────────
+
+    @Test
+    fun `buildBlockResponse with EDE includes EXTRA-TEXT I-JSON`() {
+        val query = buildQuery("ads.example.com")
+        val resp = DnsPacketBuilder.buildBlockResponse(query, "nxdomain", DnsPacketBuilder.EDE_BLOCKED, "blocklist")
+        val respStr = String(resp, Charsets.UTF_8)
+        assertTrue("Response should contain I-JSON justification", respStr.contains(""""j":"blocklist""""))
+        assertTrue("Response should contain org field", respStr.contains(""""o":"HostShield""""))
+    }
+
+    @Test
+    fun `buildBlockResponse without reason emits EDE with no EXTRA-TEXT`() {
+        val query = buildQuery("test.example.com")
+        val resp = DnsPacketBuilder.buildBlockResponse(query, "nxdomain", DnsPacketBuilder.EDE_BLOCKED, null)
+        val respStr = String(resp, Charsets.UTF_8)
+        assertFalse("No I-JSON when reason is null", respStr.contains("HostShield"))
+    }
+
+    @Test
+    fun `appendEdeOpt with EXTRA-TEXT has correct OPTION-LENGTH`() {
+        val query = buildQuery("x.test")
+        val base = DnsPacketBuilder.buildBlockResponse(query, "nxdomain", -1)
+        val extraText = """{"j":"test","o":"HostShield"}""".toByteArray(Charsets.UTF_8)
+        val withEde = DnsPacketBuilder.appendEdeOpt(base, 15, extraText)
+        assertTrue("EDE OPT must be appended", withEde.size > base.size)
+        val optStart = base.size
+        assertEquals("OPTION-CODE high byte", 0x00.toByte(), withEde[optStart + 11])
+        assertEquals("OPTION-CODE low byte", 0x0F.toByte(), withEde[optStart + 12])
+        val optLen = ((withEde[optStart + 13].toInt() and 0xFF) shl 8) or (withEde[optStart + 14].toInt() and 0xFF)
+        assertEquals("OPTION-LENGTH = 2 + extra text length", 2 + extraText.size, optLen)
+    }
 }
