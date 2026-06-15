@@ -1,3 +1,37 @@
+# HostShield v6.9.13
+
+**Release Date:** 2026-06-15
+**Version Code:** 95
+
+## Stricter Release Polish
+
+### Fixed
+- Custom redirect rules now validate IPv4 and IPv6 targets before saving, so
+  incomplete redirect rules cannot be added from the dialog.
+- Regex rule errors now use stable user-facing text instead of exposing raw
+  parser exception messages.
+- Source and DNS log failure banners now show actionable product copy while
+  preserving full exception details in Logcat for diagnostics.
+- Source failure rows now summarize common failure classes without displaying
+  raw networking exception strings.
+
+### UX and Accessibility
+- Long rule hostnames, redirect targets, source labels/descriptions, DNS log
+  app labels, packages, and detail values now truncate safely instead of
+  crowding badges or actions.
+- DNS log query-type filters now wrap on small screens.
+- Rule/source add buttons, delete buttons, DNS log selection checkboxes, and
+  the log-detail pin control now use larger touch targets.
+- Rule and source dialogs now provide clearer validation feedback and keyboard
+  actions.
+
+### Verification
+- `tools/check-release-docs.ps1`
+- `:app:testFullDebugUnitTest`
+- `:app:lintFullDebug`
+- `:app:assembleFullDebug`
+- `HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING=true :app:assembleFullRelease`
+
 # HostShield v6.9.12
 
 **Release Date:** 2026-06-15

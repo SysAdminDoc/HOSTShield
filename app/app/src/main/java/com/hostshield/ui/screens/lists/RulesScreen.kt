@@ -2,10 +2,12 @@ package com.hostshield.ui.screens.lists
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.AltRoute
@@ -17,9 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -38,6 +44,7 @@ import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
+import com.hostshield.util.BackupRestoreUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -136,7 +143,7 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
                             color = Surface3.copy(alpha = 0.8f),
                             contentColor = Teal,
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(48.dp)
                         ) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Icon(Icons.Filled.ContentPaste, "Paste domains", modifier = Modifier.size(18.dp))
@@ -148,7 +155,7 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
                             color = Teal.copy(alpha = 0.14f),
                             contentColor = Teal,
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(48.dp)
                                 .testTag(HostShieldTestTags.Rules.AddButton)
                         ) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -254,10 +261,10 @@ private fun TypeChip(type: RuleType?, label: String, selected: Boolean, onClick:
         shape = RoundedCornerShape(8.dp),
         color = if (selected) color.copy(alpha = 0.12f) else Surface2,
         modifier = Modifier
-            .heightIn(min = 34.dp)
+            .heightIn(min = 44.dp)
             .accessibilitySelection("$label rule filter", selected)
     ) {
-        Text(label, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = if (selected) color else TextDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        Text(label, modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp), color = if (selected) color else TextDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -279,7 +286,16 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(rule.hostname, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium, fontFamily = FontFamily.Monospace)
+                    Text(
+                        rule.hostname,
+                        color = TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = FontFamily.Monospace,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
                     if (rule.isWildcard) {
                         Spacer(Modifier.width(6.dp))
                         Surface(shape = RoundedCornerShape(3.dp), color = Mauve.copy(alpha = 0.1f)) {
@@ -294,13 +310,13 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
                     }
                 }
                 if (rule.type == RuleType.REDIRECT && rule.redirectIp.isNotEmpty()) {
-                    Text("-> ${rule.redirectIp}", color = Peach, fontSize = 11.sp)
+                    Text("-> ${rule.redirectIp}", color = Peach, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 if (rule.comment.isNotEmpty()) {
-                    Text(rule.comment, color = TextDim, fontSize = 11.sp, maxLines = 1)
+                    Text(rule.comment, color = TextDim, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
+            IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
                 Icon(Icons.Filled.Delete, "Delete ${rule.hostname}", tint = Red.copy(alpha = 0.5f), modifier = Modifier.size(15.dp))
             }
             Spacer(Modifier.width(4.dp))
@@ -321,6 +337,15 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
     var comment by remember { mutableStateOf("") }
     var isRegex by remember { mutableStateOf(false) }
     var regexError by remember { mutableStateOf<String?>(null) }
+    val redirectError = remember(type, redirectIp) {
+        when {
+            type != RuleType.REDIRECT -> null
+            redirectIp.isBlank() -> "Redirect rules need an IPv4 or IPv6 address."
+            BackupRestoreUtil.isValidRedirectIp(redirectIp) -> null
+            else -> "Enter a valid IPv4 or IPv6 address."
+        }
+    }
+    val canSubmit = hostname.isNotBlank() && regexError == null && redirectError == null
 
     AlertDialog(
         onDismissRequest = onDismiss, containerColor = Surface1, shape = RoundedCornerShape(12.dp),
@@ -336,12 +361,16 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
                     value = hostname, onValueChange = {
                         hostname = it
                         if (isRegex) {
-                            regexError = try { Regex(it); null } catch (e: Exception) { e.message?.take(50) }
+                            regexError = validateRegexPattern(it)
                         }
                     },
                     label = { Text(if (isRegex) "Regex pattern" else "Hostname") },
                     placeholder = { Text(if (isRegex) ".*\\.ad[sv]?\\." else "*.example.com", color = TextDim) },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = if (isRegex) KeyboardType.Text else KeyboardType.Uri,
+                        imeAction = ImeAction.Next
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag(HostShieldTestTags.Rules.HostnameField),
@@ -351,36 +380,65 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
                 if (regexError != null) {
                     Text(regexError!!, color = Red, fontSize = 10.sp)
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = isRegex, onCheckedChange = {
-                            isRegex = it
-                            regexError = if (it && hostname.isNotBlank()) {
-                                try { Regex(hostname); null } catch (e: Exception) { e.message?.take(50) }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(role = Role.Checkbox) {
+                            isRegex = !isRegex
+                            regexError = if (isRegex && hostname.isNotBlank()) {
+                                validateRegexPattern(hostname)
                             } else null
-                        },
+                        }
+                        .accessibilityToggle("Regex pattern", isRegex),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = isRegex,
+                        onCheckedChange = null,
                         colors = CheckboxDefaults.colors(checkedColor = Mauve, uncheckedColor = TextDim, checkmarkColor = Color.Black),
-                        modifier = Modifier.size(20.dp).accessibilityToggle("Regex pattern", isRegex)
+                        modifier = Modifier.size(24.dp)
                     )
                     Spacer(Modifier.width(8.dp))
                     Text("Regex pattern", color = if (isRegex) Mauve else TextDim, fontSize = 12.sp)
                 }
                 if (type == RuleType.REDIRECT) {
-                    OutlinedTextField(value = redirectIp, onValueChange = { redirectIp = it }, label = { Text("Redirect IP") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                    OutlinedTextField(
+                        value = redirectIp,
+                        onValueChange = { redirectIp = it.trim() },
+                        label = { Text("Redirect IP") },
+                        singleLine = true,
+                        isError = redirectError != null,
+                        supportingText = redirectError?.let { message ->
+                            { Text(message, color = Red, fontSize = 11.sp) }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = fieldColors()
+                    )
                 }
-                OutlinedTextField(value = comment, onValueChange = { comment = it }, label = { Text("Comment (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                OutlinedTextField(
+                    value = comment,
+                    onValueChange = { comment = it },
+                    label = { Text("Comment (optional)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors()
+                )
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (hostname.isNotBlank() && regexError == null) {
+                    if (canSubmit) {
                         onAdd(hostname, type, redirectIp, if (isRegex) "REGEX:$comment" else comment)
                     }
                 },
-                enabled = hostname.isNotBlank() && regexError == null,
+                enabled = canSubmit,
                 modifier = Modifier.testTag(HostShieldTestTags.Rules.ConfirmAddButton)
-            ) { Text("Add rule", color = Teal) }
+            ) { Text("Add rule", color = if (canSubmit) Teal else TextDim) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) } }
     )
@@ -390,8 +448,17 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
 private fun fieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = Teal, unfocusedBorderColor = Surface3, cursorColor = Teal,
     focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
-    focusedLabelColor = Teal, unfocusedLabelColor = TextDim, focusedPlaceholderColor = TextDim
+    focusedLabelColor = Teal, unfocusedLabelColor = TextDim, focusedPlaceholderColor = TextDim,
+    errorBorderColor = Red, errorCursorColor = Red, errorLabelColor = Red
 )
+
+private fun validateRegexPattern(pattern: String): String? =
+    try {
+        Regex(pattern)
+        null
+    } catch (_: Exception) {
+        "Invalid regex pattern."
+    }
 
 private fun ruleColor(type: RuleType?): Color = when (type) {
     RuleType.BLOCK -> Red; RuleType.ALLOW -> Green; RuleType.REDIRECT -> Peach; null -> Teal

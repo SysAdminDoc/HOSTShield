@@ -3,6 +3,28 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.13] - 2026-06-15
+
+### Fixed
+- Redirect custom rules now require a valid IPv4 or IPv6 target before they can
+  be saved, matching backup/restore validation.
+- Regex rule validation now shows stable product copy instead of exposing raw
+  parser exception text.
+- Source and DNS log error banners now use user-facing recovery copy while
+  preserving detailed exception data in logs.
+- Source failure rows now summarize network, timeout, DNS, certificate, and
+  empty-source failures without surfacing raw exception strings.
+
+### UX
+- Rules, Sources, and DNS Logs now truncate long hostnames, source labels,
+  descriptions, app labels, and detail values where they would otherwise crowd
+  badges or action buttons.
+- DNS log query-type filters wrap on narrow screens instead of overflowing.
+- Rule/source add buttons, delete buttons, log selection checkboxes, and the
+  log-detail pin action use larger touch targets.
+- Rule and source dialogs now provide clearer keyboard actions and validation
+  feedback.
+
 ## [v6.9.12] - 2026-06-15
 
 ### Fixed

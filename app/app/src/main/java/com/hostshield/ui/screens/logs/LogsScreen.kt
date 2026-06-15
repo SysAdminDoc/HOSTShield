@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -138,7 +139,7 @@ class LogsViewModel @Inject constructor(
                 _blockedHostnames.value = all
             } catch (e: Exception) {
                 Log.e("LogsViewModel", "Failed to load blocked state", e)
-                _error.value = "Failed to load blocked domains: ${e.message}"
+                _error.value = "Could not load DNS log state. Try again."
             } finally {
                 _isLoading.value = false
             }
@@ -168,7 +169,7 @@ class LogsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 PrivacyLog.e("LogsViewModel", "Failed to block domain: $host", e)
-                _error.value = "Failed to block $host: ${e.message}"
+                _error.value = "Could not block $host. Check permissions and try again."
             }
         }
     }
@@ -187,7 +188,7 @@ class LogsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 PrivacyLog.e("LogsViewModel", "Failed to allow domain: $host", e)
-                _error.value = "Failed to allow $host: ${e.message}"
+                _error.value = "Could not allow $host. Check permissions and try again."
             }
         }
     }
@@ -198,7 +199,7 @@ class LogsViewModel @Inject constructor(
                 repository.clearAllLogs()
             } catch (e: Exception) {
                 Log.e("LogsViewModel", "Failed to clear logs", e)
-                _error.value = "Failed to clear logs: ${e.message}"
+                _error.value = "Could not clear DNS logs. Try again."
             }
         }
     }
@@ -218,7 +219,7 @@ class LogsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e("LogsViewModel", "Failed to block domains", e)
-                _error.value = "Failed to block domains: ${e.message}"
+                _error.value = "Could not block the selected domains. Try again."
             }
         }
     }
@@ -245,7 +246,7 @@ class LogsViewModel @Inject constructor(
                 if (method == BlockMethod.ROOT_HOSTS) rootUtil.appendHostEntry(host)
             } catch (e: Exception) {
                 PrivacyLog.e("LogsViewModel", "Failed to temporarily allow domain: $host", e)
-                _error.value = "Failed to temporarily allow $host: ${e.message}"
+                _error.value = "Could not temporarily allow $host. Try again."
             }
         }
     }
@@ -258,7 +259,7 @@ class LogsViewModel @Inject constructor(
                 else prefs.pinDomain(domain)
             } catch (e: Exception) {
                 PrivacyLog.e("LogsViewModel", "Failed to toggle pin for: $domain", e)
-                _error.value = "Failed to toggle pin: ${e.message}"
+                _error.value = "Could not update the pinned domain. Try again."
             }
         }
     }
@@ -278,7 +279,7 @@ class LogsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e("LogsViewModel", "Failed to allow domains", e)
-                _error.value = "Failed to allow domains: ${e.message}"
+                _error.value = "Could not allow the selected domains. Try again."
             }
         }
     }
@@ -290,7 +291,7 @@ class LogsViewModel @Inject constructor(
     }
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)? = null) {
     val logs by viewModel.logs.collectAsStateWithLifecycle()
@@ -502,9 +503,10 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
         }
 
         Spacer(Modifier.height(4.dp))
-        Row(
+        FlowRow(
             modifier = Modifier.padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             val types = listOf(null to "All Types", "A" to "A", "AAAA" to "AAAA", "CNAME" to "CNAME", "MX" to "MX", "TXT" to "TXT")
             types.forEach { (type, label) ->
@@ -512,10 +514,11 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                 Surface(
                     onClick = { queryTypeFilter = type },
                     shape = RoundedCornerShape(6.dp),
-                    color = if (selected) Blue.copy(alpha = 0.12f) else Surface2
+                    color = if (selected) Blue.copy(alpha = 0.12f) else Surface2,
+                    modifier = Modifier.heightIn(min = 40.dp)
                 ) {
                     Text(
-                        label, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        label, modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                         color = if (selected) Blue else TextDim, fontSize = 10.sp, fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -573,7 +576,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                                     checkmarkColor = Color.Black
                                 ),
                                 modifier = Modifier
-                                    .size(28.dp)
+                                    .size(48.dp)
                                     .accessibilityToggle(
                                         "Select ${entry.hostname}",
                                         entry.hostname in selectedHostnames
@@ -642,12 +645,12 @@ private fun LogFilter(label: String, selected: Boolean, onClick: () -> Unit) {
         shape = RoundedCornerShape(8.dp),
         color = if (selected) Teal.copy(alpha = 0.12f) else Surface2,
         modifier = Modifier
-            .heightIn(min = 34.dp)
+            .heightIn(min = 44.dp)
             .accessibilitySelection("$label DNS log filter", selected)
     ) {
         Text(
             label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
             color = if (selected) Teal else TextDim,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
@@ -737,6 +740,7 @@ private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> 
                             fontWeight = if (blocked) FontWeight.SemiBold else FontWeight.Medium,
                             fontFamily = FontFamily.Monospace,
                             maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                             textDecoration = if (blocked) TextDecoration.LineThrough else TextDecoration.None
                         )
                         Spacer(Modifier.height(2.dp))
@@ -745,7 +749,7 @@ private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> 
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             if (entry.appLabel.isNotEmpty()) {
-                                Text(entry.appLabel, color = TextDim, fontSize = 10.sp, lineHeight = 13.sp)
+                                Text(entry.appLabel, color = TextDim, fontSize = 10.sp, lineHeight = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                             if (entry.hitCount > 1) {
                                 Text("${entry.hitCount}x", color = TextDim, fontSize = 10.sp, lineHeight = 13.sp)
@@ -791,7 +795,8 @@ private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> 
                         if (entry.appPackage.isNotEmpty()) {
                             Text(
                                 entry.appPackage, color = TextDim, fontSize = 10.sp,
-                                modifier = Modifier.weight(1f), fontFamily = FontFamily.Monospace
+                                modifier = Modifier.weight(1f), fontFamily = FontFamily.Monospace,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis
                             )
                         } else {
                             Spacer(Modifier.weight(1f))
@@ -887,7 +892,7 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
                 fontSize = 18.sp,
                 modifier = Modifier.weight(1f).accessibilityHeading()
             )
-            IconButton(onClick = onTogglePin, modifier = Modifier.size(40.dp)) {
+            IconButton(onClick = onTogglePin, modifier = Modifier.size(48.dp)) {
                 Icon(
                     if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                     if (isPinned) "Unpin" else "Pin",
@@ -1101,7 +1106,8 @@ private fun ReputationButton(label: String, color: Color, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
-        color = color.copy(alpha = 0.1f)
+        color = color.copy(alpha = 0.1f),
+        modifier = Modifier.heightIn(min = 40.dp)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -1126,7 +1132,8 @@ private fun DetailRow(label: String, value: String, valueColor: Color = TextPrim
             value, color = valueColor, fontSize = 12.sp, fontWeight = FontWeight.Medium,
             fontFamily = if (label == "Domain" || label == "Package") FontFamily.Monospace else FontFamily.Default,
             modifier = Modifier.weight(0.65f),
-            maxLines = 2
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

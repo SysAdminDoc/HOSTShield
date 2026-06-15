@@ -1,5 +1,6 @@
 package com.hostshield.ui.screens.sources
 
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -18,6 +20,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -84,6 +89,10 @@ class SourcesViewModel @Inject constructor(
     private val downloader: SourceDownloader,
     private val blocklistHolder: BlocklistHolder
 ) : ViewModel() {
+    private companion object {
+        const val TAG = "SourcesViewModel"
+    }
+
     val sources: StateFlow<List<HostSource>> = repository.getAllSources()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -123,7 +132,8 @@ class SourcesViewModel @Inject constructor(
             try {
                 repository.toggleSource(id, enabled)
             } catch (e: Exception) {
-                _error.value = "Failed to toggle source: ${e.message}"
+                Log.e(TAG, "Failed to toggle source $id", e)
+                _error.value = "Could not update the source. Try again."
             }
         }
     }
@@ -132,7 +142,8 @@ class SourcesViewModel @Inject constructor(
             try {
                 repository.deleteSource(source)
             } catch (e: Exception) {
-                _error.value = "Failed to delete source: ${e.message}"
+                Log.e(TAG, "Failed to delete source ${source.id}", e)
+                _error.value = "Could not delete the source. Try again."
             }
         }
     }
@@ -148,7 +159,8 @@ class SourcesViewModel @Inject constructor(
                     HostSource(url = validation.normalizedUrl, label = label, category = category)
                 )
             } catch (e: Exception) {
-                _error.value = "Failed to add source: ${e.message}"
+                Log.e(TAG, "Failed to add source", e)
+                _error.value = "Could not add the source. Check the URL and try again."
             }
         }
     }
@@ -192,7 +204,8 @@ class SourcesViewModel @Inject constructor(
                 }
                 _healthCheckMessage.value = "$ok reachable, $fail unreachable"
             } catch (e: Exception) {
-                _error.value = "Health check failed: ${e.message}"
+                Log.e(TAG, "Source health check failed", e)
+                _error.value = "Could not finish the source health check. Try again."
                 _healthCheckMessage.value = null
             } finally {
                 _isCheckingHealth.value = false
@@ -251,7 +264,8 @@ class SourcesViewModel @Inject constructor(
                 val total = impacts.values.sumOf { it.neutralizedCount }
                 _allowlistImpactMessage.value = "$total blocked domains neutralized by enabled allowlists"
             } catch (e: Exception) {
-                _error.value = "Allowlist analysis failed: ${e.message}"
+                Log.e(TAG, "Allowlist impact analysis failed", e)
+                _error.value = "Could not analyze allowlist impact. Try again."
                 _allowlistImpactMessage.value = null
             } finally {
                 _isAnalyzingAllowlists.value = false
@@ -337,7 +351,8 @@ class SourcesViewModel @Inject constructor(
                     else -> "Previewed $sourceCount enabled sources without applying changes."
                 }
             } catch (e: Exception) {
-                _error.value = "Source impact preview failed: ${e.message}"
+                Log.e(TAG, "Source impact preview failed", e)
+                _error.value = "Could not preview source update impact. Try again."
                 _sourceImpactMessage.value = null
             } finally {
                 _isPreviewingSourceImpact.value = false
@@ -512,7 +527,7 @@ fun SourcesScreen(
                         color = Teal.copy(alpha = 0.14f),
                         contentColor = Teal,
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(48.dp)
                             .testTag(HostShieldTestTags.Sources.AddButton)
                     ) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -799,6 +814,7 @@ private fun SourceItem(
                         fontSize = 14.sp,
                         lineHeight = 18.sp,
                         maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
                     if (source.isBuiltin) {
@@ -832,7 +848,14 @@ private fun SourceItem(
                 }
                 if (source.description.isNotEmpty()) {
                     Spacer(Modifier.height(2.dp))
-                    Text(source.description, style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 3, lineHeight = 16.sp)
+                    Text(
+                        source.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 16.sp
+                    )
                 }
                 Spacer(Modifier.height(6.dp))
                 FlowRow(
@@ -942,7 +965,7 @@ private fun SourceItem(
             Spacer(Modifier.width(8.dp))
 
             if (!source.isBuiltin) {
-                IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Filled.Delete, "Delete ${source.label}", tint = Red.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
                 }
             }
@@ -975,6 +998,7 @@ private fun AddSourceDialog(
     val urlValidation = remember(url) { SourceUrlPolicy.validate(url) }
     val urlValid = urlValidation.isValid
     val labelValid = label.trim().isNotEmpty()
+    val showLabelError = url.isNotBlank() && !labelValid
     val canSubmit = urlValid && labelValid
 
     AlertDialog(
@@ -987,6 +1011,14 @@ private fun AddSourceDialog(
                 OutlinedTextField(
                     value = label, onValueChange = { label = it },
                     label = { Text("Source name") }, singleLine = true,
+                    isError = showLabelError,
+                    supportingText = if (showLabelError) {
+                        { Text("Enter a source name.", color = Red, fontSize = 11.sp) }
+                    } else null,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words,
+                        imeAction = ImeAction.Next
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag(HostShieldTestTags.Sources.NameField),
@@ -1000,6 +1032,7 @@ private fun AddSourceDialog(
                     value = url, onValueChange = { url = it },
                     label = { Text("Source URL") }, singleLine = true,
                     isError = url.isNotBlank() && !urlValid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
                     supportingText = if (url.isNotBlank() && !urlValid) {
                         {
                             Text(
@@ -1077,9 +1110,22 @@ private fun formatTimestamp(ms: Long): String = try {
 
 private fun sourceFailureText(source: HostSource): String {
     val status = if (source.lastHttpStatus > 0) "HTTP ${source.lastHttpStatus}" else "Network"
-    val reason = source.lastError.ifBlank { "Unknown failure" }
+    val reason = sanitizeSourceFailureReason(source.lastError)
     val failures = if (source.consecutiveFailures > 0) " (${source.consecutiveFailures}x)" else ""
     return "Last failure: $status - $reason$failures"
+}
+
+private fun sanitizeSourceFailureReason(rawError: String): String {
+    val error = rawError.trim()
+    if (error.isBlank()) return "Update failed"
+    return when {
+        error.startsWith("HTTP ", ignoreCase = true) -> error.take(80)
+        error.contains("timeout", ignoreCase = true) -> "Connection timed out"
+        error.contains("unable to resolve host", ignoreCase = true) -> "DNS lookup failed"
+        error.contains("certificate", ignoreCase = true) || error.contains("ssl", ignoreCase = true) -> "Secure connection failed"
+        error.contains("0 entries", ignoreCase = true) -> "Source returned no entries"
+        else -> "Download failed"
+    }
 }
 
 private fun sourceLastSuccessText(lastUpdated: Long): String {

@@ -1,0 +1,7 @@
+v6.9.13
+
+- Redirect custom rules now validate IPv4/IPv6 targets before saving.
+- Regex rule validation now shows stable product copy instead of parser errors.
+- Source and DNS log errors use clearer recovery copy while detailed failures stay in logs.
+- Long rule/source/log text truncates safely, and DNS log query-type filters wrap on narrow screens.
+- Key rule, source, and DNS log controls now use larger touch targets.
