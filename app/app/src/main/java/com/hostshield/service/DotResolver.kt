@@ -5,6 +5,8 @@ import com.hostshield.util.PrivacyLog
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.InetSocketAddress
+import java.security.MessageDigest
+import java.security.cert.X509Certificate
 import javax.inject.Inject
 import javax.inject.Singleton
 import javax.net.ssl.SSLContext
@@ -59,28 +61,33 @@ class DotResolver @Inject constructor() {
     fun resolve(dns: ByteArray, provider: Provider = Provider.CLOUDFLARE): ByteArray? {
         var socket: SSLSocket? = null
         return try {
-            val sslContext = SSLContext.getInstance("TLSv1.3")
+            // Use "TLS" (not "TLSv1.3") so the platform negotiates the best
+            // available version: TLS 1.3 on API 29+, TLS 1.2 on API 26-28.
+            val sslContext = SSLContext.getInstance("TLS")
             sslContext.init(null, null, null)
             val factory = sslContext.socketFactory
 
             socket = factory.createSocket() as SSLSocket
             socket.soTimeout = READ_TIMEOUT_MS
 
-            // SNI hostname verification
             val params = socket.sslParameters
             params.serverNames = listOf(javax.net.ssl.SNIHostName(provider.hostname))
             socket.sslParameters = params
 
-            // Connect to provider IP on port 853
             socket.connect(InetSocketAddress(provider.ip, DOT_PORT), CONNECT_TIMEOUT_MS)
             socket.startHandshake()
 
-            // Verify hostname matches certificate
             val session = socket.session
-            val peerHost = session.peerHost ?: provider.ip
             val verifier = javax.net.ssl.HttpsURLConnection.getDefaultHostnameVerifier()
             if (!verifier.verify(provider.hostname, session)) {
-                PrivacyLog.w(TAG, "Hostname verification failed for ${provider.hostname}")
+                PrivacyLog.w(TAG, "DoT hostname verification failed for ${provider.hostname}")
+                return null
+            }
+
+            // SPKI pin verification — same CA pins as the DoH manifest since
+            // DoT providers share certificate chains with their DoH endpoints.
+            if (!verifySpkiPins(session.peerCertificates, provider)) {
+                PrivacyLog.w(TAG, "DoT SPKI pin verification failed for ${provider.hostname}")
                 return null
             }
 
@@ -110,5 +117,29 @@ class DotResolver @Inject constructor() {
         } finally {
             try { socket?.close() } catch (_: Exception) { }
         }
+    }
+
+    private fun verifySpkiPins(
+        peerCertificates: Array<java.security.cert.Certificate>,
+        provider: Provider
+    ): Boolean {
+        val dohProviderId = when (provider) {
+            Provider.CLOUDFLARE -> "CLOUDFLARE"
+            Provider.GOOGLE -> "GOOGLE"
+            Provider.QUAD9 -> "QUAD9"
+            Provider.ADGUARD -> "ADGUARD"
+        }
+        val providerPins = DohPinManifest.providers.firstOrNull { it.providerId == dohProviderId }
+            ?: return true // no pins configured — pass (system trust only)
+        val expectedHashes = providerPins.pins.map { it.value.removePrefix("sha256/") }.toSet()
+
+        for (cert in peerCertificates) {
+            if (cert !is X509Certificate) continue
+            val spki = cert.publicKey.encoded ?: continue
+            val hash = MessageDigest.getInstance("SHA-256").digest(spki)
+            val b64 = android.util.Base64.encodeToString(hash, android.util.Base64.NO_WRAP)
+            if (b64 in expectedHashes) return true
+        }
+        return false
     }
 }
