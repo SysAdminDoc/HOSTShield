@@ -3,6 +3,27 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.11] - 2026-06-15
+
+### Fixed
+- DoH provider selection now honors the user-selected provider as the primary
+  resolver even after latency data exists; measured latency is used only to rank
+  failover providers after the selected resolver fails.
+- Settings PCAP export now exposes all, DNS-only, and firewall-only export modes
+  with share/save/discard actions and visible failure feedback instead of
+  Logcat-only share errors.
+- Diagnostic export dismissal now deletes the generated temporary ZIP.
+
+### Build
+- Moved Gradle plugin and dependency versions into `app/gradle/libs.versions.toml`.
+
+### Docs
+- Release documentation checks now validate the version catalog, targetSdk,
+  `systemExempted` foreground-service state, fail-closed encrypted-DNS anchors,
+  disabled embedded DoH3 posture, and removed offline GeoIP claims.
+- Updated current docs and metadata to match the live bounded ipapi.co GeoIP
+  implementation.
+
 ## [v6.9.10] - 2026-06-14
 
 ### Fixed

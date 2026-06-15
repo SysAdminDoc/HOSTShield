@@ -1,3 +1,33 @@
+# HostShield v6.9.11
+
+**Release Date:** 2026-06-15
+**Version Code:** 93
+
+## DoH Provider Preference and Export UX
+
+### Fixed
+- DoH now treats the provider selected in Settings as the primary resolver even
+  when another provider has lower observed latency. Latency still ranks failover
+  candidates after the selected provider fails.
+- Settings PCAP export now offers all, DNS-only, and firewall-only capture modes
+  and keeps share/save/discard actions visible after generation.
+- PCAP and diagnostic package share failures now surface as recoverable UI state
+  instead of Logcat-only errors.
+- Dismissing a generated diagnostic package now removes the temporary ZIP.
+
+### Build
+- Moved plugin and dependency versions to `gradle/libs.versions.toml`.
+
+### Release
+- Extended `tools/check-release-docs.ps1` to validate version-catalog versions,
+  targetSdk, `systemExempted` foreground-service claims, fail-closed encrypted
+  DNS code anchors, disabled embedded DoH3 posture, and removed offline
+  GeoIP/MaxMind claims.
+
+### Verification
+- `:app:testFullDebugUnitTest`
+- `:app:lintFullDebug`
+
 # HostShield v6.9.10
 
 **Release Date:** 2026-06-14

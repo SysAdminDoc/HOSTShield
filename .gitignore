@@ -17,3 +17,5 @@ replay_pid*.log
 # Markdown files local-only (except README)
 *.md
 !README.md
+!docs/
+!docs/WORKMANAGER_AUDIT.md

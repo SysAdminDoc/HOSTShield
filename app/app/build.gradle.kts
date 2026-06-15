@@ -29,14 +29,14 @@ fun releaseSigningFailureMessage(): String =
 
 android {
     namespace = "com.hostshield"
-    compileSdk = 36
+        compileSdk = 36
 
     defaultConfig {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 36
-        versionCode = 92
-        versionName = "6.9.10"
+        versionCode = 93
+        versionName = "6.9.11"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -171,97 +171,97 @@ gradle.taskGraph.whenReady {
 
 dependencies {
     // Core Android
-    implementation("androidx.core:core-ktx:1.18.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
-    implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("androidx.work:work-runtime-ktx:2.11.2")
-    implementation("androidx.startup:startup-runtime:1.2.0")
-    val serializationBom = platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.8.1")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.startup.runtime)
+    val serializationBom = platform(libs.kotlinx.serialization.bom)
     implementation(serializationBom)
 
     // Compose BOM
-    val composeBom = platform("androidx.compose:compose-bom:2026.05.00")
+    val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.compose.animation:animation")
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.compose.animation)
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.9.8")
+    implementation(libs.androidx.navigation.compose)
 
     // Room Database
-    implementation("androidx.room:room-runtime:2.8.4")
-    implementation("androidx.room:room-ktx:2.8.4")
-    ksp("androidx.room:room-compiler:2.8.4")
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.59.2")
-    ksp("com.google.dagger:hilt-android-compiler:2.59.2")
-    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
-    implementation("androidx.hilt:hilt-work:1.3.0")
-    ksp("androidx.hilt:hilt-compiler:1.3.0")
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     // Networking (for downloading hosts sources and pinned DoH)
-    implementation("com.squareup.okhttp3:okhttp:5.4.0")
+    implementation(libs.okhttp)
 
     // Root access via libsu
-    implementation("com.github.topjohnwu.libsu:core:6.0.0")
-    implementation("com.github.topjohnwu.libsu:service:6.0.0")
-    implementation("com.github.topjohnwu.libsu:nio:6.0.0")
+    implementation(libs.libsu.core)
+    implementation(libs.libsu.service)
+    implementation(libs.libsu.nio)
 
     // DataStore for preferences
-    implementation("androidx.datastore:datastore-preferences:1.2.1")
+    implementation(libs.androidx.datastore.preferences)
 
     // Tink is retained only for one-time migration from legacy AndroidX
     // EncryptedSharedPreferences keysets; new secret writes use Android Keystore
     // directly through SecureStore.
-    implementation("com.google.crypto.tink:tink-android:1.21.0")
+    implementation(libs.tink.android)
     // Lightweight Argon2id implementation for new PIN and backup KDF records.
-    implementation("org.bouncycastle:bcprov-jdk18on:1.84")
+    implementation(libs.bcprov)
 
     // Custom Tabs (captive portal login)
-    implementation("androidx.browser:browser:1.10.0")
+    implementation(libs.androidx.browser)
 
     // Splash screen
-    implementation("androidx.core:core-splashscreen:1.2.0")
+    implementation(libs.androidx.core.splashscreen)
 
     // v6.1: Vico chart library (Roadmap #26)
-    implementation("com.patrykandpatrick.vico:compose-m3:2.5.0")
+    implementation(libs.vico.compose.m3)
 
     // v6.1: Lottie animations (Roadmap #27)
-    implementation("com.airbnb.android:lottie-compose:6.7.1")
+    implementation(libs.lottie.compose)
 
     // v6.1: Jetpack Glance widgets (Roadmap #29)
-    implementation("androidx.glance:glance-appwidget:1.1.1")
-    implementation("androidx.glance:glance-material3:1.1.1")
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
 
     // v6.2: QR code generation for config sharing (Roadmap #38)
-    implementation("com.google.zxing:core:3.5.4")
+    implementation(libs.zxing.core)
 
     // Debug
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Testing
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    testImplementation("com.google.truth:truth:1.4.5")
-    testImplementation("androidx.room:room-testing:2.8.4")
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.truth)
+    testImplementation(libs.androidx.room.testing)
     // BackupRestoreUtil unit tests use org.json.JSONObject directly; without
     // this the stubbed Android JSONObject throws `not mocked` and three tests
     // were dead before v6.5.
-    testImplementation("org.json:json:20240303")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test:core:1.7.0")
-    androidTestImplementation("androidx.test:rules:1.7.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    testImplementation(libs.json)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(composeBom)
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(serializationBom)
-    androidTestImplementation("androidx.room:room-testing:2.8.4")
+    androidTestImplementation(libs.androidx.room.testing)
 }

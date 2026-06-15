@@ -1,0 +1,6 @@
+v6.9.11
+
+- DoH now honors the user-selected provider as the primary resolver; latency data only ranks failover providers.
+- Settings PCAP export now offers all, DNS-only, and firewall-only capture modes with share/save/discard actions and visible failure feedback.
+- Gradle dependency and plugin versions moved to a central version catalog.
+- Release documentation checks now catch stale foreground-service, DoH3, GeoIP, targetSdk, and version metadata claims before release.

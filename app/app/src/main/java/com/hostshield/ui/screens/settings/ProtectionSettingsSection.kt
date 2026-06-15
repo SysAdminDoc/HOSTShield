@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import com.hostshield.R
 import com.hostshield.ui.theme.*
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProtectionSettingsSection(
     // VPN
@@ -81,20 +82,21 @@ fun ProtectionSettingsSection(
         // PCAP export
         when (pcapExport) {
             PcapExportState.Idle -> {
-                Row(
+                Text(
+                    stringResource(R.string.pcap_privacy_warning),
+                    color = Peach,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp,
+                    modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
+                )
+                FlowRow(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = { onExportPcap("all") },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
-                    ) {
-                        Icon(Icons.Filled.SaveAlt, null, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.action_export_pcap), fontSize = 10.sp)
-                    }
+                    PcapExportButton(stringResource(R.string.pcap_export_all), "all", onExportPcap)
+                    PcapExportButton(stringResource(R.string.pcap_export_dns), "dns", onExportPcap)
+                    PcapExportButton(stringResource(R.string.pcap_export_firewall), "firewall", onExportPcap)
                 }
             }
             PcapExportState.Exporting -> {
@@ -109,6 +111,13 @@ fun ProtectionSettingsSection(
             }
             is PcapExportState.Ready -> {
                 val sizeKb = pcapExport.sizeBytes / 1024
+                Text(
+                    stringResource(R.string.pcap_ready_summary, pcapExport.mode, pcapExport.fileName),
+                    color = TextSecondary,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
                 Text(
                     stringResource(R.string.pcap_privacy_warning),
                     color = Peach,
@@ -142,18 +151,33 @@ fun ProtectionSettingsSection(
                     OutlinedButton(
                         onClick = onDismissPcap,
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
                     ) {
-                        Icon(Icons.Filled.Close, null, modifier = Modifier.size(14.dp))
+                        Icon(
+                            Icons.Filled.Close,
+                            stringResource(R.string.action_discard),
+                            modifier = Modifier.size(14.dp)
+                        )
                     }
                 }
             }
             PcapExportState.Empty -> {
                 Text(stringResource(R.string.pcap_empty), color = TextDim, fontSize = 10.sp, modifier = Modifier.padding(vertical = 4.dp))
+                OutlinedButton(
+                    onClick = onDismissPcap,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim)
+                ) {
+                    Text(stringResource(R.string.action_discard), fontSize = 10.sp)
+                }
             }
             is PcapExportState.Failed -> {
                 Text(pcapExport.error, color = Red, fontSize = 10.sp, modifier = Modifier.padding(vertical = 4.dp))
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     OutlinedButton(
                         onClick = { onExportPcap("all") },
                         shape = RoundedCornerShape(8.dp),
@@ -161,8 +185,33 @@ fun ProtectionSettingsSection(
                     ) {
                         Text(stringResource(R.string.action_retry), fontSize = 10.sp)
                     }
+                    OutlinedButton(
+                        onClick = onDismissPcap,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim)
+                    ) {
+                        Text(stringResource(R.string.action_discard), fontSize = 10.sp)
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PcapExportButton(
+    label: String,
+    mode: String,
+    onExportPcap: (String) -> Unit
+) {
+    OutlinedButton(
+        onClick = { onExportPcap(mode) },
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal),
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
+    ) {
+        Icon(Icons.Filled.SaveAlt, null, modifier = Modifier.size(14.dp))
+        Spacer(Modifier.width(4.dp))
+        Text(label, fontSize = 10.sp)
     }
 }

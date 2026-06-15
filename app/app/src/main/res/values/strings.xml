@@ -53,7 +53,6 @@
     <string name="action_share">Share</string>
     <string name="action_save_as">Save As</string>
     <string name="action_discard">Discard</string>
-    <string name="action_export_pcap">Export PCAP</string>
     <string name="action_export_csv">Export CSV</string>
     <string name="action_view_all">View all</string>
     <string name="action_export">Export</string>
@@ -157,6 +156,10 @@
     <string name="pcap_generating">Generating PCAP…</string>
     <string name="pcap_privacy_warning">Contains DNS hostnames and connection destinations</string>
     <string name="pcap_empty">No blocked entries to export</string>
+    <string name="pcap_export_all">All PCAP</string>
+    <string name="pcap_export_dns">DNS PCAP</string>
+    <string name="pcap_export_firewall">Firewall PCAP</string>
+    <string name="pcap_ready_summary">%1$s export ready: %2$s</string>
 
     <!-- Backup dialogs -->
     <string name="backup_dialog_title">Create Backup</string>

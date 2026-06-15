@@ -33,7 +33,12 @@ import javax.inject.Inject
 sealed interface PcapExportState {
     data object Idle : PcapExportState
     data object Exporting : PcapExportState
-    data class Ready(val filePath: String, val fileName: String, val sizeBytes: Long) : PcapExportState
+    data class Ready(
+        val filePath: String,
+        val fileName: String,
+        val sizeBytes: Long,
+        val mode: String
+    ) : PcapExportState
     data object Empty : PcapExportState
     data class Failed(val error: String) : PcapExportState
 }
@@ -606,7 +611,7 @@ class SettingsViewModel @Inject constructor(
                 if (file != null) {
                     _uiState.update {
                         it.copy(pcapExport = PcapExportState.Ready(
-                            file.absolutePath, file.name, file.length()
+                            file.absolutePath, file.name, file.length(), mode
                         ))
                     }
                 } else {
@@ -633,7 +638,7 @@ class SettingsViewModel @Inject constructor(
                 val intent = Intent(Intent.ACTION_SEND).apply {
                     type = "application/vnd.tcpdump.pcap"
                     putExtra(Intent.EXTRA_STREAM, uri)
-                    putExtra(Intent.EXTRA_SUBJECT, "HostShield PCAP Export")
+                    putExtra(Intent.EXTRA_SUBJECT, "HostShield PCAP Export (${export.mode})")
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
@@ -641,6 +646,9 @@ class SettingsViewModel @Inject constructor(
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             } catch (e: Exception) {
                 android.util.Log.e("Settings", "PCAP share failed: ${e.message}", e)
+                _uiState.update {
+                    it.copy(pcapExport = PcapExportState.Failed("Share failed: ${e.message ?: e.javaClass.simpleName}"))
+                }
             }
         }
     }
@@ -861,11 +869,22 @@ class SettingsViewModel @Inject constructor(
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             } catch (e: Exception) {
                 android.util.Log.e("Settings", "Share failed: ${e.message}", e)
+                _uiState.update {
+                    it.copy(
+                        diagnosticExport = DiagnosticExportState.Failed(
+                            "Share failed: ${e.message ?: e.javaClass.simpleName}"
+                        )
+                    )
+                }
             }
         }
     }
 
     fun dismissDiagnosticExport() {
+        val export = _uiState.value.diagnosticExport
+        if (export is DiagnosticExportState.Ready) {
+            try { java.io.File(export.filePath).delete() } catch (_: Exception) {}
+        }
         _uiState.update { it.copy(diagnosticExport = DiagnosticExportState.Idle) }
     }
 }

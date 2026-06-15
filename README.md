@@ -1,13 +1,13 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.10-blue)
+![Version](https://img.shields.io/badge/version-6.9.11-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, DoH with certificate pinning, offline GeoIP, and a professional AMOLED dark UI with an optional high-contrast AMOLED mode.
+> System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, rate-limited GeoIP enrichment, and a professional AMOLED dark UI with an optional high-contrast AMOLED mode.
 
 ---
 
@@ -120,8 +120,7 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Offline GeoIP** | MaxMind GeoLite2 Country + ASN databases (~14MB). Unlimited, zero-latency, no rate limits |
-| **Online GeoIP Fallback** | ipapi.co over HTTPS for city-level detail, client-side rate-limited below the free-tier cap with exponential backoff |
+| **GeoIP Lookup** | ipapi.co over HTTPS for city-level detail, client-side rate-limited below the free-tier cap with exponential backoff |
 | **Country Flags** | Emoji flag display next to resolved IPs in DNS logs |
 | **ASN Lookup** | ISP/organization identification for every connection |
 
@@ -292,8 +291,8 @@ Public actions are protected by HostShield's signature-level automation permissi
 | Async | Coroutines + Flow, ViewModels + StateFlow |
 | Networking | OkHttp 5 (source downloads, pinned DoH resolver) |
 | Root | libsu (topjohnwu) |
-| GeoIP | MaxMind GeoIP2 (GeoLite2-Country + ASN) |
-| Build | Gradle KTS, AGP 9.2, KSP, Android SDK 36 compile / targetSdk 36, minSdk 26 |
+| GeoIP | Bounded ipapi.co lookup with in-memory cache and exponential backoff |
+| Build | Gradle KTS, version catalog, AGP 9.2, KSP, Android SDK 36 compile / targetSdk 36, minSdk 26 |
 
 ---
 
@@ -345,8 +344,7 @@ app/src/main/java/com/hostshield/
 │   ├── widget/        # Glance widgets (toggle + stats)
 │   └── theme/         # Material 3 theme, high-contrast AMOLED palette, accent colors
 └── util/
-    ├── OfflineGeoIp.kt        # MaxMind GeoLite2 offline lookups
-    ├── GeoIpLookup.kt         # ipapi.co online GeoIP fallback
+    ├── GeoIpLookup.kt         # bounded ipapi.co GeoIP lookups
     ├── TrackerSignatureDb.kt   # Exodus-style APK tracker scanner
     ├── TlsFingerprinter.kt    # JA3/JA4 TLS ClientHello fingerprinting
     ├── AppPrivacyScorer.kt     # Per-app A-F privacy grades
@@ -377,7 +375,7 @@ Magisk, KernelSU, and APatch are supported when HostShield has root permission. 
 Entirely local — no traffic goes to a remote server. The VPN tunnel intercepts DNS queries on the device and filters them locally. Standard technique used by NetGuard, RethinkDNS, Blokada, and DNS66.
 
 **How is this different from AdAway?**
-CNAME cloaking detection (including SVCB/HTTPS records), serve-stale DNS cache (RFC 8767), DoH with certificate pinning and smart latency failover, per-app iptables firewall, live query streaming, 7-day trend charts, query anomaly detection, offline GeoIP, tracker SDK scanning, DNS leak test, automation API, and a modern Material 3 Compose UI.
+CNAME cloaking detection (including SVCB/HTTPS records), serve-stale DNS cache (RFC 8767), fail-closed DoH with certificate pinning and selected-provider preference, per-app iptables firewall, live query streaming, 7-day trend charts, query anomaly detection, rate-limited GeoIP lookup, tracker SDK scanning, DNS leak test, automation API, and a modern Material 3 Compose UI.
 
 **How is this different from RethinkDNS?**
 HostShield focuses on local DNS blocking with a curated gallery of 50+ blocklists. It has a dual-mode architecture (VPN + root) while RethinkDNS is VPN-only. HostShield includes an iptables-based per-app firewall for rooted devices, tracker SDK scanning, and hosts file diffing.
@@ -389,7 +387,7 @@ In VPN mode: no — Android only allows one VPN at a time. In root mode: yes —
 Protection services use Android's `systemExempted` foreground-service type for VPN/root/proxy filtering, and each service records timeout events before shutting down cleanly. If Android denies a boot or background restart, HostShield records `foreground_service_start_failed` in the local diagnostic export and the Home screen asks the user to reopen the app and enable protection again.
 
 **Does it send data to any server?**
-No. All DNS filtering happens locally on-device. The only network requests are: downloading blocklist sources (user-configured URLs), DoH queries to the user-selected DNS provider, GeoIP database updates (MaxMind), optional city-level GeoIP fallback through ipapi.co, and optional remote DoH bypass / CNAME cloak list updates from GitHub.
+No. All DNS filtering happens locally on-device. The only network requests are: downloading blocklist sources (user-configured URLs), encrypted DNS queries to the user-selected provider, optional rate-limited GeoIP lookup through ipapi.co, and optional remote DoH bypass / CNAME cloak list updates from GitHub.
 
 **What about the Android 16 VPN update bug?**
 Android 16 has a confirmed system-level bug where VPN apps become unusable after a background app update while always-on VPN is active. The device's network stack enters a corrupted state where all connections time out even though the VPN tunnel appears connected. This affects all VPN-based apps (Mullvad, Proton, Ivanti, TunnelBear, and others have confirmed it). Google has not issued a fix. HostShield detects this condition automatically (since v6.5.2) and shows a recovery banner on the Home screen. **Workaround**: reboot the device, or uninstall and reinstall the app. On rooted devices, HostShield offers a one-tap device restart from the recovery banner. To prevent the issue, disable always-on VPN before updating HostShield, then re-enable it after the update completes.
@@ -406,6 +404,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.11** | DoH now honors the user-selected provider as the primary resolver while using latency only for failover ordering. Gradle versions moved to `libs.versions.toml`, Settings PCAP export exposes all/DNS/firewall modes with visible share failure feedback, and release-doc checks now catch stale FGS, DoH3, GeoIP, and version metadata claims. |
 | **6.9.9** | New launcher icon assets across Android icon densities, README screenshots, and AdAway Default plus StevenBlack Unified enabled by default with an upgrade migration for existing installs. |
 | **6.9.8** | Removed the non-root "Root not detected" Home banner, fixed Settings > View on GitHub so it opens the repository in a browser, and simplified the Sources header to keep only the add-source action. |
 | **6.9.7** | Animated the active protection orb with a rotating arc, trailing sweep, and breathing halo so the dashboard visibly communicates active protection. |
@@ -417,7 +416,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 | **6.9.1** | Debug pseudolocales enabled, RTL/pseudo-expanded Compose layout scaffold added, Home/Settings/QR strings moved through resources, and QR config import/export validation kept covered by JVM tests. |
 | **6.9.0** | AdGuard `$dnsrewrite` import support. NXDOMAIN/REFUSED/null-IP rewrites imported as block rules. A/AAAA IP rewrites parsed as redirect rules. 3-part form (`NOERROR;A;1.2.3.4`) supported. Unsupported CNAME rewrites counted in diagnostics. |
 | **6.8.0** | Threat-intel feed health tracking. Per-feed HTTP status, SHA-256, entry counts, staleness detection, and consecutive failure tracking with full cache persistence. Compile-warning deprecation cleanup: removed dead NetworkChangeReceiver, migrated clipboard API, updated MaxMind accessors. ZXing/Room 3.0/Accrescent evaluations documented. |
-| **6.7.2** | GeoIP local-first. Log detail IP enrichment now uses offline MaxMind GeoLite2 databases by default with no network call. Online ipapi.co lookup is an explicit opt-in setting. |
+| **6.7.2** | Historical local-first GeoIP path for log detail enrichment. Current builds use the bounded ipapi.co lookup path documented above. |
 | **6.7.1** | Temporary bypass timer. Home screen pause now offers 5/15/30/60-minute durations with visible countdown and auto-resume via WorkManager. |
 | **6.7.0** | TargetSdk 36 (Android 16). QR config import hardened with bounded decompression, Base64 padding tolerance, and separated import planning. |
 | **6.6.9** | License unification and hardening. Unified project license on GPL-3.0, resolving the root MIT / app GPL-3.0 conflict that blocked F-Droid/IzzyOnDroid publication. |

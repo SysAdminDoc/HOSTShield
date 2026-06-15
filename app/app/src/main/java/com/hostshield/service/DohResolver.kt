@@ -42,6 +42,12 @@ class DohResolver @Inject constructor(
         // After this many consecutive failures, a provider is demoted to the end
         // of the failover order so we stop hitting a known-broken endpoint first.
         private const val FAILURE_DEMOTE_THRESHOLD = 3
+
+        @Suppress("UNUSED_PARAMETER")
+        internal fun choosePrimaryProvider(
+            selectedProvider: Provider,
+            fastestObservedProvider: Provider?
+        ): Provider = selectedProvider
     }
 
     enum class Transport {
@@ -142,7 +148,7 @@ class DohResolver @Inject constructor(
         dnsQuery: ByteArray,
         provider: Provider = Provider.CLOUDFLARE
     ): DohResponse? = withContext(Dispatchers.IO) {
-        val preferredProvider = getFastestProvider() ?: provider
+        val preferredProvider = choosePrimaryProvider(provider, getFastestProvider())
 
         if (doh3Resolver.isAvailable) {
             doh3Resolver.resolve(dnsQuery, Doh3Resolver.Provider.fromDohProvider(preferredProvider))?.let { doh3 ->

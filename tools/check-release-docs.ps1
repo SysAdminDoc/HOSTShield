@@ -18,15 +18,32 @@ function Test-RepoFile {
 
 $appBuild = Read-RepoFile "app/app/build.gradle.kts"
 $rootBuild = Read-RepoFile "app/build.gradle.kts"
+$versionCatalog = Read-RepoFile "app/gradle/libs.versions.toml"
 $releaseWorkflow = Read-RepoFile ".github/workflows/release.yml"
 $releaseProvenance = Read-RepoFile "tools/release-provenance.ps1"
 $osvPolicyScript = Read-RepoFile "tools/check-osv-report.ps1"
 $androidPageAlignmentScript = Read-RepoFile "tools/check-android-page-alignment.ps1"
+$appManifest = Read-RepoFile "app/app/src/main/AndroidManifest.xml"
+$fgsTypeHelper = Read-RepoFile "app/app/src/main/java/com/hostshield/service/ProtectionForegroundServiceTypes.kt"
+$workManagerAudit = Read-RepoFile "docs/WORKMANAGER_AUDIT.md"
+$dohResolver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DohResolver.kt"
+$dnsVpnService = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DnsVpnService.kt"
+$doh3Resolver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/Doh3Resolver.kt"
+$geoIpLookup = Read-RepoFile "app/app/src/main/java/com/hostshield/util/GeoIpLookup.kt"
 $versionNameMatch = [regex]::Match($appBuild, 'versionName\s*=\s*"([^"]+)"')
 $versionCodeMatch = [regex]::Match($appBuild, 'versionCode\s*=\s*(\d+)')
 $compileSdkMatch = [regex]::Match($appBuild, 'compileSdk\s*=\s*(\d+)')
-$agpVersionMatch = [regex]::Match($rootBuild, 'com\.android\.application"\)\s+version\s+"([^"]+)"')
-$kotlinVersionMatch = [regex]::Match($rootBuild, 'org\.jetbrains\.kotlin\.(?:android|plugin\.compose)"\)\s+version\s+"([^"]+)"')
+$targetSdkMatch = [regex]::Match($appBuild, 'targetSdk\s*=\s*(\d+)')
+
+function Get-VersionCatalogVersion {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    $match = [regex]::Match($versionCatalog, "(?m)^\s*$([regex]::Escape($Name))\s*=\s*`"([^`"]+)`"")
+    if ($match.Success) {
+        return $match.Groups[1].Value
+    }
+    return "unknown"
+}
 
 if (-not $versionNameMatch.Success -or -not $versionCodeMatch.Success) {
     throw "Unable to parse versionName/versionCode from app/app/build.gradle.kts."
@@ -35,8 +52,10 @@ if (-not $versionNameMatch.Success -or -not $versionCodeMatch.Success) {
 $versionName = $versionNameMatch.Groups[1].Value
 $versionCode = $versionCodeMatch.Groups[1].Value
 $compileSdk = if ($compileSdkMatch.Success) { $compileSdkMatch.Groups[1].Value } else { "unknown" }
-$agpVersion = if ($agpVersionMatch.Success) { $agpVersionMatch.Groups[1].Value } else { "unknown" }
-$kotlinVersion = if ($kotlinVersionMatch.Success) { $kotlinVersionMatch.Groups[1].Value } else { "unknown" }
+$targetSdk = if ($targetSdkMatch.Success) { $targetSdkMatch.Groups[1].Value } else { "unknown" }
+$agpVersion = Get-VersionCatalogVersion "agp"
+$kotlinVersion = Get-VersionCatalogVersion "kotlin"
+$cyclonedxVersion = Get-VersionCatalogVersion "cyclonedx"
 $kotlinMajorMinor = if ($kotlinVersion -match '^(\d+\.\d+)') { $Matches[1] } else { $kotlinVersion }
 $agpMajorMinor = if ($agpVersion -match '^(\d+\.\d+)') { $Matches[1] } else { $agpVersion }
 $metadataChangelog = "app/metadata/en-US/changelogs/$versionCode.txt"
@@ -224,10 +243,20 @@ $releaseGatePatterns = @{
     "app/build.gradle.kts" = @{
         Text = $rootBuild
         Patterns = @(
-            "org.cyclonedx.bom",
-            "3.2.4",
+            "alias(libs.plugins.cyclonedx)",
             "hostshield-bom.cdx.json",
             "componentVersion"
+        )
+    }
+    "app/gradle/libs.versions.toml" = @{
+        Text = $versionCatalog
+        Patterns = @(
+            "agp = `"$agpVersion`"",
+            "kotlin = `"$kotlinVersion`"",
+            "cyclonedx = `"$cyclonedxVersion`"",
+            "android-application",
+            "kotlin-compose",
+            "cyclonedx"
         )
     }
     ".github/workflows/release.yml" = @{
@@ -287,6 +316,59 @@ foreach ($file in $releaseGatePatterns.Keys) {
             $failures.Add("$file is missing required release-gate phrase: $pattern")
         }
     }
+}
+
+$systemExemptedServices = [regex]::Matches($appManifest, 'foregroundServiceType="systemExempted"').Count
+if ($systemExemptedServices -lt 3) {
+    $failures.Add("AndroidManifest.xml must keep VPN/root/proxy protection services on systemExempted foreground-service type.")
+}
+if ($appManifest -match 'foregroundServiceType="dataSync"') {
+    $failures.Add("AndroidManifest.xml still contains stale dataSync foreground-service type.")
+}
+if ($fgsTypeHelper -notmatch 'FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED' -or $fgsTypeHelper -match 'FOREGROUND_SERVICE_TYPE_DATA_SYNC') {
+    $failures.Add("ProtectionForegroundServiceTypes.kt must use SYSTEM_EXEMPTED runtime type, not DATA_SYNC.")
+}
+if ($workManagerAudit -match '\bdataSync\b' -or $workManagerAudit -match 'FOREGROUND_SERVICE_TYPE_DATA_SYNC') {
+    $failures.Add("docs/WORKMANAGER_AUDIT.md still contains stale dataSync foreground-service claims.")
+}
+foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt")) {
+    if ($docs[$doc] -notmatch [regex]::Escape("targetSdk $targetSdk")) {
+        $failures.Add("$doc is missing targetSdk $targetSdk platform claim.")
+    }
+}
+
+if ($dohResolver -notmatch 'certificatePinner' -or $dnsVpnService -notmatch 'failClosedEncrypted') {
+    $failures.Add("Encrypted-DNS fail-closed code claims are not backed by DohResolver pinning plus DnsVpnService.failClosedEncrypted.")
+}
+if ($docs["README.md"] -notmatch 'fail-closed' -or $docs["app/README.md"] -notmatch 'fail-closed') {
+    $failures.Add("README docs must continue to state the encrypted-DNS fail-closed posture.")
+}
+
+if ($doh3Resolver -notmatch 'EMBEDDED_CRONET_ENABLED\s*=\s*false') {
+    $failures.Add("Doh3Resolver must remain explicitly disabled while embedded Cronet is unavailable.")
+}
+if ($appBuild -match 'cronet' -or $versionCatalog -match 'cronet') {
+    $failures.Add("Build files still reference Cronet despite the disabled embedded DoH3 posture.")
+}
+
+$assetRoot = Join-Path $repoRoot "app/app/src/main/assets"
+$geoIpAssets = @()
+if (Test-Path -LiteralPath $assetRoot) {
+    $geoIpAssets = Get-ChildItem -LiteralPath $assetRoot -Recurse -File |
+        Where-Object { $_.Name -match 'GeoLite|GeoIP|\.mmdb$' }
+}
+if ($geoIpAssets.Count -gt 0) {
+    $failures.Add("Offline GeoIP assets are present but the current GeoIpLookup path is ipapi-only: $($geoIpAssets.Name -join ', ')")
+}
+if ($appBuild -match 'geoip2|MaxMind|GeoLite' -or $versionCatalog -match 'geoip2|MaxMind|GeoLite') {
+    $failures.Add("Build files still reference removed offline GeoIP dependencies.")
+}
+if ($geoIpLookup -notmatch 'https://ipapi.co/' -or $geoIpLookup -match 'MaxMind|GeoLite|OfflineGeoIp') {
+    $failures.Add("GeoIpLookup.kt must reflect the current bounded ipapi.co implementation and not stale offline GeoIP paths.")
+}
+if ($docs["README.md"] -match 'OfflineGeoIp\.kt' -or
+    $docs["app/metadata/en-US/full_description.txt"] -match 'offline GeoIP|MaxMind|GeoLite') {
+    $failures.Add("Current release docs still claim removed offline GeoIP / MaxMind support.")
 }
 
 $forbiddenPatterns = @(
