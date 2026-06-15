@@ -1999,7 +1999,8 @@ class DnsVpnService : VpnService() {
                 if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
                 else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            PrivacyLog.w(TAG, "DoQ forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
             if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
             else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr)
         }
@@ -2025,7 +2026,8 @@ class DnsVpnService : VpnService() {
                 else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
                 else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            PrivacyLog.w(TAG, "WireGuard forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
             if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
             else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
             else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr)
@@ -2051,7 +2053,8 @@ class DnsVpnService : VpnService() {
                 if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
                 else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            PrivacyLog.w(TAG, "DoT forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
             if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
             else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr)
         }
