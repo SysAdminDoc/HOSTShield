@@ -432,6 +432,7 @@ class DnsPacketBuilderTest {
         assertEquals(41, DnsPacketBuilder.TYPE_OPT)
         assertEquals(64, DnsPacketBuilder.TYPE_SVCB)
         assertEquals(65, DnsPacketBuilder.TYPE_HTTPS)
+        assertEquals(128, DnsPacketBuilder.TYPE_NXNAME)
     }
 
     // ── buildServfail (fail-closed encrypted DNS path) ─────
