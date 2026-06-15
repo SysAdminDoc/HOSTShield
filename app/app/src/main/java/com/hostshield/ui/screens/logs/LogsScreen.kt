@@ -51,7 +51,6 @@ import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import com.hostshield.util.GeoIpLookup
-import com.hostshield.util.OfflineGeoIp
 import com.hostshield.util.RootUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -88,7 +87,6 @@ class LogsViewModel @Inject constructor(
     private val blocklist: BlocklistHolder,
     private val rootUtil: RootUtil,
     private val prefs: AppPreferences,
-    private val offlineGeoIp: OfflineGeoIp,
     private val geoIpLookup: GeoIpLookup
 ) : ViewModel() {
     val logs: StateFlow<List<DnsLogEntry>> = repository.getRecentLogs(2000)
@@ -286,34 +284,9 @@ class LogsViewModel @Inject constructor(
     }
 
     suspend fun lookupAllGeo(ips: List<String>): List<GeoIpLookup.GeoInfo> {
-        val results = mutableListOf<GeoIpLookup.GeoInfo>()
-        val onlineFallbackIps = mutableListOf<String>()
-
-        for (ip in ips) {
-            val trimmed = ip.trim()
-            val offlineResult = offlineGeoIp.lookup(trimmed)
-            if (offlineResult != null) {
-                results += GeoIpLookup.GeoInfo(
-                    ip = trimmed,
-                    country = offlineResult.country,
-                    countryCode = offlineResult.countryCode,
-                    org = offlineResult.asnOrg,
-                    asn = if (offlineResult.asn > 0) "AS${offlineResult.asn}" else "",
-                    flag = offlineResult.flag
-                )
-            } else {
-                onlineFallbackIps += trimmed
-            }
-        }
-
-        if (onlineFallbackIps.isNotEmpty()) {
-            val useOnline = prefs.onlineGeoIpEnabled.first()
-            if (useOnline) {
-                results += geoIpLookup.lookupAll(onlineFallbackIps)
-            }
-        }
-
-        return results
+        val useOnline = prefs.onlineGeoIpEnabled.first()
+        if (!useOnline) return emptyList()
+        return geoIpLookup.lookupAll(ips.map { it.trim() })
     }
 }
 

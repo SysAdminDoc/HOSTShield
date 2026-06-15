@@ -8,7 +8,6 @@ import com.hostshield.data.preferences.SyncPreferences
 import com.hostshield.service.CnameCloakUpdater
 import com.hostshield.service.AutoBackupWorker
 import com.hostshield.service.ThreatIntelWorker
-import com.hostshield.util.OfflineGeoIp
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +22,6 @@ class HostShieldApp : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var cnameCloakUpdater: CnameCloakUpdater
-    @Inject lateinit var offlineGeoIp: OfflineGeoIp
     @Inject lateinit var securityPreferences: SecurityPreferences
     @Inject lateinit var syncPreferences: SyncPreferences
 
@@ -33,8 +31,6 @@ class HostShieldApp : Application(), Configuration.Provider {
         super.onCreate()
         // v5.0: Non-blocking startup initialization
         appScope.launch { cnameCloakUpdater.loadCached() }
-        appScope.launch { offlineGeoIp.initialize() }
-
         // v6.2+: Migrate plaintext/legacy secrets into SecureStore.
         appScope.launch {
             securityPreferences.migratePlaintextSecrets()

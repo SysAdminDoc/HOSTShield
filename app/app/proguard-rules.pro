@@ -86,8 +86,6 @@
 -keep class com.hostshield.service.DnsCache$CacheResult { *; }
 -keep class com.hostshield.service.DnsDiskCache { *; }
 -keep class com.hostshield.service.DnsDiskCache$** { *; }
--keep class com.hostshield.util.OfflineGeoIp { *; }
--keep class com.hostshield.util.OfflineGeoIp$** { *; }
 -keep class com.hostshield.util.DnsBenchmark { *; }
 -keep class com.hostshield.util.DnsBenchmark$** { *; }
 
@@ -105,11 +103,6 @@
 -dontwarn com.google.errorprone.annotations.RestrictedApi
 -keep class com.hostshield.data.preferences.SecureStore { *; }
 
-# ── v5.0: MaxMind GeoIP2 ──────────────────────────────────
--dontwarn com.maxmind.**
--keep class com.maxmind.** { *; }
--dontwarn com.fasterxml.jackson.**
--keep class com.fasterxml.jackson.** { *; }
 
 # ── StatsWidget (v3.8.0) ────────────────────────────────────
 -keep class com.hostshield.service.StatsWidgetProvider { *; }

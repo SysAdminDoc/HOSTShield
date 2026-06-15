@@ -243,10 +243,6 @@ dependencies {
     // v6.2: QR code generation for config sharing (Roadmap #38)
     implementation("com.google.zxing:core:3.5.4")
 
-    // v5.0: MaxMind GeoIP2 for offline GeoIP lookups (replaces ip-api.com rate-limited API)
-    // Bundled GeoLite2-Country.mmdb (~6MB) + GeoLite2-ASN.mmdb (~8MB)
-    implementation("com.maxmind.geoip2:geoip2:5.1.0")
-
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
