@@ -251,6 +251,9 @@ class DnsVpnService : VpnService() {
     private var vpnInterface: ParcelFileDescriptor? = null
     @Volatile private var isRunning = false
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    // Independent of serviceScope so the final log flush survives serviceScope.cancel()
+    // and onDestroy(). Used only for fire-and-forget teardown work off the main thread.
+    private val teardownScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     // Shutdown pipe: writing any byte breaks the Os.poll() loop cleanly.
     // pipe[0] = read end (polled), pipe[1] = write end (signalled in stopVpn).
@@ -774,22 +777,6 @@ class DnsVpnService : VpnService() {
         dnsConfigJob?.cancel(); dnsConfigJob = null
         logFlushJob?.cancel(); logFlushJob = null
         stabilityFlushJob?.cancel(); stabilityFlushJob = null
-        // Flush remaining logs SYNCHRONOUSLY — serviceScope dies with the service,
-        // so a launched coroutine would be cancelled before completing.
-        // Timeout-guarded to prevent ANR if DB write hangs.
-        try {
-            kotlinx.coroutines.runBlocking(Dispatchers.IO) {
-                kotlinx.coroutines.withTimeoutOrNull(3000L) {
-                    val pending = logBuffer.size
-                    if (pending > 0) Log.i(TAG, "Flushing $pending remaining log entries on stop")
-                    flushLogBuffer()
-                    flushStats()
-                    flushStability()
-                } ?: Log.w(TAG, "Final log flush timed out after 3s — some entries may be lost")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Final log flush failed: ${e.message}")
-        }
         // Disconnect WireGuard proxy if active
         try { if (useWireGuard) wireGuardProxy.disconnect() } catch (_: Exception) { }
         ContextState.unregister(this)
@@ -799,7 +786,28 @@ class DnsVpnService : VpnService() {
         try { writeChannel.close() } catch (_: Exception) { }
         try { vpnInterface?.close() } catch (_: Exception) { }
         vpnInterface = null
-        stopForeground(STOP_FOREGROUND_REMOVE); stopSelf()
+        // Flush remaining logs OFF the main thread to avoid ANR — stopVpn() runs on
+        // the main thread from ACTION_STOP/onRevoke. teardownScope outlives
+        // serviceScope, so the flush is not cancelled before it completes. The final
+        // stopForeground/stopSelf happens after the flush (or its 3s timeout).
+        val pending = logBuffer.size
+        teardownScope.launch {
+            try {
+                withTimeoutOrNull(3000L) {
+                    if (pending > 0) Log.i(TAG, "Flushing $pending remaining log entries on stop")
+                    flushLogBuffer()
+                    flushStats()
+                    flushStability()
+                } ?: Log.w(TAG, "Final log flush timed out after 3s — some entries may be lost")
+            } catch (e: Exception) {
+                Log.e(TAG, "Final log flush failed: ${e.message}")
+            } finally {
+                withContext(Dispatchers.Main) {
+                    try { stopForeground(STOP_FOREGROUND_REMOVE) } catch (_: Exception) { }
+                    try { stopSelf() } catch (_: Exception) { }
+                }
+            }
+        }
     }
 
     private fun restartVpn() {
@@ -1064,19 +1072,14 @@ class DnsVpnService : VpnService() {
                     val ipVer = (packet[0].toInt() and 0xF0) shr 4
                     when (ipVer) {
                         4 -> {
-                            if (isIpv4UdpDns(packet, length)) processIpv4Dns(packet, length)
-                            else if (isIpv4TcpDns(packet, length)) processIpv4TcpDns(packet, length)
-                            else tryTlsFingerprint(packet, length)
-                            // Drop non-DNS traffic to trapped IPs (DoT port 853,
-                            // DoH port 443). The packets simply get absorbed without
-                            // forwarding, causing a connection timeout that forces
-                            // apps to fall back to standard DNS (which we filter).
-                            // No explicit action needed -- not writing a response = drop.
+                            if (isIpv4UdpDns(packet, length)) processDnsPacket(packet, length, isV6 = false)
+                            else if (isIpv4TcpDns(packet, length)) processTcpDns(packet, length, isV6 = false)
+                            else tryTlsFingerprintPacket(packet, length, isV6 = false)
                         }
                         6 -> {
-                            if (isIpv6UdpDns(packet, length)) processIpv6Dns(packet, length)
-                            else if (isIpv6TcpDns(packet, length)) processIpv6TcpDns(packet, length)
-                            else tryTlsFingerprintV6(packet, length)
+                            if (isIpv6UdpDns(packet, length)) processDnsPacket(packet, length, isV6 = true)
+                            else if (isIpv6TcpDns(packet, length)) processTcpDns(packet, length, isV6 = true)
+                            else tryTlsFingerprintPacket(packet, length, isV6 = true)
                         }
                     }
 
@@ -1110,23 +1113,20 @@ class DnsVpnService : VpnService() {
         }
     }
 
-    private suspend fun processIpv4Dns(packet: ByteArray, length: Int) {
-        val ihl = (packet[0].toInt() and 0x0F) * 4
-        val dns = extractDnsPayload(packet, length, ihl) ?: return
+    private suspend fun processDnsPacket(packet: ByteArray, length: Int, isV6: Boolean) {
+        val headerOffset = if (isV6) 40 else (packet[0].toInt() and 0x0F) * 4
+        val dns = if (isV6) extractDnsPayloadV6(packet, length, headerOffset)
+                  else extractDnsPayload(packet, length, headerOffset)
+        dns ?: return
         val domain = parseDnsQueryDomain(dns) ?: return
         val qtype = parseDnsQueryType(dns)
-        var app = resolveApp(packet, ihl)
+        var app = if (isV6) resolveAppV6(packet, headerOffset) else resolveApp(packet, headerOffset)
 
-        // Heuristic fallback: if primary UID lookup failed, check if any app
-        // recently connected to an IP that resolved from this hostname.
-        // This catches cases where getConnectionOwnerUid and /proc/net/udp miss.
         if (app.first.isEmpty()) {
             val heuristicUid = findUidByDnsCorrelation(domain)
             if (heuristicUid > 0) app = resolvePkg(heuristicUid)
         }
 
-        // Per-app firewall: block ALL DNS for firewalled apps
-        // v6.0: Skip firewall checks in DNS-only mode (no per-app blocking)
         if (!dnsOnlyMode && app.first.isNotEmpty() && app.first in blockedApps) {
             logAsync(domain, true, app, qtype, explicitDecision(
                 blocked = true,
@@ -1135,11 +1135,10 @@ class DnsVpnService : VpnService() {
                 matchedValue = app.first,
                 precedence = "per-app firewall runs before DNS policy"
             ))
-            sendBlockResponse(dns, packet, ihl, false, qtype)
+            sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
             return
         }
 
-        // Context-aware firewall: block based on screen state, foreground, metered
         if (!dnsOnlyMode && app.first.isNotEmpty()) {
             val ctxRule = contextRules[app.first]
             if (ctxRule != null && shouldBlockByContext(ctxRule, app.first)) {
@@ -1150,12 +1149,11 @@ class DnsVpnService : VpnService() {
                     matchedValue = app.first,
                     precedence = "context firewall runs before DNS policy"
                 ))
-                sendBlockResponse(dns, packet, ihl, false, qtype)
+                sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
                 return
             }
         }
 
-        // v6.0: Safe Search enforcement — intercept search engine queries
         if (safeSearchEnabled && safeSearchEnforcer.isSafeSearchDomain(domain)) {
             val safeResp = safeSearchEnforcer.buildSafeResponse(dns, domain)
             if (safeResp != null) {
@@ -1167,13 +1165,12 @@ class DnsVpnService : VpnService() {
                     matchedValue = domain,
                     precedence = "safe-search rewrite runs before blocklist lookup"
                 ))
-                wrapResponseV4(packet, ihl, safeResp)?.let { sendToTun(it) }
+                wrapAndSend(packet, headerOffset, isV6, safeResp)
                 allowedCount.incrementAndGet()
                 return
             }
         }
 
-        // v6.1: Per-app domain rules (Roadmap #12)
         if (app.first.isNotEmpty()) {
             val ruleAction = appDnsRuleEngine.checkDomain(app.first, domain)
             if (ruleAction == AppDnsRuleEngine.RuleAction.BLOCK) {
@@ -1185,11 +1182,10 @@ class DnsVpnService : VpnService() {
                     matchedValue = app.first,
                     precedence = "per-app block rule runs before shared blocklist"
                 ))
-                sendBlockResponse(dns, packet, ihl, false, qtype)
+                sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
                 return
             }
             if (ruleAction == AppDnsRuleEngine.RuleAction.ALLOW) {
-                // Explicitly allowed by per-app rule — skip blocklist
                 PrivacyLog.d(TAG, "APP-RULE allowed $domain for ${app.second}")
                 logAsync(domain, false, app, qtype, explicitDecision(
                     blocked = false,
@@ -1198,14 +1194,13 @@ class DnsVpnService : VpnService() {
                     matchedValue = app.first,
                     precedence = "per-app allow rule skips shared blocklist"
                 ))
-                val pCopy = packet.copyOf()
-                serviceScope.launch { forwardEncrypted(dns, domain, pCopy, ihl, app) }
+                val pCopy = packet.copyOf(length)
+                serviceScope.launch { forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset) }
                 allowedCount.incrementAndGet()
                 return
             }
         }
 
-        // v6.1: Content filter categories (Roadmap #40)
         if (contentFilterCategories.isNotEmpty() && contentFilterManager.isBlocked(domain, contentFilterCategories)) {
             val cat = contentFilterManager.lookupCategory(domain)?.displayName ?: "Unknown"
             PrivacyLog.d(TAG, "CONTENT-FILTER blocked $domain ($qtype) category=$cat")
@@ -1218,11 +1213,10 @@ class DnsVpnService : VpnService() {
                     matchedValue = domain,
                     precedence = "content category policy runs before shared blocklist"
                 ))
-            sendBlockResponse(dns, packet, ihl, false, qtype)
+            sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
             return
         }
 
-        // v6.1: Parental controls — age-profile category blocking (Roadmap #48)
         if (parentalControlManager.shouldBlock(domain)) {
             val cat = contentFilterManager.lookupCategory(domain)?.displayName ?: "Unknown"
             PrivacyLog.d(TAG, "PARENTAL blocked $domain ($qtype) category=$cat profile=${parentalControlManager.currentProfile.name}")
@@ -1235,14 +1229,13 @@ class DnsVpnService : VpnService() {
                     matchedValue = cat,
                     precedence = "parental profile runs before shared blocklist"
                 ))
-            sendBlockResponse(dns, packet, ihl, false, qtype)
+            sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
             return
         }
 
         val blockDecision = domainDecision(domain)
         val blocked = blockDecision.blocked
 
-        // v6.0: Threat intelligence domain check
         if (!blocked && threatIntelEnabled) {
             val threat = threatIntelManager.isDomainMalicious(domain)
             if (threat != null) {
@@ -1254,7 +1247,7 @@ class DnsVpnService : VpnService() {
                     matchedValue = domain,
                     precedence = "threat intel runs after blocklist miss"
                 ))
-                sendBlockResponse(dns, packet, ihl, false, qtype)
+                sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
                 return
             }
         }
@@ -1262,274 +1255,66 @@ class DnsVpnService : VpnService() {
         if (blocked) {
             logAsync(domain, true, app, qtype, blockDecision)
             PrivacyLog.d(TAG, "BLOCKED $domain ($qtype) [${app.second.ifEmpty { "system" }}]")
-            sendBlockResponse(dns, packet, ihl, false, qtype)
+            sendBlockResponse(dns, packet, headerOffset, isV6, qtype)
         } else {
-            // Cache lookup — serve from cache if available (v5.0: CacheResult with stale/prefetch)
             val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
             val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
             val cacheResult = dnsCache.get(domain, qtypeNum, txId)
             if (cacheResult != null) {
                 if (!cacheResult.isStale) {
-                    // Fresh cache hit
                     PrivacyLog.d(TAG, "CACHE HIT $domain ($qtype)")
                     logAsync(domain, false, app, qtype)
-                    wrapResponseV4(packet, ihl, cacheResult.response)?.let { sendToTun(it) }
-                    allowedCount.incrementAndGet()
-                    // v5.0: Trigger background prefetch if entry is nearing expiry
-                    if (cacheResult.needsPrefetch) {
-                        val pCopy = packet.copyOf(length)
-                        serviceScope.launch {
-                            try {
-                                forwardEncrypted(dns, domain, pCopy, ihl, app)
-                            } catch (_: Exception) { /* prefetch failure is non-fatal */ }
-                        }
-                    }
-                    return
-                } else {
-                    // v5.0: Stale entry — serve immediately per RFC 8767, re-query in background
-                    PrivacyLog.d(TAG, "SERVE-STALE $domain ($qtype) — refreshing in background")
-                    wrapResponseV4(packet, ihl, cacheResult.response)?.let { sendToTun(it) }
-                    allowedCount.incrementAndGet()
-                    // Background refresh to update the cache
-                    val pCopy = packet.copyOf(length)
-                    serviceScope.launch {
-                        try {
-                            forwardEncrypted(dns, domain, pCopy, ihl, app)
-                        } catch (_: Exception) { /* refresh failure is non-fatal, stale was already served */ }
-                    }
-                    return
-                }
-            }
-
-            // Cache miss — forward to upstream
-            PrivacyLog.d(TAG, "ALLOWED $domain ($qtype)")
-            val pCopy = packet.copyOf(length)
-            serviceScope.launch { forwardEncrypted(dns, domain, pCopy, ihl, app) }
-            allowedCount.incrementAndGet()
-        }
-    }
-
-    private suspend fun processIpv6Dns(packet: ByteArray, length: Int) {
-        val hdr = 40
-        val dns = extractDnsPayloadV6(packet, length, hdr) ?: return
-        val domain = parseDnsQueryDomain(dns) ?: return
-        val qtype = parseDnsQueryType(dns)
-        var app = resolveAppV6(packet, hdr)
-
-        // Heuristic fallback: DNS answer -> TCP connection correlation
-        if (app.first.isEmpty()) {
-            val heuristicUid = findUidByDnsCorrelation(domain)
-            if (heuristicUid > 0) app = resolvePkg(heuristicUid)
-        }
-
-        // Per-app firewall: block ALL DNS for firewalled apps
-        // v6.0: Skip firewall checks in DNS-only mode
-        if (!dnsOnlyMode && app.first.isNotEmpty() && app.first in blockedApps) {
-            logAsync(domain, true, app, qtype, explicitDecision(
-                blocked = true,
-                reason = "app_firewall",
-                source = "Per-app DNS firewall",
-                matchedValue = app.first,
-                precedence = "per-app firewall runs before DNS policy"
-            ))
-            val resp = buildBlockResponse(dns, qtype) ?: return
-            val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-            sendToTun(wrapped); blockedCount.incrementAndGet()
-            if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
-            return
-        }
-
-        // Context-aware firewall
-        if (!dnsOnlyMode && app.first.isNotEmpty()) {
-            val ctxRule = contextRules[app.first]
-            if (ctxRule != null && shouldBlockByContext(ctxRule, app.first)) {
-                logAsync(domain, true, app, qtype, explicitDecision(
-                    blocked = true,
-                    reason = "context_firewall",
-                    source = "Context-aware firewall",
-                    matchedValue = app.first,
-                    precedence = "context firewall runs before DNS policy"
-                ))
-                val resp = buildBlockResponse(dns, qtype) ?: return
-                val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-                sendToTun(wrapped); blockedCount.incrementAndGet()
-                if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
-                return
-            }
-        }
-
-        // v6.0: Safe Search enforcement (IPv6)
-        if (safeSearchEnabled && safeSearchEnforcer.isSafeSearchDomain(domain)) {
-            val safeResp = safeSearchEnforcer.buildSafeResponse(dns, domain)
-            if (safeResp != null) {
-                PrivacyLog.d(TAG, "SAFE-SEARCH (v6) $domain")
-                logAsync(domain, false, app, qtype, explicitDecision(
-                    blocked = false,
-                    reason = "safe_search",
-                    source = "Safe Search enforcer",
-                    matchedValue = domain,
-                    precedence = "safe-search rewrite runs before blocklist lookup"
-                ))
-                wrapResponseV6(packet, hdr, safeResp)?.let { sendToTun(it) }
-                allowedCount.incrementAndGet()
-                return
-            }
-        }
-
-        // v6.1: Per-app domain rules (Roadmap #12)
-        if (app.first.isNotEmpty()) {
-            val ruleAction = appDnsRuleEngine.checkDomain(app.first, domain)
-            if (ruleAction == AppDnsRuleEngine.RuleAction.BLOCK) {
-                PrivacyLog.d(TAG, "APP-RULE blocked (v6) $domain for ${app.second}")
-                logAsync(domain, true, app, qtype, explicitDecision(
-                    blocked = true,
-                    reason = "app_rule_block",
-                    source = "Per-app DNS rule",
-                    matchedValue = app.first,
-                    precedence = "per-app block rule runs before shared blocklist"
-                ))
-                val resp = buildBlockResponse(dns, qtype) ?: return
-                val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-                sendToTun(wrapped); blockedCount.incrementAndGet()
-                if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
-                return
-            }
-            if (ruleAction == AppDnsRuleEngine.RuleAction.ALLOW) {
-                PrivacyLog.d(TAG, "APP-RULE allowed (v6) $domain for ${app.second}")
-                logAsync(domain, false, app, qtype, explicitDecision(
-                    blocked = false,
-                    reason = "app_rule_allow",
-                    source = "Per-app DNS rule",
-                    matchedValue = app.first,
-                    precedence = "per-app allow rule skips shared blocklist"
-                ))
-                val pCopy = packet.copyOf(length)
-                serviceScope.launch { forwardEncrypted(dns, domain, pCopy, 0, app, wrapV6 = true, v6Hdr = hdr) }
-                allowedCount.incrementAndGet()
-                return
-            }
-        }
-
-        // v6.1: Content filter categories (Roadmap #40)
-        if (contentFilterCategories.isNotEmpty() && contentFilterManager.isBlocked(domain, contentFilterCategories)) {
-            val cat = contentFilterManager.lookupCategory(domain)?.displayName ?: "Unknown"
-            PrivacyLog.d(TAG, "CONTENT-FILTER blocked (v6) $domain ($qtype) category=$cat")
-            logAsyncRich(domain, true, app, qtype,
-                trackerCategory = "ContentFilter:$cat",
-                decision = explicitDecision(
-                    blocked = true,
-                    reason = "content_filter",
-                    source = cat,
-                    matchedValue = domain,
-                    precedence = "content category policy runs before shared blocklist"
-                ))
-            val resp = buildBlockResponse(dns, qtype) ?: return
-            val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-            sendToTun(wrapped); blockedCount.incrementAndGet()
-            if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
-            return
-        }
-
-        // v6.1: Parental controls — age-profile category blocking (Roadmap #48)
-        if (parentalControlManager.shouldBlock(domain)) {
-            val cat = contentFilterManager.lookupCategory(domain)?.displayName ?: "Unknown"
-            PrivacyLog.d(TAG, "PARENTAL blocked (v6) $domain ($qtype) category=$cat profile=${parentalControlManager.currentProfile.name}")
-            logAsyncRich(domain, true, app, qtype,
-                trackerCategory = "Parental:$cat",
-                decision = explicitDecision(
-                    blocked = true,
-                    reason = "parental_control",
-                    source = parentalControlManager.currentProfile.name,
-                    matchedValue = cat,
-                    precedence = "parental profile runs before shared blocklist"
-                ))
-            val resp = buildBlockResponse(dns, qtype) ?: return
-            val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-            sendToTun(wrapped); blockedCount.incrementAndGet()
-            if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
-            return
-        }
-
-        val blockDecision = domainDecision(domain)
-        val blocked = blockDecision.blocked
-
-        // v6.0: Threat intelligence domain check
-        if (!blocked && threatIntelEnabled) {
-            val threat = threatIntelManager.isDomainMalicious(domain)
-            if (threat != null) {
-                PrivacyLog.i(TAG, "THREAT-INTEL blocked domain (v6): $domain (${threat.feedName})")
-                logAsync(domain, true, app, qtype, explicitDecision(
-                    blocked = true,
-                    reason = "threat_intel_domain",
-                    source = threat.feedName,
-                    matchedValue = domain,
-                    precedence = "threat intel runs after blocklist miss"
-                ))
-                val resp = buildBlockResponse(dns, qtype) ?: return
-                val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-                sendToTun(wrapped); blockedCount.incrementAndGet()
-                if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
-                return
-            }
-        }
-
-        if (blocked) {
-            logAsync(domain, true, app, qtype, blockDecision)
-            val resp = buildBlockResponse(dns, qtype) ?: return
-            val wrapped = wrapResponseV6(packet, hdr, resp) ?: return
-            sendToTun(wrapped); blockedCount.incrementAndGet()
-            if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
-        } else {
-            // Cache lookup (v5.0: CacheResult with stale/prefetch)
-            val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-            val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
-            val cacheResult = dnsCache.get(domain, qtypeNum, txId)
-            if (cacheResult != null) {
-                if (!cacheResult.isStale) {
-                    // Fresh cache hit
-                    PrivacyLog.d(TAG, "CACHE HIT (v6) $domain ($qtype)")
-                    wrapResponseV6(packet, hdr, cacheResult.response)?.let { sendToTun(it) }
+                    wrapAndSend(packet, headerOffset, isV6, cacheResult.response)
                     allowedCount.incrementAndGet()
                     if (cacheResult.needsPrefetch) {
                         val pCopy = packet.copyOf(length)
                         serviceScope.launch {
                             try {
-                                forwardEncrypted(dns, domain, pCopy, 0, app, wrapV6 = true, v6Hdr = hdr)
+                                forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset)
                             } catch (_: Exception) { }
                         }
                     }
                     return
                 } else {
-                    // v5.0: Serve stale immediately, refresh in background (RFC 8767)
-                    PrivacyLog.d(TAG, "SERVE-STALE (v6) $domain ($qtype) — refreshing in background")
-                    wrapResponseV6(packet, hdr, cacheResult.response)?.let { sendToTun(it) }
+                    PrivacyLog.d(TAG, "SERVE-STALE $domain ($qtype) — refreshing in background")
+                    wrapAndSend(packet, headerOffset, isV6, cacheResult.response)
                     allowedCount.incrementAndGet()
                     val pCopy = packet.copyOf(length)
                     serviceScope.launch {
                         try {
-                            forwardEncrypted(dns, domain, pCopy, 0, app, wrapV6 = true, v6Hdr = hdr)
+                            forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset)
                         } catch (_: Exception) { }
                     }
                     return
                 }
             }
 
-            // Cache miss
+            PrivacyLog.d(TAG, "ALLOWED $domain ($qtype)")
             val pCopy = packet.copyOf(length)
-            serviceScope.launch { forwardEncrypted(dns, domain, pCopy, 0, app, wrapV6 = true, v6Hdr = hdr) }
+            serviceScope.launch { forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset) }
             allowedCount.incrementAndGet()
         }
     }
 
+    @Suppress("UNUSED") // removed — unified into processDnsPacket
+
     /**
-     * Send a block response (NXDOMAIN, 0.0.0.0/::, or REFUSED) for an IPv4 packet.
+     * Send a block response (NXDOMAIN, 0.0.0.0/::, or REFUSED) for a DNS packet.
      * The response type is controlled by the blockResponseType preference.
      */
-    private suspend fun sendBlockResponse(dns: ByteArray, packet: ByteArray, ihl: Int, isV6: Boolean, qtype: String) {
+    private suspend fun sendBlockResponse(dns: ByteArray, packet: ByteArray, headerOffset: Int, isV6: Boolean, qtype: String) {
         val resp = buildBlockResponse(dns, qtype) ?: return
-        val wrapped = wrapResponseV4(packet, ihl, resp) ?: return
-        sendToTun(wrapped); blockedCount.incrementAndGet()
+        val wrapped = if (isV6) wrapResponseV6(packet, headerOffset, resp)
+                      else wrapResponseV4(packet, headerOffset, resp)
+        wrapped?.let { sendToTun(it) } ?: return
+        blockedCount.incrementAndGet()
         if (blockedCount.get() % 100 == 0) updateNotification(blockedCount.get())
+    }
+
+    private fun wrapAndSend(packet: ByteArray, headerOffset: Int, isV6: Boolean, dns: ByteArray) {
+        val wrapped = if (isV6) wrapResponseV6(packet, headerOffset, dns)
+                      else wrapResponseV4(packet, headerOffset, dns)
+        wrapped?.let { sendToTun(it) }
     }
 
     /**
@@ -1812,64 +1597,14 @@ class DnsVpnService : VpnService() {
      * TCP state machine. Allowed TCP DNS queries fall back to UDP on timeout
      * (standard DNS client behavior per RFC 7766 §6.2.2).
      */
-    private suspend fun processIpv4TcpDns(packet: ByteArray, length: Int) {
-        val ihl = (packet[0].toInt() and 0x0F) * 4
-        val tcpOff = ihl
+    private suspend fun processTcpDns(packet: ByteArray, length: Int, isV6: Boolean) {
+        val headerOffset = if (isV6) 40 else (packet[0].toInt() and 0x0F) * 4
+        val tcpOff = headerOffset
         if (length < tcpOff + 20) return
 
         val dataOff = ((packet[tcpOff + 12].toInt() and 0xF0) shr 4) * 4
         val tcpFlags = packet[tcpOff + 13].toInt() and 0xFF
-        val isSyn = (tcpFlags and 0x02) != 0
-        val isRst = (tcpFlags and 0x04) != 0
-
-        // Don't respond to RST packets
-        if (isRst) return
-
-        val payloadStart = tcpOff + dataOff
-        val payloadLen = length - payloadStart
-
-        // Try to extract DNS hostname from payload (if present)
-        var hostname: String? = null
-        if (payloadLen > 14) { // 2-byte length prefix + minimum DNS header (12 bytes)
-            // TCP DNS: 2-byte big-endian length prefix, then standard DNS message
-            val dnsLen = ((packet[payloadStart].toInt() and 0xFF) shl 8) or
-                (packet[payloadStart + 1].toInt() and 0xFF)
-            if (dnsLen in 12..4096 && payloadStart + 2 + dnsLen <= length) {
-                val dns = packet.copyOfRange(payloadStart + 2, payloadStart + 2 + dnsLen)
-                hostname = parseDnsQueryDomain(dns)
-            }
-        }
-
-        val blocked = if (hostname != null) isDomainBlocked(hostname) else true // block unknown
-
-        if (blocked) {
-            // Send TCP RST — immediate connection rejection
-            val rst = buildTcpRst(packet, ihl) ?: return
-            sendToTun(rst)
-            blockedCount.incrementAndGet()
-            if (hostname != null) {
-                PrivacyLog.d(TAG, "TCP-DNS BLOCKED (RST) $hostname")
-                logAsync(hostname, true, "" to "", "TCP")
-            }
-        } else {
-            // Allowed but we can't fully proxy TCP DNS without state tracking.
-            // Drop the packet — app will timeout and retry with UDP per RFC 7766.
-            if (hostname != null) {
-                PrivacyLog.d(TAG, "TCP-DNS allowed (drop→UDP fallback) $hostname")
-            }
-        }
-    }
-
-    /** Handle IPv6 TCP DNS packets — mirrors processIpv4TcpDns logic. */
-    private suspend fun processIpv6TcpDns(packet: ByteArray, length: Int) {
-        val hdr = 40 // IPv6 fixed header
-        val tcpOff = hdr
-        if (length < tcpOff + 20) return
-
-        val dataOff = ((packet[tcpOff + 12].toInt() and 0xF0) shr 4) * 4
-        val tcpFlags = packet[tcpOff + 13].toInt() and 0xFF
-        val isRst = (tcpFlags and 0x04) != 0
-        if (isRst) return
+        if ((tcpFlags and 0x04) != 0) return // RST — don't respond
 
         val payloadStart = tcpOff + dataOff
         val payloadLen = length - payloadStart
@@ -1887,66 +1622,38 @@ class DnsVpnService : VpnService() {
         val blocked = if (hostname != null) isDomainBlocked(hostname) else true
 
         if (blocked) {
-            val rst = buildTcpRstV6(packet) ?: return
+            val rst = if (isV6) buildTcpRstV6(packet) else buildTcpRst(packet, headerOffset)
+            rst ?: return
             sendToTun(rst)
             blockedCount.incrementAndGet()
             if (hostname != null) {
-                PrivacyLog.d(TAG, "TCP6-DNS BLOCKED (RST) $hostname")
+                PrivacyLog.d(TAG, "TCP-DNS BLOCKED (RST) $hostname")
                 logAsync(hostname, true, "" to "", "TCP")
             }
         } else {
-            if (hostname != null) PrivacyLog.d(TAG, "TCP6-DNS allowed (drop) $hostname")
+            if (hostname != null) PrivacyLog.d(TAG, "TCP-DNS allowed (drop→UDP fallback) $hostname")
         }
     }
 
     // ── TLS Fingerprinting (v6.2) ──────────────────────────────
 
-    /**
-     * Attempt TLS ClientHello fingerprinting on non-DNS TCP packets.
-     * Extracts JA3/JA4 hashes for protocol-level app identification.
-     */
-    private fun tryTlsFingerprint(packet: ByteArray, length: Int) {
-        if (length < 60) return // too small for IP + TCP + TLS
-        val ihl = (packet[0].toInt() and 0x0F) * 4
-        val protocol = packet[9].toInt() and 0xFF
-        if (protocol != 6) return // not TCP
-        val tcpOff = ihl
-        if (length < tcpOff + 20) return
-        val dataOff = ((packet[tcpOff + 12].toInt() and 0xF0) shr 4) * 4
-        val payloadStart = tcpOff + dataOff
-        val payloadLen = length - payloadStart
-        if (payloadLen < 6) return
-        // Quick pre-filter: is this a TLS ClientHello?
-        if (!tlsFingerprinter.isClientHello(packet, payloadStart, payloadLen)) return
-        val fp = tlsFingerprinter.fingerprint(packet, payloadStart, payloadLen)
-        if (fp != null) {
-            val app = resolveApp(packet, ihl)
-            tlsFingerprinter.record(app.first, app.second, fp)
-            PrivacyLog.d(TAG, "TLS-FP ${app.second.ifEmpty { "unknown" }}: JA3=${fp.ja3} JA4=${fp.ja4} SNI=${fp.sni ?: "-"} identity=${fp.knownIdentity ?: "-"}")
-        }
-    }
-
-    /**
-     * TLS fingerprinting for IPv6 non-DNS TCP packets.
-     * IPv6 header is 40 bytes fixed, next header at byte 6.
-     */
-    private fun tryTlsFingerprintV6(packet: ByteArray, length: Int) {
-        if (length < 80) return // too small for IPv6(40) + TCP(20) + TLS
-        val nextHeader = packet[6].toInt() and 0xFF
-        if (nextHeader != 6) return // not TCP
-        val tcpOff = 40
+    private fun tryTlsFingerprintPacket(packet: ByteArray, length: Int, isV6: Boolean) {
+        val minSize = if (isV6) 80 else 60
+        if (length < minSize) return
+        val headerOffset = if (isV6) 40 else (packet[0].toInt() and 0x0F) * 4
+        val protocol = if (isV6) packet[6].toInt() and 0xFF else packet[9].toInt() and 0xFF
+        if (protocol != 6) return
+        val tcpOff = headerOffset
         if (length < tcpOff + 20) return
         val dataOff = ((packet[tcpOff + 12].toInt() and 0xF0) shr 4) * 4
         val payloadStart = tcpOff + dataOff
         val payloadLen = length - payloadStart
         if (payloadLen < 6) return
         if (!tlsFingerprinter.isClientHello(packet, payloadStart, payloadLen)) return
-        val fp = tlsFingerprinter.fingerprint(packet, payloadStart, payloadLen)
-        if (fp != null) {
-            val app = resolveAppV6(packet, 40)
-            tlsFingerprinter.record(app.first, app.second, fp)
-            PrivacyLog.d(TAG, "TLS-FP6 ${app.second.ifEmpty { "unknown" }}: JA3=${fp.ja3} JA4=${fp.ja4} SNI=${fp.sni ?: "-"}")
-        }
+        val fp = tlsFingerprinter.fingerprint(packet, payloadStart, payloadLen) ?: return
+        val app = if (isV6) resolveAppV6(packet, headerOffset) else resolveApp(packet, headerOffset)
+        tlsFingerprinter.record(app.first, app.second, fp)
+        PrivacyLog.d(TAG, "TLS-FP ${app.second.ifEmpty { "unknown" }}: JA3=${fp.ja3} JA4=${fp.ja4} SNI=${fp.sni ?: "-"}")
     }
 
     // ── TCP RST Building (delegated to TcpRstBuilder) ──────
@@ -2067,41 +1774,41 @@ class DnsVpnService : VpnService() {
         return PostForwardResult(blocked = false)
     }
 
-    private suspend fun forwardUdp(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
-                                    app: Pair<String, String> = Pair("", "")) {
+    private suspend fun forwardUdpPlaintext(dns: ByteArray, domain: String, orig: ByteArray,
+                                            headerOffset: Int, isV6: Boolean,
+                                            app: Pair<String, String> = Pair("", "")) {
         val sock = DatagramSocket()
         try {
             val startMs = System.currentTimeMillis()
-            protect(sock)
-            sock.soTimeout = 5000
             val primary = upstreamDnsServers.firstOrNull() ?: UPSTREAM_DNS[0]
+            var responseUpstream = primary
+            protect(sock); sock.soTimeout = 5000
             sock.send(DatagramPacket(dns, dns.size, InetAddress.getByName(primary), DNS_PORT))
             val buf = ByteArray(1500); val rp = DatagramPacket(buf, buf.size)
             try {
                 sock.receive(rp)
-                var respBytes = buf.copyOf(rp.length)
-
-                // RFC 7766 §6.2: when the UDP response has the TC (truncated) bit
-                // set, retry the same query over TCP and substitute the response.
-                // Many large DNSSEC RRSIG / TXT records can't fit in the 1500-byte
-                // UDP buffer.
-                respBytes = retryTruncatedUdpOverTcp(dns, respBytes, primary)
-
-                val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-
-                val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, primary)
-                if (pfResult.blocked) {
-                    if (pfResult.blockResponse != null) wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
-                    return
-                }
-
-                wrapResponseV4(orig, ihl, respBytes)?.let { sendToTun(it) }
             } catch (_: java.net.SocketTimeoutException) {
-                forwardUdpFallback(dns, domain, orig, ihl, app)
+                sock.close()
+                val fallback = upstreamDnsServers.getOrElse(1) { UPSTREAM_DNS.getOrElse(1) { UPSTREAM_DNS[0] } }
+                val sock2 = DatagramSocket(); protect(sock2); sock2.soTimeout = 5000
+                try {
+                    sock2.send(DatagramPacket(dns, dns.size, InetAddress.getByName(fallback), DNS_PORT))
+                    sock2.receive(rp)
+                    responseUpstream = fallback
+                } finally { try { sock2.close() } catch (_: Exception) { } }
             }
+            val respBytes = retryTruncatedUdpOverTcp(dns, buf.copyOf(rp.length), responseUpstream)
+            val latencyMs = (System.currentTimeMillis() - startMs).toInt()
+
+            val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, responseUpstream)
+            if (pfResult.blocked) {
+                if (pfResult.blockResponse != null) wrapAndSend(orig, headerOffset, isV6, pfResult.blockResponse)
+                return
+            }
+
+            wrapAndSend(orig, headerOffset, isV6, respBytes)
         } catch (_: Exception) {
-            // v5.0: Serve-stale fallback — return expired cache entry if upstream completely fails
-            serveStaleV4(dns, domain, orig, ihl)
+            serveStale(dns, domain, orig, headerOffset, isV6)
         } finally {
             try { sock.close() } catch (_: Exception) { }
         }
@@ -2129,12 +1836,6 @@ class DnsVpnService : VpnService() {
         return result.response
     }
 
-    /**
-     * RFC 7766 TCP DNS fallback: 2-byte length prefix + DNS message, both ways.
-     * Used when an upstream UDP response has TC=1. Returns null on failure so
-     * the caller keeps the original truncated UDP response (which is still a
-     * legitimate, parseable answer — just incomplete).
-     */
     private fun forwardOverTcp(dns: ByteArray, upstream: String): ByteArray? {
         val sock = java.net.Socket()
         try {
@@ -2158,47 +1859,13 @@ class DnsVpnService : VpnService() {
         }
     }
 
-    private suspend fun forwardUdpFallback(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
-                                           app: Pair<String, String> = Pair("", "")) {
-        val sock = DatagramSocket()
-        try {
-            val startMs = System.currentTimeMillis()
-            val fallback = upstreamDnsServers.getOrElse(1) { UPSTREAM_DNS[1] }
-            protect(sock); sock.soTimeout = 5000
-            sock.send(DatagramPacket(dns, dns.size, InetAddress.getByName(fallback), DNS_PORT))
-            val buf = ByteArray(1500); val rp = DatagramPacket(buf, buf.size)
-            sock.receive(rp)
-            val respBytes = retryTruncatedUdpOverTcp(dns, buf.copyOf(rp.length), fallback)
-            val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-
-            val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, "$fallback (fallback)")
-            if (pfResult.blocked) {
-                if (pfResult.blockResponse != null) wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
-                return
-            }
-
-            wrapResponseV4(orig, ihl, respBytes)?.let { sendToTun(it) }
-        } catch (_: Exception) {
-            // v5.0: Serve-stale fallback — both upstreams failed, try expired cache
-            serveStaleV4(dns, domain, orig, ihl)
-        } finally {
-            try { sock.close() } catch (_: Exception) { }
-        }
-    }
-
-    /**
-     * v5.0: Serve-stale (RFC 8767) — return an expired-but-still-cached DNS response
-     * when all upstream resolvers fail. Critical for WiFi↔cellular transitions where
-     * DNS resolution briefly fails. Returns the stale response with a short TTL so
-     * the client will re-query soon.
-     */
-    private suspend fun serveStaleV4(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int) {
+    private fun serveStale(dns: ByteArray, domain: String, orig: ByteArray, headerOffset: Int, isV6: Boolean) {
         val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
         val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
         val stale = dnsCache.getStale(domain, qtypeNum, txId)
         if (stale != null) {
             PrivacyLog.i(TAG, "SERVE-STALE $domain (upstream failed, returning expired cache)")
-            wrapResponseV4(orig, ihl, stale)?.let { sendToTun(it) }
+            wrapAndSend(orig, headerOffset, isV6, stale)
         }
     }
 
@@ -2216,19 +1883,17 @@ class DnsVpnService : VpnService() {
      */
     private fun failClosedEncrypted(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                     transport: String, wrapV6: Boolean = false, v6Hdr: Int = 0) {
+        val headerOffset = if (wrapV6) v6Hdr else ihl
         val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
         val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
         val stale = dnsCache.getStale(domain, qtypeNum, txId)
         if (stale != null) {
             PrivacyLog.i(TAG, "FAIL-CLOSED $transport $domain — serving stale cache (no plaintext fallback)")
-            if (wrapV6) wrapResponseV6(orig, v6Hdr, stale)?.let { sendToTun(it) }
-            else wrapResponseV4(orig, ihl, stale)?.let { sendToTun(it) }
+            wrapAndSend(orig, headerOffset, wrapV6, stale)
             return
         }
         PrivacyLog.w(TAG, "FAIL-CLOSED $transport $domain — SERVFAIL (encrypted DNS failed, refusing plaintext fallback)")
-        val servfail = DnsPacketBuilder.buildServfail(dns)
-        if (wrapV6) wrapResponseV6(orig, v6Hdr, servfail)?.let { sendToTun(it) }
-        else wrapResponseV4(orig, ihl, servfail)?.let { sendToTun(it) }
+        wrapAndSend(orig, headerOffset, wrapV6, DnsPacketBuilder.buildServfail(dns))
     }
 
     /**
@@ -2280,6 +1945,7 @@ class DnsVpnService : VpnService() {
     private suspend fun forwardDoH(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                     app: Pair<String, String> = Pair("", ""),
                                     wrapV6: Boolean = false, v6Hdr: Int = 0) {
+        val hdr = if (wrapV6) v6Hdr else ihl
         try {
             val startMs = System.currentTimeMillis()
             val dohResult = dohResolver.resolveWithMetadata(dns, dohProvider)
@@ -2293,18 +1959,13 @@ class DnsVpnService : VpnService() {
 
                 val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
                 if (pfResult.blocked) {
-                    if (pfResult.blockResponse != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { sendToTun(it) }
-                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
-                    }
+                    if (pfResult.blockResponse != null) wrapAndSend(orig, hdr, wrapV6, pfResult.blockResponse)
                     return
                 }
 
-                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { sendToTun(it) }
-                else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
+                wrapAndSend(orig, hdr, wrapV6, resp)
             }
             else {
-                // DoH was explicitly enabled — fail closed, never leak to plaintext UDP.
                 failClosedEncrypted(dns, domain, orig, ihl, "DoH", wrapV6, v6Hdr)
             }
         } catch (e: Exception) {
@@ -2329,56 +1990,37 @@ class DnsVpnService : VpnService() {
 
                 val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
                 if (pfResult.blocked) {
-                    if (pfResult.blockResponse != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { sendToTun(it) }
-                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
-                    }
+                    if (pfResult.blockResponse != null) wrapAndSend(orig, if (wrapV6) v6Hdr else ihl, wrapV6, pfResult.blockResponse)
                     return
                 }
 
-                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { sendToTun(it) }
-                else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
+                wrapAndSend(orig, if (wrapV6) v6Hdr else ihl, wrapV6, resp)
             } else {
-                // DoQ returned null (server requires full QUIC handshake) — fall back
-                // to DoH if enabled (still encrypted), otherwise fail closed.
                 if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
                 else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr)
             }
         } catch (_: Exception) {
-            // DoQ failed — fall back to DoH (encrypted) or fail closed. Never plaintext.
             if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
             else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr)
         }
     }
 
-    /**
-     * Forward DNS query via WireGuard tunnel.
-     * Falls back to DoQ or DoH (still encrypted) when enabled, otherwise fails closed.
-     */
     private suspend fun forwardWireGuard(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                           app: Pair<String, String> = Pair("", ""),
                                           wrapV6: Boolean = false, v6Hdr: Int = 0) {
+        val hdr = if (wrapV6) v6Hdr else ihl
         try {
             val startMs = System.currentTimeMillis()
             val resp = wireGuardProxy.resolveDns(dns)
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val upstreamLabel = "WireGuard"
-
-                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
+                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, "WireGuard")
                 if (pfResult.blocked) {
-                    if (pfResult.blockResponse != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { sendToTun(it) }
-                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
-                    }
+                    if (pfResult.blockResponse != null) wrapAndSend(orig, hdr, wrapV6, pfResult.blockResponse)
                     return
                 }
-
-                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { sendToTun(it) }
-                else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
+                wrapAndSend(orig, hdr, wrapV6, resp)
             } else {
-                // WireGuard returned null — fall through to another encrypted
-                // transport when enabled, otherwise fail closed. Never plaintext.
                 if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
                 else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
                 else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr)
@@ -2390,38 +2032,22 @@ class DnsVpnService : VpnService() {
         }
     }
 
-    /**
-     * Dispatch DNS query to the best available encrypted transport.
-     * Priority: WireGuard > DoQ > DoH > plaintext UDP.
-     */
-    /**
-     * Forward DNS query via DNS-over-TLS (RFC 7858).
-     * Falls back to DoH (still encrypted) when enabled, otherwise fails closed.
-     */
     private suspend fun forwardDoT(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                     app: Pair<String, String> = Pair("", ""),
                                     wrapV6: Boolean = false, v6Hdr: Int = 0) {
+        val hdr = if (wrapV6) v6Hdr else ihl
         try {
             val startMs = System.currentTimeMillis()
             val resp = dotResolver.resolve(dns, dotProvider)
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val upstreamLabel = "DoT:${dotProvider.name}"
-
-                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
+                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, "DoT:${dotProvider.name}")
                 if (pfResult.blocked) {
-                    if (pfResult.blockResponse != null) {
-                        if (wrapV6) wrapResponseV6(orig, v6Hdr, pfResult.blockResponse)?.let { sendToTun(it) }
-                        else wrapResponseV4(orig, ihl, pfResult.blockResponse)?.let { sendToTun(it) }
-                    }
+                    if (pfResult.blockResponse != null) wrapAndSend(orig, hdr, wrapV6, pfResult.blockResponse)
                     return
                 }
-
-                if (wrapV6) wrapResponseV6(orig, v6Hdr, resp)?.let { sendToTun(it) }
-                else wrapResponseV4(orig, ihl, resp)?.let { sendToTun(it) }
+                wrapAndSend(orig, hdr, wrapV6, resp)
             } else {
-                // DoT returned null — fall back to DoH if enabled (still encrypted),
-                // otherwise fail closed. Never plaintext UDP.
                 if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
                 else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr)
             }
@@ -2444,55 +2070,7 @@ class DnsVpnService : VpnService() {
             useDoQ -> forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
             useDoT -> forwardDoT(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
             useDoH -> forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            wrapV6 -> forwardUdpV6(dns, domain, orig, v6Hdr, app)
-            else -> forwardUdp(dns, domain, orig, ihl, app)
-        }
-    }
-
-    private suspend fun forwardUdpV6(dns: ByteArray, domain: String, orig: ByteArray, hdr: Int,
-                                     app: Pair<String, String> = Pair("", "")) {
-        val sock = DatagramSocket()
-        try {
-            val startMs = System.currentTimeMillis()
-            val primary = upstreamDnsServers.firstOrNull() ?: UPSTREAM_DNS[0]
-            var responseUpstream = primary
-            protect(sock); sock.soTimeout = 5000
-            sock.send(DatagramPacket(dns, dns.size, InetAddress.getByName(primary), DNS_PORT))
-            val buf = ByteArray(1500); val rp = DatagramPacket(buf, buf.size)
-            try {
-                sock.receive(rp)
-            } catch (_: java.net.SocketTimeoutException) {
-                // Try fallback upstream
-                sock.close()
-                val fallback = upstreamDnsServers.getOrElse(1) { UPSTREAM_DNS.getOrElse(1) { UPSTREAM_DNS[0] } }
-                val sock2 = DatagramSocket(); protect(sock2); sock2.soTimeout = 5000
-                try {
-                    sock2.send(DatagramPacket(dns, dns.size, InetAddress.getByName(fallback), DNS_PORT))
-                    sock2.receive(rp)
-                    responseUpstream = fallback
-                } finally { try { sock2.close() } catch (_: Exception) { } }
-            }
-            val respBytes = retryTruncatedUdpOverTcp(dns, buf.copyOf(rp.length), responseUpstream)
-            val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-
-            val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, responseUpstream)
-            if (pfResult.blocked) {
-                if (pfResult.blockResponse != null) wrapResponseV6(orig, hdr, pfResult.blockResponse)?.let { sendToTun(it) }
-                return
-            }
-
-            wrapResponseV6(orig, hdr, respBytes)?.let { sendToTun(it) }
-        } catch (_: Exception) {
-            // v5.0: Serve-stale fallback for IPv6
-            val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-            val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
-            val stale = dnsCache.getStale(domain, qtypeNum, txId)
-            if (stale != null) {
-                PrivacyLog.i(TAG, "SERVE-STALE (v6) $domain (upstream failed)")
-                wrapResponseV6(orig, hdr, stale)?.let { sendToTun(it) }
-            }
-        } finally {
-            try { sock.close() } catch (_: Exception) { }
+            else -> forwardUdpPlaintext(dns, domain, orig, if (wrapV6) v6Hdr else ihl, wrapV6, app)
         }
     }
 
