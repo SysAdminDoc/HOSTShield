@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
 
     defaults:
       run:
@@ -77,6 +79,11 @@ jobs:
             echo "ERROR: SBOM unexpectedly contains netty (scoping regressed)"; exit 1
           fi
 
+      - name: Attest SBOM provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: artifacts/release-provenance/hostshield-bom.cdx.json
+
       - name: Run OSV vulnerability scan
         uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
         continue-on-error: true
@@ -117,6 +124,16 @@ jobs:
           cp "$AAB_SRC" "HostShield-v${VERSION}-play-release.aab"
           echo "APK_PATH=app/HostShield-v${VERSION}-full-release.apk" >> $GITHUB_ENV
           echo "AAB_PATH=app/HostShield-v${VERSION}-play-release.aab" >> $GITHUB_ENV
+
+      - name: Attest APK provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ env.APK_PATH }}
+
+      - name: Attest AAB provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ env.AAB_PATH }}
 
       - name: Verify Android 16 KB page alignment
         shell: pwsh
