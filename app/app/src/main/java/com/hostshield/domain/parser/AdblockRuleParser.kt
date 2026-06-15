@@ -282,9 +282,11 @@ object AdblockRuleParser {
                         if (rewrite.isNotEmpty()) redirectIpValue = rewrite
                     }
                     m == "all" || m == "popup" || m == "third-party" || m == "first-party" ||
-                        m.startsWith("domain=") || m.startsWith("app=") || m.startsWith("client=") -> {
-                        // Browser/network modifiers not applicable to DNS filtering — skip rule
+                        m.startsWith("domain=") -> {
                         return null
+                    }
+                    m.startsWith("app=") || m.startsWith("client=") -> {
+                        // App/client scoping not yet implemented — apply base rule globally
                     }
                     // Unknown modifiers — ignore silently (forward-compatible)
                 }
