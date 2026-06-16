@@ -1,10 +1,13 @@
 package com.hostshield.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,10 +34,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,6 +59,216 @@ data class HostShieldSegmentOption<T>(
     val accent: Color,
     val icon: ImageVector? = null,
 )
+
+@Composable
+fun HostShieldScreenHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    leadingContent: (@Composable () -> Unit)? = null,
+    actions: (@Composable RowScope.() -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = if (subtitle.isNullOrBlank()) title else "$title. $subtitle"
+            },
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (leadingContent != null) {
+                leadingContent()
+                Spacer(Modifier.width(6.dp))
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.semantics { heading() },
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        subtitle,
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall,
+                        lineHeight = 16.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        if (actions != null) {
+            Spacer(Modifier.width(12.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                content = actions,
+            )
+        }
+    }
+}
+
+@Composable
+fun HostShieldActionIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    accent: Color = Teal,
+    enabled: Boolean = true,
+    selected: Boolean = false,
+) {
+    val containerColor = when {
+        !enabled -> Surface2.copy(alpha = 0.30f)
+        selected -> accent.copy(alpha = 0.16f)
+        else -> Surface2.copy(alpha = 0.82f)
+    }
+    val borderColor = when {
+        !enabled -> Surface3.copy(alpha = 0.26f)
+        selected -> accent.copy(alpha = 0.30f)
+        else -> Surface3.copy(alpha = 0.48f)
+    }
+
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(8.dp),
+        color = containerColor,
+        border = BorderStroke(1.dp, borderColor),
+        contentColor = if (enabled) accent else TextDim.copy(alpha = 0.55f),
+        modifier = modifier
+            .size(48.dp)
+            .semantics {
+                role = Role.Button
+                this.contentDescription = contentDescription
+                if (selected) stateDescription = "Selected"
+                if (!enabled) disabled()
+            },
+    ) {
+        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+        }
+    }
+}
+
+@Composable
+fun HostShieldFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    accent: Color = Teal,
+    leadingIcon: ImageVector? = null,
+    enabled: Boolean = true,
+    semanticsLabel: String = label,
+) {
+    val bgColor = if (selected) accent.copy(alpha = 0.14f) else Surface2.copy(alpha = 0.72f)
+    val borderColor = if (selected) accent.copy(alpha = 0.28f) else Surface3.copy(alpha = 0.42f)
+    val animatedBg = animateColorAsState(bgColor, tween(160), label = "filterBg").value
+    val animatedBorder = animateColorAsState(borderColor, tween(160), label = "filterBorder").value
+    val contentColor = when {
+        !enabled -> TextDim.copy(alpha = 0.55f)
+        selected -> accent
+        else -> TextDim
+    }
+
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(8.dp),
+        color = animatedBg,
+        border = BorderStroke(1.dp, animatedBorder),
+        modifier = modifier
+            .heightIn(min = 44.dp)
+            .semantics {
+                role = Role.Tab
+                contentDescription = semanticsLabel
+                stateDescription = when {
+                    !enabled -> "Disabled"
+                    selected -> "Selected"
+                    else -> "Not selected"
+                }
+                if (!enabled) disabled()
+            },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            leadingIcon?.let { icon ->
+                Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(
+                label,
+                color = contentColor,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+fun HostShieldInlineAction(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    accent: Color = Teal,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    trailingChevron: Boolean = false,
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(8.dp),
+        color = if (enabled) accent.copy(alpha = 0.11f) else Surface2.copy(alpha = 0.34f),
+        border = BorderStroke(1.dp, if (enabled) accent.copy(alpha = 0.16f) else Surface3.copy(alpha = 0.30f)),
+        modifier = modifier
+            .heightIn(min = 40.dp)
+            .semantics {
+                role = Role.Button
+                contentDescription = label
+                if (!enabled) disabled()
+            },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            icon?.let {
+                Icon(it, contentDescription = null, tint = if (enabled) accent else TextDim, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(
+                label,
+                color = if (enabled) accent else TextDim,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (trailingChevron) {
+                Spacer(Modifier.width(4.dp))
+                Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = if (enabled) accent else TextDim, modifier = Modifier.size(14.dp))
+            }
+        }
+    }
+}
 
 @Composable
 fun <T> HostShieldSegmentedTabs(

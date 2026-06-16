@@ -263,7 +263,7 @@ $releaseGatePatterns = @{
         Text = $releaseWorkflow
         Patterns = @(
             "cyclonedxBom",
-            "google/osv-scanner-action/osv-scanner-action@v2.3.8",
+            "google/osv-scanner-action/osv-scanner-action@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8",
             "check-osv-report.ps1",
             "check-android-page-alignment.ps1",
             "hostshield-bom.cdx.json",

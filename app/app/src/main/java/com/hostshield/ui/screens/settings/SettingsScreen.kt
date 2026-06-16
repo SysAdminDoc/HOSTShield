@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -45,9 +46,11 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.res.stringResource
 import com.hostshield.BuildConfig
 import com.hostshield.R
-import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.HostShieldTestTags
+import com.hostshield.ui.components.HostShieldFilterChip
+import com.hostshield.ui.components.HostShieldPanelHeader
+import com.hostshield.ui.components.HostShieldScreenHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -149,17 +152,9 @@ fun SettingsScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text(
-            stringResource(R.string.screen_settings),
-            style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimary,
-            modifier = Modifier.accessibilityHeading()
-        )
-        Text(
-            stringResource(R.string.screen_settings_subtitle),
-            color = TextSecondary,
-            style = MaterialTheme.typography.bodySmall,
-            lineHeight = 16.sp
+        HostShieldScreenHeader(
+            title = stringResource(R.string.screen_settings),
+            subtitle = stringResource(R.string.screen_settings_subtitle),
         )
         Spacer(Modifier.height(4.dp))
 
@@ -928,25 +923,11 @@ internal fun SettingsSection(
                 .padding(16.dp)
                 .animateContentSize()
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(color.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(icon, null, tint = color, modifier = Modifier.size(15.dp))
-                }
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    title,
-                    color = TextPrimary,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    modifier = Modifier.accessibilityHeading()
-                )
-            }
+            HostShieldPanelHeader(
+                icon = icon,
+                title = title,
+                accent = color,
+            )
             Spacer(Modifier.height(14.dp))
             content()
         }
@@ -994,8 +975,22 @@ internal fun SettingsToggle(
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, color = TextDim, fontSize = 11.sp, lineHeight = 15.sp)
+            Text(
+                title,
+                color = TextPrimary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                subtitle,
+                color = TextDim,
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         Switch(
             checked = checked, onCheckedChange = null,
@@ -1042,8 +1037,22 @@ internal fun SettingsRow(
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, color = TextDim, fontSize = 11.sp, lineHeight = 15.sp)
+            Text(
+                title,
+                color = TextPrimary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                subtitle,
+                color = TextDim,
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         Icon(Icons.Filled.ChevronRight, null, tint = TextDim, modifier = Modifier.size(18.dp))
     }
@@ -1066,19 +1075,13 @@ internal fun DohProviderSelector(current: String, onSelect: (String) -> Unit) {
     ) {
         providers.forEach { (key, label) ->
             val selected = current == key
-            Surface(
+            HostShieldFilterChip(
+                label = label,
+                selected = selected,
                 onClick = { onSelect(key) },
-                shape = RoundedCornerShape(8.dp),
-                color = if (selected) Blue.copy(alpha = 0.12f) else Surface2
-            ) {
-                Text(
-                    label,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                    color = if (selected) Blue else TextDim,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+                accent = Blue,
+                semanticsLabel = "$label DNS-over-HTTPS provider",
+            )
         }
     }
 }
@@ -1099,19 +1102,13 @@ internal fun DotProviderSelector(current: String, onSelect: (String) -> Unit) {
     ) {
         providers.forEach { (key, label) ->
             val selected = current == key
-            Surface(
+            HostShieldFilterChip(
+                label = label,
+                selected = selected,
                 onClick = { onSelect(key) },
-                shape = RoundedCornerShape(8.dp),
-                color = if (selected) Blue.copy(alpha = 0.12f) else Surface2
-            ) {
-                Text(
-                    label,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                    color = if (selected) Blue else TextDim,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+                accent = Blue,
+                semanticsLabel = "$label DNS-over-TLS provider",
+            )
         }
     }
 }
@@ -1131,19 +1128,13 @@ internal fun DoqProviderSelector(current: String, onSelect: (String) -> Unit) {
     ) {
         providers.forEach { (key, label) ->
             val selected = current == key
-            Surface(
+            HostShieldFilterChip(
+                label = label,
+                selected = selected,
                 onClick = { onSelect(key) },
-                shape = RoundedCornerShape(8.dp),
-                color = if (selected) Blue.copy(alpha = 0.12f) else Surface2
-            ) {
-                Text(
-                    label,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                    color = if (selected) Blue else TextDim,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+                accent = Blue,
+                semanticsLabel = "$label DNS-over-QUIC provider",
+            )
         }
     }
 }

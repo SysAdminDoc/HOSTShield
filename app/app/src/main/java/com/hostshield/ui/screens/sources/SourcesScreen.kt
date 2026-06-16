@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -40,13 +41,16 @@ import com.hostshield.data.source.SourceUrlPolicy
 import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
-import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
+import com.hostshield.ui.components.HostShieldActionIconButton
 import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldFilterChip
+import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.components.HostShieldMetricTile
+import com.hostshield.ui.components.HostShieldScreenHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -472,26 +476,12 @@ fun SourcesScreen(
                     .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier
-                            .padding(24.dp)
-                            .accessibilityLiveRegion("Loading configured sources"),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(Icons.Filled.CloudDownload, null, tint = Teal, modifier = Modifier.size(32.dp))
-                        Spacer(Modifier.height(14.dp))
-                        Text("Loading sources", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Checking configured blocklists and health data.",
-                            color = TextSecondary,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        CircularProgressIndicator(color = Teal, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                    }
-                }
+                HostShieldLoadingState(
+                    title = "Loading sources",
+                    message = "Checking configured blocklists and health data.",
+                    accent = Teal,
+                    modifier = Modifier.accessibilityLiveRegion("Loading configured sources"),
+                )
             }
         } else {
         LazyColumn(
@@ -510,30 +500,23 @@ fun SourcesScreen(
                 }
             }
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                HostShieldScreenHeader(
+                    title = "Sources",
+                    subtitle = "Blocklists, allowlists, and source health.",
                 ) {
-                    Text(
-                        "Sources",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = TextPrimary,
-                        modifier = Modifier.accessibilityHeading()
+                    HostShieldActionIconButton(
+                        icon = Icons.Filled.CloudDownload,
+                        contentDescription = "Browse curated sources",
+                        onClick = onNavigateToGallery,
+                        accent = Blue,
                     )
-                    Surface(
+                    HostShieldActionIconButton(
+                        icon = Icons.Filled.Add,
+                        contentDescription = "Add source",
                         onClick = { showAddDialog = true },
-                        shape = RoundedCornerShape(8.dp),
-                        color = Teal.copy(alpha = 0.14f),
-                        contentColor = Teal,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .testTag(HostShieldTestTags.Sources.AddButton)
-                    ) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Filled.Add, "Add source", modifier = Modifier.size(20.dp))
-                        }
-                    }
+                        accent = Teal,
+                        modifier = Modifier.testTag(HostShieldTestTags.Sources.AddButton),
+                    )
                 }
                 healthMsg?.let { msg ->
                     Spacer(Modifier.height(8.dp))
@@ -625,7 +608,7 @@ fun SourcesScreen(
                 val items = grouped[category] ?: return@forEach
                 item {
                     Text(
-                        category.name.lowercase().replaceFirstChar { it.uppercase() },
+                        "${category.name.lowercase().replaceFirstChar { it.uppercase() }} (${items.size})",
                         style = MaterialTheme.typography.labelLarge,
                         color = categoryColor(category),
                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
@@ -804,6 +787,21 @@ private fun SourceItem(
             modifier = Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(9.dp))
+                    .background(categoryColor(source.category).copy(alpha = 0.10f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    categoryIcon(source.category),
+                    contentDescription = null,
+                    tint = categoryColor(source.category),
+                    modifier = Modifier.size(17.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -1063,17 +1061,12 @@ private fun AddSourceDialog(
                 ) {
                     SourceCategory.entries.forEach { c ->
                         val selected = c == category
-                        FilterChip(
+                        HostShieldFilterChip(
+                            label = c.name,
                             selected = selected,
                             onClick = { category = c },
-                            label = { Text(c.name, fontSize = 11.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = Surface2,
-                                labelColor = TextDim,
-                                selectedContainerColor = categoryColor(c).copy(alpha = 0.18f),
-                                selectedLabelColor = categoryColor(c),
-                            ),
-                            shape = RoundedCornerShape(8.dp),
+                            accent = categoryColor(c),
+                            semanticsLabel = "${c.name} source category",
                         )
                     }
                 }
@@ -1110,17 +1103,26 @@ private fun formatTimestamp(ms: Long): String = try {
 } catch (e: Exception) { "Unknown" }
 
 private fun sourceFailureText(source: HostSource): String {
-    val status = if (source.lastHttpStatus > 0) "HTTP ${source.lastHttpStatus}" else "Network"
-    val reason = sanitizeSourceFailureReason(source.lastError)
+    val reason = sanitizeSourceFailureReason(source.lastError, source.lastHttpStatus)
     val failures = if (source.consecutiveFailures > 0) " (${source.consecutiveFailures}x)" else ""
-    return "Last failure: $status - $reason$failures"
+    return "Last failure: $reason$failures"
 }
 
-private fun sanitizeSourceFailureReason(rawError: String): String {
+private fun sanitizeSourceFailureReason(rawError: String, storedHttpStatus: Int): String {
     val error = rawError.trim()
-    if (error.isBlank()) return "Update failed"
+    val httpStatus = Regex("""HTTP\s+(\d{3})""", RegexOption.IGNORE_CASE)
+        .find(error)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.toIntOrNull()
+        ?: storedHttpStatus.takeIf { it > 0 }
+    if (error.isBlank()) return if (httpStatus != null) "Source returned HTTP $httpStatus" else "Update failed"
     return when {
-        error.startsWith("HTTP ", ignoreCase = true) -> error.take(80)
+        httpStatus in 200..299 -> "Update failed after download"
+        httpStatus in 300..399 -> "Source redirected unexpectedly"
+        httpStatus in 400..499 -> "Source URL returned HTTP $httpStatus"
+        httpStatus in 500..599 -> "Source server returned HTTP $httpStatus"
+        httpStatus != null -> "Source returned HTTP $httpStatus"
         error.contains("timeout", ignoreCase = true) -> "Connection timed out"
         error.contains("unable to resolve host", ignoreCase = true) -> "DNS lookup failed"
         error.contains("certificate", ignoreCase = true) || error.contains("ssl", ignoreCase = true) -> "Secure connection failed"
@@ -1135,4 +1137,12 @@ private fun sourceLastSuccessText(lastUpdated: Long): String {
     } else {
         "Last successful update: never"
     }
+}
+
+@Composable
+private fun categoryIcon(cat: SourceCategory): ImageVector = when (cat) {
+    SourceCategory.MALWARE -> Icons.Filled.Security
+    SourceCategory.ALLOWLIST -> Icons.Filled.CheckCircle
+    SourceCategory.CUSTOM -> Icons.Filled.Tune
+    else -> Icons.Filled.CloudDownload
 }

@@ -35,13 +35,14 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.repository.HostShieldRepository
-import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
-import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
+import com.hostshield.ui.components.HostShieldActionIconButton
 import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldFilterChip
+import com.hostshield.ui.components.HostShieldScreenHeader
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.BackupRestoreUtil
@@ -115,54 +116,23 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                HostShieldScreenHeader(
+                    title = "Rules",
+                    subtitle = "Exact, wildcard, regex, allow, and redirect overrides.",
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Rules",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = TextPrimary,
-                            modifier = Modifier.accessibilityHeading()
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Create exact, wildcard, regex, allow, and redirect rules.",
-                            color = TextSecondary,
-                            style = MaterialTheme.typography.bodySmall,
-                            lineHeight = 16.sp
-                        )
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Surface(
-                            onClick = pasteDomainsFromClipboard,
-                            shape = RoundedCornerShape(8.dp),
-                            color = Surface3.copy(alpha = 0.8f),
-                            contentColor = Teal,
-                            modifier = Modifier
-                                .size(48.dp)
-                        ) {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Filled.ContentPaste, "Paste domains", modifier = Modifier.size(18.dp))
-                            }
-                        }
-                        Surface(
-                            onClick = { showAddDialog = true },
-                            shape = RoundedCornerShape(8.dp),
-                            color = Teal.copy(alpha = 0.14f),
-                            contentColor = Teal,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .testTag(HostShieldTestTags.Rules.AddButton)
-                        ) {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Filled.Add, "Add rule", modifier = Modifier.size(20.dp))
-                            }
-                        }
-                    }
+                    HostShieldActionIconButton(
+                        icon = Icons.Filled.ContentPaste,
+                        contentDescription = "Paste domains",
+                        onClick = pasteDomainsFromClipboard,
+                        accent = Blue,
+                    )
+                    HostShieldActionIconButton(
+                        icon = Icons.Filled.Add,
+                        contentDescription = "Add rule",
+                        onClick = { showAddDialog = true },
+                        accent = Teal,
+                        modifier = Modifier.testTag(HostShieldTestTags.Rules.AddButton),
+                    )
                 }
                 Spacer(Modifier.height(16.dp))
                 FlowRow(
@@ -256,16 +226,13 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
 @Composable
 private fun TypeChip(type: RuleType?, label: String, selected: Boolean, onClick: () -> Unit) {
     val color = ruleColor(type)
-    Surface(
+    HostShieldFilterChip(
+        label = label,
+        selected = selected,
         onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
-        color = if (selected) color.copy(alpha = 0.12f) else Surface2,
-        modifier = Modifier
-            .heightIn(min = 44.dp)
-            .accessibilitySelection("$label rule filter", selected)
-    ) {
-        Text(label, modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp), color = if (selected) color else TextDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-    }
+        accent = color,
+        semanticsLabel = "$label rule filter",
+    )
 }
 
 @Composable
@@ -329,6 +296,7 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, String, String) -> Unit) {
     var hostname by remember { mutableStateOf("") }
@@ -352,7 +320,10 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
         title = { Text("Add rule", color = TextPrimary) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     RuleType.entries.forEach { rt ->
                         TypeChip(rt, rt.name.lowercase().replaceFirstChar { it.uppercase() }, type == rt) { type = rt }
                     }

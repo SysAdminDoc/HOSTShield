@@ -1,0 +1,7 @@
+HostShield v6.9.26
+
+- Added shared premium UI primitives for headers, square icon actions, selected filters, and inline actions.
+- Refined Home search, DNS Logs, Sources, Rules, and Settings for clearer hierarchy, consistent touch targets, and better compact-screen behavior.
+- Sources now exposes curated blocklist browsing from the header, and DNS log expanded actions wrap cleanly on narrow screens.
+- Source failure rows and experimental DNS Settings copy now read cleanly on compact screens.
+- Release-documentation checks now validate the pinned OSV scanner action.

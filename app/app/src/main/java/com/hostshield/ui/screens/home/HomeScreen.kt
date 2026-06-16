@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.hostshield.ui.components.HostShieldCompactState
+import com.hostshield.ui.components.HostShieldInlineAction
 import com.hostshield.ui.components.HostShieldPanelHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
 import androidx.compose.ui.res.stringResource
@@ -275,19 +276,12 @@ fun HomeScreen(
                         subtitle = if (state.dnsLoggingEnabled) stringResource(R.string.home_newest_decisions) else stringResource(R.string.home_logging_is_paused),
                         accent = Blue,
                     ) {
-                        Surface(
+                        HostShieldInlineAction(
+                            label = stringResource(R.string.action_view_all),
                             onClick = onNavigateToLogs,
-                            shape = RoundedCornerShape(8.dp),
-                            color = Surface2,
-                        ) {
-                            Text(
-                                stringResource(R.string.action_view_all),
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                color = Teal,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
+                            accent = Teal,
+                            trailingChevron = true,
+                        )
                     }
 
                     Spacer(Modifier.height(12.dp))

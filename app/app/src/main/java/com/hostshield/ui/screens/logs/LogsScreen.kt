@@ -47,12 +47,15 @@ import com.hostshield.data.database.AppDnsRuleDao
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.ui.accessibility.accessibilityAction
 import com.hostshield.ui.accessibility.accessibilityHeading
-import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
+import com.hostshield.ui.components.HostShieldActionIconButton
 import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldFilterChip
+import com.hostshield.ui.components.HostShieldInlineAction
 import com.hostshield.ui.components.HostShieldLoadingState
+import com.hostshield.ui.components.HostShieldScreenHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import com.hostshield.util.GeoIpLookup
@@ -398,54 +401,52 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val deduped by viewModel.deduped.collectAsStateWithLifecycle()
     val totalDomains by viewModel.totalDomains.collectAsStateWithLifecycle()
     val blockedCount by viewModel.blockedCount.collectAsStateWithLifecycle()
+    val backAction = onBack
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = if (onBack != null) 8.dp else 20.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (onBack != null) {
-                    IconButton(onClick = onBack) {
+        HostShieldScreenHeader(
+            title = "DNS Logs",
+            subtitle = "$totalDomains domains - $blockedCount blocked - ${logs.size} queries",
+            modifier = Modifier.padding(horizontal = if (backAction != null) 8.dp else 20.dp, vertical = 12.dp),
+            leadingContent = if (backAction != null) {
+                {
+                    IconButton(onClick = backAction) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
                     }
                 }
-                Column {
-                    Text(
-                        "DNS Logs",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = TextPrimary,
-                        modifier = Modifier.accessibilityHeading()
-                    )
-                    Text(
-                        "$totalDomains domains \u2022 $blockedCount blocked \u2022 ${logs.size} queries",
-                        color = TextSecondary, fontSize = 12.sp
-                    )
-                }
-            }
-            IconButton(onClick = {
-                multiSelectMode = !multiSelectMode
-                if (!multiSelectMode) selectedHostnames = emptySet()
-            }, modifier = Modifier.accessibilityToggle("DNS log multi-select mode", multiSelectMode)) {
-                Icon(
-                    if (multiSelectMode) Icons.Filled.Close else Icons.Filled.Checklist,
-                    if (multiSelectMode) "Exit multi-select" else "Enter multi-select",
-                    tint = if (multiSelectMode) Teal else TextDim
-                )
-            }
-            IconButton(
+            } else {
+                null
+            },
+        ) {
+            HostShieldActionIconButton(
+                icon = if (multiSelectMode) Icons.Filled.Close else Icons.Filled.Checklist,
+                contentDescription = if (multiSelectMode) "Exit multi-select" else "Enter multi-select",
+                onClick = {
+                    multiSelectMode = !multiSelectMode
+                    if (!multiSelectMode) selectedHostnames = emptySet()
+                },
+                accent = Teal,
+                selected = multiSelectMode,
+            )
+            HostShieldActionIconButton(
+                icon = Icons.Filled.DeleteSweep,
+                contentDescription = "Clear DNS logs",
                 onClick = { showClearLogsDialog = true },
+                accent = Red,
                 enabled = logs.isNotEmpty(),
-                modifier = Modifier.accessibilityAction("Clear DNS logs", logs.isNotEmpty())
-            ) {
-                Icon(
-                    Icons.Filled.DeleteSweep,
-                    "Clear DNS logs",
-                    tint = if (logs.isNotEmpty()) TextDim else TextDim.copy(alpha = 0.35f)
-                )
-            }
+            )
+        }
+
+        if (multiSelectMode && selectedHostnames.isEmpty()) {
+            HostShieldStatusBanner(
+                icon = Icons.Filled.Checklist,
+                title = "Selection mode",
+                message = "Long-press or check domains to apply block or allow actions together.",
+                accent = Teal,
+                announce = false,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+            )
         }
 
         if (error != null) {
@@ -474,48 +475,41 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             Surface(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(10.dp),
-                color = Surface2
+                color = Surface2.copy(alpha = 0.86f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Teal.copy(alpha = 0.20f)),
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         "${selectedHostnames.size} selected",
-                        color = Teal, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                        color = Teal,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.weight(1f)
                     )
-                    Surface(
+                    HostShieldInlineAction(
+                        label = "Block",
+                        icon = Icons.Filled.Block,
+                        accent = Red,
                         onClick = {
                             viewModel.blockDomains(selectedHostnames)
                             selectedHostnames = emptySet()
                             multiSelectMode = false
                         },
-                        shape = RoundedCornerShape(8.dp),
-                        color = Red.copy(alpha = 0.12f)
-                    ) {
-                        Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
-                            Icon(Icons.Filled.Block, null, tint = Red, modifier = Modifier.size(14.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Block All", color = Red, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                    Surface(
+                    )
+                    HostShieldInlineAction(
+                        label = "Allow",
+                        icon = Icons.Filled.CheckCircle,
+                        accent = Green,
                         onClick = {
                             viewModel.allowDomains(selectedHostnames)
                             selectedHostnames = emptySet()
                             multiSelectMode = false
                         },
-                        shape = RoundedCornerShape(8.dp),
-                        color = Green.copy(alpha = 0.12f)
-                    ) {
-                        Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
-                            Icon(Icons.Filled.CheckCircle, null, tint = Green, modifier = Modifier.size(14.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Allow All", color = Green, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
+                    )
                 }
             }
             Spacer(Modifier.height(4.dp))
@@ -524,7 +518,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
         // Search
         OutlinedTextField(
             value = query, onValueChange = { viewModel.setSearch(it) },
-            placeholder = { Text("Search domains, apps...", color = TextDim) },
+            placeholder = { Text("Search domains or apps", color = TextDim) },
             leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextDim) },
             trailingIcon = {
                 if (query.isNotBlank()) {
@@ -549,8 +543,8 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
         // Filters
         Row(modifier = Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             LogFilter("All", blockedFilter == null) { viewModel.setFilter(null) }
-            LogFilter("Blocked", blockedFilter == true) { viewModel.setFilter(true) }
-            LogFilter("Allowed", blockedFilter == false) { viewModel.setFilter(false) }
+            LogFilter("Blocked", blockedFilter == true, accent = Red) { viewModel.setFilter(true) }
+            LogFilter("Allowed", blockedFilter == false, accent = Green) { viewModel.setFilter(false) }
         }
 
         Spacer(Modifier.height(4.dp))
@@ -559,20 +553,15 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            val types = listOf(null to "All Types", "A" to "A", "AAAA" to "AAAA", "CNAME" to "CNAME", "MX" to "MX", "TXT" to "TXT")
+            val types = listOf(null to "All types", "A" to "A", "AAAA" to "AAAA", "CNAME" to "CNAME", "MX" to "MX", "TXT" to "TXT")
             types.forEach { (type, label) ->
-                val selected = queryTypeFilter == type
-                Surface(
+                HostShieldFilterChip(
+                    label = label,
+                    selected = queryTypeFilter == type,
                     onClick = { viewModel.setQueryTypeFilter(type) },
-                    shape = RoundedCornerShape(6.dp),
-                    color = if (selected) Blue.copy(alpha = 0.12f) else Surface2,
-                    modifier = Modifier.heightIn(min = 40.dp)
-                ) {
-                    Text(
-                        label, modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                        color = if (selected) Blue else TextDim, fontSize = 10.sp, fontWeight = FontWeight.SemiBold
-                    )
-                }
+                    accent = Blue,
+                    semanticsLabel = "$label DNS query type filter",
+                )
             }
         }
 
@@ -691,23 +680,14 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
 }
 
 @Composable
-private fun LogFilter(label: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(
+private fun LogFilter(label: String, selected: Boolean, accent: Color = Teal, onClick: () -> Unit) {
+    HostShieldFilterChip(
+        label = label,
+        selected = selected,
         onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
-        color = if (selected) Teal.copy(alpha = 0.12f) else Surface2,
-        modifier = Modifier
-            .heightIn(min = 44.dp)
-            .accessibilitySelection("$label DNS log filter", selected)
-    ) {
-        Text(
-            label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-            color = if (selected) Teal else TextDim,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
+        accent = accent,
+        semanticsLabel = "$label DNS log filter",
+    )
 }
 
 @Composable
@@ -839,67 +819,43 @@ private fun LogItem(entry: DedupedLogEntry, onBlock: () -> Unit, onAllow: () -> 
 
                 // ── Expanded: actions ──
                 AnimatedVisibility(visible = expanded) {
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         if (entry.appPackage.isNotEmpty()) {
                             Text(
                                 entry.appPackage, color = TextDim, fontSize = 10.sp,
-                                modifier = Modifier.weight(1f), fontFamily = FontFamily.Monospace,
+                                fontFamily = FontFamily.Monospace,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis
                             )
-                        } else {
-                            Spacer(Modifier.weight(1f))
                         }
 
-                        // Detail button
-                        Surface(
-                            onClick = onTap,
-                            shape = RoundedCornerShape(8.dp),
-                            color = Blue.copy(alpha = 0.1f)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Filled.Info, null, tint = Blue, modifier = Modifier.size(14.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Details", color = Blue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                        Spacer(Modifier.width(6.dp))
-
-                        if (!blocked) {
-                            Surface(
-                                onClick = onBlock,
-                                shape = RoundedCornerShape(8.dp),
-                                color = Red.copy(alpha = 0.1f)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(Icons.Filled.Block, null, tint = Red, modifier = Modifier.size(14.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("Block", color = Red, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                                }
-                            }
-                        } else {
-                            Surface(
-                                onClick = onAllow,
-                                shape = RoundedCornerShape(8.dp),
-                                color = Green.copy(alpha = 0.1f)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(Icons.Filled.CheckCircle, null, tint = Green, modifier = Modifier.size(14.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("Allow", color = Green, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                                }
+                            HostShieldInlineAction(
+                                label = "Details",
+                                icon = Icons.Filled.Info,
+                                onClick = onTap,
+                                accent = Blue,
+                            )
+                            if (!blocked) {
+                                HostShieldInlineAction(
+                                    label = "Block",
+                                    icon = Icons.Filled.Block,
+                                    onClick = onBlock,
+                                    accent = Red,
+                                )
+                            } else {
+                                HostShieldInlineAction(
+                                    label = "Allow",
+                                    icon = Icons.Filled.CheckCircle,
+                                    onClick = onAllow,
+                                    accent = Green,
+                                )
                             }
                         }
                     }

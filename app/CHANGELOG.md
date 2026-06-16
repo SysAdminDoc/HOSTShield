@@ -1,3 +1,32 @@
+# HostShield v6.9.26
+
+**Release Date:** 2026-06-16
+**Version Code:** 108
+
+## Premium UX Polish
+
+### Changed
+- Added shared Compose primitives for premium screen headers, square icon
+  actions, selected filter controls, and compact inline actions.
+- Updated Home search/history, DNS Logs, Sources, Rules, and Settings to share
+  the same spacing, state, touch target, and action-control treatment.
+- DNS log expanded actions now wrap cleanly on compact screens.
+- Sources exposes curated blocklist browsing from the header and adds category
+  glyphs plus category counts for faster scanning.
+- Source failure rows now use calmer user-facing copy, and experimental DNS
+  descriptions fit compact Settings rows without clipped text.
+- Release-doc validation now checks the pinned OSV scanner action SHA plus
+  version comment instead of the old mutable tag.
+
+### Verification
+- `:app:compileFullDebugKotlin`
+- `tools/check-release-docs.ps1`
+- `:app:testFullDebugUnitTest`
+- `:app:lintFullDebug`
+- `:app:installFullDebug`
+- Emulator smoke pass on `emulator-5554` covering Home, Sources, Rules,
+  Settings, and DNS Logs UI trees/screenshots plus focused logcat review.
+
 # HostShield v6.9.22
 
 **Release Date:** 2026-06-16

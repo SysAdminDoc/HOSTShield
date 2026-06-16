@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hostshield.ui.components.HostShieldFilterChip
 import com.hostshield.ui.theme.*
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -29,7 +30,7 @@ fun HomeSearchSection(
     OutlinedTextField(
         value = searchQuery,
         onValueChange = { onSearchQueryChange(it); onSearchExpandedChange(it.isNotBlank()) },
-        placeholder = { Text("Search domains, rules, apps...", color = TextDim, fontSize = 13.sp) },
+        placeholder = { Text("Search domains, rules, or apps", color = TextDim, fontSize = 13.sp) },
         leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextDim, modifier = Modifier.size(18.dp)) },
         trailingIcon = {
             if (searchQuery.isNotBlank()) {
@@ -54,14 +55,13 @@ fun HomeSearchSection(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             searchHistory.take(6).forEach { term ->
-                Surface(
+                HostShieldFilterChip(
+                    label = term,
+                    selected = false,
                     onClick = { onSearchQueryChange(term); onSearchExpandedChange(true); onSaveSearch(term) },
-                    shape = RoundedCornerShape(12.dp),
-                    color = Surface2
-                ) {
-                    Text(term, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        color = TextDim, fontSize = 11.sp)
-                }
+                    accent = Teal,
+                    semanticsLabel = "Recent search $term",
+                )
             }
         }
     }
@@ -79,7 +79,7 @@ fun HomeSearchSection(
                         color = Surface2
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(10.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(Icons.Filled.Dns, null, tint = Blue, modifier = Modifier.size(16.dp))
@@ -96,7 +96,7 @@ fun HomeSearchSection(
                         color = Surface2
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(10.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(Icons.Filled.Apps, null, tint = Mauve, modifier = Modifier.size(16.dp))

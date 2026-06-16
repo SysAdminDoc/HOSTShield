@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.25-blue)
+![Version](https://img.shields.io/badge/version-6.9.26-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -404,6 +404,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.26** | Premium UX polish pass: shared screen headers, square icon actions, selected filters, inline actions, clearer source/log/rule/settings states, and more compact-screen-safe row layouts. |
 | **6.9.25** | Backup schema v2 search history, empty-catch logging, unused resource cleanup, DoH3 dead-code annotation. |
 | **6.9.24** | HomeViewModel deduplication (shared blocklist build, combined pref observers) and lint baseline burndown (14 fixes). |
 | **6.9.23** | Security/correctness audit: LocalDnsServer fail-closed, BlocklistHolder most-specific-wins trie, WebDavSync path-traversal rejection, Pi-hole ReDoS guard, CI SHA pinning, release lint gate, manifest alias cleanup, LogsScreen ViewModel extraction. |

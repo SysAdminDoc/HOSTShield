@@ -3,6 +3,27 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.26] - 2026-06-16
+
+### Changed
+- Added shared premium Compose primitives for screen headers, square icon
+  actions, selected filter controls, and compact inline actions.
+- Updated Home search/history, DNS Logs, Sources, Rules, and Settings to use
+  consistent spacing, 44-48dp touch targets, selected states, and row/action
+  treatment.
+
+### Fixed
+- DNS log expanded actions now wrap on compact screens instead of crowding
+  package/domain text.
+- Sources now exposes the curated gallery from the header even when sources
+  already exist, and source rows include category glyphs plus section counts.
+- Settings provider selectors and section headers now match the rest of the
+  product surface.
+- Source failure rows now avoid raw HTTP/download fragments, and experimental
+  DNS descriptions no longer clip on compact Settings rows.
+- Release-doc validation now checks the pinned OSV scanner action SHA plus
+  version comment instead of the old mutable tag.
+
 ## [v6.9.25] - 2026-06-16
 
 ### Added
