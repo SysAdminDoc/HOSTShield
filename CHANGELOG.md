@@ -3,6 +3,16 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.24] - 2026-06-16
+
+### Changed
+- HomeViewModel: collapsed 9 preference observer coroutines into a single
+  `combine()` flow and extracted shared `downloadAndBuildBlocklist()` from
+  three near-duplicate blocklist-building methods (~160 LOC reduction).
+- Lint baseline burned down: AutoboxingStateCreation, UseKtx, TypographyEllipsis,
+  UnnecessaryArrayInit, and ObsoleteSdkInt warnings fixed (14 fixes, baseline
+  reduced from 72 to 58 warnings).
+
 ## [v6.9.23] - 2026-06-16
 
 ### Fixed
