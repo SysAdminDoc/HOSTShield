@@ -301,7 +301,9 @@ private fun HostShieldMainApp(activity: MainActivity) {
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         containerColor = Color.Black,
+        contentWindowInsets = WindowInsets.systemBars,
         bottomBar = {
             if (showBottomBar) {
                 Box {

@@ -1,0 +1,3 @@
+v6.9.20 - Edge-to-edge system bar padding:
+- Main app navigation now applies explicit system-bar content insets.
+- Home, Logs, Rules, Apps, Stats, Sources, Settings, and sub-screens stay clear of Android 15+ status and navigation bars while edge-to-edge remains enabled.

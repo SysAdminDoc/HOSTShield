@@ -1,3 +1,22 @@
+# HostShield v6.9.20
+
+**Release Date:** 2026-06-16
+**Version Code:** 102
+
+## Edge-to-Edge System Bar Padding
+
+### Fixed
+- The main app scaffold now applies explicit `WindowInsets.systemBars` content
+  insets so Home, Logs, Rules, Apps, Stats, Sources, Settings, and sub-screens
+  avoid Android 15+ status and navigation bars.
+- Startup and onboarding retain their existing full-screen system-bar padding.
+
+### Verification
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest`
+- `:app:lintFullDebug`
+- `:app:assembleFullDebug`
+
 # HostShield v6.9.19
 
 **Release Date:** 2026-06-16

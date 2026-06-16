@@ -3,6 +3,13 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.20] - 2026-06-16
+
+### Fixed
+- The main app scaffold now applies explicit system-bar window insets, keeping
+  top-level and sub-screen content out from under Android 15+ status and
+  navigation bars while preserving edge-to-edge rendering.
+
 ## [v6.9.19] - 2026-06-16
 
 ### Fixed
