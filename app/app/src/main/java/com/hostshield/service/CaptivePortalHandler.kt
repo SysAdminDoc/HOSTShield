@@ -8,7 +8,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.net.Uri
+import androidx.core.net.toUri
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -124,7 +124,7 @@ class CaptivePortalHandler @Inject constructor(
         // Try to get the captive portal URL from the network
         val portalUrl = getCaptivePortalUrl(network)
 
-        val loginIntent = Intent(Intent.ACTION_VIEW, Uri.parse(portalUrl)).apply {
+        val loginIntent = Intent(Intent.ACTION_VIEW, portalUrl.toUri()).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         val pi = PendingIntent.getActivity(

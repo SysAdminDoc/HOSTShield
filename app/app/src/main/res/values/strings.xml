@@ -198,7 +198,7 @@
     <string name="home_logging_is_paused">Logging is paused</string>
     <string name="home_resume_protection">Resume protection</string>
     <string name="home_auto_resumes_in">Auto-resumes in %1$dm %2$ds</string>
-    <string name="home_resuming">Resuming...</string>
+    <string name="home_resuming">Resuming…</string>
     <string name="home_protection_disabled">Protection disabled</string>
     <string name="home_protection_disabled_sub">Tap the shield to re-enable</string>
     <string name="home_pause_protection">Pause protection</string>
@@ -217,15 +217,15 @@
     <string name="qr_screen_title">QR Config Sharing</string>
     <string name="qr_screen_description">Share your HostShield configuration via QR code. The recipient can scan it to import your DNS settings, custom rules, and sources.</string>
     <string name="qr_export_configuration">Export Configuration</string>
-    <string name="qr_generating">Generating...</string>
+    <string name="qr_generating">Generating…</string>
     <string name="qr_generate_code">Generate QR Code</string>
     <string name="qr_code_content_description">QR Code</string>
     <string name="qr_encoded_string">Encoded String</string>
     <string name="qr_import_configuration">Import Configuration</string>
-    <string name="qr_import_hint">Paste a HostShield config string (HS:...) to preview before importing.</string>
-    <string name="qr_placeholder">HS:...</string>
+    <string name="qr_import_hint">Paste a HostShield config string (HS:…) to preview before importing.</string>
+    <string name="qr_placeholder">HS:…</string>
     <string name="qr_decode_preview">Decode &amp; Preview</string>
-    <string name="qr_importing">Importing...</string>
+    <string name="qr_importing">Importing…</string>
     <string name="qr_apply_import">Apply Import</string>
 
     <!-- Status messages -->

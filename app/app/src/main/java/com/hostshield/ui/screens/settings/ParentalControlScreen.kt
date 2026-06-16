@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -68,7 +69,7 @@ class ParentalControlViewModel @Inject constructor(
         private set
     var pinError by mutableStateOf<String?>(null)
         private set
-    var pinLockoutMs by mutableStateOf(0L)
+    var pinLockoutMs by mutableLongStateOf(0L)
         private set
     var pinAction by mutableStateOf<String?>(null)
         private set
@@ -455,7 +456,7 @@ fun ParentalControlScreen(
         var dialogPin by remember { mutableStateOf("") }
         val errorMessage = viewModel.pinError
         val lockoutMs = viewModel.pinLockoutMs
-        var lockoutCountdown by remember(lockoutMs) { mutableStateOf(lockoutMs) }
+        var lockoutCountdown by remember(lockoutMs) { mutableLongStateOf(lockoutMs) }
 
         // Live-tick the lockout countdown
         LaunchedEffect(lockoutMs) {

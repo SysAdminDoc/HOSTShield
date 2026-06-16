@@ -3,7 +3,7 @@ package com.hostshield.ui.screens.settings
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import android.provider.Browser
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -55,7 +55,7 @@ import com.hostshield.ui.theme.*
 internal const val HOSTSHIELD_GITHUB_REPOSITORY_URL = "https://github.com/SysAdminDoc/HostShield"
 
 internal fun hostShieldGitHubRepositoryIntent(context: Context): Intent =
-    Intent(Intent.ACTION_VIEW, Uri.parse(HOSTSHIELD_GITHUB_REPOSITORY_URL)).apply {
+    Intent(Intent.ACTION_VIEW, HOSTSHIELD_GITHUB_REPOSITORY_URL.toUri()).apply {
         addCategory(Intent.CATEGORY_BROWSABLE)
         putExtra(Browser.EXTRA_APPLICATION_ID, context.packageName)
     }
@@ -674,7 +674,7 @@ fun SettingsScreen(
                             Spacer(Modifier.height(8.dp))
                             Surface(
                                 onClick = {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(state.updateDownloadUrl))
+                                    val intent = Intent(Intent.ACTION_VIEW, state.updateDownloadUrl.toUri())
                                     context.startActivity(intent)
                                 },
                                 shape = RoundedCornerShape(8.dp),

@@ -2,6 +2,7 @@ package com.hostshield.ui.screens.logs
 
 import android.content.Context
 import android.util.Log
+import androidx.core.net.toUri
 import com.hostshield.util.PrivacyLog
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -1159,21 +1160,21 @@ private fun QueryDetailSheet(
             ReputationButton("VirusTotal", Blue) {
                 val intent = android.content.Intent(
                     android.content.Intent.ACTION_VIEW,
-                    android.net.Uri.parse("https://www.virustotal.com/gui/domain/${entry.hostname}")
+                    "https://www.virustotal.com/gui/domain/${entry.hostname}".toUri()
                 )
                 context.startActivity(intent)
             }
             ReputationButton("URLhaus", Red) {
                 val intent = android.content.Intent(
                     android.content.Intent.ACTION_VIEW,
-                    android.net.Uri.parse("https://urlhaus.abuse.ch/browse.php?search=${entry.hostname}")
+                    "https://urlhaus.abuse.ch/browse.php?search=${entry.hostname}".toUri()
                 )
                 context.startActivity(intent)
             }
             ReputationButton("Whois", Teal) {
                 val intent = android.content.Intent(
                     android.content.Intent.ACTION_VIEW,
-                    android.net.Uri.parse("https://who.is/whois/${entry.hostname}")
+                    "https://who.is/whois/${entry.hostname}".toUri()
                 )
                 context.startActivity(intent)
             }

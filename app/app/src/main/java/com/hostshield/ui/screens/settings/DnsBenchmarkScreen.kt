@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,7 +38,7 @@ class DnsBenchmarkViewModel @Inject constructor(
 
     var isRunning by mutableStateOf(false)
         private set
-    var progress by mutableStateOf(0f)
+    var progress by mutableFloatStateOf(0f)
         private set
     var results by mutableStateOf<List<DnsBenchmark.BenchmarkResult>>(emptyList())
         private set

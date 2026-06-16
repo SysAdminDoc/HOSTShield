@@ -2,7 +2,7 @@ package com.hostshield.util
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
@@ -70,7 +70,7 @@ class BatteryOptimizationUtil @Inject constructor(
     /** Get intent to request battery optimization exemption. */
     fun getExemptionIntent(): Intent {
         return Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-            data = Uri.parse("package:${context.packageName}")
+            data = "package:${context.packageName}".toUri()
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }
