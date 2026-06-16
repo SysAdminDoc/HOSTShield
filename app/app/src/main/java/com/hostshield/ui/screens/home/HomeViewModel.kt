@@ -372,52 +372,55 @@ class HomeViewModel @Inject constructor(
 
     private fun observePrefs() {
         viewModelScope.launch {
-            prefs.isEnabled.collect { enabled ->
-                _uiState.update { it.copy(isEnabled = enabled) }
-            }
-        }
-        viewModelScope.launch {
-            prefs.blockMethod.collect { method ->
-                _uiState.update { it.copy(blockMethod = method) }
-            }
-        }
-        viewModelScope.launch {
-            prefs.lastApplyTime.collect { time ->
-                _uiState.update { it.copy(lastApplyTime = time) }
-            }
-        }
-        viewModelScope.launch {
-            prefs.lastApplyCount.collect { count ->
-                _uiState.update { it.copy(totalDomainsBlocked = count) }
-            }
-        }
-        viewModelScope.launch {
-            prefs.dnsTrapEnabled.collect { v ->
-                _uiState.update { it.copy(dnsTrapEnabled = v) }
-            }
-        }
-        viewModelScope.launch {
-            prefs.dohEnabled.collect { v ->
-                _uiState.update { it.copy(dohEnabled = v) }
-            }
-        }
-        viewModelScope.launch {
-            prefs.blockedApps.collect { apps ->
-                _uiState.update { it.copy(firewalledApps = apps.size) }
-            }
-        }
-        viewModelScope.launch {
-            prefs.dnsLogging.collect { enabled ->
-                _uiState.update { it.copy(dnsLoggingEnabled = enabled) }
-            }
-        }
-        viewModelScope.launch {
-            prefs.pauseEndTime.collect { endMs ->
-                val effective = if (endMs > 0 && endMs <= System.currentTimeMillis()) 0L else endMs
-                _uiState.update { it.copy(pauseEndTimeMs = effective) }
-            }
+            combine(
+                prefs.isEnabled,
+                prefs.blockMethod,
+                prefs.lastApplyTime,
+                prefs.lastApplyCount,
+                prefs.dnsTrapEnabled
+            ) { enabled, method, time, count, dnsTrap ->
+                PrefsSnapshot1(enabled, method, time, count, dnsTrap)
+            }.combine(
+                combine(
+                    prefs.dohEnabled,
+                    prefs.blockedApps,
+                    prefs.dnsLogging,
+                    prefs.pauseEndTime
+                ) { doh, apps, logging, pauseEnd ->
+                    PrefsSnapshot2(doh, apps.size, logging, pauseEnd)
+                }
+            ) { s1, s2 ->
+                val pauseEffective = if (s2.pauseEndMs > 0 && s2.pauseEndMs <= System.currentTimeMillis()) 0L else s2.pauseEndMs
+                _uiState.update {
+                    it.copy(
+                        isEnabled = s1.isEnabled,
+                        blockMethod = s1.blockMethod,
+                        lastApplyTime = s1.lastApplyTime,
+                        totalDomainsBlocked = s1.lastApplyCount,
+                        dnsTrapEnabled = s1.dnsTrapEnabled,
+                        dohEnabled = s2.dohEnabled,
+                        firewalledApps = s2.firewalledApps,
+                        dnsLoggingEnabled = s2.dnsLogging,
+                        pauseEndTimeMs = pauseEffective
+                    )
+                }
+            }.collect()
         }
     }
+
+    private data class PrefsSnapshot1(
+        val isEnabled: Boolean,
+        val blockMethod: BlockMethod,
+        val lastApplyTime: Long,
+        val lastApplyCount: Int,
+        val dnsTrapEnabled: Boolean
+    )
+    private data class PrefsSnapshot2(
+        val dohEnabled: Boolean,
+        val firewalledApps: Int,
+        val dnsLogging: Boolean,
+        val pauseEndMs: Long
+    )
 
     private fun observeStats() {
         val todayStart = java.time.LocalDate.now()
@@ -642,97 +645,11 @@ class HomeViewModel @Inject constructor(
         try {
             _uiState.update { it.copy(progressMessage = "Building blocklist...") }
 
-            val blockSources = repository.getEnabledBlockSources()
-            val allowlistSources = repository.getEnabledAllowlistSources()
-            val totalSources = blockSources.size + allowlistSources.size
-            val allDomains = mutableSetOf<String>()
-            val sourceAllowDomains = mutableSetOf<String>()
-            val sourceWildcardBlocks = mutableSetOf<String>()
-            val sourceWildcardAllows = mutableSetOf<String>()
-            val exactBlockOrigins = mutableMapOf<String, String>()
-            val wildcardBlockOrigins = mutableMapOf<String, String>()
-
-            for ((index, source) in blockSources.withIndex()) {
-                _uiState.update {
-                    it.copy(progressMessage = "Downloading ${source.label} (${index + 1}/$totalSources)...")
-                }
-                downloader.download(source, forceDownload = true).onSuccess { dl ->
-                    val parsed = HostsParser.parseForBlocking(dl.content)
-                    allDomains.addAll(parsed.blockDomains)
-                    parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
-                    sourceAllowDomains.addAll(parsed.allowDomains)
-                    sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
-                    parsed.wildcardBlockDomains.forEach {
-                        wildcardBlockOrigins.putIfAbsent(it, source.label)
-                    }
-                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                    // Update source meta for health tracking
-                    try {
-                        repository.updateSource(source.copy(
-                            entryCount = parsed.entryCount,
-                            lastUpdated = System.currentTimeMillis(),
-                            health = com.hostshield.data.model.SourceHealth.OK,
-                            lastError = "",
-                            lastHttpStatus = 0,
-                            consecutiveFailures = 0
-                        ))
-                    } catch (_: Exception) { }
-                }.onFailure { err ->
-                    markSourceDownloadFailure(source, err)
-                }
-            }
-            for ((index, source) in allowlistSources.withIndex()) {
-                _uiState.update {
-                    it.copy(progressMessage = "Applying allowlist ${source.label} (${blockSources.size + index + 1}/$totalSources)...")
-                }
-                downloader.download(source, forceDownload = true).onSuccess { dl ->
-                    val parsed = HostsParser.parseForAllowing(dl.content)
-                    sourceAllowDomains.addAll(parsed.allowDomains)
-                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                    try {
-                        repository.updateSource(source.copy(
-                            entryCount = parsed.entryCount,
-                            lastUpdated = System.currentTimeMillis(),
-                            health = com.hostshield.data.model.SourceHealth.OK,
-                            lastError = "",
-                            lastHttpStatus = 0,
-                            consecutiveFailures = 0
-                        ))
-                    } catch (_: Exception) { }
-                }.onFailure { err ->
-                    markSourceDownloadFailure(source, err)
-                }
+            val count = downloadAndBuildBlocklist { msg ->
+                _uiState.update { it.copy(progressMessage = msg) }
             }
 
-            // Merge user rules
-            val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-            blockRules.filter { !it.isWildcard }.forEach {
-                val hostname = it.hostname.lowercase()
-                allDomains.add(hostname)
-                exactBlockOrigins[hostname] = "User block rule"
-            }
-            val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-            allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-            allDomains.removeAll(sourceAllowDomains)
-            dohBypassUpdater.mergeCachedInto(
-                allDomains,
-                sourceWildcardBlocks,
-                exactBlockOrigins,
-                wildcardBlockOrigins
-            )
-            val wildcards = repository.getEnabledWildcards()
-            blocklistHolder.updateAsync(
-                allDomains,
-                wildcards,
-                sourceWildcardBlocks = sourceWildcardBlocks,
-                sourceWildcardAllows = sourceWildcardAllows,
-                exactBlockOrigins = exactBlockOrigins,
-                sourceWildcardBlockOrigins = wildcardBlockOrigins,
-                sourceExactAllows = sourceAllowDomains
-            )
-
-            val count = allDomains.size + sourceWildcardBlocks.size
-            if (count == 0 && blockSources.isNotEmpty()) {
+            if (count == 0) {
                 _uiState.update {
                     it.copy(isApplying = false,
                         errorMessage = "No domains downloaded. Check your internet connection.",
@@ -741,9 +658,6 @@ class HomeViewModel @Inject constructor(
                 return
             }
 
-            // Write minimal hosts file — proxy handles all blocking.
-            // This prevents the OS from resolving blocked domains from /etc/hosts
-            // before they reach the network (which would bypass logging).
             _uiState.update { it.copy(progressMessage = "Configuring DNS proxy ($count domains)...") }
             rootUtil.writeHostsFile(
                 "# HostShield root mode — blocking via DNS proxy\n" +
@@ -751,7 +665,6 @@ class HomeViewModel @Inject constructor(
                 "127.0.0.1 localhost\n::1 localhost\n"
             )
 
-            // Start DNS proxy service
             if (!RootDnsService.start(getApplication(), "HomeViewModel.applyRootBlocking")) {
                 throw IllegalStateException("Unable to start root DNS foreground service")
             }
@@ -786,81 +699,11 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(progressMessage = "Building blocklist...") }
 
         try {
-            val blockSources = repository.getEnabledBlockSources()
-            val allowlistSources = repository.getEnabledAllowlistSources()
-            val allDomains = mutableSetOf<String>()
-            val sourceAllowDomains = mutableSetOf<String>()
-            val sourceWildcardBlocks = mutableSetOf<String>()
-            val sourceWildcardAllows = mutableSetOf<String>()
-            val exactBlockOrigins = mutableMapOf<String, String>()
-            val wildcardBlockOrigins = mutableMapOf<String, String>()
-            val totalSources = blockSources.size + allowlistSources.size
-
-            for ((index, source) in blockSources.withIndex()) {
-                _uiState.update {
-                    it.copy(progressMessage = "Downloading ${source.label} (${index + 1}/$totalSources)...")
-                }
-                val result = downloader.download(source, forceDownload = true)
-                result.onSuccess { dl ->
-                    val parsed = HostsParser.parseForBlocking(dl.content)
-                    allDomains.addAll(parsed.blockDomains)
-                    parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
-                    sourceAllowDomains.addAll(parsed.allowDomains)
-                    sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
-                    parsed.wildcardBlockDomains.forEach {
-                        wildcardBlockOrigins.putIfAbsent(it, source.label)
-                    }
-                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                    markSourceDownloadSuccess(source.id)
-                }.onFailure { err ->
-                    markSourceDownloadFailure(source, err)
-                }
-            }
-            for ((index, source) in allowlistSources.withIndex()) {
-                _uiState.update {
-                    it.copy(progressMessage = "Applying allowlist ${source.label} (${blockSources.size + index + 1}/$totalSources)...")
-                }
-                val result = downloader.download(source, forceDownload = true)
-                result.onSuccess { dl ->
-                    val parsed = HostsParser.parseForAllowing(dl.content)
-                    sourceAllowDomains.addAll(parsed.allowDomains)
-                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                    markSourceDownloadSuccess(source.id)
-                }.onFailure { err ->
-                    markSourceDownloadFailure(source, err)
-                }
+            val count = downloadAndBuildBlocklist { msg ->
+                _uiState.update { it.copy(progressMessage = msg) }
             }
 
-            val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-            blockRules.filter { !it.isWildcard }.forEach {
-                val hostname = it.hostname.lowercase()
-                allDomains.add(hostname)
-                exactBlockOrigins[hostname] = "User block rule"
-            }
-            val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-            allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-            allDomains.removeAll(sourceAllowDomains)
-            dohBypassUpdater.mergeCachedInto(
-                allDomains,
-                sourceWildcardBlocks,
-                exactBlockOrigins,
-                wildcardBlockOrigins
-            )
-            val wildcards = repository.getEnabledWildcards()
-            blocklistHolder.updateAsync(
-                allDomains,
-                wildcards,
-                sourceWildcardBlocks = sourceWildcardBlocks,
-                sourceWildcardAllows = sourceWildcardAllows,
-                exactBlockOrigins = exactBlockOrigins,
-                sourceWildcardBlockOrigins = wildcardBlockOrigins,
-                sourceExactAllows = sourceAllowDomains
-            )
-
-            val count = allDomains.size + sourceWildcardBlocks.size
-            _uiState.update {
-                it.copy(progressMessage = "Starting VPN ($count domains)...")
-            }
+            _uiState.update { it.copy(progressMessage = "Starting VPN ($count domains)...") }
 
             val intent = Intent(getApplication(), DnsVpnService::class.java).apply {
                 action = DnsVpnService.ACTION_START
@@ -1042,78 +885,92 @@ class HomeViewModel @Inject constructor(
     /** Build the in-memory blocklist from sources + user rules. */
     private suspend fun buildBlocklistHolder() {
         try {
-            val blockSources = repository.getEnabledBlockSources()
-            val allowlistSources = repository.getEnabledAllowlistSources()
-            val allDomains = mutableSetOf<String>()
-            val sourceAllowDomains = mutableSetOf<String>()
-            val sourceWildcardBlocks = mutableSetOf<String>()
-            val sourceWildcardAllows = mutableSetOf<String>()
-            val exactBlockOrigins = mutableMapOf<String, String>()
-            val wildcardBlockOrigins = mutableMapOf<String, String>()
-
-            for (source in blockSources) {
-                val result = downloader.download(source, forceDownload = true)
-                result.onSuccess { dl ->
-                    val parsed = HostsParser.parseForBlocking(dl.content)
-                    allDomains.addAll(parsed.blockDomains)
-                    parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
-                    sourceAllowDomains.addAll(parsed.allowDomains)
-                    sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
-                    parsed.wildcardBlockDomains.forEach {
-                        wildcardBlockOrigins.putIfAbsent(it, source.label)
-                    }
-                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                    markSourceDownloadSuccess(source.id)
-                }.onFailure { err ->
-                    markSourceDownloadFailure(source, err)
+            val count = downloadAndBuildBlocklist { msg -> }
+            if (count == 0) {
+                val blockSources = repository.getEnabledBlockSources()
+                if (blockSources.isNotEmpty()) {
+                    android.util.Log.w("HomeViewModel", "Blocklist build produced 0 domains from ${blockSources.size} block sources")
+                    _uiState.update { it.copy(errorMessage = "Warning: blocklist is empty. Check your internet connection.") }
                 }
-            }
-            for (source in allowlistSources) {
-                val result = downloader.download(source, forceDownload = true)
-                result.onSuccess { dl ->
-                    val parsed = HostsParser.parseForAllowing(dl.content)
-                    sourceAllowDomains.addAll(parsed.allowDomains)
-                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                    markSourceDownloadSuccess(source.id)
-                }.onFailure { err ->
-                    markSourceDownloadFailure(source, err)
-                }
-            }
-
-            val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-            blockRules.filter { !it.isWildcard }.forEach {
-                val hostname = it.hostname.lowercase()
-                allDomains.add(hostname)
-                exactBlockOrigins[hostname] = "User block rule"
-            }
-            val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-            allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-            allDomains.removeAll(sourceAllowDomains)
-            dohBypassUpdater.mergeCachedInto(
-                allDomains,
-                sourceWildcardBlocks,
-                exactBlockOrigins,
-                wildcardBlockOrigins
-            )
-            val wildcards = repository.getEnabledWildcards()
-            blocklistHolder.updateAsync(
-                allDomains,
-                wildcards,
-                sourceWildcardBlocks = sourceWildcardBlocks,
-                sourceWildcardAllows = sourceWildcardAllows,
-                exactBlockOrigins = exactBlockOrigins,
-                sourceWildcardBlockOrigins = wildcardBlockOrigins,
-                sourceExactAllows = sourceAllowDomains
-            )
-
-            val count = allDomains.size + sourceWildcardBlocks.size
-            if (count == 0 && blockSources.isNotEmpty()) {
-                android.util.Log.w("HomeViewModel", "Blocklist build produced 0 domains from ${blockSources.size} block sources")
-                _uiState.update { it.copy(errorMessage = "Warning: blocklist is empty. Check your internet connection.") }
             }
         } catch (e: Exception) {
             android.util.Log.e("HomeViewModel", "Blocklist build failed: ${e.message}", e)
             _uiState.update { it.copy(errorMessage = "Could not rebuild the blocklist. Check network connectivity and enabled sources.") }
         }
+    }
+
+    /**
+     * Shared core: download all sources, parse, merge user rules and DoH bypass,
+     * update the in-memory blocklist holder. Returns the total blocked domain count.
+     */
+    private suspend fun downloadAndBuildBlocklist(
+        onProgress: (String) -> Unit
+    ): Int {
+        val blockSources = repository.getEnabledBlockSources()
+        val allowlistSources = repository.getEnabledAllowlistSources()
+        val allDomains = mutableSetOf<String>()
+        val sourceAllowDomains = mutableSetOf<String>()
+        val sourceWildcardBlocks = mutableSetOf<String>()
+        val sourceWildcardAllows = mutableSetOf<String>()
+        val exactBlockOrigins = mutableMapOf<String, String>()
+        val wildcardBlockOrigins = mutableMapOf<String, String>()
+        val totalSources = blockSources.size + allowlistSources.size
+
+        for ((index, source) in blockSources.withIndex()) {
+            onProgress("Downloading ${source.label} (${index + 1}/$totalSources)...")
+            downloader.download(source, forceDownload = true).onSuccess { dl ->
+                val parsed = HostsParser.parseForBlocking(dl.content)
+                allDomains.addAll(parsed.blockDomains)
+                parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
+                sourceAllowDomains.addAll(parsed.allowDomains)
+                sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                parsed.wildcardBlockDomains.forEach {
+                    wildcardBlockOrigins.putIfAbsent(it, source.label)
+                }
+                sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                markSourceDownloadSuccess(source.id)
+            }.onFailure { err ->
+                markSourceDownloadFailure(source, err)
+            }
+        }
+        for ((index, source) in allowlistSources.withIndex()) {
+            onProgress("Applying allowlist ${source.label} (${blockSources.size + index + 1}/$totalSources)...")
+            downloader.download(source, forceDownload = true).onSuccess { dl ->
+                val parsed = HostsParser.parseForAllowing(dl.content)
+                sourceAllowDomains.addAll(parsed.allowDomains)
+                sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                markSourceDownloadSuccess(source.id)
+            }.onFailure { err ->
+                markSourceDownloadFailure(source, err)
+            }
+        }
+
+        val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
+        blockRules.filter { !it.isWildcard }.forEach {
+            val hostname = it.hostname.lowercase()
+            allDomains.add(hostname)
+            exactBlockOrigins[hostname] = "User block rule"
+        }
+        val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
+        allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
+        allDomains.removeAll(sourceAllowDomains)
+        dohBypassUpdater.mergeCachedInto(
+            allDomains,
+            sourceWildcardBlocks,
+            exactBlockOrigins,
+            wildcardBlockOrigins
+        )
+        val wildcards = repository.getEnabledWildcards()
+        blocklistHolder.updateAsync(
+            allDomains,
+            wildcards,
+            sourceWildcardBlocks = sourceWildcardBlocks,
+            sourceWildcardAllows = sourceWildcardAllows,
+            exactBlockOrigins = exactBlockOrigins,
+            sourceWildcardBlockOrigins = wildcardBlockOrigins,
+            sourceExactAllows = sourceAllowDomains
+        )
+
+        return allDomains.size + sourceWildcardBlocks.size
     }
 }
