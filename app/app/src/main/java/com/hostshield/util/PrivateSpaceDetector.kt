@@ -26,7 +26,6 @@ object PrivateSpaceDetector {
      * profiles that also bypass VPN.
      */
     fun hasPrivateSpace(context: Context): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return false
         try {
             val um = context.getSystemService(Context.USER_SERVICE) as? UserManager ?: return false
             val profiles = um.userProfiles

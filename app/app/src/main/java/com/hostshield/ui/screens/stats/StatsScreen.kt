@@ -765,7 +765,7 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
 
 @Composable
 private fun HourlyBarChart(data: List<HourlyStat>, modifier: Modifier) {
-    val hourData = FloatArray(24) { 0f }
+    val hourData = FloatArray(24)
     data.forEach { if (it.hour in 0..23) hourData[it.hour] = it.cnt.toFloat() }
     val maxVal = hourData.maxOrNull()?.coerceAtLeast(1f) ?: 1f
     val textMeasurer = rememberTextMeasurer()
@@ -1169,8 +1169,8 @@ private fun DomainBar(rank: Int, hostname: String, count: Int, maxCount: Int) {
 
 @Composable
 private fun LatencyBarChart(data: List<com.hostshield.data.database.HourlyLatency>, modifier: Modifier) {
-    val hourData = FloatArray(24) { 0f }
-    val maxData = FloatArray(24) { 0f }
+    val hourData = FloatArray(24)
+    val maxData = FloatArray(24)
     data.forEach {
         if (it.hour in 0..23) {
             hourData[it.hour] = it.avgMs
