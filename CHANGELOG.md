@@ -3,6 +3,20 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.25] - 2026-06-16
+
+### Added
+- Search history now persists in backup schema v2 export/import.
+- Connected backup/restore roundtrip test exercising real utility paths.
+
+### Fixed
+- Added diagnostic logging to ~15 silent empty catch blocks in DNS
+  forwarding prefetch, stability flush, app resolution, DoH bypass
+  refresh, CNAME cloak refresh, network stats, and dumpsys polling.
+- Removed 5 unused string resources and 2 unused Glance widget XML files.
+- Widget `baselineAligned=false` for layout performance.
+- Annotated dead DoH3 branch with suppression for dead-code clarity.
+
 ## [v6.9.24] - 2026-06-16
 
 ### Changed
