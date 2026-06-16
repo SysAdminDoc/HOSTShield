@@ -201,6 +201,8 @@ class LocalDnsServer @Inject constructor(
     }
 
     private suspend fun forwardToUpstream(query: ByteArray): ByteArray? {
+        val encryptedDnsEnabled = useDoT || useDoH
+
         // Try encrypted DNS first (DoT > DoH, matching VPN priority)
         if (useDoT) {
             try {
@@ -219,7 +221,13 @@ class LocalDnsServer @Inject constructor(
             }
         }
 
-        // Plaintext UDP fallback
+        // Fail closed: never downgrade to plaintext when encrypted DNS is configured
+        if (encryptedDnsEnabled) {
+            Log.w(TAG, "Encrypted DNS failed, returning SERVFAIL (fail-closed)")
+            return DnsPacketBuilder.buildServfail(query)
+        }
+
+        // Plaintext UDP only when no encrypted transport is configured
         var sock: DatagramSocket? = null
         return try {
             sock = DatagramSocket()

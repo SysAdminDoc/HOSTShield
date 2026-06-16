@@ -487,14 +487,17 @@ class BlocklistHolder @Inject constructor() {
 
         for (label in labels) {
             val child = node.children[label] ?: break
-            val match = labels.take(depth + 1).asReversed().joinToString(".")
-            if (child.wildcardAllow) { wildcardAllowMatch = match; break }
+            depth++
+            val match = labels.take(depth).asReversed().joinToString(".")
+            if (child.wildcardAllow) wildcardAllowMatch = match
             if (child.wildcardBlock) wildcardBlockMatch = match
             node = child
-            depth++
         }
 
-        if (wildcardAllowMatch.isNotEmpty()) {
+        // Most-specific-wins: a deeper wildcardBlock overrides a shallower wildcardAllow
+        if (wildcardAllowMatch.isNotEmpty() &&
+            (wildcardBlockMatch.isEmpty() || wildcardAllowMatch.count { it == '.' } >= wildcardBlockMatch.count { it == '.' })
+        ) {
             return BlockDecision(
                 blocked = false,
                 reason = "allowlist_wildcard",

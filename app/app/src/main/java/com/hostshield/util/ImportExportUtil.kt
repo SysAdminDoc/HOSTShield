@@ -518,6 +518,8 @@ class ImportExportUtil @Inject constructor() {
                 val enabled = parts.getOrNull(3)?.trim() != "0"
                 val isRegex = type == 2 || type == 3
 
+                if (isRegex && !isSafeRegex(domain)) return@forEach
+
                 when (type) {
                     0 -> allow.add(UserRule(hostname = domain, type = RuleType.ALLOW, enabled = enabled, isRegex = isRegex))
                     1 -> block.add(UserRule(hostname = domain, type = RuleType.BLOCK, enabled = enabled, isRegex = isRegex))
@@ -547,6 +549,13 @@ class ImportExportUtil @Inject constructor() {
             blocklist = block, allowlist = allow, sources = sources,
             format = "pihole"
         )
+    }
+
+    private val nestedQuantifierRe = Regex("""\([^)]*[+*][^)]*\)[+*?]""")
+    private fun isSafeRegex(pattern: String): Boolean {
+        if (pattern.length > 500) return false
+        if (nestedQuantifierRe.containsMatchIn(pattern)) return false
+        return try { Regex(pattern); true } catch (_: Exception) { false }
     }
 
     private fun isValidHost(s: String): Boolean =

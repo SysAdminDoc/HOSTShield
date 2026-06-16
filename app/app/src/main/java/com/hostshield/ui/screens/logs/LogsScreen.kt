@@ -109,6 +109,9 @@ class LogsViewModel @Inject constructor(
     private val _showBlocked = MutableStateFlow<Boolean?>(null)
     val showBlocked = _showBlocked.asStateFlow()
 
+    private val _queryTypeFilter = MutableStateFlow<String?>(null)
+    val queryTypeFilter = _queryTypeFilter.asStateFlow()
+
     // Authoritative set of blocked hostnames — loaded from DB + blocklist on init,
     // updated instantly on block/allow actions. Persists across sessions via DB.
     private val _blockedHostnames = MutableStateFlow<Set<String>>(emptySet())
@@ -116,6 +119,50 @@ class LogsViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
+
+    val deduped: StateFlow<List<DedupedLogEntry>> =
+        combine(logs, _searchQuery, _showBlocked, _blockedHostnames, _queryTypeFilter) { logList, query, blockedFilter, blockedSet, qTypeFilter ->
+            logList
+                .groupBy { it.hostname.lowercase() }
+                .map { (hostname, entries) ->
+                    val isBlocked = hostname in blockedSet || entries.any { it.blocked }
+                    val latest = entries.maxByOrNull { it.timestamp }
+                    DedupedLogEntry(
+                        hostname = hostname,
+                        blocked = isBlocked,
+                        hitCount = entries.size,
+                        latestTimestamp = entries.maxOf { it.timestamp },
+                        appLabel = entries.firstOrNull { it.appLabel.isNotEmpty() }?.appLabel ?: "",
+                        appPackage = entries.firstOrNull { it.appPackage.isNotEmpty() }?.appPackage ?: "",
+                        queryType = latest?.queryType ?: "A",
+                        responseTimeMs = latest?.responseTimeMs ?: 0,
+                        upstreamServer = latest?.upstreamServer ?: "",
+                        cnameChain = latest?.cnameChain ?: "",
+                        resolvedIps = latest?.resolvedIps ?: "",
+                        decisionReason = latest?.decisionReason ?: "",
+                        decisionSource = latest?.decisionSource ?: "",
+                        matchedValue = latest?.matchedValue ?: "",
+                        decisionPrecedence = latest?.decisionPrecedence ?: ""
+                    )
+                }
+                .filter { entry ->
+                    (query.isBlank() || entry.hostname.contains(query, ignoreCase = true) || entry.appPackage.contains(query, ignoreCase = true)) &&
+                    (blockedFilter == null || entry.blocked == blockedFilter) &&
+                    (qTypeFilter == null || entry.queryType.equals(qTypeFilter, ignoreCase = true))
+                }
+                .sortedByDescending { it.latestTimestamp }
+        }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val totalDomains: StateFlow<Int> = logs
+        .map { logList -> logList.map { it.hostname.lowercase() }.distinct().size }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val blockedCount: StateFlow<Int> = deduped
+        .map { list -> list.count { it.blocked } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
@@ -163,6 +210,7 @@ class LogsViewModel @Inject constructor(
     }
     fun clearSearchHistory() { _searchHistory.value = emptyList() }
     fun setFilter(blocked: Boolean?) { _showBlocked.value = blocked }
+    fun setQueryTypeFilter(type: String?) { _queryTypeFilter.value = type }
 
     fun blockDomain(hostname: String) {
         val host = hostname.lowercase()
@@ -345,43 +393,10 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     var selectedHostnames by remember { mutableStateOf(setOf<String>()) }
     var showClearLogsDialog by remember { mutableStateOf(false) }
 
-    // Query type filter
-    var queryTypeFilter by remember { mutableStateOf<String?>(null) }
-
-    val deduped = remember(logs, query, blockedFilter, blockedSet, queryTypeFilter) {
-        logs
-            .groupBy { it.hostname.lowercase() }
-            .map { (hostname, entries) ->
-                val isBlocked = hostname in blockedSet || entries.any { it.blocked }
-                val latest = entries.maxByOrNull { it.timestamp }
-                DedupedLogEntry(
-                    hostname = hostname,
-                    blocked = isBlocked,
-                    hitCount = entries.size,
-                    latestTimestamp = entries.maxOf { it.timestamp },
-                    appLabel = entries.firstOrNull { it.appLabel.isNotEmpty() }?.appLabel ?: "",
-                    appPackage = entries.firstOrNull { it.appPackage.isNotEmpty() }?.appPackage ?: "",
-                    queryType = latest?.queryType ?: "A",
-                    responseTimeMs = latest?.responseTimeMs ?: 0,
-                    upstreamServer = latest?.upstreamServer ?: "",
-                    cnameChain = latest?.cnameChain ?: "",
-                    resolvedIps = latest?.resolvedIps ?: "",
-                    decisionReason = latest?.decisionReason ?: "",
-                    decisionSource = latest?.decisionSource ?: "",
-                    matchedValue = latest?.matchedValue ?: "",
-                    decisionPrecedence = latest?.decisionPrecedence ?: ""
-                )
-            }
-            .filter { entry ->
-                (query.isBlank() || entry.hostname.contains(query, ignoreCase = true) || entry.appPackage.contains(query, ignoreCase = true)) &&
-                (blockedFilter == null || entry.blocked == blockedFilter) &&
-                (queryTypeFilter == null || entry.queryType.equals(queryTypeFilter, ignoreCase = true))
-            }
-            .sortedByDescending { it.latestTimestamp }
-    }
-
-    val totalDomains = remember(logs) { logs.map { it.hostname.lowercase() }.distinct().size }
-    val blockedCount = remember(deduped) { deduped.count { it.blocked } }
+    val queryTypeFilter by viewModel.queryTypeFilter.collectAsStateWithLifecycle()
+    val deduped by viewModel.deduped.collectAsStateWithLifecycle()
+    val totalDomains by viewModel.totalDomains.collectAsStateWithLifecycle()
+    val blockedCount by viewModel.blockedCount.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         // Header
@@ -547,7 +562,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             types.forEach { (type, label) ->
                 val selected = queryTypeFilter == type
                 Surface(
-                    onClick = { queryTypeFilter = type },
+                    onClick = { viewModel.setQueryTypeFilter(type) },
                     shape = RoundedCornerShape(6.dp),
                     color = if (selected) Blue.copy(alpha = 0.12f) else Surface2,
                     modifier = Modifier.heightIn(min = 40.dp)
@@ -584,7 +599,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                         {
                             viewModel.setSearch("")
                             viewModel.setFilter(null)
-                            queryTypeFilter = null
+                            viewModel.setQueryTypeFilter(null)
                         }
                     } else {
                         null

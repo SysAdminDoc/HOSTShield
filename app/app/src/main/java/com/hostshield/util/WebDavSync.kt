@@ -338,6 +338,9 @@ class WebDavSync @Inject constructor(
     private fun buildUrl(serverUrl: String, remotePath: String): String {
         val base = serverUrl.trimEnd('/')
         val path = remotePath.trimStart('/')
+        require(!path.split('/').any { it == ".." || it == "." }) {
+            "Path traversal segments rejected: $path"
+        }
         return "$base/$path"
     }
 
@@ -403,9 +406,11 @@ class WebDavSync @Inject constructor(
                             val normalizedParent = parentPath.trimEnd('/')
                             val normalizedHref = path.trimEnd('/')
 
-                            // Skip the parent collection itself
+                            // Skip the parent collection itself and reject path traversal
+                            val hasTraversal = normalizedHref.split('/').any { it == ".." || it == "." }
                             if (normalizedHref.isNotEmpty() &&
-                                !normalizedHref.endsWith(normalizedParent)
+                                !normalizedHref.endsWith(normalizedParent) &&
+                                !hasTraversal
                             ) {
                                 val name = normalizedHref.substringAfterLast('/')
                                 if (name.isNotEmpty()) {

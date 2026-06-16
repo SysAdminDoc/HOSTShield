@@ -3,6 +3,31 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.23] - 2026-06-16
+
+### Fixed
+- LocalDnsServer now fails closed when encrypted DNS (DoH/DoT) is configured
+  but fails, returning SERVFAIL instead of silently falling back to plaintext
+  UDP — matching the VPN mode fail-closed policy.
+- BlocklistHolder trie walk no longer breaks early on wildcardAllow, so a
+  more-specific wildcardBlock at a deeper level correctly overrides a shallower
+  wildcardAllow (most-specific-wins semantics).
+- WebDavSync rejects path traversal segments (`..`/`.`) in server-supplied
+  `<d:href>` values and in `buildUrl`, preventing a malicious WebDAV server
+  from requesting arbitrary paths.
+- Pi-hole CSV regex import now validates imported patterns against the same
+  length cap and nested-quantifier rejection used at blocklist compile time,
+  preventing ReDoS from pathological imported regexes.
+- Removed duplicate lowercase automation action aliases from the manifest,
+  halving the exported receiver attack surface.
+
+### Changed
+- CI and release workflow actions pinned to SHA digests instead of mutable tags.
+- Release workflow now runs `lintFullDebug` before building artifacts.
+- DNS log deduplication, filtering, and sorting moved from LogsScreen composable
+  `remember{}` to ViewModel `StateFlow`, eliminating main-thread recomposition
+  cost for up to 2000 log entries.
+
 ## [v6.9.22] - 2026-06-16
 
 ### Added

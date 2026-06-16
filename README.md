@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.22-blue)
+![Version](https://img.shields.io/badge/version-6.9.23-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -404,6 +404,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.23** | Security/correctness audit: LocalDnsServer fail-closed, BlocklistHolder most-specific-wins trie, WebDavSync path-traversal rejection, Pi-hole ReDoS guard, CI SHA pinning, release lint gate, manifest alias cleanup, LogsScreen ViewModel extraction. |
 | **6.9.22** | Threat-intel blocked log details now include review actions for a global domain allow or an app-scoped DNS allow rule for the affected app/domain pair. |
 | **6.9.21** | Stats now shows local threat-intel impact by feed with 24h/7d block counts, last matched time, top affected domains/apps, and a compact 7-day feed trend. |
 | **6.9.20** | Main app navigation now applies explicit system-bar insets so top-level and sub-screen content stays clear of Android 15+ status and navigation bars while edge-to-edge remains enabled. |
