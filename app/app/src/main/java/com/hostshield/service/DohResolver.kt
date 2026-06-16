@@ -150,6 +150,10 @@ class DohResolver @Inject constructor(
     ): DohResponse? = withContext(Dispatchers.IO) {
         val preferredProvider = choosePrimaryProvider(provider, getFastestProvider())
 
+        // DoH3/QUIC transport is disabled until a maintained Cronet artifact is available.
+        // Doh3Resolver.isAvailable is compile-time false; this guard exists for the
+        // future re-enable path and is stripped by R8 in release builds.
+        @Suppress("KotlinConstantConditions")
         if (doh3Resolver.isAvailable) {
             doh3Resolver.resolve(dnsQuery, Doh3Resolver.Provider.fromDohProvider(preferredProvider))?.let { doh3 ->
                 updateLatency(doh3.provider.dohProvider, doh3.latencyMs)
