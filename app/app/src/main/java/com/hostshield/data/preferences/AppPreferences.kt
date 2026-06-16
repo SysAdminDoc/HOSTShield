@@ -262,6 +262,7 @@ class AppPreferences @Inject constructor(
 
     // ── Search History ────────────────────────────────────────
     val searchHistory: Flow<List<String>> get() = ui.searchHistory
+    suspend fun setSearchHistory(queries: List<String>) = ui.setSearchHistory(queries)
     suspend fun addSearchQuery(query: String) = ui.addSearchQuery(query)
     suspend fun clearSearchHistory() = ui.clearSearchHistory()
 }

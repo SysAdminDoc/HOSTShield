@@ -52,6 +52,15 @@ class UiPreferences @Inject constructor(
         (it[Keys.SEARCH_HISTORY] ?: "").split("\n").filter { s -> s.isNotBlank() }
     }
 
+    suspend fun setSearchHistory(queries: List<String>) = ds.edit {
+        val normalized = queries
+            .map { query -> query.trim().lowercase() }
+            .filter { query -> query.length >= 2 }
+            .distinct()
+            .take(10)
+        it[Keys.SEARCH_HISTORY] = normalized.joinToString("\n")
+    }
+
     suspend fun addSearchQuery(query: String) {
         val trimmed = query.trim().lowercase()
         if (trimmed.length < 2) return

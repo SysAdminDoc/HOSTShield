@@ -221,6 +221,7 @@ class BackupRestoreUtil @Inject constructor(
         prefsObj.put("high_contrast_amoled", prefs.highContrastAmoled.first())
         prefsObj.put("show_notification", prefs.showNotification.first())
         prefsObj.put("pinned_domains", JSONArray(prefs.pinnedDomains.first().toList()))
+        prefsObj.put("search_history", JSONArray(prefs.searchHistory.first()))
 
         // v2 sync/schedule
         prefsObj.put("schedule_enabled", prefs.scheduleEnabled.first())
@@ -429,6 +430,12 @@ class BackupRestoreUtil @Inject constructor(
                 val pins = mutableSetOf<String>()
                 for (i in 0 until pinArr.length()) pins.add(pinArr.getString(i))
                 prefs.setPinnedDomains(pins)
+            }
+            if (p.has("search_history")) {
+                val historyArr = p.getJSONArray("search_history")
+                val queries = mutableListOf<String>()
+                for (i in 0 until historyArr.length()) queries.add(historyArr.getString(i))
+                prefs.setSearchHistory(queries)
             }
 
             // v2 sync/schedule
