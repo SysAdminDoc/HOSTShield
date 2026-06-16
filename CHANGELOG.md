@@ -3,6 +3,13 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.18] - 2026-06-16
+
+### Fixed
+- DNS log temporary-allow actions now schedule their re-block through
+  WorkManager instead of a ViewModel coroutine delay, so process death and Doze
+  no longer turn a temporary allow into a persistent bypass.
+
 ## [v6.9.17] - 2026-06-16
 
 ### Security

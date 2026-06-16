@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.17-blue)
+![Version](https://img.shields.io/badge/version-6.9.18-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -8,7 +8,7 @@
 
 > System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, rate-limited GeoIP enrichment, and a professional AMOLED dark UI with an optional high-contrast mode.
 
-Current module baseline: v6.9.17, versionCode 99.
+Current module baseline: v6.9.18, versionCode 100.
 
 ## Quick Start
 
@@ -44,6 +44,7 @@ Current module baseline: v6.9.17, versionCode 99.
 | **Diagnostic Export** | One-tap shareable report with device info, config, logs, network state |
 | **AdAway Import** | Import hosts files, sources, and rules from AdAway backups |
 | **Remote DoH Updates** | Supplementary DoH bypass domains fetched from GitHub without app updates |
+| **Durable Temporary Allows** | DNS log temporary allow windows are restored by WorkManager after process death or Doze |
 | **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
 | **Parental PIN Upgrade** | Legacy SHA-256 parental PIN hashes are detected at startup and forced through the current KDF upgrade path |
 | **High-Contrast AMOLED** | Settings toggle for pure-black surfaces, brighter text, stronger semantic colors, chart contrast, and high-contrast widgets |

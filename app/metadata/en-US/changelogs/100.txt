@@ -1,0 +1,4 @@
+v6.9.18 - Durable temporary allows:
+- DNS log temporary-allow timers now use WorkManager
+- Temporarily allowed domains are re-blocked after the chosen window even after process death
+- Root hosts entries are restored when temporary allows expire in root mode

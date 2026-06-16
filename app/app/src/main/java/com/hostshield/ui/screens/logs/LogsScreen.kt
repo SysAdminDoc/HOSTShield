@@ -1,5 +1,6 @@
 package com.hostshield.ui.screens.logs
 
+import android.content.Context
 import android.util.Log
 import com.hostshield.util.PrivacyLog
 import androidx.compose.animation.*
@@ -53,7 +54,9 @@ import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import com.hostshield.util.GeoIpLookup
 import com.hostshield.util.RootUtil
+import com.hostshield.service.TemporaryAllowWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -84,6 +87,7 @@ data class DedupedLogEntry(
 
 @HiltViewModel
 class LogsViewModel @Inject constructor(
+    @param:ApplicationContext private val appContext: Context,
     private val repository: HostShieldRepository,
     private val blocklist: BlocklistHolder,
     private val rootUtil: RootUtil,
@@ -237,14 +241,15 @@ class LogsViewModel @Inject constructor(
             try {
                 val method = prefs.blockMethod.first()
                 if (method == BlockMethod.ROOT_HOSTS) rootUtil.removeHostEntry(host)
-
-                // Wait then re-block
-                kotlinx.coroutines.delay(minutes * 60_000L)
-
+                TemporaryAllowWorker.schedule(appContext, host, minutes)
+            } catch (e: Exception) {
                 _blockedHostnames.update { it + host }
                 blocklist.addDomain(host)
-                if (method == BlockMethod.ROOT_HOSTS) rootUtil.appendHostEntry(host)
-            } catch (e: Exception) {
+                runCatching {
+                    if (prefs.blockMethod.first() == BlockMethod.ROOT_HOSTS) {
+                        rootUtil.appendHostEntry(host)
+                    }
+                }
                 PrivacyLog.e("LogsViewModel", "Failed to temporarily allow domain: $host", e)
                 _error.value = "Could not temporarily allow $host. Try again."
             }

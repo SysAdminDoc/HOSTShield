@@ -1,3 +1,20 @@
+# HostShield v6.9.18
+
+**Release Date:** 2026-06-16
+**Version Code:** 100
+
+## Durable Temporary Allow Timers
+
+### Fixed
+- DNS log temporary-allow actions now schedule the re-block with WorkManager
+  instead of a ViewModel coroutine delay.
+- Domains temporarily removed from the active blocklist or root hosts file are
+  restored after the selected allow window even if the app process is killed or
+  Android delays background work.
+
+### Verification
+- `:app:compileFullDebugKotlin`
+
 # HostShield v6.9.17
 
 **Release Date:** 2026-06-16
