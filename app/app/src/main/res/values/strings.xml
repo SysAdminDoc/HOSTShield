@@ -22,9 +22,6 @@
     <!-- Screen titles -->
     <string name="screen_settings">Settings</string>
     <string name="screen_settings_subtitle">Tune protection, DNS routing, backups, diagnostics, and sharing.</string>
-    <string name="screen_sources">Sources</string>
-    <string name="screen_dns_logs">DNS Logs</string>
-    <string name="screen_automation">Automation</string>
 
     <!-- Settings section headers -->
     <string name="section_battery">Battery</string>
@@ -195,8 +192,6 @@
     <string name="home_apps_firewalled">%1$d apps firewalled</string>
     <string name="home_update_apply">Update and apply</string>
     <string name="home_update_apply_sub">Download latest sources and apply</string>
-    <string name="home_root_warning_title">Root not detected</string>
-    <string name="home_root_warning_message">Use VPN mode for system-wide DNS filtering, or grant root permission to write the hosts file.</string>
     <string name="home_logging_paused">Logging paused</string>
     <string name="home_logging_paused_message">Enable DNS logging in Settings to review app activity, resolver latency, and blocked domains.</string>
     <string name="home_waiting_dns">Waiting for DNS traffic</string>
