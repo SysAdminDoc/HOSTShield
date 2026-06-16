@@ -9,6 +9,15 @@
     <string name="shortcut_logs">Logs</string>
     <string name="shortcut_logs_long">View DNS Logs</string>
     <string name="stats_widget_description">Blocking statistics dashboard</string>
+    <string name="widget_shield_label">HS</string>
+    <string name="widget_status_protected">Protected</string>
+    <string name="widget_toggle_enable">Enable</string>
+    <string name="widget_stats_title">HostShield Stats</string>
+    <string name="widget_blocked_today">blocked today</string>
+    <string name="widget_queries">queries</string>
+    <string name="widget_block_rate">block rate</string>
+    <string name="widget_zero">0</string>
+    <string name="widget_zero_percent">0%</string>
 
     <!-- Screen titles -->
     <string name="screen_settings">Settings</string>

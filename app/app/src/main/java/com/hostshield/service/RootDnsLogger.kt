@@ -389,7 +389,7 @@ class RootDnsLogger @Inject constructor(
                 val result = Shell.cmd("dumpsys dnsresolver 2>/dev/null").exec()
                 if (result.isSuccess) parseDumpsysOutput(result.out)
             } catch (_: CancellationException) { break }
-            catch (_: Exception) { }
+            catch (e: Exception) { Log.w(TAG, "Dumpsys poll failed: ${e.message}") }
             delay(DUMPSYS_POLL_MS)
         }
     }

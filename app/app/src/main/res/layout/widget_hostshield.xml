@@ -12,7 +12,7 @@
         android:id="@+id/widget_shield"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="HS"
+        android:text="@string/widget_shield_label"
         android:textColor="#7FFFEA"
         android:textSize="28sp"
         android:textStyle="bold" />
@@ -22,7 +22,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
-        android:text="Protected"
+        android:text="@string/widget_status_protected"
         android:textColor="#7FFFEA"
         android:textSize="14sp"
         android:textStyle="bold" />
@@ -76,7 +76,7 @@
             android:id="@+id/widget_toggle_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Enable"
+            android:text="@string/widget_toggle_enable"
             android:textColor="#FFFFFF"
             android:textSize="12sp"
             android:textStyle="bold" />

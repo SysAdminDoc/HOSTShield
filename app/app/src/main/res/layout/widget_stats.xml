@@ -12,7 +12,7 @@
         android:id="@+id/stats_widget_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="HostShield Stats"
+        android:text="@string/widget_stats_title"
         android:textColor="#7FFFEA"
         android:textSize="11sp"
         android:textStyle="bold" />
@@ -22,7 +22,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="0"
+        android:text="@string/widget_zero"
         android:textColor="#FF7AA8"
         android:textSize="28sp"
         android:textStyle="bold" />
@@ -31,7 +31,7 @@
         android:id="@+id/stats_widget_blocked_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="blocked today"
+        android:text="@string/widget_blocked_today"
         android:textColor="#D9E2F2"
         android:textSize="10sp" />
 
@@ -53,7 +53,7 @@
                 android:id="@+id/stats_widget_queries"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0"
+                android:text="@string/widget_zero"
                 android:textColor="#9ED0FF"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -61,7 +61,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="queries"
+                android:text="@string/widget_queries"
                 android:textColor="#AAB6C8"
                 android:textSize="9sp" />
         </LinearLayout>
@@ -77,7 +77,7 @@
                 android:id="@+id/stats_widget_rate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0%"
+                android:text="@string/widget_zero_percent"
                 android:textColor="#7FFFEA"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -85,7 +85,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="block rate"
+                android:text="@string/widget_block_rate"
                 android:textColor="#AAB6C8"
                 android:textSize="9sp" />
         </LinearLayout>

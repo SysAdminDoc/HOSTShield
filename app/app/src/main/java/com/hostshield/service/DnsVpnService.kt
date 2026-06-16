@@ -1274,7 +1274,7 @@ class DnsVpnService : VpnService() {
                         serviceScope.launch {
                             try {
                                 forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset)
-                            } catch (_: Exception) { }
+                            } catch (e: Exception) { PrivacyLog.d(TAG, "Prefetch failed for $domain: ${e.message}") }
                         }
                     }
                     return
@@ -1286,7 +1286,7 @@ class DnsVpnService : VpnService() {
                     serviceScope.launch {
                         try {
                             forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset)
-                        } catch (_: Exception) { }
+                        } catch (e: Exception) { PrivacyLog.d(TAG, "Stale refresh failed for $domain: ${e.message}") }
                     }
                     return
                 }
@@ -1526,7 +1526,7 @@ class DnsVpnService : VpnService() {
         stabilityFlushJob = serviceScope.launch {
             while (isActive) {
                 delay(60_000)
-                try { flushStability() } catch (_: Exception) { }
+                try { flushStability() } catch (e: Exception) { Log.w(TAG, "Stability flush failed: ${e.message}") }
             }
         }
     }

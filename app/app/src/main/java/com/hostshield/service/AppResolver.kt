@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
+import android.util.Log
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
@@ -15,6 +16,10 @@ class AppResolver(
     private val context: Context,
     private val protectSocket: () -> Unit = {}
 ) {
+    companion object {
+        private const val TAG = "AppResolver"
+    }
+
     private val pm: PackageManager get() = context.packageManager
 
     /** Resolve app from IPv4 DNS packet. Returns (packageName, appLabel). */
@@ -34,7 +39,7 @@ class AppResolver(
             }
             val uid = findUidFromPort(srcPort)
             if (uid > 0) return resolvePkg(uid)
-        } catch (_: Exception) { }
+        } catch (e: Exception) { Log.w(TAG, "IPv4 app resolve failed: ${e.message}") }
         return "" to ""
     }
 
@@ -55,7 +60,7 @@ class AppResolver(
             }
             val uid = findUidFromPort(srcPort)
             if (uid > 0) return resolvePkg(uid)
-        } catch (_: Exception) { }
+        } catch (e: Exception) { Log.w(TAG, "IPv6 app resolve failed: ${e.message}") }
         return "" to ""
     }
 
@@ -64,7 +69,7 @@ class AppResolver(
         try {
             val pkg = pm.getPackagesForUid(uid)?.firstOrNull() ?: return "" to ""
             return pkg to pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
-        } catch (_: Exception) { }
+        } catch (e: Exception) { Log.w(TAG, "UID $uid package resolve failed: ${e.message}") }
         return "" to ""
     }
 
@@ -79,7 +84,7 @@ class AppResolver(
                         return parts[7].toIntOrNull() ?: -1
                 }
             }
-        } catch (_: Exception) { }
+        } catch (e: Exception) { Log.w(TAG, "Port $port UID lookup failed: ${e.message}") }
         return -1
     }
 }

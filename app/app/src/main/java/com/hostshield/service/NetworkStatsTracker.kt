@@ -108,7 +108,7 @@ class NetworkStatsTracker @Inject constructor(
                     )
                 }
                 wifiStats.close()
-            } catch (_: Exception) { }
+            } catch (e: Exception) { Log.w(TAG, "WiFi stats query failed: ${e.message}") }
 
             // Mobile stats
             try {
@@ -132,7 +132,7 @@ class NetworkStatsTracker @Inject constructor(
                     )
                 }
                 mobileStats.close()
-            } catch (_: Exception) { }
+            } catch (e: Exception) { Log.w(TAG, "Mobile stats query failed: ${e.message}") }
 
             return if (uidStats.isNotEmpty()) uidStats.values.toList() else null
         } catch (e: Exception) {
