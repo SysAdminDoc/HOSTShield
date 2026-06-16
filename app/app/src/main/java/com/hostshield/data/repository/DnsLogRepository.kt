@@ -28,6 +28,14 @@ class DnsLogRepository @Inject constructor(
     fun getDailyBreakdown(since: Long): Flow<List<DailyBreakdown>> = logDao.getDailyBreakdown(since)
     fun getHourlyLatency(since: Long): Flow<List<HourlyLatency>> = logDao.getHourlyLatency(since)
     fun getQueryTypeDistribution(since: Long): Flow<List<QueryTypeStat>> = logDao.getQueryTypeDistribution(since)
+    fun getThreatIntelFeedImpact(dayStart: Long, weekStart: Long, limit: Int = 8): Flow<List<ThreatIntelFeedImpact>> =
+        logDao.getThreatIntelFeedImpact(dayStart, weekStart, limit)
+    fun getThreatIntelTopDomains(since: Long, limit: Int = 8): Flow<List<ThreatIntelTopDomain>> =
+        logDao.getThreatIntelTopDomains(since, limit)
+    fun getThreatIntelTopApps(since: Long, limit: Int = 8): Flow<List<ThreatIntelTopApp>> =
+        logDao.getThreatIntelTopApps(since, limit)
+    fun getThreatIntelDailyImpact(since: Long): Flow<List<ThreatIntelDailyImpact>> =
+        logDao.getThreatIntelDailyImpact(since)
     suspend fun logDnsQuery(entry: DnsLogEntry) = logDao.insert(entry)
     suspend fun clearOldLogs(olderThanMs: Long) = logDao.deleteOlderThan(System.currentTimeMillis() - olderThanMs)
     suspend fun clearAllLogs() = logDao.deleteAll()

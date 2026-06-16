@@ -1,3 +1,22 @@
+# HostShield v6.9.21
+
+**Release Date:** 2026-06-16
+**Version Code:** 103
+
+## Threat-Intel Impact Analytics
+
+### Added
+- Stats now shows local malware-feed impact by feed with 24-hour and 7-day
+  block counts plus last matched time.
+- Threat-intel analytics include top affected domains, top affected apps, and
+  a compact 7-day feed trend without uploading telemetry.
+
+### Verification
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest`
+- `:app:lintFullDebug`
+- `:app:assembleFullDebug`
+
 # HostShield v6.9.20
 
 **Release Date:** 2026-06-16

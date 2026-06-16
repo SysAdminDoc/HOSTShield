@@ -92,6 +92,14 @@ class HostShieldRepository @Inject constructor(
     fun getDailyBreakdown(since: Long): Flow<List<DailyBreakdown>> = logs.getDailyBreakdown(since)
     fun getHourlyLatency(since: Long): Flow<List<HourlyLatency>> = logs.getHourlyLatency(since)
     fun getQueryTypeDistribution(since: Long): Flow<List<QueryTypeStat>> = logs.getQueryTypeDistribution(since)
+    fun getThreatIntelFeedImpact(dayStart: Long, weekStart: Long, limit: Int = 8): Flow<List<ThreatIntelFeedImpact>> =
+        logs.getThreatIntelFeedImpact(dayStart, weekStart, limit)
+    fun getThreatIntelTopDomains(since: Long, limit: Int = 8): Flow<List<ThreatIntelTopDomain>> =
+        logs.getThreatIntelTopDomains(since, limit)
+    fun getThreatIntelTopApps(since: Long, limit: Int = 8): Flow<List<ThreatIntelTopApp>> =
+        logs.getThreatIntelTopApps(since, limit)
+    fun getThreatIntelDailyImpact(since: Long): Flow<List<ThreatIntelDailyImpact>> =
+        logs.getThreatIntelDailyImpact(since)
     suspend fun logDnsQuery(entry: DnsLogEntry) = logs.logDnsQuery(entry)
     suspend fun clearOldLogs(olderThanMs: Long) = logs.clearOldLogs(olderThanMs)
     suspend fun clearAllLogs() = logs.clearAllLogs()

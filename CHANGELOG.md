@@ -3,6 +3,13 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.21] - 2026-06-16
+
+### Added
+- Stats now includes local threat-intel impact analytics with per-feed 24-hour
+  and 7-day block counts, last matched time, top affected domains/apps, and a
+  compact 7-day feed trend.
+
 ## [v6.9.20] - 2026-06-16
 
 ### Fixed

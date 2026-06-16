@@ -290,6 +290,85 @@ interface DnsLogDao {
         WHERE app_package = :pkg AND tracker_category != '' AND timestamp > :since
     """)
     fun getTrackerCountForApp(pkg: String, since: Long): Flow<Int>
+
+    /** Threat-intel impact by feed over the last 24h and 7d. */
+    @Query("""
+        SELECT decision_source as feed_name,
+            CAST(SUM(CASE WHEN timestamp > :dayStart THEN 1 ELSE 0 END) AS INTEGER) as blocks_24h,
+            COUNT(*) as blocks_7d,
+            MAX(timestamp) as last_matched
+        FROM dns_logs
+        WHERE blocked = 1
+            AND timestamp > :weekStart
+            AND decision_source != ''
+            AND decision_reason IN ('threat_intel_domain', 'threat_intel_ip')
+        GROUP BY decision_source
+        ORDER BY blocks_7d DESC, blocks_24h DESC
+        LIMIT :limit
+    """)
+    fun getThreatIntelFeedImpact(
+        dayStart: Long,
+        weekStart: Long,
+        limit: Int = 8
+    ): Flow<List<ThreatIntelFeedImpact>>
+
+    /** Top domains affected by threat-intel blocks. */
+    @Query("""
+        SELECT decision_source as feed_name,
+            hostname,
+            matched_value as matched_value,
+            COUNT(*) as cnt,
+            MAX(timestamp) as last_matched
+        FROM dns_logs
+        WHERE blocked = 1
+            AND timestamp > :since
+            AND decision_source != ''
+            AND decision_reason IN ('threat_intel_domain', 'threat_intel_ip')
+        GROUP BY decision_source, hostname, matched_value
+        ORDER BY cnt DESC, last_matched DESC
+        LIMIT :limit
+    """)
+    fun getThreatIntelTopDomains(
+        since: Long,
+        limit: Int = 8
+    ): Flow<List<ThreatIntelTopDomain>>
+
+    /** Top apps affected by threat-intel blocks. */
+    @Query("""
+        SELECT decision_source as feed_name,
+            app_package as app_package,
+            app_label as app_label,
+            COUNT(*) as cnt,
+            MAX(timestamp) as last_matched
+        FROM dns_logs
+        WHERE blocked = 1
+            AND timestamp > :since
+            AND app_package != ''
+            AND decision_source != ''
+            AND decision_reason IN ('threat_intel_domain', 'threat_intel_ip')
+        GROUP BY decision_source, app_package, app_label
+        ORDER BY cnt DESC, last_matched DESC
+        LIMIT :limit
+    """)
+    fun getThreatIntelTopApps(
+        since: Long,
+        limit: Int = 8
+    ): Flow<List<ThreatIntelTopApp>>
+
+    /** Daily threat-intel block counts by feed for trend panels. */
+    @Query("""
+        SELECT date(timestamp / 1000, 'unixepoch', 'localtime') as day,
+            decision_source as feed_name,
+            COUNT(*) as cnt
+        FROM dns_logs
+        WHERE blocked = 1
+            AND timestamp > :since
+            AND decision_source != ''
+            AND decision_reason IN ('threat_intel_domain', 'threat_intel_ip')
+        GROUP BY day, decision_source
+        ORDER BY day ASC, cnt DESC
+    """)
+    fun getThreatIntelDailyImpact(since: Long): Flow<List<ThreatIntelDailyImpact>>
 }
 
 @Dao
@@ -515,6 +594,35 @@ data class AppTrackerStat(
     @ColumnInfo(name = "app_package") val appPackage: String,
     @ColumnInfo(name = "app_label") val appLabel: String,
     val category: String,
+    val cnt: Int
+)
+
+data class ThreatIntelFeedImpact(
+    @ColumnInfo(name = "feed_name") val feedName: String,
+    @ColumnInfo(name = "blocks_24h") val blocks24h: Int,
+    @ColumnInfo(name = "blocks_7d") val blocks7d: Int,
+    @ColumnInfo(name = "last_matched") val lastMatched: Long
+)
+
+data class ThreatIntelTopDomain(
+    @ColumnInfo(name = "feed_name") val feedName: String,
+    val hostname: String,
+    @ColumnInfo(name = "matched_value") val matchedValue: String,
+    val cnt: Int,
+    @ColumnInfo(name = "last_matched") val lastMatched: Long
+)
+
+data class ThreatIntelTopApp(
+    @ColumnInfo(name = "feed_name") val feedName: String,
+    @ColumnInfo(name = "app_package") val appPackage: String,
+    @ColumnInfo(name = "app_label") val appLabel: String,
+    val cnt: Int,
+    @ColumnInfo(name = "last_matched") val lastMatched: Long
+)
+
+data class ThreatIntelDailyImpact(
+    val day: String,
+    @ColumnInfo(name = "feed_name") val feedName: String,
     val cnt: Int
 )
 

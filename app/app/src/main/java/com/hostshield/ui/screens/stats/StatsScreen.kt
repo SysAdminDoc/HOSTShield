@@ -34,6 +34,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.database.HourlyStat
+import com.hostshield.data.database.ThreatIntelDailyImpact
+import com.hostshield.data.database.ThreatIntelFeedImpact
+import com.hostshield.data.database.ThreatIntelTopApp
+import com.hostshield.data.database.ThreatIntelTopDomain
 import com.hostshield.data.database.TopApp
 import com.hostshield.data.database.TopHostname
 import com.hostshield.data.model.BlockStats
@@ -83,7 +87,11 @@ data class StatsUiState(
     val threatIntelIpCidrCount: Int = 0,
     val threatIntelLastUpdated: Long = 0L,
     val isRefreshingThreatIntel: Boolean = false,
-    val threatIntelRefreshMessage: String? = null
+    val threatIntelRefreshMessage: String? = null,
+    val threatIntelFeedImpact: List<ThreatIntelFeedImpact> = emptyList(),
+    val threatIntelTopDomains: List<ThreatIntelTopDomain> = emptyList(),
+    val threatIntelTopApps: List<ThreatIntelTopApp> = emptyList(),
+    val threatIntelDailyImpact: List<ThreatIntelDailyImpact> = emptyList()
 )
 
 enum class ThreatIntelFeedStatus {
@@ -150,6 +158,7 @@ class StatsViewModel @Inject constructor(
         .toInstant().toEpochMilli()
 
     private val weekStart = todayStart - (7 * 24 * 60 * 60 * 1000L)
+    private val last24hStart = System.currentTimeMillis() - (24 * 60 * 60 * 1000L)
 
     init {
         viewModelScope.launch { repository.getTotalBlocked().collect { t -> _uiState.update { it.copy(totalBlocked = t ?: 0) } } }
@@ -170,6 +179,10 @@ class StatsViewModel @Inject constructor(
         viewModelScope.launch { repository.getDailyBreakdown(weekStart).collect { d -> _uiState.update { it.copy(dailyTrend = d) } } }
         viewModelScope.launch { repository.getHourlyLatency(todayStart).collect { l -> _uiState.update { it.copy(hourlyLatency = l) } } }
         viewModelScope.launch { repository.getQueryTypeDistribution(weekStart).collect { d -> _uiState.update { it.copy(queryTypeDistribution = d) } } }
+        viewModelScope.launch { repository.getThreatIntelFeedImpact(last24hStart, weekStart).collect { impact -> _uiState.update { it.copy(threatIntelFeedImpact = impact) } } }
+        viewModelScope.launch { repository.getThreatIntelTopDomains(weekStart).collect { domains -> _uiState.update { it.copy(threatIntelTopDomains = domains) } } }
+        viewModelScope.launch { repository.getThreatIntelTopApps(weekStart).collect { apps -> _uiState.update { it.copy(threatIntelTopApps = apps) } } }
+        viewModelScope.launch { repository.getThreatIntelDailyImpact(weekStart).collect { trend -> _uiState.update { it.copy(threatIntelDailyImpact = trend) } } }
         pollCacheStats()
         loadVpnStability()
         loadThreatIntelHealth()
@@ -516,6 +529,10 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                 numberFormat = nf,
                 onRefresh = viewModel::refreshThreatIntelFeeds
             )
+        }
+
+        item {
+            ThreatIntelImpactCard(state = state, numberFormat = nf)
         }
 
         // 7-Day Trend Line Chart
@@ -910,6 +927,178 @@ private fun ThreatIntelFeedHealthRow(feed: ThreatIntelFeedHealthUi, numberFormat
     }
 }
 
+@Composable
+private fun ThreatIntelImpactCard(state: StatsUiState, numberFormat: NumberFormat) {
+    val total24h = state.threatIntelFeedImpact.sumOf { it.blocks24h }
+    val total7d = state.threatIntelFeedImpact.sumOf { it.blocks7d }
+
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Red.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.GppBad, null, tint = Red, modifier = Modifier.size(14.dp))
+                }
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Threat Feed Impact", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text("Local blocks attributed by feed", color = TextDim, fontSize = 10.sp, lineHeight = 14.sp)
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            if (state.threatIntelFeedImpact.isEmpty()) {
+                HostShieldCompactState(
+                    icon = Icons.Filled.GppBad,
+                    title = "No threat-intel blocks yet",
+                    message = "Malware feed impact appears here after a feed blocks DNS traffic.",
+                    accent = Red,
+                )
+                return@Column
+            }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ThreatIntelImpactMetric(
+                    label = "24h",
+                    value = numberFormat.format(total24h),
+                    color = if (total24h > 0) Red else TextDim,
+                    modifier = Modifier.weight(1f),
+                )
+                ThreatIntelImpactMetric(
+                    label = "7d",
+                    value = numberFormat.format(total7d),
+                    color = Red,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+            Text("Feeds", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(4.dp))
+            state.threatIntelFeedImpact.take(4).forEach { feed ->
+                ThreatIntelFeedImpactRow(feed, numberFormat)
+            }
+
+            if (state.threatIntelTopDomains.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text("Affected Domains", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                state.threatIntelTopDomains.take(4).forEach { domain ->
+                    ThreatIntelDomainImpactRow(domain, numberFormat)
+                }
+            }
+
+            if (state.threatIntelTopApps.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text("Affected Apps", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                state.threatIntelTopApps.take(4).forEach { app ->
+                    ThreatIntelAppImpactRow(app, numberFormat)
+                }
+            }
+
+            if (state.threatIntelDailyImpact.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text("7-Day Feed Trend", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                ThreatIntelDailyTrend(state.threatIntelDailyImpact, numberFormat)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThreatIntelImpactMetric(
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(shape = RoundedCornerShape(8.dp), color = color.copy(alpha = 0.08f), modifier = modifier) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Text(label, color = TextDim, fontSize = 10.sp)
+            Text(value, color = color, fontWeight = FontWeight.Bold, fontSize = 18.sp, letterSpacing = 0.sp)
+        }
+    }
+}
+
+@Composable
+private fun ThreatIntelFeedImpactRow(feed: ThreatIntelFeedImpact, numberFormat: NumberFormat) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(feed.feedName, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+            Text(
+                "Last ${formatThreatIntelTimestamp(feed.lastMatched)}",
+                color = TextDim,
+                fontSize = 10.sp,
+                lineHeight = 14.sp,
+            )
+        }
+        Text(
+            "${numberFormat.format(feed.blocks24h)} / ${numberFormat.format(feed.blocks7d)}",
+            color = Red,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun ThreatIntelDomainImpactRow(domain: ThreatIntelTopDomain, numberFormat: NumberFormat) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(domain.hostname, color = TextPrimary, fontSize = 11.sp, maxLines = 1, fontFamily = FontFamily.Monospace)
+            val matchText = domain.matchedValue.ifBlank { domain.feedName }
+            Text("$matchText | ${domain.feedName}", color = TextDim, fontSize = 9.sp, maxLines = 1)
+        }
+        Text(numberFormat.format(domain.cnt), color = Red, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun ThreatIntelAppImpactRow(app: ThreatIntelTopApp, numberFormat: NumberFormat) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(app.appLabel.ifBlank { app.appPackage }, color = TextPrimary, fontSize = 11.sp, maxLines = 1)
+            Text("${app.appPackage} | ${app.feedName}", color = TextDim, fontSize = 9.sp, maxLines = 1)
+        }
+        Text(numberFormat.format(app.cnt), color = Red, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun ThreatIntelDailyTrend(trend: List<ThreatIntelDailyImpact>, numberFormat: NumberFormat) {
+    val byDay = trend.groupBy { it.day }.toSortedMap()
+    val maxCount = byDay.values.maxOfOrNull { rows -> rows.sumOf { it.cnt } }?.coerceAtLeast(1) ?: 1
+    byDay.entries.toList().takeLast(7).forEach { (day, rows) ->
+        val total = rows.sumOf { it.cnt }
+        val topFeed = rows.maxByOrNull { it.cnt }?.feedName.orEmpty()
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(shortThreatIntelDay(day), color = TextDim, fontSize = 10.sp, modifier = Modifier.width(44.dp))
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Surface3)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth((total.toFloat() / maxCount).coerceIn(0.04f, 1f))
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Red.copy(alpha = 0.65f))
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(topFeed, color = TextDim, fontSize = 9.sp, maxLines = 1, modifier = Modifier.width(72.dp))
+            Text(numberFormat.format(total), color = Red, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
 private fun threatIntelStatusLabel(status: ThreatIntelFeedStatus): String = when (status) {
     ThreatIntelFeedStatus.HEALTHY -> "Fresh"
     ThreatIntelFeedStatus.STALE -> "Stale"
@@ -945,6 +1134,9 @@ private fun formatThreatIntelBytes(bytes: Long): String = when {
     bytes < 1024L * 1024L -> "${bytes / 1024L} KiB"
     else -> "${bytes / (1024L * 1024L)} MiB"
 }
+
+private fun shortThreatIntelDay(day: String): String =
+    if (day.length >= 10) day.substring(5) else day
 
 @Composable
 private fun MiniStat(modifier: Modifier, label: String, value: String, color: Color, icon: androidx.compose.ui.graphics.vector.ImageVector) {

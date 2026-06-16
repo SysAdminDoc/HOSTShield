@@ -1,0 +1,3 @@
+v6.9.21 - Threat-intel impact analytics:
+- Stats now shows local 24-hour and 7-day malware-feed block impact by feed.
+- Added top affected domains, top affected apps, last matched time, and a compact 7-day threat-intel feed trend.
