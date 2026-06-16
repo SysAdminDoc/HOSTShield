@@ -1,0 +1,7 @@
+v6.6.8 - QR Config Import Completion
+
+- QR config export now includes actual enabled rules and custom source URLs instead of DNS settings only.
+- QR import now previews the validated changes before applying them.
+- Import applies validated block/allow rules, HTTPS-only custom source URLs, custom upstream DNS, and enabled DoH settings through existing persistence paths.
+- QR decoding now rejects oversized pasted strings and compressed payloads that expand beyond the safety limit.
+- Added focused JVM tests for QR encode, decode, validation, and apply planning.
