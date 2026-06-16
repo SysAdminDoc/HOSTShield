@@ -1,0 +1,3 @@
+v6.9.22 - Threat-intel review actions:
+- Threat-intel blocked log details now show feed and match context.
+- Added review actions for a global domain allow rule or an app-scoped DNS allow rule for the affected app/domain pair.

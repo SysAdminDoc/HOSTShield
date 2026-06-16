@@ -36,11 +36,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.BlockMethod
+import com.hostshield.data.model.AppDnsRule
 import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.data.database.AppDnsRuleDao
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.ui.accessibility.accessibilityAction
 import com.hostshield.ui.accessibility.accessibilityHeading
@@ -54,6 +56,7 @@ import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import com.hostshield.util.GeoIpLookup
 import com.hostshield.util.RootUtil
+import com.hostshield.service.AppDnsRuleEngine
 import com.hostshield.service.TemporaryAllowWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -92,7 +95,9 @@ class LogsViewModel @Inject constructor(
     private val blocklist: BlocklistHolder,
     private val rootUtil: RootUtil,
     private val prefs: AppPreferences,
-    private val geoIpLookup: GeoIpLookup
+    private val geoIpLookup: GeoIpLookup,
+    private val appDnsRuleDao: AppDnsRuleDao,
+    private val appDnsRuleEngine: AppDnsRuleEngine
 ) : ViewModel() {
     val logs: StateFlow<List<DnsLogEntry>> = repository.getRecentLogs(2000)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -193,6 +198,31 @@ class LogsViewModel @Inject constructor(
             } catch (e: Exception) {
                 PrivacyLog.e("LogsViewModel", "Failed to allow domain: $host", e)
                 _error.value = "Could not allow $host. Check permissions and try again."
+            }
+        }
+    }
+
+    fun allowThreatIntelForApp(hostname: String, packageName: String) {
+        val host = hostname.lowercase()
+        val pkg = packageName.trim()
+        if (pkg.isBlank()) {
+            allowDomain(host)
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                appDnsRuleDao.insert(
+                    AppDnsRule(
+                        packageName = pkg,
+                        domain = host,
+                        action = "allow"
+                    )
+                )
+                appDnsRuleEngine.reloadForApp(pkg)
+            } catch (e: Exception) {
+                PrivacyLog.e("LogsViewModel", "Failed to allow threat-intel domain for app: $host / $pkg", e)
+                _error.value = "Could not add an app-scoped allow rule. Try again."
             }
         }
     }
@@ -627,6 +657,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                 onTemporaryAllow = { mins -> viewModel.temporaryAllow(entry.hostname, mins) },
                 onBlock = { viewModel.blockDomain(entry.hostname) },
                 onAllow = { viewModel.allowDomain(entry.hostname) },
+                onAllowForApp = { viewModel.allowThreatIntelForApp(entry.hostname, entry.appPackage) },
                 geoLookup = viewModel::lookupAllGeo
             )
         }
@@ -872,7 +903,17 @@ private fun formatDecisionReason(reason: String): String =
         .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
 
 @Composable
-private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPinned: Boolean = false, onTogglePin: () -> Unit = {}, onTemporaryAllow: (Int) -> Unit = {}, onBlock: () -> Unit = {}, onAllow: () -> Unit = {}, geoLookup: (suspend (List<String>) -> List<GeoIpLookup.GeoInfo>)? = null) {
+private fun QueryDetailSheet(
+    entry: DedupedLogEntry,
+    onDismiss: () -> Unit,
+    isPinned: Boolean = false,
+    onTogglePin: () -> Unit = {},
+    onTemporaryAllow: (Int) -> Unit = {},
+    onBlock: () -> Unit = {},
+    onAllow: () -> Unit = {},
+    onAllowForApp: () -> Unit = {},
+    geoLookup: (suspend (List<String>) -> List<GeoIpLookup.GeoInfo>)? = null
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
@@ -1025,6 +1066,25 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
             }
         }
 
+        if (entry.isThreatIntelBlock()) {
+            Spacer(Modifier.height(12.dp))
+            ThreatIntelReviewSection(
+                entry = entry,
+                onAllowDomain = {
+                    onAllow()
+                    onDismiss()
+                },
+                onAllowForApp = if (entry.appPackage.isNotBlank()) {
+                    {
+                        onAllowForApp()
+                        onDismiss()
+                    }
+                } else {
+                    null
+                }
+            )
+        }
+
         // Quick rule actions
         Spacer(Modifier.height(12.dp))
         Text("QUICK ACTIONS", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
@@ -1107,6 +1167,63 @@ private fun QueryDetailSheet(entry: DedupedLogEntry, onDismiss: () -> Unit, isPi
 }
 
 @Composable
+private fun ThreatIntelReviewSection(
+    entry: DedupedLogEntry,
+    onAllowDomain: () -> Unit,
+    onAllowForApp: (() -> Unit)?
+) {
+    Surface(shape = RoundedCornerShape(10.dp), color = Red.copy(alpha = 0.08f)) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.GppBad, null, tint = Red, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("THREAT REVIEW", color = Red, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "${entry.decisionSource.ifBlank { "Threat feed" }} matched ${entry.matchedValue.ifBlank { entry.hostname }}.",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                lineHeight = 15.sp
+            )
+            if (entry.appPackage.isNotBlank()) {
+                Text(
+                    "Scope recovery to ${entry.appLabel.ifBlank { entry.appPackage }} when only this app is affected.",
+                    color = TextDim,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ThreatReviewAction("Allow Domain", Green, onAllowDomain)
+                if (onAllowForApp != null) {
+                    ThreatReviewAction("Allow for App", Blue, onAllowForApp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThreatReviewAction(label: String, color: Color, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(8.dp),
+        color = color.copy(alpha = 0.1f),
+        modifier = Modifier.heightIn(min = 40.dp)
+    ) {
+        Text(
+            label,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            color = color,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
 private fun ReputationButton(label: String, color: Color, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
@@ -1124,6 +1241,9 @@ private fun ReputationButton(label: String, color: Color, onClick: () -> Unit) {
         }
     }
 }
+
+private fun DedupedLogEntry.isThreatIntelBlock(): Boolean =
+    blocked && (decisionReason == "threat_intel_domain" || decisionReason == "threat_intel_ip")
 
 @Composable
 private fun DetailRow(label: String, value: String, valueColor: Color = TextPrimary) {

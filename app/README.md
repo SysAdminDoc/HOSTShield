@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.21-blue)
+![Version](https://img.shields.io/badge/version-6.9.22-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -8,7 +8,7 @@
 
 > System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, rate-limited GeoIP enrichment, and a professional AMOLED dark UI with an optional high-contrast mode.
 
-Current module baseline: v6.9.21, versionCode 103.
+Current module baseline: v6.9.22, versionCode 104.
 
 ## Quick Start
 
@@ -41,6 +41,7 @@ Current module baseline: v6.9.21, versionCode 103.
 | **Tracker SDK Scanner** | Exodus-style APK dex scanning for 405 tracker SDK signatures |
 | **Threat Feed Health** | Stats dashboard shows malware-feed freshness, status, entry counts, and manual refresh without uploading telemetry |
 | **Threat Feed Impact** | Stats dashboard shows local feed impact, affected domains/apps, and 7-day threat-intel trends |
+| **Threat Review Actions** | Threat-blocked log details can add global or app-scoped allow rules without disabling all malware protection |
 | **GeoIP Lookup** | ipapi.co over HTTPS for city-level detail with local in-memory caching and rate-limit backoff |
 | **Diagnostic Export** | One-tap shareable report with device info, config, logs, network state |
 | **AdAway Import** | Import hosts files, sources, and rules from AdAway backups |

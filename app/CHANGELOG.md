@@ -1,3 +1,23 @@
+# HostShield v6.9.22
+
+**Release Date:** 2026-06-16
+**Version Code:** 104
+
+## Threat-Intel Review Actions
+
+### Added
+- Threat-intel blocked log details now show a review panel with feed and match
+  context.
+- Review actions can create a global domain allow rule or an app-scoped DNS
+  allow rule for the affected app/domain pair without disabling threat-intel
+  protection globally.
+
+### Verification
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest`
+- `:app:lintFullDebug`
+- `:app:assembleFullDebug`
+
 # HostShield v6.9.21
 
 **Release Date:** 2026-06-16
