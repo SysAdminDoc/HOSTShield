@@ -3,6 +3,13 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.17] - 2026-06-16
+
+### Security
+- Legacy unsalted SHA-256 parental PIN hashes are now detected on app launch,
+  force the parental-controls PIN upgrade flow, and are rewritten to the
+  current KDF after successful PIN verification.
+
 ## [v6.9.16] - 2026-06-15
 
 ### Fixed

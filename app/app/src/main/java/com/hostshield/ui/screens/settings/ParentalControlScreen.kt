@@ -45,12 +45,22 @@ class ParentalControlViewModel @Inject constructor(
     private val prefs: AppPreferences,
     private val manager: ParentalControlManager,
 ) : ViewModel() {
+    private companion object {
+        const val ACTION_DISABLE = "disable"
+        const val ACTION_ENABLE = "enable"
+        const val ACTION_CLEAR_PIN = "clear_pin"
+        const val ACTION_UPGRADE_PIN = "upgrade_pin"
+        const val ACTION_SET_PIN_PREFIX = "set_pin:"
+        const val ACTION_PROFILE_PREFIX = "profile:"
+    }
 
     val enabled = prefs.parentalEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val profile = prefs.parentalAgeProfile
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "ADULT")
 
     var pinRequired by mutableStateOf(false)
+        private set
+    var pinUpgradeRequired by mutableStateOf(false)
         private set
     var message by mutableStateOf<String?>(null)
         private set
@@ -64,24 +74,32 @@ class ParentalControlViewModel @Inject constructor(
         private set
 
     init {
-        viewModelScope.launch { pinRequired = manager.isPinSet() }
+        viewModelScope.launch {
+            pinRequired = manager.isPinSet()
+            pinUpgradeRequired = manager.isPinRehashRequired()
+            if (pinRequired && pinUpgradeRequired) {
+                openPinDialog(ACTION_UPGRADE_PIN)
+            }
+        }
     }
 
     fun setEnabled(value: Boolean) {
         viewModelScope.launch {
-            if (value) {
+            if (manager.isPinSet()) {
+                openPinDialog(if (value) ACTION_ENABLE else ACTION_DISABLE)
+            } else if (value) {
                 manager.enable(AgeProfile.fromName(profile.value))
             } else {
-                if (manager.isPinSet()) {
-                    showPinDialog = true
-                    pinError = null
-                    pinLockoutMs = manager.lockoutRemainingMs()
-                    pinAction = "disable"
-                } else {
-                    manager.disable()
-                }
+                manager.disable()
             }
         }
+    }
+
+    private fun openPinDialog(action: String) {
+        showPinDialog = true
+        pinError = null
+        pinLockoutMs = manager.lockoutRemainingMs()
+        pinAction = action
     }
 
     fun dismissPinDialog() {
@@ -95,12 +113,13 @@ class ParentalControlViewModel @Inject constructor(
         viewModelScope.launch {
             when (val r = manager.verifyPinDetailed(pin)) {
                 is ParentalControlManager.PinResult.Success -> {
+                    val action = pinAction
                     showPinDialog = false
                     pinError = null
                     pinLockoutMs = 0L
-                    when (pinAction) {
-                        "disable" -> manager.disable()
-                    }
+                    runVerifiedAction(action)
+                    pinRequired = manager.isPinSet()
+                    pinUpgradeRequired = manager.isPinRehashRequired()
                     pinAction = null
                 }
                 is ParentalControlManager.PinResult.LockedOut -> {
@@ -112,36 +131,78 @@ class ParentalControlViewModel @Inject constructor(
                     pinLockoutMs = 0L
                 }
                 is ParentalControlManager.PinResult.NoPin -> {
-                    // PIN was cleared between dialog open and submit — just disable
+                    val action = pinAction
                     showPinDialog = false
-                    manager.disable()
+                    runVerifiedAction(action)
+                    pinRequired = manager.isPinSet()
+                    pinUpgradeRequired = manager.isPinRehashRequired()
+                    pinAction = null
                 }
+            }
+        }
+    }
+
+    private suspend fun runVerifiedAction(action: String?) {
+        when {
+            action == ACTION_DISABLE -> manager.disable()
+            action == ACTION_ENABLE -> manager.enable(AgeProfile.fromName(profile.value))
+            action == ACTION_CLEAR_PIN -> {
+                manager.clearPin()
+                message = "PIN removed"
+            }
+            action == ACTION_UPGRADE_PIN -> {
+                message = "PIN upgraded successfully"
+            }
+            action?.startsWith(ACTION_SET_PIN_PREFIX) == true -> {
+                val newPin = action.removePrefix(ACTION_SET_PIN_PREFIX)
+                if (manager.setPin(newPin)) {
+                    message = "PIN set successfully"
+                } else {
+                    message = "Invalid PIN - must be 4 digits"
+                }
+            }
+            action?.startsWith(ACTION_PROFILE_PREFIX) == true -> {
+                manager.setProfile(AgeProfile.fromName(action.removePrefix(ACTION_PROFILE_PREFIX)))
             }
         }
     }
 
     fun setProfile(profileName: String) {
         viewModelScope.launch {
-            manager.setProfile(AgeProfile.fromName(profileName))
+            if (manager.isPinSet()) {
+                openPinDialog(ACTION_PROFILE_PREFIX + profileName)
+            } else {
+                manager.setProfile(AgeProfile.fromName(profileName))
+            }
         }
     }
 
     fun setPin(pin: String) {
         viewModelScope.launch {
-            if (manager.setPin(pin)) {
+            if (pin.length != 4 || !pin.all { it.isDigit() }) {
+                message = "Invalid PIN - must be 4 digits"
+            } else if (manager.isPinSet()) {
+                openPinDialog(ACTION_SET_PIN_PREFIX + pin)
+            } else if (manager.setPin(pin)) {
                 pinRequired = true
+                pinUpgradeRequired = false
                 message = "PIN set successfully"
             } else {
-                message = "Invalid PIN — must be 4 digits"
+                message = "Invalid PIN - must be 4 digits"
             }
         }
     }
 
     fun clearPin() {
         viewModelScope.launch {
-            manager.clearPin()
-            pinRequired = false
-            message = "PIN removed"
+            if (manager.isPinSet()) {
+                openPinDialog(ACTION_CLEAR_PIN)
+            } else {
+                manager.clearPin()
+                pinRequired = false
+                pinUpgradeRequired = false
+                message = "PIN removed"
+            }
         }
     }
 
@@ -149,6 +210,17 @@ class ParentalControlViewModel @Inject constructor(
         manager.getRestrictionsForProfile(profile)
 
     fun clearMessage() { message = null }
+
+    fun isPinUpgradeDialog(): Boolean = pinAction == ACTION_UPGRADE_PIN
+
+    fun pinDialogMessage(): String = when {
+        pinAction == ACTION_UPGRADE_PIN -> "Enter your 4-digit PIN to upgrade the PIN lock."
+        pinAction == ACTION_CLEAR_PIN -> "Enter your 4-digit PIN to remove the PIN lock."
+        pinAction == ACTION_ENABLE -> "Enter your 4-digit PIN to enable parental controls."
+        pinAction?.startsWith(ACTION_SET_PIN_PREFIX) == true -> "Enter your current PIN to set a new PIN."
+        pinAction?.startsWith(ACTION_PROFILE_PREFIX) == true -> "Enter your 4-digit PIN to change parental settings."
+        else -> "Enter your 4-digit PIN to disable parental controls."
+    }
 }
 
 @Composable
@@ -277,6 +349,15 @@ fun ParentalControlScreen(
                         else "No PIN set — anyone can modify parental controls",
                         color = TextDim, fontSize = 11.sp,
                     )
+                    if (viewModel.pinUpgradeRequired) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "PIN security upgrade required. Enter the current PIN to keep parental controls locked with current protection.",
+                            color = Yellow,
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp,
+                        )
+                    }
                     Spacer(Modifier.height(10.dp))
 
                     var pinInput by remember { mutableStateOf("") }
@@ -390,11 +471,15 @@ fun ParentalControlScreen(
         val locked = lockoutCountdown > 0
 
         AlertDialog(
-            onDismissRequest = { viewModel.dismissPinDialog() },
+            onDismissRequest = {
+                if (!viewModel.isPinUpgradeDialog()) {
+                    viewModel.dismissPinDialog()
+                }
+            },
             title = { Text("Enter PIN", color = TextPrimary) },
             text = {
                 Column {
-                    Text("Enter your 4-digit PIN to disable parental controls.", color = TextDim, fontSize = 13.sp)
+                    Text(viewModel.pinDialogMessage(), color = TextDim, fontSize = 13.sp)
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = dialogPin,
@@ -445,8 +530,10 @@ fun ParentalControlScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.dismissPinDialog() }) {
-                    Text("Cancel", color = TextDim)
+                if (!viewModel.isPinUpgradeDialog()) {
+                    TextButton(onClick = { viewModel.dismissPinDialog() }) {
+                        Text("Cancel", color = TextDim)
+                    }
                 }
             },
             containerColor = Surface2,

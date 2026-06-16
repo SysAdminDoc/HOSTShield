@@ -1,3 +1,21 @@
+# HostShield v6.9.17
+
+**Release Date:** 2026-06-16
+**Version Code:** 99
+
+## Parental PIN Legacy Hash Upgrade
+
+### Security
+- Legacy unsalted SHA-256 parental PIN hashes are detected during app startup
+  and marked for immediate upgrade.
+- Existing users with legacy PIN hashes are routed to Parental Controls and
+  must verify the current PIN before leaving the upgrade gate.
+- Successful verification rewrites the stored PIN hash through the current KDF
+  path and clears the upgrade requirement.
+
+### Verification
+- `:app:testFullDebugUnitTest --tests com.hostshield.util.ParentalPinHashPolicyTest`
+
 # HostShield v6.9.15
 
 **Release Date:** 2026-06-15

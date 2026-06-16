@@ -272,12 +272,29 @@ private fun HostShieldMainApp(activity: MainActivity) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val showBottomBar = currentDestination?.route in bottomNavScreens.map { it.route }
+    val parentalPinRehashRequired by activity.prefs.parentalPinRehashRequired.collectAsState(initial = false)
 
     // Handle pending deep link from shortcuts/intents
     LaunchedEffect(Unit) {
+        kotlinx.coroutines.withContext(Dispatchers.IO) {
+            activity.prefs.refreshParentalPinRehashRequired()
+        }
         val deepLink = activity.consumeDeepLink()
         if (deepLink != null) {
             navController.navigate(deepLink) {
+                launchSingleTop = true
+            }
+        }
+    }
+
+    LaunchedEffect(parentalPinRehashRequired, currentDestination?.route) {
+        val route = currentDestination?.route
+        if (
+            parentalPinRehashRequired &&
+            route != null &&
+            route != SubScreen.PARENTAL_CONTROLS
+        ) {
+            navController.navigate(SubScreen.PARENTAL_CONTROLS) {
                 launchSingleTop = true
             }
         }

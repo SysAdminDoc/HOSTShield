@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.16-blue)
+![Version](https://img.shields.io/badge/version-6.9.17-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -187,7 +187,7 @@
 |---------|-------------|
 | **15 Content Categories** | Gaming, Streaming, Social Media, News, Shopping, Dating, Gambling, Adult, VPN/Proxy, Malware, and more — toggleable per category |
 | **Parental Controls** | 3 age profiles (Child, Teen, Adult) with automatic category blocking per profile |
-| **PIN Lock** | SHA-256 hashed PIN protects parental control settings from bypass |
+| **PIN Lock** | Argon2id PIN lock protects parental control settings from bypass and forces legacy SHA-256 hashes through an upgrade prompt |
 | **Local DNS Server** | "Portable Pi-hole" mode on port 5353 — private-network clients can use the phone as a DNS filter |
 | **DNS Proxy Mode** | No-VPN, no-root DNS blocking via local proxy (tri-mode: VPN / Root / Proxy) |
 | **Safe Search Enforcement** | DNS-level rewriting for Google, Bing, DuckDuckGo, YouTube |
@@ -404,6 +404,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.17** | Parental controls now detect legacy unsalted SHA-256 PIN hashes at app launch, force the user through the PIN upgrade gate, and rewrite the hash to the current KDF after successful verification. |
 | **6.9.16** | Deep engineering audit: fixed blocklist data loss on all-304 periodic refresh, missing regex rules in VPN rebuild, per-app DNS rule cache torn-state, DNS cache TTL overcapping, hourly chart UTC mismatch, threat-intel domain swap race, GeoIP cache unbounded growth, VPN restart coroutine leaks, stability metric loss on DB failure, EDE JSON injection. Added legacy backup rules for API 26-30, restricted FileProvider paths, cleaned ProGuard dead rules. |
 | **6.9.15** | Additional release-state polish: Blocklist Gallery now has explicit loading, unavailable, empty, success, and add-failure states using shared status surfaces; gallery add failures are logged and shown as errors instead of green success messages; Home warning dismiss/restart actions, automation copy, TLS/crash clear actions, parental message dismiss, and app privacy expand controls have larger touch targets; app privacy and content filter rows truncate long text safely. |
 | **6.9.14** | Public-release polish for shared status surfaces, Home protection errors, DNS tools, hosts utilities, firewall controls, and the blocklist gallery: user-facing failures no longer expose raw exception text, repeated firewall controls and gallery add actions use larger touch targets, shared status/empty actions reserve larger hit areas, and gallery cards handle long labels/descriptions safely. |

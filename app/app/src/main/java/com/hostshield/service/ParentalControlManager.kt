@@ -3,8 +3,8 @@ package com.hostshield.service
 import android.util.Log
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.preferences.SecureStore
+import com.hostshield.util.ParentalPinHashPolicy
 import kotlinx.coroutines.flow.first
-import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -176,24 +176,20 @@ class ParentalControlManager @Inject constructor(
         val storedHash = prefs.parentalPinHash.first()
         if (storedHash.isEmpty()) return PinResult.NoPin
 
-        val match = if (storedHash.contains(':') || storedHash.startsWith("argon2id${'$'}")) {
+        val match = if (ParentalPinHashPolicy.isLegacySha256Record(storedHash)) {
+            val legacyMatch = ParentalPinHashPolicy.verifyLegacySha256Pin(pin, storedHash)
+            if (legacyMatch) {
+                prefs.setParentalPinHash(SecureStore.hashPin(pin))
+                Log.d(TAG, "PIN hash upgraded from SHA-256 to Argon2id")
+            }
+            legacyMatch
+        } else {
             val verified = SecureStore.verifyPin(pin, storedHash)
             if (verified && SecureStore.needsPinRehash(storedHash)) {
                 prefs.setParentalPinHash(SecureStore.hashPin(pin))
                 Log.d(TAG, "PIN hash upgraded from PBKDF2 to Argon2id")
             }
             verified
-        } else {
-            // Legacy SHA-256 format — verify then upgrade to Argon2id.
-            val legacyMatch = MessageDigest.isEqual(
-                hashPin(pin).toByteArray(),
-                storedHash.toByteArray()
-            )
-            if (legacyMatch) {
-                prefs.setParentalPinHash(SecureStore.hashPin(pin))
-                Log.d(TAG, "PIN hash upgraded from SHA-256 to Argon2id")
-            }
-            legacyMatch
         }
 
         if (match) {
@@ -223,6 +219,10 @@ class ParentalControlManager @Inject constructor(
      * Check if a PIN has been configured.
      */
     suspend fun isPinSet(): Boolean = prefs.parentalPinHash.first().isNotEmpty()
+
+    suspend fun isPinRehashRequired(): Boolean =
+        prefs.parentalPinRehashRequired.first() ||
+            ParentalPinHashPolicy.isLegacySha256Record(prefs.parentalPinHash.first())
 
     /**
      * Remove the PIN lock.
@@ -269,9 +269,4 @@ class ParentalControlManager @Inject constructor(
     private fun isValidPin(pin: String): Boolean =
         pin.length == PIN_LENGTH && pin.all { it.isDigit() }
 
-    private fun hashPin(pin: String): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        val bytes = digest.digest(pin.toByteArray(Charsets.UTF_8))
-        return bytes.joinToString("") { "%02x".format(it) }
-    }
 }

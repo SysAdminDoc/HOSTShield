@@ -1,0 +1,4 @@
+v6.9.17 - Parental PIN security upgrade:
+- Legacy SHA-256 parental PIN hashes are now detected when the app starts
+- Users with legacy PINs are sent to the parental-controls upgrade gate
+- Verifying the current PIN rewrites it with the current secure KDF

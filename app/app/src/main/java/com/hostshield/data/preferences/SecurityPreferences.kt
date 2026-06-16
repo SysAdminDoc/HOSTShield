@@ -3,6 +3,7 @@ package com.hostshield.data.preferences
 import android.content.Context
 import androidx.datastore.preferences.core.*
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.hostshield.util.ParentalPinHashPolicy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -29,6 +30,7 @@ class SecurityPreferences @Inject constructor(
         val CONTENT_FILTER_CATEGORIES = stringSetPreferencesKey("content_filter_categories")
         val PARENTAL_ENABLED = booleanPreferencesKey("parental_enabled")
         val PARENTAL_PIN_HASH = stringPreferencesKey("parental_pin_hash")
+        val PARENTAL_PIN_REHASH_REQUIRED = booleanPreferencesKey("parental_pin_rehash_required")
         val PARENTAL_AGE_PROFILE = stringPreferencesKey("parental_age_profile")
     }
 
@@ -67,6 +69,18 @@ class SecurityPreferences @Inject constructor(
         migrateIfNeeded(Keys.WIREGUARD_ENDPOINT, SEC_WG_ENDPOINT)
         migrateIfNeeded(Keys.WIREGUARD_PRESHARED_KEY, SEC_WG_PSK)
         migrateIfNeeded(Keys.PARENTAL_PIN_HASH, SEC_PARENTAL_PIN_HASH)
+        refreshParentalPinRehashRequired()
+    }
+
+    suspend fun refreshParentalPinRehashRequired() {
+        val hash = secureStore.getString(SEC_PARENTAL_PIN_HASH)
+        ds.edit { prefs ->
+            if (ParentalPinHashPolicy.isLegacySha256Record(hash)) {
+                prefs[Keys.PARENTAL_PIN_REHASH_REQUIRED] = true
+            } else {
+                prefs.remove(Keys.PARENTAL_PIN_REHASH_REQUIRED)
+            }
+        }
     }
 
     // ── WireGuard ───────────────────────────────────────────────
@@ -113,7 +127,18 @@ class SecurityPreferences @Inject constructor(
 
     /** PIN hash is now served from SecureStore (Flow wrapper for API compat). */
     val parentalPinHash: Flow<String> get() = flowOf(secureStore.getString(SEC_PARENTAL_PIN_HASH))
-    suspend fun setParentalPinHash(hash: String) = secureStore.putString(SEC_PARENTAL_PIN_HASH, hash)
+    val parentalPinRehashRequired: Flow<Boolean> =
+        ds.data.map { it[Keys.PARENTAL_PIN_REHASH_REQUIRED] ?: false }
+    suspend fun setParentalPinHash(hash: String) {
+        secureStore.putString(SEC_PARENTAL_PIN_HASH, hash)
+        ds.edit { prefs ->
+            if (ParentalPinHashPolicy.isLegacySha256Record(hash)) {
+                prefs[Keys.PARENTAL_PIN_REHASH_REQUIRED] = true
+            } else {
+                prefs.remove(Keys.PARENTAL_PIN_REHASH_REQUIRED)
+            }
+        }
+    }
 
     val parentalAgeProfile: Flow<String> = ds.data.map { it[Keys.PARENTAL_AGE_PROFILE] ?: "ADULT" }
     suspend fun setParentalAgeProfile(profile: String) = ds.edit { it[Keys.PARENTAL_AGE_PROFILE] = profile }
