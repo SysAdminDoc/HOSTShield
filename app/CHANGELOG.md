@@ -1,3 +1,23 @@
+# HostShield v6.9.19
+
+**Release Date:** 2026-06-16
+**Version Code:** 101
+
+## Composition-Scoped Theme Palette
+
+### Fixed
+- Theme color tokens now read from a `CompositionLocal` palette instead of
+  top-level mutable state.
+- High-contrast AMOLED and accent-color variants can now be rendered side by
+  side without one themed surface overwriting another surface's colors.
+
+### Verification
+- `:app:compileFullDebugKotlin`
+- `:app:testFullDebugUnitTest --tests com.hostshield.ui.theme.ThemeContrastTest`
+- `:app:testFullDebugUnitTest`
+- `:app:lintFullDebug`
+- `:app:assembleFullDebug`
+
 # HostShield v6.9.18
 
 **Release Date:** 2026-06-16

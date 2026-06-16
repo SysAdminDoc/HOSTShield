@@ -62,8 +62,8 @@ import com.hostshield.ui.theme.TextPrimary
 import com.hostshield.ui.theme.TextSecondary
 import com.hostshield.ui.theme.Yellow
 
-private val queryTypeColors: List<Color>
-    get() = listOf(Teal, Mauve, Blue, Peach, Flamingo, Green, Yellow, Sky, Red)
+@Composable
+private fun queryTypeColors(): List<Color> = listOf(Teal, Mauve, Blue, Peach, Flamingo, Green, Yellow, Sky, Red)
 
 // -- 1. HourlyBlockedChart --
 
@@ -186,6 +186,7 @@ fun QueryTypeDistribution(
 ) {
     val total = distribution.values.sum().coerceAtLeast(1)
     val entries = distribution.entries.toList()
+    val colors = queryTypeColors()
 
     Column(modifier = modifier.fillMaxWidth()) {
         Canvas(
@@ -205,7 +206,7 @@ fun QueryTypeDistribution(
             var startAngle = -90f
             entries.forEachIndexed { index, (_, count) ->
                 val sweep = (count.toFloat() / total) * 360f
-                val color = queryTypeColors[index % queryTypeColors.size]
+                val color = colors[index % colors.size]
                 drawArc(
                     color = color,
                     startAngle = startAngle,
@@ -227,7 +228,7 @@ fun QueryTypeDistribution(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             entries.forEachIndexed { index, (label, count) ->
-                val color = queryTypeColors[index % queryTypeColors.size]
+                val color = colors[index % colors.size]
                 val pct = (count * 100f / total).let { "%.0f".format(it) }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
@@ -357,19 +358,22 @@ fun TopDomainsChart(
                 Spacer(Modifier.width(8.dp))
                 Box(modifier = Modifier.weight(1f)) {
                     val fraction = count.toFloat() / maxCount
+                    val trackColor = Surface3
+                    val barStartColor = Teal.copy(alpha = 0.7f)
+                    val barEndColor = Teal
                     Canvas(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(18.dp),
                     ) {
                         drawRoundRect(
-                            color = Surface3,
+                            color = trackColor,
                             size = Size(size.width, size.height),
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f),
                         )
                         drawRoundRect(
                             brush = Brush.horizontalGradient(
-                                colors = listOf(Teal.copy(alpha = 0.7f), Teal),
+                                colors = listOf(barStartColor, barEndColor),
                             ),
                             size = Size(size.width * fraction, size.height),
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f),

@@ -257,6 +257,8 @@ fun LiveActivityIndicator(
         animationSpec = tween(300),
         label = "dotAlpha"
     )
+    val activeColor = Green
+    val inactiveColor = TextDim
 
     Row(
         modifier = modifier,
@@ -271,20 +273,20 @@ fun LiveActivityIndicator(
             // Outer glow
             if (isActive) {
                 drawCircle(
-                    color = Green.copy(alpha = 0.2f),
+                    color = activeColor.copy(alpha = 0.2f),
                     radius = size.minDimension / 2f
                 )
             }
             // Inner dot
             drawCircle(
-                color = if (isActive) Green else TextDim,
+                color = if (isActive) activeColor else inactiveColor,
                 radius = r
             )
         }
         Spacer(Modifier.width(6.dp))
         Text(
             text = if (isActive) "Live" else "Paused",
-            color = if (isActive) Green.copy(alpha = 0.8f) else TextDim,
+            color = if (isActive) activeColor.copy(alpha = 0.8f) else inactiveColor,
             fontSize = 10.sp
         )
     }

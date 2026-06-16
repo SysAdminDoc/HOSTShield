@@ -265,6 +265,7 @@ private fun AppReportCard(report: AppPrivacyScorer.AppReport) {
     }
 }
 
+@Composable
 private fun gradeColor(grade: String): Color = when (grade) {
     "A" -> Green
     "B" -> Teal
@@ -274,6 +275,7 @@ private fun gradeColor(grade: String): Color = when (grade) {
     else -> TextDim
 }
 
+@Composable
 private fun sdkCategoryColor(category: String): Color = when (category) {
     "Advertising" -> Red
     "Analytics" -> Peach

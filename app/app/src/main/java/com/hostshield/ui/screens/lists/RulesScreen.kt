@@ -460,6 +460,7 @@ private fun validateRegexPattern(pattern: String): String? =
         "Invalid regex pattern."
     }
 
+@Composable
 private fun ruleColor(type: RuleType?): Color = when (type) {
     RuleType.BLOCK -> Red; RuleType.ALLOW -> Green; RuleType.REDIRECT -> Peach; null -> Teal
 }

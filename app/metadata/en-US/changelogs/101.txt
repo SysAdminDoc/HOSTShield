@@ -1,0 +1,3 @@
+v6.9.19 - Composition-scoped theme palette:
+- Theme color tokens now resolve from the current Compose palette instead of global mutable state.
+- High-contrast AMOLED and accent-color surfaces can coexist without overwriting each other's colors.

@@ -153,6 +153,11 @@ private fun WelcomePage(onNext: () -> Unit) {
         animationSpec = infiniteRepeatable(tween(10000, easing = LinearEasing), RepeatMode.Restart),
         label = "ring"
     )
+    val teal = Teal
+    val tealGlow = TealGlow
+    val surface0 = Surface0
+    val surface1 = Surface1
+    val surface3 = Surface3
 
     Column(
         modifier = Modifier
@@ -167,8 +172,8 @@ private fun WelcomePage(onNext: () -> Unit) {
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            TealGlow.copy(alpha = glowPulse * 0.35f),
-                            TealGlow.copy(alpha = glowPulse * 0.1f),
+                            tealGlow.copy(alpha = glowPulse * 0.35f),
+                            tealGlow.copy(alpha = glowPulse * 0.1f),
                             Color.Transparent
                         ), center = center, radius = size.minDimension / 2f
                     ), radius = size.minDimension / 2f, center = center
@@ -179,10 +184,10 @@ private fun WelcomePage(onNext: () -> Unit) {
                 rotate(ringRotation) {
                     drawArc(
                         brush = Brush.sweepGradient(
-                            0f to Teal.copy(alpha = 0.5f),
+                            0f to teal.copy(alpha = 0.5f),
                             0.3f to Color.Transparent,
                             0.7f to Color.Transparent,
-                            1f to Teal.copy(alpha = 0.5f)
+                            1f to teal.copy(alpha = 0.5f)
                         ),
                         startAngle = 0f, sweepAngle = 360f, useCenter = false,
                         style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
@@ -195,12 +200,12 @@ private fun WelcomePage(onNext: () -> Unit) {
                     .size(110.dp)
                     .clip(CircleShape)
                     .background(
-                        Brush.radialGradient(listOf(Surface3, Surface1, Surface0))
+                        Brush.radialGradient(listOf(surface3, surface1, surface0))
                     )
-                    .border(1.dp, Teal.copy(alpha = 0.2f), CircleShape),
+                    .border(1.dp, teal.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.Shield, null, tint = Teal, modifier = Modifier.size(52.dp))
+                Icon(Icons.Filled.Shield, null, tint = teal, modifier = Modifier.size(52.dp))
             }
         }
 
@@ -356,6 +361,7 @@ private fun PrivateDnsWarningPage(
     status: PrivateDnsDetector.PrivateDnsStatus,
     onNext: () -> Unit
 ) {
+    val yellow = Yellow
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -367,7 +373,7 @@ private fun PrivateDnsWarningPage(
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawCircle(
                     brush = Brush.radialGradient(
-                        listOf(Yellow.copy(alpha = 0.3f), Yellow.copy(alpha = 0.05f), Color.Transparent),
+                        listOf(yellow.copy(alpha = 0.3f), yellow.copy(alpha = 0.05f), Color.Transparent),
                         center = center, radius = size.minDimension / 2f
                     ), radius = size.minDimension / 2f, center = center
                 )
@@ -376,11 +382,11 @@ private fun PrivateDnsWarningPage(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(Yellow.copy(alpha = 0.08f))
-                    .border(1.dp, Yellow.copy(alpha = 0.3f), CircleShape),
+                    .background(yellow.copy(alpha = 0.08f))
+                    .border(1.dp, yellow.copy(alpha = 0.3f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.Warning, null, tint = Yellow, modifier = Modifier.size(44.dp))
+                Icon(Icons.Filled.Warning, null, tint = yellow, modifier = Modifier.size(44.dp))
             }
         }
 
@@ -700,6 +706,7 @@ private fun ReadyPage(
 ) {
     var isActivating by remember { mutableStateOf(false) }
     var vpnDenied by remember { mutableStateOf(false) }
+    val green = Green
 
     Column(
         modifier = Modifier
@@ -712,7 +719,7 @@ private fun ReadyPage(
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawCircle(
                     brush = Brush.radialGradient(
-                        listOf(Green.copy(alpha = 0.25f), Green.copy(alpha = 0.05f), Color.Transparent),
+                        listOf(green.copy(alpha = 0.25f), green.copy(alpha = 0.05f), Color.Transparent),
                         center = center, radius = size.minDimension / 2f
                     ), radius = size.minDimension / 2f, center = center
                 )
@@ -721,11 +728,11 @@ private fun ReadyPage(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(Green.copy(alpha = 0.08f))
-                    .border(1.dp, Green.copy(alpha = 0.3f), CircleShape),
+                    .background(green.copy(alpha = 0.08f))
+                    .border(1.dp, green.copy(alpha = 0.3f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.CheckCircle, null, tint = Green, modifier = Modifier.size(44.dp))
+                Icon(Icons.Filled.CheckCircle, null, tint = green, modifier = Modifier.size(44.dp))
             }
         }
 

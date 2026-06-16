@@ -3,6 +3,13 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.19] - 2026-06-16
+
+### Fixed
+- Theme palette tokens now resolve through a per-composition palette instead
+  of mutating top-level global state, so high-contrast and accent variants can
+  coexist safely in previews, widgets, and nested themed surfaces.
+
 ## [v6.9.18] - 2026-06-16
 
 ### Fixed

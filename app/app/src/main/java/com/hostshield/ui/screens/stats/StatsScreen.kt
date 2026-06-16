@@ -752,6 +752,10 @@ private fun HourlyBarChart(data: List<HourlyStat>, modifier: Modifier) {
     data.forEach { if (it.hour in 0..23) hourData[it.hour] = it.cnt.toFloat() }
     val maxVal = hourData.maxOrNull()?.coerceAtLeast(1f) ?: 1f
     val textMeasurer = rememberTextMeasurer()
+    val activeStartColor = Teal
+    val activeEndColor = TealDim.copy(alpha = 0.4f)
+    val emptyColor = Surface3
+    val labelColor = TextDim
 
     Canvas(modifier = modifier) {
         val barWidth = size.width / 28f
@@ -767,7 +771,7 @@ private fun HourlyBarChart(data: List<HourlyStat>, modifier: Modifier) {
             // Bar with gradient
             drawRoundRect(
                 brush = Brush.verticalGradient(
-                    colors = if (hourData[i] > 0) listOf(Teal, TealDim.copy(alpha = 0.4f)) else listOf(Surface3, Surface3)
+                    colors = if (hourData[i] > 0) listOf(activeStartColor, activeEndColor) else listOf(emptyColor, emptyColor)
                 ),
                 topLeft = Offset(x, y),
                 size = Size(barWidth, barH.coerceAtLeast(2f)),
@@ -775,7 +779,7 @@ private fun HourlyBarChart(data: List<HourlyStat>, modifier: Modifier) {
             )
 
             if (i % 6 == 0) {
-                drawText(textMeasurer = textMeasurer, text = "${i}h", topLeft = Offset(x - 2f, chartHeight + 4f), style = TextStyle(color = TextDim, fontSize = 9.sp))
+                drawText(textMeasurer = textMeasurer, text = "${i}h", topLeft = Offset(x - 2f, chartHeight + 4f), style = TextStyle(color = labelColor, fontSize = 9.sp))
             }
         }
     }
@@ -914,6 +918,7 @@ private fun threatIntelStatusLabel(status: ThreatIntelFeedStatus): String = when
     ThreatIntelFeedStatus.NEVER_REFRESHED -> "No cache"
 }
 
+@Composable
 private fun threatIntelStatusColor(status: ThreatIntelFeedStatus): Color = when (status) {
     ThreatIntelFeedStatus.HEALTHY -> Green
     ThreatIntelFeedStatus.STALE -> Yellow
@@ -982,6 +987,11 @@ private fun LatencyBarChart(data: List<com.hostshield.data.database.HourlyLatenc
     }
     val maxVal = maxData.maxOrNull()?.coerceAtLeast(1f) ?: 1f
     val textMeasurer = rememberTextMeasurer()
+    val maxBarColor = Red.copy(alpha = 0.15f)
+    val avgStartColor = Peach
+    val avgEndColor = Peach.copy(alpha = 0.4f)
+    val emptyColor = Surface3
+    val labelColor = TextDim
 
     Canvas(modifier = modifier) {
         val barWidth = size.width / 28f
@@ -996,7 +1006,7 @@ private fun LatencyBarChart(data: List<com.hostshield.data.database.HourlyLatenc
             // Max bar (faded)
             val maxH = maxFrac * chartHeight * 0.9f
             drawRoundRect(
-                color = Red.copy(alpha = 0.15f),
+                color = maxBarColor,
                 topLeft = Offset(x, chartHeight - maxH),
                 size = Size(barWidth, maxH.coerceAtLeast(1f)),
                 cornerRadius = CornerRadius(3f, 3f)
@@ -1006,7 +1016,7 @@ private fun LatencyBarChart(data: List<com.hostshield.data.database.HourlyLatenc
             val avgH = avgFrac * chartHeight * 0.9f
             drawRoundRect(
                 brush = Brush.verticalGradient(
-                    colors = if (hourData[i] > 0) listOf(Peach, Peach.copy(alpha = 0.4f)) else listOf(Surface3, Surface3)
+                    colors = if (hourData[i] > 0) listOf(avgStartColor, avgEndColor) else listOf(emptyColor, emptyColor)
                 ),
                 topLeft = Offset(x, chartHeight - avgH),
                 size = Size(barWidth, avgH.coerceAtLeast(1f)),
@@ -1016,7 +1026,7 @@ private fun LatencyBarChart(data: List<com.hostshield.data.database.HourlyLatenc
             if (i % 6 == 0) {
                 drawText(textMeasurer = textMeasurer, text = "${i}h",
                     topLeft = Offset(x - 2f, chartHeight + 4f),
-                    style = TextStyle(color = TextDim, fontSize = 9.sp))
+                    style = TextStyle(color = labelColor, fontSize = 9.sp))
             }
         }
     }
@@ -1025,6 +1035,12 @@ private fun LatencyBarChart(data: List<com.hostshield.data.database.HourlyLatenc
 @Composable
 private fun TrendLineChart(data: List<com.hostshield.data.database.DailyBreakdown>, modifier: Modifier) {
     val textMeasurer = rememberTextMeasurer()
+    val gridColor = Surface3
+    val totalLineColor = Blue.copy(alpha = 0.6f)
+    val blockedLineColor = Red.copy(alpha = 0.8f)
+    val blockedPointColor = Red
+    val labelColor = TextDim
+    val totalLabelColor = Blue
     Canvas(modifier = modifier) {
         if (data.size < 2) return@Canvas
         val maxVal = data.maxOfOrNull { it.total }?.coerceAtLeast(1)?.toFloat() ?: 1f
@@ -1035,7 +1051,7 @@ private fun TrendLineChart(data: List<com.hostshield.data.database.DailyBreakdow
         // Grid lines
         for (i in 0..3) {
             val y = chartH * (1 - i / 4f)
-            drawLine(Surface3, Offset(30f, y), Offset(size.width, y), strokeWidth = 0.5f)
+            drawLine(gridColor, Offset(30f, y), Offset(size.width, y), strokeWidth = 0.5f)
         }
 
         // Total queries line (blue)
@@ -1045,7 +1061,7 @@ private fun TrendLineChart(data: List<com.hostshield.data.database.DailyBreakdow
             val y = chartH * (1 - d.total / maxVal)
             if (idx == 0) totalPath.moveTo(x, y) else totalPath.lineTo(x, y)
         }
-        drawPath(totalPath, Blue.copy(alpha = 0.6f), style = Stroke(width = 2f, cap = StrokeCap.Round))
+        drawPath(totalPath, totalLineColor, style = Stroke(width = 2f, cap = StrokeCap.Round))
 
         // Blocked line (red)
         val blockedPath = Path()
@@ -1054,13 +1070,13 @@ private fun TrendLineChart(data: List<com.hostshield.data.database.DailyBreakdow
             val y = chartH * (1 - d.blocked / maxVal)
             if (idx == 0) blockedPath.moveTo(x, y) else blockedPath.lineTo(x, y)
         }
-        drawPath(blockedPath, Red.copy(alpha = 0.8f), style = Stroke(width = 2.5f, cap = StrokeCap.Round))
+        drawPath(blockedPath, blockedLineColor, style = Stroke(width = 2.5f, cap = StrokeCap.Round))
 
         // Data points on blocked line
         data.forEachIndexed { idx, d ->
             val x = 30f + idx * stepX
             val y = chartH * (1 - d.blocked / maxVal)
-            drawCircle(Red, 3f, Offset(x, y))
+            drawCircle(blockedPointColor, 3f, Offset(x, y))
         }
 
         // Day labels
@@ -1073,15 +1089,15 @@ private fun TrendLineChart(data: List<com.hostshield.data.database.DailyBreakdow
             val label = data[idx].day.takeLast(5) // MM-DD
             drawText(textMeasurer = textMeasurer, text = label,
                 topLeft = Offset(x - 12f, chartH + 6f),
-                style = TextStyle(color = TextDim, fontSize = 8.sp))
+                style = TextStyle(color = labelColor, fontSize = 8.sp))
         }
 
         // Legend
-        drawCircle(Red, 4f, Offset(size.width - 90f, 8f))
+        drawCircle(blockedPointColor, 4f, Offset(size.width - 90f, 8f))
         drawText(textMeasurer, "Blocked", Offset(size.width - 82f, 0f),
-            TextStyle(color = Red, fontSize = 9.sp))
-        drawCircle(Blue.copy(alpha = 0.6f), 4f, Offset(size.width - 35f, 8f))
+            TextStyle(color = blockedPointColor, fontSize = 9.sp))
+        drawCircle(totalLineColor, 4f, Offset(size.width - 35f, 8f))
         drawText(textMeasurer, "Total", Offset(size.width - 27f, 0f),
-            TextStyle(color = Blue, fontSize = 9.sp))
+            TextStyle(color = totalLabelColor, fontSize = 9.sp))
     }
 }

@@ -115,6 +115,11 @@ fun ShieldOrb(
     val accentColor by animateColorAsState(
         if (isEnabled) TealGlow else TextDim, tween(500), label = "accent"
     )
+    val teal = Teal
+    val tealGlow = TealGlow
+    val surface0 = Surface0
+    val surface1 = Surface1
+    val surface3 = Surface3
     val activeSeconds = activeFrameNanos / 1_000_000_000f
     val activeRotation = (activeSeconds * 92f) % 360f
     val activePulse = ((activeSeconds % 1.55f) / 1.55f).coerceIn(0f, 1f)
@@ -154,8 +159,8 @@ fun ShieldOrb(
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            TealGlow.copy(alpha = glowPulse * activeGlow * 0.35f),
-                            TealGlow.copy(alpha = glowPulse * activeGlow * 0.12f),
+                            tealGlow.copy(alpha = glowPulse * activeGlow * 0.35f),
+                            tealGlow.copy(alpha = glowPulse * activeGlow * 0.12f),
                             Color.Transparent
                         ),
                         center = Offset(cx, cy),
@@ -238,7 +243,7 @@ fun ShieldOrb(
             // Orb body
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Surface3, Surface1.copy(alpha = 0.95f), Surface0),
+                    colors = listOf(surface3, surface1.copy(alpha = 0.95f), surface0),
                     center = Offset(cx, cy),
                     radius = orbRadius
                 ),
@@ -290,7 +295,7 @@ fun ShieldOrb(
                 brush = Brush.linearGradient(
                     colors = listOf(
                         accentColor.copy(alpha = 0.35f),
-                        Surface3.copy(alpha = 0.25f),
+                        surface3.copy(alpha = 0.25f),
                         accentColor.copy(alpha = 0.12f)
                     ),
                     start = Offset(cx - orbRadius, cy - orbRadius),
@@ -306,7 +311,7 @@ fun ShieldOrb(
                 val spinR = 28.dp.toPx()
                 rotate(spinnerRotation, pivot = Offset(cx, cy)) {
                     drawArc(
-                        color = Teal,
+                        color = teal,
                         startAngle = 0f, sweepAngle = 100f, useCenter = false,
                         style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
                         topLeft = Offset(cx - spinR, cy - spinR),

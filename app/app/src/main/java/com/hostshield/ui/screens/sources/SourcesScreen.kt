@@ -1092,6 +1092,7 @@ private fun AddSourceDialog(
     )
 }
 
+@Composable
 private fun categoryColor(cat: SourceCategory): Color = when (cat) {
     SourceCategory.ADS -> Teal
     SourceCategory.TRACKERS -> Blue

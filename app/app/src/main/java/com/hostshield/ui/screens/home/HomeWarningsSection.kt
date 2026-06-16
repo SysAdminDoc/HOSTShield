@@ -372,6 +372,7 @@ fun HomeWarningsSection(
         // Latency sparkline
         if (latencySparkline.size >= 3) {
             Spacer(Modifier.height(6.dp))
+            val sparklineColor = Peach.copy(alpha = 0.6f)
             Canvas(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp).height(24.dp)
             ) {
@@ -386,7 +387,7 @@ fun HomeWarningsSection(
                 }
                 drawPath(
                     path = path,
-                    color = Peach.copy(alpha = 0.6f),
+                    color = sparklineColor,
                     style = androidx.compose.ui.graphics.drawscope.Stroke(
                         width = 2f,
                         cap = androidx.compose.ui.graphics.StrokeCap.Round

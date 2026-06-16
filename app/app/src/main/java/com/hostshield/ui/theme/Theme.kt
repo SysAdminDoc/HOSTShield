@@ -5,10 +5,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -95,56 +93,102 @@ internal val HighContrastAmoledPalette = HostShieldPalette(
     textDim = Color(0xFFAAB6C8)
 )
 
-// Core palette. These names are used throughout the UI; the active palette is
-// switched by HostShieldTheme so existing screens inherit the selected variant.
-var Black by mutableStateOf(StandardHostShieldPalette.black)
-    private set
-var Surface0 by mutableStateOf(StandardHostShieldPalette.surface0)
-    private set
-var Surface1 by mutableStateOf(StandardHostShieldPalette.surface1)
-    private set
-var Surface2 by mutableStateOf(StandardHostShieldPalette.surface2)
-    private set
-var Surface3 by mutableStateOf(StandardHostShieldPalette.surface3)
-    private set
-var Surface4 by mutableStateOf(StandardHostShieldPalette.surface4)
-    private set
+internal val LocalHostShieldPalette = staticCompositionLocalOf { StandardHostShieldPalette }
+
+// Core palette. These names are used throughout the UI; HostShieldTheme now
+// resolves them per composition instead of mutating global color state.
+val Black: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.black
+val Surface0: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.surface0
+val Surface1: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.surface1
+val Surface2: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.surface2
+val Surface3: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.surface3
+val Surface4: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.surface4
 
 // Accent colors
-var Teal by mutableStateOf(StandardHostShieldPalette.teal)
-    private set
-var TealBright by mutableStateOf(StandardHostShieldPalette.tealBright)
-    private set
-var TealDim by mutableStateOf(StandardHostShieldPalette.tealDim)
-    private set
-var TealGlow by mutableStateOf(StandardHostShieldPalette.tealGlow)
-    private set
-var Mauve by mutableStateOf(StandardHostShieldPalette.mauve)
-    private set
-var MauveDim by mutableStateOf(StandardHostShieldPalette.mauveDim)
-    private set
-var Green by mutableStateOf(StandardHostShieldPalette.green)
-    private set
-var Red by mutableStateOf(StandardHostShieldPalette.red)
-    private set
-var Yellow by mutableStateOf(StandardHostShieldPalette.yellow)
-    private set
-var Blue by mutableStateOf(StandardHostShieldPalette.blue)
-    private set
-var Peach by mutableStateOf(StandardHostShieldPalette.peach)
-    private set
-var Flamingo by mutableStateOf(StandardHostShieldPalette.flamingo)
-    private set
-var Sky by mutableStateOf(StandardHostShieldPalette.sky)
-    private set
+val Teal: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.teal
+val TealBright: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.tealBright
+val TealDim: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.tealDim
+val TealGlow: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.tealGlow
+val Mauve: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.mauve
+val MauveDim: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.mauveDim
+val Green: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.green
+val Red: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.red
+val Yellow: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.yellow
+val Blue: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.blue
+val Peach: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.peach
+val Flamingo: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.flamingo
+val Sky: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.sky
 
 // Text hierarchy
-var TextPrimary by mutableStateOf(StandardHostShieldPalette.textPrimary)
-    private set
-var TextSecondary by mutableStateOf(StandardHostShieldPalette.textSecondary)
-    private set
-var TextDim by mutableStateOf(StandardHostShieldPalette.textDim)
-    private set
+val TextPrimary: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.textPrimary
+val TextSecondary: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.textSecondary
+val TextDim: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalHostShieldPalette.current.textDim
 
 val LocalHighContrastAmoled = staticCompositionLocalOf { false }
 
@@ -188,31 +232,6 @@ private fun HostShieldPalette.withAccent(accentColor: String): HostShieldPalette
         tealGlow = peach,
     )
     else -> this
-}
-
-private fun applyHostShieldPalette(palette: HostShieldPalette) {
-    Black = palette.black
-    Surface0 = palette.surface0
-    Surface1 = palette.surface1
-    Surface2 = palette.surface2
-    Surface3 = palette.surface3
-    Surface4 = palette.surface4
-    Teal = palette.teal
-    TealBright = palette.tealBright
-    TealDim = palette.tealDim
-    TealGlow = palette.tealGlow
-    Mauve = palette.mauve
-    MauveDim = palette.mauveDim
-    Green = palette.green
-    Red = palette.red
-    Yellow = palette.yellow
-    Blue = palette.blue
-    Peach = palette.peach
-    Flamingo = palette.flamingo
-    Sky = palette.sky
-    TextPrimary = palette.textPrimary
-    TextSecondary = palette.textSecondary
-    TextDim = palette.textDim
 }
 
 internal fun hostShieldColorScheme(
@@ -329,9 +348,6 @@ fun HostShieldTheme(
     content: @Composable () -> Unit
 ) {
     val palette = hostShieldPalette(highContrastAmoled, accentColor)
-    SideEffect {
-        applyHostShieldPalette(palette)
-    }
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -342,13 +358,16 @@ fun HostShieldTheme(
             }
             @Suppress("DEPRECATION")
             if (android.os.Build.VERSION.SDK_INT < 35) {
-                window.statusBarColor = Black.toArgb()
-                window.navigationBarColor = Black.toArgb()
+                window.statusBarColor = palette.black.toArgb()
+                window.navigationBarColor = palette.black.toArgb()
             }
         }
     }
 
-    CompositionLocalProvider(LocalHighContrastAmoled provides highContrastAmoled) {
+    CompositionLocalProvider(
+        LocalHighContrastAmoled provides highContrastAmoled,
+        LocalHostShieldPalette provides palette,
+    ) {
         MaterialTheme(
             colorScheme = hostShieldColorScheme(palette, highContrastAmoled),
             typography = HostShieldTypography,

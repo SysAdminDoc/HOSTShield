@@ -403,6 +403,7 @@ private fun GalleryListItem(
     }
 }
 
+@Composable
 private fun galleryCategoryColor(cat: SourceCategory): Color = when (cat) {
     SourceCategory.ADS -> Teal
     SourceCategory.TRACKERS -> Blue

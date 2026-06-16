@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.18-blue)
+![Version](https://img.shields.io/badge/version-6.9.19-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -404,6 +404,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.19** | Theme color tokens now use a per-composition palette instead of global mutable state, preventing high-contrast/accent variants from racing when multiple themed surfaces coexist. |
 | **6.9.18** | DNS log temporary-allow timers now use WorkManager, so process death or Doze cannot leave a temporarily allowed domain unblocked after the selected window expires. |
 | **6.9.17** | Parental controls now detect legacy unsalted SHA-256 PIN hashes at app launch, force the user through the PIN upgrade gate, and rewrite the hash to the current KDF after successful verification. |
 | **6.9.16** | Deep engineering audit: fixed blocklist data loss on all-304 periodic refresh, missing regex rules in VPN rebuild, per-app DNS rule cache torn-state, DNS cache TTL overcapping, hourly chart UTC mismatch, threat-intel domain swap race, GeoIP cache unbounded growth, VPN restart coroutine leaks, stability metric loss on DB failure, EDE JSON injection. Added legacy backup rules for API 26-30, restricted FileProvider paths, cleaned ProGuard dead rules. |
