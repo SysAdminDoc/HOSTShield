@@ -1,3 +1,37 @@
+# HostShield v6.9.27
+
+**Release Date:** 2026-06-17
+**Version Code:** 109
+
+## Release Quality and Localization
+
+### Security
+- AdGuard DNS rules with `$app=`, `$client=`, or `$ctag=` scoped modifiers are
+  now safely skipped instead of being applied globally, preventing false
+  positives from scoped custom rules.
+
+### Reliability
+- DoH/DoT certificate pin freshness is now gated by unit tests and the release
+  docs script. Pins that are review-due or expired fail the build.
+- Release CI now verifies APK, AAB, and SBOM attestations with
+  `gh attestation verify` after generation. User-ready verification commands
+  are published in README and release provenance.
+- Release truth checks now validate root evidence docs (LOGO_PROMPTS.md) for
+  stale product claims.
+
+### Improved
+- StatsScreen inline business logic (latency averages, query-type totals, VPN
+  health labels) lifted to `StatsUiState` derived properties.
+- Curated blocklist catalog has structural integrity tests: per-category
+  duplicate URL/label detection, HTTPS enforcement, valid category names.
+- Obtainium install configuration added to README.
+
+### Localization
+- Extracted ~25 hardcoded English strings from HomeWarningsSection and
+  DnsSettingsSection into `strings.xml` for localization readiness.
+
+---
+
 # HostShield v6.9.26
 
 **Release Date:** 2026-06-16

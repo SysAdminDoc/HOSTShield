@@ -1,0 +1,1 @@
+v6.9.27: Scoped AdGuard DNS rules now skip instead of globalizing. DoH/DoT pin freshness gated in CI. Release attestation verification. Hardcoded string extraction for localization readiness.
