@@ -431,6 +431,27 @@ foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_descri
     }
 }
 
+$rootDocForbiddenPhrases = @(
+    "offline GeoIP",
+    "MaxMind",
+    "GeoLite",
+    "OfflineGeoIp",
+    "unpinned fallback",
+    "dataSync foreground"
+)
+
+$rootDocFiles = @("LOGO_PROMPTS.md")
+foreach ($rootDoc in $rootDocFiles) {
+    if (Test-RepoFile $rootDoc) {
+        $rootDocContent = Read-RepoFile $rootDoc
+        foreach ($phrase in $rootDocForbiddenPhrases) {
+            if ($rootDocContent -match [regex]::Escape($phrase)) {
+                $failures.Add("$rootDoc still contains stale product claim: $phrase")
+            }
+        }
+    }
+}
+
 if ($failures.Count -gt 0) {
     Write-Error ("Release documentation consistency check failed:`n - " + ($failures -join "`n - "))
     exit 1
