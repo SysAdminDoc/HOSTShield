@@ -12,6 +12,8 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import com.hostshield.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
@@ -93,7 +95,7 @@ fun HomeWarningsSection(
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Private DNS Active",
+                        stringResource(R.string.warning_private_dns_title),
                         color = Yellow,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 12.sp,
@@ -101,7 +103,7 @@ fun HomeWarningsSection(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        "Tap to open Network settings and set Private DNS to \"Off\"",
+                        stringResource(R.string.warning_private_dns_message),
                         color = Yellow.copy(alpha = 0.8f),
                         fontSize = 11.sp,
                         lineHeight = 16.sp
@@ -111,7 +113,7 @@ fun HomeWarningsSection(
                     onClick = onDismissPrivateDns,
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(Icons.Filled.Close, "Dismiss Private DNS warning", tint = TextDim, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Filled.Close, stringResource(R.string.warning_private_dns_dismiss), tint = TextDim, modifier = Modifier.size(14.dp))
                 }
             }
         }
@@ -120,6 +122,7 @@ fun HomeWarningsSection(
     // Battery optimization warning banner
     batteryWarning?.let {
         Spacer(Modifier.height(8.dp))
+        val batteryA11yDesc = stringResource(R.string.warning_battery_a11y)
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = Peach.copy(alpha = 0.08f),
@@ -129,7 +132,7 @@ fun HomeWarningsSection(
                 .clip(RoundedCornerShape(12.dp))
                 .semantics {
                     role = Role.Button
-                    contentDescription = "Battery optimization may interrupt protection. Open battery exemption settings."
+                    contentDescription = batteryA11yDesc
                 }
                 .clickable(role = Role.Button) { onRequestBatteryExemption() }
         ) {
@@ -145,7 +148,7 @@ fun HomeWarningsSection(
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Battery Optimization",
+                        stringResource(R.string.warning_battery_title),
                         color = Peach,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 12.sp,
@@ -153,7 +156,7 @@ fun HomeWarningsSection(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        "Tap to allow HostShield to run in the background",
+                        stringResource(R.string.warning_battery_message),
                         color = Peach.copy(alpha = 0.8f),
                         fontSize = 11.sp,
                         lineHeight = 16.sp
@@ -163,7 +166,7 @@ fun HomeWarningsSection(
                     onClick = onDismissBattery,
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(Icons.Filled.Close, "Dismiss battery optimization warning", tint = TextDim, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Filled.Close, stringResource(R.string.warning_battery_dismiss), tint = TextDim, modifier = Modifier.size(14.dp))
                 }
             }
         }
@@ -201,11 +204,7 @@ fun HomeWarningsSection(
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
-                            if (canRestartDevice) {
-                                "Android 16 VPN stack corruption detected — always-on lockdown is active but no traffic is reaching the tunnel. This is a known Android bug. Restart now to recover."
-                            } else {
-                                "Android 16 VPN stack corruption detected — always-on lockdown is active but no traffic is reaching the tunnel. This is a known Android bug. Restart the device manually to recover."
-                            },
+                            stringResource(if (canRestartDevice) R.string.warning_vpn_recovery_root else R.string.warning_vpn_recovery_no_root),
                             color = Red.copy(alpha = 0.82f),
                             fontSize = 11.sp,
                             lineHeight = 16.sp
@@ -215,11 +214,12 @@ fun HomeWarningsSection(
                         onClick = onDismissVpnRecovery,
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(Icons.Filled.Close, "Dismiss VPN recovery advisory", tint = TextDim, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.Close, stringResource(R.string.warning_vpn_recovery_dismiss), tint = TextDim, modifier = Modifier.size(14.dp))
                     }
                 }
                 if (canRestartDevice) {
                     Spacer(Modifier.height(10.dp))
+                    val restartA11yDesc = stringResource(R.string.warning_vpn_recovery_restart_a11y)
                     Surface(
                         onClick = onRestartDevice,
                         shape = RoundedCornerShape(8.dp),
@@ -229,7 +229,7 @@ fun HomeWarningsSection(
                             .heightIn(min = 44.dp)
                             .semantics {
                                 role = Role.Button
-                                contentDescription = "Restart device to recover the VPN stack"
+                                contentDescription = restartA11yDesc
                             }
                     ) {
                         Row(
@@ -238,7 +238,7 @@ fun HomeWarningsSection(
                         ) {
                             Icon(Icons.Filled.RestartAlt, null, tint = Red, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(6.dp))
-                    Text("Restart device", color = Red, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.warning_vpn_recovery_restart), color = Red, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -268,7 +268,7 @@ fun HomeWarningsSection(
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Private Space Detected",
+                        stringResource(R.string.warning_private_space_title),
                         color = Red,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 12.sp,
@@ -286,7 +286,7 @@ fun HomeWarningsSection(
                     onClick = onDismissPrivateSpace,
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(Icons.Filled.Close, "Dismiss Private Space warning", tint = TextDim, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Filled.Close, stringResource(R.string.warning_private_space_dismiss), tint = TextDim, modifier = Modifier.size(14.dp))
                 }
             }
         }
@@ -304,7 +304,7 @@ fun HomeWarningsSection(
                 Icon(Icons.AutoMirrored.Filled.TrendingUp, null, tint = Peach, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("High Query Rate", color = Peach, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp)
+                    Text(stringResource(R.string.warning_high_query_rate), color = Peach, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp)
                     Text(warning, color = Peach.copy(alpha = 0.8f), fontSize = 11.sp, lineHeight = 16.sp)
                 }
             }
@@ -322,7 +322,7 @@ fun HomeWarningsSection(
             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
                 Icon(Icons.Filled.Warning, null, tint = Red, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("$droppedQueries queries dropped (log buffer full)", color = Red, fontSize = 11.sp, lineHeight = 16.sp)
+                Text(stringResource(R.string.warning_dropped_queries, droppedQueries), color = Red, fontSize = 11.sp, lineHeight = 16.sp)
             }
         }
     }
@@ -359,14 +359,14 @@ fun HomeWarningsSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("$queriesPerMinute", color = Blue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text(" q/min", color = TextDim, fontSize = 10.sp)
+            Text(" ${stringResource(R.string.unit_queries_per_min)}", color = TextDim, fontSize = 10.sp)
             Spacer(Modifier.width(16.dp))
             Text("$blocksPerMinute", color = Red, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text(" blk/min", color = TextDim, fontSize = 10.sp)
+            Text(" ${stringResource(R.string.unit_blocks_per_min)}", color = TextDim, fontSize = 10.sp)
             if (avgLatencyMs > 0) {
                 Spacer(Modifier.width(16.dp))
                 Text("$avgLatencyMs", color = Peach, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Text(" ms", color = TextDim, fontSize = 10.sp)
+                Text(" ${stringResource(R.string.unit_ms)}", color = TextDim, fontSize = 10.sp)
             }
         }
         // Latency sparkline

@@ -235,4 +235,49 @@
     <!-- Status messages -->
     <string name="status_action_failed">Settings action failed</string>
     <string name="status_action_complete">Settings action complete</string>
+
+    <!-- Home warnings -->
+    <string name="warning_private_dns_title">Private DNS Active</string>
+    <string name="warning_private_dns_message">Tap to open Network settings and set Private DNS to \"Off\"</string>
+    <string name="warning_private_dns_dismiss">Dismiss Private DNS warning</string>
+    <string name="warning_battery_title">Battery Optimization</string>
+    <string name="warning_battery_message">Tap to allow HostShield to run in the background</string>
+    <string name="warning_battery_a11y">Battery optimization may interrupt protection. Open battery exemption settings.</string>
+    <string name="warning_battery_dismiss">Dismiss battery optimization warning</string>
+    <string name="warning_vpn_recovery_root">Android 16 VPN stack corruption detected &#8212; always-on lockdown is active but no traffic is reaching the tunnel. This is a known Android bug. Restart now to recover.</string>
+    <string name="warning_vpn_recovery_no_root">Android 16 VPN stack corruption detected &#8212; always-on lockdown is active but no traffic is reaching the tunnel. This is a known Android bug. Restart the device manually to recover.</string>
+    <string name="warning_vpn_recovery_dismiss">Dismiss VPN recovery advisory</string>
+    <string name="warning_vpn_recovery_restart">Restart device</string>
+    <string name="warning_vpn_recovery_restart_a11y">Restart device to recover the VPN stack</string>
+    <string name="warning_private_space_title">Private Space Detected</string>
+    <string name="warning_private_space_dismiss">Dismiss Private Space warning</string>
+    <string name="warning_high_query_rate">High Query Rate</string>
+    <string name="warning_dropped_queries">%d queries dropped (log buffer full)</string>
+    <string name="unit_queries_per_min">q/min</string>
+    <string name="unit_blocks_per_min">blk/min</string>
+    <string name="unit_ms">ms</string>
+
+    <!-- DNS settings -->
+    <string name="dns_endpoint_hint">Endpoint (host:port)</string>
+    <string name="dns_tunnel_ip_hint">DNS IP inside tunnel (e.g. 1.1.1.1)</string>
+    <string name="dns_wireguard_keys_hint">Configure keys in WireGuard settings</string>
+    <string name="dns_custom_upstream">Custom Upstream DNS</string>
+    <string name="dns_custom_upstream_hint">Comma-separated IPs (leave empty for system default)</string>
+    <string name="dns_custom_upstream_example">e.g. 1.1.1.1, 9.9.9.9</string>
+    <string name="dns_block_response">Block Response</string>
+    <string name="dns_cache_title">DNS Cache</string>
+    <string name="dns_cache_clear">Clear DNS cache</string>
+
+    <!-- Home stats -->
+    <string name="stats_privacy_score">Privacy Score</string>
+    <string name="stats_source_categories">Source Categories</string>
+    <string name="stats_top_querying_apps">Top Querying Apps</string>
+
+    <!-- Sources -->
+    <string name="sources_update_preview">Source update preview</string>
+    <string name="sources_built_in">BUILT-IN</string>
+    <string name="sources_add_source">Add source</string>
+    <string name="sources_source_name">Source name</string>
+    <string name="sources_enter_name">Enter a source name.</string>
+    <string name="sources_source_url">Source URL</string>
 </resources>
