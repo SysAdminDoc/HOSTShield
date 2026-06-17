@@ -224,7 +224,8 @@ $requiredPatterns = @{
         "com.hostshield.ACTION_ENABLE",
         "com.hostshield.ACTION_SET_PROFILE",
         "duration_minutes",
-        "v1-v15"
+        "v1-v15",
+        "gh attestation verify"
     )
     "app/README.md" = @(
         "fail-closed",
@@ -300,7 +301,8 @@ $releaseGatePatterns = @{
             "osv-results.json",
             "android-page-alignment.txt",
             "release-provenance.ps1",
-            "upload-artifact"
+            "upload-artifact",
+            "gh attestation verify"
         )
     }
     "tools/release-provenance.ps1" = @{

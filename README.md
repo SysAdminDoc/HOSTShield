@@ -230,6 +230,13 @@ powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 
 **CI/CD**: `.github/workflows/release.yml` triggers on tag push (`v*`) — builds, signs, and uploads APK to GitHub Releases.
 
+**Attestation Verification**: Release APKs, AABs, and SBOMs carry GitHub artifact attestations. Verify with:
+
+```bash
+gh attestation verify HostShield-v*.apk --repo SysAdminDoc/HostShield
+gh attestation verify hostshield-bom.cdx.json --repo SysAdminDoc/HostShield
+```
+
 ---
 
 ## Configuration

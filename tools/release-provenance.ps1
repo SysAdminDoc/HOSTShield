@@ -241,7 +241,20 @@ $provenance = @(
     '- OSV policy fails release CI on unacknowledged HIGH or CRITICAL vulnerabilities; allowlist entries require a reason and expiry.',
     '- Android 16 KB page alignment is verified with `zipalign -P 16` for APKs and `PAGE_ALIGNMENT_16K` bundle config for AABs.',
     '- Signing certificate fingerprint comes from `apksigner verify --verbose --print-certs` when Android build tools are available.',
-    '- Git status is recorded so release notes can distinguish clean tagged releases from local smoke-test artifacts.'
+    '- Git status is recorded so release notes can distinguish clean tagged releases from local smoke-test artifacts.',
+    '',
+    '## Attestation Verification',
+    '',
+    'GitHub artifact attestations prove that the APK, AAB, and SBOM were built by the release workflow in this repository.',
+    'Verify with the GitHub CLI:',
+    '',
+    '```bash',
+    "gh attestation verify HostShield-v${versionName}-full-release.apk --repo SysAdminDoc/HostShield",
+    "gh attestation verify HostShield-v${versionName}-play-release.aab --repo SysAdminDoc/HostShield",
+    "gh attestation verify hostshield-bom.cdx.json --repo SysAdminDoc/HostShield",
+    '```',
+    '',
+    'Each command verifies the SLSA provenance attestation was signed by the `SysAdminDoc/HostShield` release workflow.'
 )
 
 $provenance | Set-Content -Encoding UTF8 -LiteralPath $provenancePath

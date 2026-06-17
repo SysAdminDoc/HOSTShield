@@ -138,6 +138,30 @@ jobs:
         with:
           subject-path: ${{ env.AAB_PATH }}
 
+      - name: Verify APK attestation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh attestation verify "${{ env.APK_PATH }}" \
+            --repo SysAdminDoc/HostShield \
+            --signer-workflow .github/workflows/release.yml
+
+      - name: Verify AAB attestation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh attestation verify "${{ env.AAB_PATH }}" \
+            --repo SysAdminDoc/HostShield \
+            --signer-workflow .github/workflows/release.yml
+
+      - name: Verify SBOM attestation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh attestation verify artifacts/release-provenance/hostshield-bom.cdx.json \
+            --repo SysAdminDoc/HostShield \
+            --signer-workflow .github/workflows/release.yml
+
       - name: Verify Android 16 KB page alignment
         shell: pwsh
         working-directory: .
