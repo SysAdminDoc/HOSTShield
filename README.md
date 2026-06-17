@@ -28,6 +28,14 @@
 1. Download the latest APK from [Releases](https://github.com/SysAdminDoc/HostShield/releases)
 2. Install and launch — the onboarding wizard guides you through setup
 3. Choose **VPN mode** (no root) or **Root mode** (better battery life)
+
+### Obtainium (auto-update from GitHub)
+
+Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
+
+- **App Source URL**: `https://github.com/SysAdminDoc/HostShield`
+- **Release asset filter**: `full-release.apk`
+- **Version detection**: from GitHub release tag
 4. Enable blocking — ads and trackers are filtered immediately
 
 ---
