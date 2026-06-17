@@ -82,8 +82,7 @@ class GeoIpLookup @Inject constructor() {
 
     /** Lookup GeoIP info for an IP address. Returns cached result if available. */
     suspend fun lookup(ip: String): GeoInfo? {
-        if (ip.isBlank() || ip == "0.0.0.0" || ip.startsWith("10.") ||
-            ip.startsWith("192.168.") || ip.startsWith("127.") || ip.startsWith("::")) {
+        if (ip.isBlank() || isPrivateOrReserved(ip)) {
             return GeoInfo(ip = ip, country = "Local", countryCode = "LO", isp = "Private network")
         }
 
@@ -149,6 +148,23 @@ class GeoIpLookup @Inject constructor() {
 
     /** Whether rate limit backoff is currently active. */
     fun isBackingOff(): Boolean = System.currentTimeMillis() < backoffUntil.get()
+
+    private fun isPrivateOrReserved(ip: String): Boolean {
+        if (ip.contains(':')) {
+            return ip.startsWith("::") || ip.startsWith("fc") ||
+                ip.startsWith("fd") || ip.startsWith("fe80:") ||
+                ip == "::1"
+        }
+        return ip == "0.0.0.0" || ip.startsWith("10.") ||
+            ip.startsWith("127.") || ip.startsWith("192.168.") ||
+            ip.startsWith("169.254.") || isRfc1918_172(ip)
+    }
+
+    private fun isRfc1918_172(ip: String): Boolean {
+        if (!ip.startsWith("172.")) return false
+        val secondOctet = ip.substringAfter("172.").substringBefore('.').toIntOrNull() ?: return false
+        return secondOctet in 16..31
+    }
 
     private fun countryCodeToFlag(code: String): String {
         if (code.length != 2) return ""

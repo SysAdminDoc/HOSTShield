@@ -112,7 +112,11 @@ object DnsPacketBuilder {
             if (len and 0xC0 == 0xC0) break // compression pointer — not expected in query
             if (pos + 1 + len > dns.size) return null
             if (sb.isNotEmpty()) sb.append('.')
-            for (i in 1..len) sb.append(dns[pos + i].toInt().toChar())
+            for (i in 1..len) {
+                val b = dns[pos + i].toInt() and 0xFF
+                if (b < 0x21 || b > 0x7E) return null
+                sb.append(b.toChar())
+            }
             pos += 1 + len
         }
         return if (sb.isNotEmpty()) sb.toString().lowercase() else null

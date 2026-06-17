@@ -326,6 +326,34 @@ class DnsPacketBuilderTest {
         assertEquals(hostname, DnsPacketBuilder.parseDomain(query))
     }
 
+    @Test
+    fun `parseDomain rejects non-ASCII label bytes`() {
+        val header = ByteArray(12).apply { this[5] = 1 }
+        val question = byteArrayOf(
+            3, 0x80.toByte(), 'b'.code.toByte(), 'c'.code.toByte(),
+            3, 'c'.code.toByte(), 'o'.code.toByte(), 'm'.code.toByte(),
+            0, 0, 1, 0, 1
+        )
+        assertNull(DnsPacketBuilder.parseDomain(header + question))
+    }
+
+    @Test
+    fun `parseDomain rejects control characters in labels`() {
+        val header = ByteArray(12).apply { this[5] = 1 }
+        val question = byteArrayOf(
+            3, 0x00.toByte(), 'b'.code.toByte(), 'c'.code.toByte(),
+            3, 'c'.code.toByte(), 'o'.code.toByte(), 'm'.code.toByte(),
+            0, 0, 1, 0, 1
+        )
+        assertNull(DnsPacketBuilder.parseDomain(header + question))
+    }
+
+    @Test
+    fun `parseDomain accepts valid ASCII labels`() {
+        val query = buildQuery("valid-host.example.com")
+        assertEquals("valid-host.example.com", DnsPacketBuilder.parseDomain(query))
+    }
+
     // ── EDE (Extended DNS Errors, RFC 8914) ───────────────
 
     @Test

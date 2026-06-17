@@ -370,6 +370,15 @@ class HostsUpdateWorker @AssistedInject constructor(
 
             Result.success()
         } catch (e: Exception) {
+            Log.e(TAG, "Blocklist update failed (attempt $runAttemptCount): ${e.message}", e)
+            diagnosticEvents.record(
+                DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
+                "Blocklist update worker failed",
+                mapOf(
+                    "attempt" to runAttemptCount,
+                    "error" to (e.message ?: e.javaClass.simpleName)
+                )
+            )
             if (runAttemptCount < 5) Result.retry() else Result.failure()
         }
     }

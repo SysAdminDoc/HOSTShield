@@ -337,7 +337,10 @@ class WebDavSync @Inject constructor(
 
     private fun buildUrl(serverUrl: String, remotePath: String): String {
         val base = serverUrl.trimEnd('/')
-        val path = remotePath.trimStart('/')
+        val decoded = try {
+            java.net.URLDecoder.decode(remotePath, "UTF-8")
+        } catch (_: Exception) { remotePath }
+        val path = decoded.trimStart('/')
         require(!path.split('/').any { it == ".." || it == "." }) {
             "Path traversal segments rejected: $path"
         }
