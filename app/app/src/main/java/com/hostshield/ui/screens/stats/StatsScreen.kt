@@ -92,7 +92,33 @@ data class StatsUiState(
     val threatIntelTopDomains: List<ThreatIntelTopDomain> = emptyList(),
     val threatIntelTopApps: List<ThreatIntelTopApp> = emptyList(),
     val threatIntelDailyImpact: List<ThreatIntelDailyImpact> = emptyList()
-)
+) {
+    val avgLatencyMs: Double
+        get() = if (hourlyLatency.isNotEmpty()) hourlyLatency.map { it.avgMs }.average() else 0.0
+
+    val peakLatencyMs: Int
+        get() = hourlyLatency.maxOfOrNull { it.maxMs } ?: 0
+
+    val queryTypeTotal: Int
+        get() = queryTypeDistribution.sumOf { it.cnt }.coerceAtLeast(1)
+
+    enum class VpnHealth(val label: String) {
+        HEALTHY("Healthy"),
+        MINOR_DROPS("Minor drops"),
+        UNSTABLE("Unstable"),
+        DEGRADED("Degraded"),
+        NO_DATA("No data")
+    }
+
+    val vpnHealth: VpnHealth
+        get() = when {
+            vpnFdErrors > 5 -> VpnHealth.DEGRADED
+            vpnRebuilds > 10 -> VpnHealth.UNSTABLE
+            vpnDroppedQueries > 0 -> VpnHealth.MINOR_DROPS
+            vpnUptimeHours > 0 -> VpnHealth.HEALTHY
+            else -> VpnHealth.NO_DATA
+        }
+}
 
 enum class ThreatIntelFeedStatus {
     HEALTHY,
@@ -355,11 +381,9 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                     if (state.hourlyLatency.isNotEmpty()) {
                         LatencyBarChart(data = state.hourlyLatency, modifier = Modifier.fillMaxWidth().height(120.dp))
                         Spacer(Modifier.height(8.dp))
-                        val avgAll = state.hourlyLatency.map { it.avgMs }.average()
-                        val maxAll = state.hourlyLatency.maxOfOrNull { it.maxMs } ?: 0
                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            Text("Avg: ${"%.0f".format(avgAll)}ms", color = Peach, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                            Text("Peak: ${maxAll}ms", color = Red, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                            Text("Avg: ${"%.0f".format(state.avgLatencyMs)}ms", color = Peach, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                            Text("Peak: ${state.peakLatencyMs}ms", color = Red, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                         }
                     } else {
                         HostShieldCompactState(
@@ -425,7 +449,7 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                             Text("Query Types (7d)", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         }
                         Spacer(Modifier.height(12.dp))
-                        val total = state.queryTypeDistribution.sumOf { it.cnt }.coerceAtLeast(1)
+                        val total = state.queryTypeTotal
                         val typeColors = mapOf(
                             "A" to Teal, "AAAA" to Blue, "CNAME" to Peach,
                             "MX" to Flamingo, "TXT" to Yellow, "SRV" to Green,
@@ -471,18 +495,13 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
 
         // VPN Health
         item {
-            val healthColor = when {
-                state.vpnFdErrors > 5 || state.vpnDroppedQueries > 100 -> Red
-                state.vpnRebuilds > 10 || state.vpnDroppedQueries > 0 -> Peach
+            val health = state.vpnHealth
+            val healthColor = when (health) {
+                StatsUiState.VpnHealth.DEGRADED -> Red
+                StatsUiState.VpnHealth.UNSTABLE, StatsUiState.VpnHealth.MINOR_DROPS -> Peach
                 else -> Green
             }
-            val healthLabel = when {
-                state.vpnFdErrors > 5 -> "Degraded"
-                state.vpnRebuilds > 10 -> "Unstable"
-                state.vpnDroppedQueries > 0 -> "Minor drops"
-                state.vpnUptimeHours > 0 -> "Healthy"
-                else -> "No data"
-            }
+            val healthLabel = health.label
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
