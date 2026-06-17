@@ -1,3 +1,30 @@
+# HostShield v6.9.28
+
+**Release Date:** 2026-06-17
+**Version Code:** 110
+
+## Security and Correctness Audit
+
+### Security
+- GeoIpLookup now recognizes RFC 1918 172.16-31.x.x, link-local 169.254.x.x,
+  IPv6 ULA (fc00::/fd00::), and link-local IPv6 (fe80::) as private addresses.
+  Previously these could leak to the external ipapi.co lookup.
+- WebDavSync path traversal check now URL-decodes remote paths before
+  validation, preventing %2e%2e encoded bypass.
+- DnsPacketBuilder rejects non-printable-ASCII bytes in DNS query labels,
+  preventing control-character injection from malformed packets.
+
+### Reliability
+- HostsUpdateWorker now logs and records diagnostic events on unexpected
+  exceptions instead of silently retrying up to 5 times.
+
+### Tests
+- Added GeoIpLookup private IP coverage (12 tests covering all RFC 1918,
+  loopback, link-local, ULA, and boundary cases).
+- Added DnsPacketBuilder non-ASCII label rejection tests.
+
+---
+
 # HostShield v6.9.27
 
 **Release Date:** 2026-06-17

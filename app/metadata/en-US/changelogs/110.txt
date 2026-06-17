@@ -1,0 +1,1 @@
+v6.9.28: Security audit fixes. Private IP detection covers all RFC 1918/link-local/ULA ranges. WebDAV path traversal hardened against URL encoding. DNS label validation rejects non-ASCII bytes. Blocklist worker logs unexpected failures.
