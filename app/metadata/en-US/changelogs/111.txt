@@ -1,0 +1,1 @@
+v6.9.29: Blocklist regex matching now enforces a per-rule timeout so pathological user regex rules cannot hang DNS decisions. Decision-cache entries are tied to their blocklist snapshot so concurrent updates cannot reuse stale cached results.

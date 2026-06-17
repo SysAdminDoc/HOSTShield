@@ -1,3 +1,28 @@
+# HostShield v6.9.29
+
+**Release Date:** 2026-06-17
+**Version Code:** 111
+
+## Blocklist Regex Guard
+
+### Security
+- User-supplied blocklist regex matching now runs through a per-rule execution
+  deadline, preventing overlapping-alternation and other pathological patterns
+  from hanging DNS decisions.
+- Regex rules that time out or overflow the regex stack are disabled for the
+  active blocklist snapshot instead of being retried on every query.
+
+### Reliability
+- Blocklist decision-cache entries are tied to the immutable snapshot that
+  produced them, so concurrent blocklist swaps cannot reuse stale cached
+  decisions.
+
+### Tests
+- Added BlocklistHolder regression coverage for overlapping-alternation regex
+  timeout behavior and snapshot-aware decision cache invalidation.
+
+---
+
 # HostShield v6.9.28
 
 **Release Date:** 2026-06-17

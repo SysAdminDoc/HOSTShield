@@ -207,6 +207,39 @@ class BlocklistHolderTest {
     }
 
     @Test
+    fun `pathological regex times out without disabling safe regex rules`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            regexRules = listOf(
+                UserRule(hostname = "(a|aa)+b", type = RuleType.BLOCK, isRegex = true),
+                UserRule(hostname = "tracker\\.example", type = RuleType.BLOCK, isRegex = true)
+            )
+        )
+
+        val started = System.nanoTime()
+        assertFalse(holder.isBlocked("${"a".repeat(180)}.example"))
+        val elapsedMs = (System.nanoTime() - started) / 1_000_000
+
+        assertTrue("Pathological regex should be bounded, took ${elapsedMs}ms", elapsedMs < 250)
+        assertTrue(holder.isBlocked("ads.tracker.example"))
+    }
+
+    @Test
+    fun `cached decisions are tied to the snapshot that produced them`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = listOf(UserRule(hostname = "*.example.com", type = RuleType.BLOCK, enabled = true))
+        )
+
+        assertTrue(holder.isBlocked("ads.example.com"))
+
+        holder.update(newDomains = emptySet(), wildcards = emptyList())
+
+        assertFalse(holder.isBlocked("ads.example.com"))
+    }
+
+    @Test
     fun `subdomain of blocked domain is not blocked`() {
         // Only the exact domain should be blocked, not arbitrary subdomains
         holder.update(setOf("example.com"), emptyList())

@@ -3,6 +3,16 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.29] - 2026-06-17
+
+### Security
+- User-supplied blocklist regex matching now runs through a per-rule execution
+  deadline and disables patterns that time out or overflow the regex stack.
+
+### Fixed
+- Blocklist decision-cache entries are tied to the snapshot that produced them,
+  preventing stale cached decisions from surviving concurrent blocklist swaps.
+
 ## [v6.9.26] - 2026-06-16
 
 ### Changed

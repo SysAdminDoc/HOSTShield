@@ -4,7 +4,6 @@ import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -65,8 +64,8 @@ class BlocklistHolder @Inject constructor() {
         val root: TrieNode,
         val exactBlockSet: Set<String>,
         val wildcardRules: List<UserRule>,
-        val regexBlockRules: List<Regex>,
-        val regexAllowRules: List<Regex>,
+        val regexBlockRules: List<TimedRegex>,
+        val regexAllowRules: List<TimedRegex>,
         val blockedIps: Set<String>,
         val domainCount: Int,
         val sourceWildcardBlockDomains: Set<String>,
@@ -93,11 +92,68 @@ class BlocklistHolder @Inject constructor() {
         }
     }
 
+    private data class CachedDecision(
+        val snapshot: Snapshot,
+        val decision: BlockDecision
+    )
+
     @Volatile private var snapshot: Snapshot = Snapshot.EMPTY
 
     val domainCount: Int get() = snapshot.domainCount
     val wildcardRules: List<UserRule> get() = snapshot.wildcardRules
     val blockedIps: Set<String> get() = snapshot.blockedIps
+
+    private class TimedRegex(private val regex: Regex) {
+        @Volatile private var disabled = false
+
+        val pattern: String get() = regex.pattern
+
+        fun containsMatchIn(input: String): Boolean {
+            if (disabled) return false
+            val deadlineNanos = System.nanoTime() + REGEX_MATCH_TIMEOUT_NANOS
+            return try {
+                regex.containsMatchIn(DeadlineCharSequence(input, deadlineNanos))
+            } catch (_: RegexMatchTimeoutException) {
+                disabled = true
+                false
+            } catch (_: StackOverflowError) {
+                disabled = true
+                false
+            } catch (_: RuntimeException) {
+                disabled = true
+                false
+            }
+        }
+    }
+
+    private class DeadlineCharSequence(
+        private val value: String,
+        private val deadlineNanos: Long
+    ) : CharSequence {
+        override val length: Int get() = value.length
+
+        override fun get(index: Int): Char {
+            throwIfExpired()
+            return value[index]
+        }
+
+        override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
+            throwIfExpired()
+            return DeadlineCharSequence(value.substring(startIndex, endIndex), deadlineNanos)
+        }
+
+        override fun toString(): String = value
+
+        private fun throwIfExpired() {
+            if (System.nanoTime() - deadlineNanos >= 0L) {
+                throw RegexMatchTimeoutException
+            }
+        }
+    }
+
+    private object RegexMatchTimeoutException : RuntimeException() {
+        override fun fillInStackTrace(): Throwable = this
+    }
 
     /**
      * Filter decision cache: bounded access-ordered LRU. Wrapped in a
@@ -105,10 +161,10 @@ class BlocklistHolder @Inject constructor() {
      * mutate it concurrently. Invalidated on every [update].
      */
     private val decisionCacheMaxSize = 8192
-    private val decisionCache: MutableMap<String, BlockDecision> =
+    private val decisionCache: MutableMap<String, CachedDecision> =
         java.util.Collections.synchronizedMap(
-            object : LinkedHashMap<String, BlockDecision>(2048, 0.75f, true) {
-                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, BlockDecision>?): Boolean =
+            object : LinkedHashMap<String, CachedDecision>(2048, 0.75f, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CachedDecision>?): Boolean =
                     size > decisionCacheMaxSize
             }
         )
@@ -283,7 +339,7 @@ class BlocklistHolder @Inject constructor() {
             }
         }
         // Compile regex rules (validated, invalid patterns silently skipped).
-        // Safety: reject patterns >500 chars or with nested quantifiers to prevent ReDoS.
+        // Matching also runs through a per-rule deadline to prevent packet-loop hangs.
         val newRegexBlock = mutableListOf<Regex>()
         val newRegexAllow = mutableListOf<Regex>()
         val nestedQuantifier = Regex("""\([^)]*[+*][^)]*\)[+*?]""")
@@ -302,12 +358,12 @@ class BlocklistHolder @Inject constructor() {
 
         // Atomic single-reference swap. Readers either see fully-built newSnapshot
         // or the previous snapshot — never a torn view of root vs exactBlockSet.
-        snapshot = Snapshot(
+        val newSnapshot = Snapshot(
             root = newRoot,
             exactBlockSet = newExactSet,
             wildcardRules = wildcards,
-            regexBlockRules = newRegexBlock,
-            regexAllowRules = newRegexAllow,
+            regexBlockRules = newRegexBlock.map(::TimedRegex),
+            regexAllowRules = newRegexAllow.map(::TimedRegex),
             blockedIps = ipBlocks,
             domainCount = newDomains.size + normalizedSourceWildcardBlocks.size + dohBypassDomains.size,
             sourceWildcardBlockDomains = normalizedSourceWildcardBlocks,
@@ -318,6 +374,7 @@ class BlocklistHolder @Inject constructor() {
         )
 
         decisionCache.clear()
+        snapshot = newSnapshot
     }
 
     suspend fun updateAsync(
@@ -345,8 +402,8 @@ class BlocklistHolder @Inject constructor() {
     }
 
     fun clear() {
-        snapshot = Snapshot.EMPTY
         decisionCache.clear()
+        snapshot = Snapshot.EMPTY
     }
 
     fun getBlockedCount(): Int = snapshot.domainCount
@@ -434,15 +491,22 @@ class BlocklistHolder @Inject constructor() {
 
         // L1: Filter decision LRU cache — O(1) for hot domains. LinkedHashMap in
         // access-order auto-evicts the LRU entry on overflow (removeEldestEntry).
-        decisionCache[lower]?.let { return it }
-
         // Snapshot once so we evaluate against a consistent view across the
         // entire decision (trie + set + regex). A concurrent update() can land
         // mid-evaluation and atomically swap `snapshot`, but the local copy is
         // immutable from this thread's perspective.
         val snap = snapshot
+        decisionCache[lower]?.let { cached ->
+            if (cached.snapshot === snap) {
+                return cached.decision
+            }
+            decisionCache.remove(lower)
+        }
+
         val result = decideInternal(lower, snap)
-        decisionCache[lower] = result
+        if (snapshot === snap) {
+            decisionCache[lower] = CachedDecision(snap, result)
+        }
         return result
     }
 
@@ -515,7 +579,7 @@ class BlocklistHolder @Inject constructor() {
         val blocked = exactBlocked || wildcardBlockMatch.isNotEmpty()
 
         if (blocked) {
-            snap.regexAllowRules.firstOrNull { it.containsMatchIn(lower) }?.let { regex ->
+            snap.regexAllowRules.firstMatchingRegex(lower)?.let { regex ->
                 return BlockDecision(
                     blocked = false,
                     reason = "regex_allow",
@@ -542,8 +606,8 @@ class BlocklistHolder @Inject constructor() {
             )
         }
 
-        snap.regexBlockRules.firstOrNull { it.containsMatchIn(lower) }?.let { regex ->
-            snap.regexAllowRules.firstOrNull { it.containsMatchIn(lower) }?.let { allowRegex ->
+        snap.regexBlockRules.firstMatchingRegex(lower)?.let { regex ->
+            snap.regexAllowRules.firstMatchingRegex(lower)?.let { allowRegex ->
                 return BlockDecision(
                     blocked = false,
                     reason = "regex_allow",
@@ -592,6 +656,9 @@ class BlocklistHolder @Inject constructor() {
     private fun findWildcardMatch(lower: String, wildcards: Set<String>): String? =
         wildcards.firstOrNull { lower == it || lower.endsWith(".$it") }
 
+    private fun List<TimedRegex>.firstMatchingRegex(input: String): TimedRegex? =
+        firstOrNull { it.containsMatchIn(input) }
+
     private fun String.toBlockReason(default: String): String = when {
         startsWith("User block rule", ignoreCase = true) -> "user_rule"
         startsWith("Remote DoH bypass", ignoreCase = true) -> "doh_bypass"
@@ -611,5 +678,9 @@ class BlocklistHolder @Inject constructor() {
         }
         if (wildcardBlock) node.wildcardBlock = true
         if (wildcardAllow) node.wildcardAllow = true
+    }
+
+    private companion object {
+        private const val REGEX_MATCH_TIMEOUT_NANOS = 5_000_000L
     }
 }
