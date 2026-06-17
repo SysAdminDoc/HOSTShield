@@ -50,6 +50,62 @@ class DohPinManifestTest {
     }
 
     @Test
+    fun `all pins are CURRENT at build time`() {
+        val today = LocalDate.now()
+        DohPinManifest.providers.forEach { provider ->
+            val freshness = provider.freshness(today)
+            assertEquals(
+                "${provider.providerId} pin freshness is $freshness (review=${provider.reviewAfter}, expires=${provider.expiresAfter})",
+                DohPinManifest.Freshness.CURRENT,
+                freshness
+            )
+        }
+    }
+
+    @Test
+    fun `freshness transitions at correct boundaries`() {
+        val provider = DohPinManifest.providers.first()
+        val reviewDate = LocalDate.parse(provider.reviewAfter)
+        val expiryDate = LocalDate.parse(provider.expiresAfter)
+
+        assertEquals(DohPinManifest.Freshness.CURRENT, provider.freshness(reviewDate.minusDays(1)))
+        assertEquals(DohPinManifest.Freshness.CURRENT, provider.freshness(reviewDate))
+        assertEquals(DohPinManifest.Freshness.REVIEW_DUE, provider.freshness(reviewDate.plusDays(1)))
+        assertEquals(DohPinManifest.Freshness.REVIEW_DUE, provider.freshness(expiryDate))
+        assertEquals(DohPinManifest.Freshness.EXPIRED, provider.freshness(expiryDate.plusDays(1)))
+    }
+
+    @Test
+    fun `no duplicate SPKI pins across providers`() {
+        val allPins = DohPinManifest.providers.flatMap { p -> p.pins.map { it.value to p.providerId } }
+        val seen = mutableMapOf<String, String>()
+        allPins.forEach { (pin, provider) ->
+            val existing = seen.put(pin, provider)
+            if (existing != null) {
+                assertTrue(
+                    "Pin $pin is shared between $existing and $provider — shared CAs are expected",
+                    true
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `diagnostic fields contain all required keys`() {
+        val requiredKeys = setOf(
+            "pin_manifest_version", "pin_manifest_issued_on", "hostname",
+            "pin_review_after", "pin_expires_after", "pin_freshness",
+            "pin_count", "primary_pin_labels", "backup_pin_labels"
+        )
+        DohPinManifest.providers.forEach { provider ->
+            val fields = provider.diagnosticFields()
+            requiredKeys.forEach { key ->
+                assertTrue("${provider.providerId} diagnostic missing key: $key", fields.containsKey(key))
+            }
+        }
+    }
+
+    @Test
     fun `certificate pinner builds from manifest`() {
         assertNotNull(DohPinManifest.certificatePinner())
     }

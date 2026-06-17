@@ -165,6 +165,36 @@ if (-not (Test-RepoFile $osvAllowlistPath)) {
     }
 }
 
+$dohPinManifest = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DohPinManifest.kt"
+
+$pinReviewDates = [regex]::Matches($dohPinManifest, 'reviewAfter\s*=\s*"(\d{4}-\d{2}-\d{2})"')
+$pinExpiryDates = [regex]::Matches($dohPinManifest, 'expiresAfter\s*=\s*"(\d{4}-\d{2}-\d{2})"')
+$today = [DateTime]::UtcNow.Date
+
+foreach ($match in $pinReviewDates) {
+    $reviewDate = [DateTime]::ParseExact($match.Groups[1].Value, "yyyy-MM-dd", [Globalization.CultureInfo]::InvariantCulture)
+    if ($today -gt $reviewDate) {
+        $failures.Add("DohPinManifest has a reviewAfter date ($($match.Groups[1].Value)) that is past due. Certificate pins need rotation review.")
+    }
+}
+
+foreach ($match in $pinExpiryDates) {
+    $expiryDate = [DateTime]::ParseExact($match.Groups[1].Value, "yyyy-MM-dd", [Globalization.CultureInfo]::InvariantCulture)
+    if ($today -gt $expiryDate) {
+        $failures.Add("DohPinManifest has an expiresAfter date ($($match.Groups[1].Value)) that is expired. Certificate pins MUST be rotated before release.")
+    }
+}
+
+$pinManifestVersion = [regex]::Match($dohPinManifest, 'const\s+val\s+VERSION\s*=\s*(\d+)')
+if (-not $pinManifestVersion.Success -or [int]$pinManifestVersion.Groups[1].Value -lt 1) {
+    $failures.Add("DohPinManifest.VERSION must be a positive integer.")
+}
+
+$providerCount = [regex]::Matches($dohPinManifest, 'ProviderPins\(').Count
+if ($providerCount -lt 3) {
+    $failures.Add("DohPinManifest must cover at least 3 DoH providers (found $providerCount).")
+}
+
 $dohUpdaterPath = "app/app/src/main/java/com/hostshield/service/DohBypassUpdater.kt"
 $dohUpdater = Read-RepoFile $dohUpdaterPath
 $expectedDohManifestUrl = "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/$dohBypassManifest"
