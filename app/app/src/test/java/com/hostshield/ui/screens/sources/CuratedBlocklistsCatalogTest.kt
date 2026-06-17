@@ -58,18 +58,76 @@ class CuratedBlocklistsCatalogTest {
         }
     }
 
-    private fun readCatalog(): List<CatalogItem> {
+    @Test
+    fun `no duplicate URLs within same category`() {
+        readCatalogByCategory().forEach { (category, items) ->
+            val seen = mutableMapOf<String, String>()
+            items.forEach { item ->
+                val existing = seen.put(item.url, item.label)
+                if (existing != null) {
+                    assertTrue("Duplicate URL in $category: ${item.url} in '$existing' and '${item.label}'", false)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `all URLs are HTTPS`() {
+        readCatalog().forEach { item ->
+            assertTrue("${item.label} URL must be HTTPS: ${item.url}", item.url.startsWith("https://"))
+        }
+    }
+
+    @Test
+    fun `no duplicate labels within same category`() {
+        readCatalogByCategory().forEach { (category, items) ->
+            val labels = items.map { it.label }
+            val duplicates = labels.groupBy { it }.filter { it.value.size > 1 }.keys
+            assertTrue("Duplicate labels in $category: $duplicates", duplicates.isEmpty())
+        }
+    }
+
+    @Test
+    fun `every list has non-blank label and entries`() {
+        readCatalog().forEach { item ->
+            assertFalse("Label must not be blank", item.label.isBlank())
+            assertFalse("${item.label}: entries must not be blank", item.entries.isBlank())
+            assertFalse("${item.label}: URL must not be blank", item.url.isBlank())
+        }
+    }
+
+    @Test
+    fun `valid categories only`() {
+        val validCategories = setOf("ADS", "TRACKERS", "MALWARE", "ADULT", "SOCIAL", "CRYPTO", "ALLOWLIST")
         val file = listOf(
             File("src/main/assets/curated_blocklists.json"),
             File("app/src/main/assets/curated_blocklists.json"),
             File("app/app/src/main/assets/curated_blocklists.json")
         ).first { it.isFile }
-
         val categories = JSONArray(file.readText())
-        val items = mutableListOf<CatalogItem>()
+        for (i in 0 until categories.length()) {
+            val cat = categories.getJSONObject(i).getString("category")
+            assertTrue("Unknown category: $cat", cat in validCategories)
+        }
+    }
+
+    private fun catalogFile(): File = listOf(
+        File("src/main/assets/curated_blocklists.json"),
+        File("app/src/main/assets/curated_blocklists.json"),
+        File("app/app/src/main/assets/curated_blocklists.json")
+    ).first { it.isFile }
+
+    private fun readCatalog(): List<CatalogItem> =
+        readCatalogByCategory().values.flatten()
+
+    private fun readCatalogByCategory(): Map<String, List<CatalogItem>> {
+        val categories = JSONArray(catalogFile().readText())
+        val result = mutableMapOf<String, List<CatalogItem>>()
         for (i in 0 until categories.length()) {
             val category = categories.getJSONObject(i)
+            val catName = category.getString("category")
             val lists = category.getJSONArray("lists")
+            val items = mutableListOf<CatalogItem>()
             for (j in 0 until lists.length()) {
                 val item = lists.getJSONObject(j)
                 items += CatalogItem(
@@ -79,8 +137,9 @@ class CuratedBlocklistsCatalogTest {
                     warning = item.optString("warning")
                 )
             }
+            result[catName] = items
         }
-        return items
+        return result
     }
 
     private data class CatalogItem(
