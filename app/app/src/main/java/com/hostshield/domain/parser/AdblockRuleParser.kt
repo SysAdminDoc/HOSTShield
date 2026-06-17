@@ -82,7 +82,8 @@ object AdblockRuleParser {
         val totalLines: Int,
         val parsedRules: Int,
         val skippedLines: Int,
-        val dnsRewriteSkipped: Int = 0
+        val dnsRewriteSkipped: Int = 0,
+        val scopedModifierSkipped: Int = 0
     ) {
         /**
          * All block domains for the exact hash set + trie insertion.
@@ -135,6 +136,7 @@ object AdblockRuleParser {
         var parsedRules = 0
         var skippedLines = 0
         var dnsRewriteSkipped = 0
+        var scopedModifierSkipped = 0
 
         content.lineSequence().forEach { rawLine ->
             totalLines++
@@ -156,6 +158,11 @@ object AdblockRuleParser {
                     else -> blockRules.add(rule)
                 }
             } else {
+                if (SCOPED_MODIFIER_PATTERN.containsMatchIn(line)) {
+                    scopedModifierSkipped++
+                    skippedLines++
+                    return@forEach
+                }
                 if (line.contains("dnsrewrite=", ignoreCase = true)) {
                     dnsRewriteSkipped++
                     skippedLines++
@@ -183,7 +190,8 @@ object AdblockRuleParser {
             totalLines = totalLines,
             parsedRules = parsedRules,
             skippedLines = skippedLines,
-            dnsRewriteSkipped = dnsRewriteSkipped
+            dnsRewriteSkipped = dnsRewriteSkipped,
+            scopedModifierSkipped = scopedModifierSkipped
         )
     }
 
@@ -285,8 +293,8 @@ object AdblockRuleParser {
                         m.startsWith("domain=") -> {
                         return null
                     }
-                    m.startsWith("app=") || m.startsWith("client=") -> {
-                        // App/client scoping not yet implemented — apply base rule globally
+                    m.startsWith("app=") || m.startsWith("client=") || m.startsWith("ctag=") -> {
+                        return null
                     }
                     // Unknown modifiers — ignore silently (forward-compatible)
                 }
@@ -378,6 +386,7 @@ object AdblockRuleParser {
         return rules.filter { Pair(it.domain, it.isException) !in badKeys }
     }
 
+    private val SCOPED_MODIFIER_PATTERN = Regex("""\$(app|client|ctag)=""", RegexOption.IGNORE_CASE)
     private val DOMAIN_PATTERN = Regex("""^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$""")
     private val LOCALHOST = setOf("localhost", "localhost.localdomain", "local", "broadcasthost",
         "ip6-localhost", "ip6-loopback")
