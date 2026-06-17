@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.hostshield.BuildConfig
+import com.hostshield.R
 import com.hostshield.util.ExperimentalEngineDisclosure
 import com.hostshield.ui.theme.*
 
@@ -88,7 +90,7 @@ fun DnsSettingsSection(
             OutlinedTextField(
                 value = wgEndpoint,
                 onValueChange = { wgEndpoint = it },
-                placeholder = { Text("Endpoint (host:port)", color = TextDim, fontSize = 12.sp) },
+                placeholder = { Text(stringResource(R.string.dns_endpoint_hint), color = TextDim, fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp),
                 singleLine = true,
                 textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
@@ -111,7 +113,7 @@ fun DnsSettingsSection(
             OutlinedTextField(
                 value = wgDnsIp,
                 onValueChange = { wgDnsIp = it },
-                placeholder = { Text("DNS IP inside tunnel (e.g. 1.1.1.1)", color = TextDim, fontSize = 12.sp) },
+                placeholder = { Text(stringResource(R.string.dns_tunnel_ip_hint), color = TextDim, fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp),
                 singleLine = true,
                 textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
@@ -129,7 +131,7 @@ fun DnsSettingsSection(
                 }
             )
             Spacer(Modifier.height(4.dp))
-            Text("Configure keys in WireGuard settings", color = TextDim, fontSize = 10.sp)
+            Text(stringResource(R.string.dns_wireguard_keys_hint), color = TextDim, fontSize = 10.sp)
         }
         } // end BuildConfig.DEBUG gate for DoQ/WireGuard
         Spacer(Modifier.height(8.dp))
@@ -143,13 +145,13 @@ fun DnsSettingsSection(
         // Custom upstream DNS
         var customDns by remember { mutableStateOf(customUpstreamDns) }
         LaunchedEffect(customUpstreamDns) { customDns = customUpstreamDns }
-        Text("Custom Upstream DNS", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        Text("Comma-separated IPs (leave empty for system default)", color = TextDim, fontSize = 10.sp)
+        Text(stringResource(R.string.dns_custom_upstream), color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.dns_custom_upstream_hint), color = TextDim, fontSize = 10.sp)
         Spacer(Modifier.height(4.dp))
         OutlinedTextField(
             value = customDns,
             onValueChange = { customDns = it },
-            placeholder = { Text("e.g. 1.1.1.1, 9.9.9.9", color = TextDim, fontSize = 12.sp) },
+            placeholder = { Text(stringResource(R.string.dns_custom_upstream_example), color = TextDim, fontSize = 12.sp) },
             modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 52.dp),
             singleLine = true,
             textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
@@ -172,7 +174,7 @@ fun DnsSettingsSection(
         SettingsRow("DNS leak test", "Verify queries go through HostShield", Icons.Filled.VerifiedUser, onClick = onNavigateToDnsLeakTest)
         Spacer(Modifier.height(8.dp))
         // Block response type selector
-        Text("Block Response", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.dns_block_response), color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Text(
             "How blocked domains are answered",
             color = TextDim, fontSize = 11.sp
@@ -189,7 +191,7 @@ fun DnsSettingsSection(
 
         // DNS Cache management
         Spacer(Modifier.height(12.dp))
-        Text("DNS Cache", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.dns_cache_title), color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(4.dp))
         val cacheStats = com.hostshield.service.DnsVpnService.currentCacheStats
         if (cacheStats != null) {
@@ -215,7 +217,7 @@ fun DnsSettingsSection(
             ) {
                 Icon(Icons.Filled.Cached, null, tint = Blue, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("Clear DNS cache", color = TextPrimary, fontSize = 13.sp)
+                Text(stringResource(R.string.dns_cache_clear), color = TextPrimary, fontSize = 13.sp)
             }
         }
     }
