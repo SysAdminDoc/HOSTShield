@@ -3,6 +3,12 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.43] - 2026-06-18
+
+### Changed
+- Widget secondary labels now use at least 11sp text for better launcher
+  readability and accessibility.
+
 ## [v6.9.42] - 2026-06-18
 
 ### Fixed

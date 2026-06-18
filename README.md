@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.42-blue)
+![Version](https://img.shields.io/badge/version-6.9.43-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -419,6 +419,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.43** | Widget secondary labels now use at least 11sp text for better launcher readability and accessibility. |
 | **6.9.42** | Firewalled-app count labels now use Android plural resources so single-app and multi-app summaries read correctly. |
 | **6.9.41** | Hardened the WebRTC leak-test WebView with stricter settings, safe bridge parsing, blocked navigation, and bridge cleanup after each probe. |
 | **6.9.40** | Widget metadata now keeps Android 12+ target-cell sizing in qualified resources while the base widget definitions stay valid for API 26-30. |

@@ -1,0 +1,1 @@
+v6.9.43: Widget secondary labels now use at least 11sp text for better launcher readability and accessibility.

@@ -1,3 +1,16 @@
+# HostShield v6.9.43
+
+**Release Date:** 2026-06-18
+**Version Code:** 125
+
+## Widget Text Readability
+
+### Changed
+- Widget secondary labels now use at least 11sp text for better launcher
+  readability and accessibility.
+
+---
+
 # HostShield v6.9.42
 
 **Release Date:** 2026-06-18

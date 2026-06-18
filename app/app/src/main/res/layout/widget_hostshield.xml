@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:text=""
         android:textColor="#D9E2F2"
-        android:textSize="10sp" />
+        android:textSize="11sp" />
 
     <TextView
         android:id="@+id/widget_count"
@@ -60,7 +60,7 @@
         android:layout_marginTop="1dp"
         android:text=""
         android:textColor="#AAB6C8"
-        android:textSize="9sp" />
+        android:textSize="11sp" />
 
     <LinearLayout
         android:id="@+id/widget_toggle"
