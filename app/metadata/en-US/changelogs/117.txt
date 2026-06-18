@@ -1,0 +1,1 @@
+v6.9.35: Dropped-query warnings now use Android plural resources so one-query and multi-query messages read correctly.

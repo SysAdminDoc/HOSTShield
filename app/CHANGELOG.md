@@ -1,3 +1,16 @@
+# HostShield v6.9.35
+
+**Release Date:** 2026-06-18
+**Version Code:** 117
+
+## Dropped-Query Warning Copy
+
+### Fixed
+- Dropped-query warnings now use Android plural resources for correct
+  one-query and multi-query copy.
+
+---
+
 # HostShield v6.9.34
 
 **Release Date:** 2026-06-18

@@ -253,7 +253,10 @@
     <string name="warning_private_space_title">Private Space Detected</string>
     <string name="warning_private_space_dismiss">Dismiss Private Space warning</string>
     <string name="warning_high_query_rate">High Query Rate</string>
-    <string name="warning_dropped_queries">%d queries dropped (log buffer full)</string>
+    <plurals name="warning_dropped_queries">
+        <item quantity="one">%d query dropped (log buffer full)</item>
+        <item quantity="other">%d queries dropped (log buffer full)</item>
+    </plurals>
     <string name="unit_queries_per_min">q/min</string>
     <string name="unit_blocks_per_min">blk/min</string>
     <string name="unit_ms">ms</string>

@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.34-blue)
+![Version](https://img.shields.io/badge/version-6.9.35-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -419,6 +419,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.35** | Dropped-query warnings now use Android plural resources so one-query and multi-query messages read correctly. |
 | **6.9.34** | Room enum converter fallbacks now log bounded warnings when corrupted or future enum values are read from the database. |
 | **6.9.33** | Added a Room migration and covering index for per-app DNS domain aggregation to keep app drill-downs responsive on large logs. |
 | **6.9.32** | DNS cache and stale-cache responses now run post-forward CNAME/threat checks, app-scoped threat allows behave consistently, and Logs has a threat-review queue filter. |

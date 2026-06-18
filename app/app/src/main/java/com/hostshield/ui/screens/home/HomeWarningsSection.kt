@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.hostshield.R
 import androidx.compose.ui.Modifier
@@ -322,7 +323,12 @@ fun HomeWarningsSection(
             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
                 Icon(Icons.Filled.Warning, null, tint = Red, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(10.dp))
-                Text(stringResource(R.string.warning_dropped_queries, droppedQueries), color = Red, fontSize = 11.sp, lineHeight = 16.sp)
+                Text(
+                    pluralStringResource(R.plurals.warning_dropped_queries, droppedQueries, droppedQueries),
+                    color = Red,
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp
+                )
             }
         }
     }
