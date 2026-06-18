@@ -28,6 +28,7 @@ import com.hostshield.ui.components.HostShieldCompactState
 import com.hostshield.ui.components.HostShieldInlineAction
 import com.hostshield.ui.components.HostShieldPanelHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.hostshield.R
 import com.hostshield.ui.accessibility.accessibilityHeading
@@ -374,7 +375,11 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.Security,
                     title = stringResource(R.string.home_firewall_rules),
-                    subtitle = stringResource(R.string.home_apps_firewalled, state.firewalledApps),
+                    subtitle = pluralStringResource(
+                        R.plurals.home_apps_firewalled,
+                        state.firewalledApps,
+                        state.firewalledApps
+                    ),
                     accent = Red,
                     gradientEnd = Peach,
                     onClick = onNavigateToFirewall

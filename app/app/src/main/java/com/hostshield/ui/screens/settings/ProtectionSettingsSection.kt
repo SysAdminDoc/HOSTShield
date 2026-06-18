@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import com.hostshield.R
@@ -42,7 +43,15 @@ fun ProtectionSettingsSection(
         Spacer(Modifier.height(4.dp))
         SettingsRow(
             stringResource(R.string.protection_per_app_firewall),
-            if (firewalledApps > 0) stringResource(R.string.protection_apps_firewalled, firewalledApps) else stringResource(R.string.protection_per_app_firewall_sub),
+            if (firewalledApps > 0) {
+                pluralStringResource(
+                    R.plurals.protection_apps_firewalled,
+                    firewalledApps,
+                    firewalledApps
+                )
+            } else {
+                stringResource(R.string.protection_per_app_firewall_sub)
+            },
             Icons.Filled.Block,
             onClick = onNavigateToFirewall
         )

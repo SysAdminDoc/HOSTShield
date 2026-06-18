@@ -1,0 +1,1 @@
+v6.9.42: Firewalled-app count labels now use Android plural resources so single-app and multi-app summaries read correctly.

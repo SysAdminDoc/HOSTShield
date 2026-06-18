@@ -156,28 +156,6 @@
     </issue>
 
     <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;apps&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;protection_apps_firewalled&quot;>%1$d apps firewalled&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="148"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;apps&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;home_apps_firewalled&quot;>%1$d apps firewalled&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="192"
-            column="5"/>
-    </issue>
-
-    <issue
         id="ObsoleteSdkInt"
         message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
         <location

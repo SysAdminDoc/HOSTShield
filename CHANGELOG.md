@@ -3,6 +3,12 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.42] - 2026-06-18
+
+### Fixed
+- Firewalled-app count labels now use Android plural resources, so single-app
+  and multi-app summaries read correctly.
+
 ## [v6.9.41] - 2026-06-18
 
 ### Security

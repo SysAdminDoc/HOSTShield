@@ -146,7 +146,10 @@
     <string name="protection_app_exclusions">App exclusions</string>
     <string name="protection_app_exclusions_sub">Bypass VPN for specific apps</string>
     <string name="protection_per_app_firewall">Per-app firewall</string>
-    <string name="protection_apps_firewalled">%1$d apps firewalled</string>
+    <plurals name="protection_apps_firewalled">
+        <item quantity="one">%1$d app firewalled</item>
+        <item quantity="other">%1$d apps firewalled</item>
+    </plurals>
     <string name="protection_per_app_firewall_sub">Block all DNS for specific apps</string>
     <string name="protection_content_filtering">Content filtering</string>
     <string name="protection_content_filtering_sub">Block categories: adult, gambling, social, etc.</string>
@@ -190,7 +193,10 @@
     <string name="home_iptables">iptables</string>
     <string name="home_blocked_today">%1$s blocked today</string>
     <string name="home_blocked_count">%1$s blocked</string>
-    <string name="home_apps_firewalled">%1$d apps firewalled</string>
+    <plurals name="home_apps_firewalled">
+        <item quantity="one">%1$d app firewalled</item>
+        <item quantity="other">%1$d apps firewalled</item>
+    </plurals>
     <string name="home_update_apply">Update and apply</string>
     <string name="home_update_apply_sub">Download latest sources and apply</string>
     <string name="home_logging_paused">Logging paused</string>

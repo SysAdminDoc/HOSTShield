@@ -1,3 +1,16 @@
+# HostShield v6.9.42
+
+**Release Date:** 2026-06-18
+**Version Code:** 124
+
+## Firewalled-App Count Copy
+
+### Fixed
+- Home and Protection Settings firewalled-app summaries now use Android plural
+  resources for correct single-app and multi-app copy.
+
+---
+
 # HostShield v6.9.41
 
 **Release Date:** 2026-06-18
