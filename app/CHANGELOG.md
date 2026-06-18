@@ -1,3 +1,17 @@
+# HostShield v6.9.36
+
+**Release Date:** 2026-06-18
+**Version Code:** 118
+
+## Localized Stats and Sources Labels
+
+### Changed
+- Home stats cards and source-management actions now use the existing Android
+  string resources for translation readiness and fewer unused-resource lint
+  warnings.
+
+---
+
 # HostShield v6.9.35
 
 **Release Date:** 2026-06-18

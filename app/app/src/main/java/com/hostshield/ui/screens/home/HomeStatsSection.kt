@@ -9,10 +9,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hostshield.R
 import com.hostshield.ui.accessibility.accessibilityAction
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
@@ -114,7 +116,12 @@ fun HomeStatsSection(
                 }
                 Spacer(Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Privacy Score", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    Text(
+                        stringResource(R.string.stats_privacy_score),
+                        color = TextPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp
+                    )
                     val passCount = privacyItems.count { it.passed }
                     val totalCount = privacyItems.size
                     Text("$passCount/$totalCount checks passed", color = TextDim, fontSize = 11.sp)
@@ -142,7 +149,7 @@ fun HomeStatsSection(
         GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Text(
-                    "Source Categories",
+                    stringResource(R.string.stats_source_categories),
                     color = TextDim,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -199,7 +206,7 @@ fun HomeStatsSection(
         GlassCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Text(
-                    "Top Querying Apps",
+                    stringResource(R.string.stats_top_querying_apps),
                     color = TextDim,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,

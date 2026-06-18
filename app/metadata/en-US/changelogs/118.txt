@@ -1,0 +1,1 @@
+v6.9.36: Home stats and source-management labels now use Android string resources instead of hardcoded Compose text, improving localization readiness and reducing unused-resource lint noise.

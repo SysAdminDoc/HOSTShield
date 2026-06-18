@@ -3,6 +3,13 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.36] - 2026-06-18
+
+### Changed
+- Home stats and source-management labels now use the existing Android string
+  resources instead of hardcoded Compose text, keeping the UI localization
+  surface complete and lint-cleaner.
+
 ## [v6.9.35] - 2026-06-18
 
 ### Fixed

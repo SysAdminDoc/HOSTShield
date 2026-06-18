@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,6 +31,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.hostshield.R
 import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.RuleType
@@ -512,7 +514,7 @@ fun SourcesScreen(
                     )
                     HostShieldActionIconButton(
                         icon = Icons.Filled.Add,
-                        contentDescription = "Add source",
+                        contentDescription = stringResource(R.string.sources_add_source),
                         onClick = { showAddDialog = true },
                         accent = Teal,
                         modifier = Modifier.testTag(HostShieldTestTags.Sources.AddButton),
@@ -662,7 +664,12 @@ private fun SourceImpactPreviewCard(preview: SourceImpactPreview) {
                 Icon(Icons.Filled.Visibility, null, tint = Blue, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Source update preview", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(R.string.sources_update_preview),
+                        color = TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                     Text(
                         "Active ${NumberFormat.getNumberInstance().format(preview.currentEntryCount)} -> preview ${NumberFormat.getNumberInstance().format(preview.previewEntryCount)} entries from ${preview.sourceCount} sources.",
                         color = TextDim,
@@ -823,7 +830,12 @@ private fun SourceItem(
                                 .background(Mauve.copy(alpha = 0.1f))
                                 .padding(horizontal = 5.dp, vertical = 1.dp)
                         ) {
-                            Text("BUILT-IN", style = MaterialTheme.typography.labelSmall, color = Mauve, fontSize = 9.sp)
+                            Text(
+                                stringResource(R.string.sources_built_in),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Mauve,
+                                fontSize = 9.sp
+                            )
                         }
                     }
                     val healthBadge = when (source.health) {
@@ -1003,15 +1015,21 @@ private fun AddSourceDialog(
         onDismissRequest = onDismiss,
         containerColor = Surface1,
         shape = RoundedCornerShape(12.dp),
-        title = { Text("Add source", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
+        title = {
+            Text(
+                stringResource(R.string.sources_add_source),
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = label, onValueChange = { label = it },
-                    label = { Text("Source name") }, singleLine = true,
+                    label = { Text(stringResource(R.string.sources_source_name)) }, singleLine = true,
                     isError = showLabelError,
                     supportingText = if (showLabelError) {
-                        { Text("Enter a source name.", color = Red, fontSize = 11.sp) }
+                        { Text(stringResource(R.string.sources_enter_name), color = Red, fontSize = 11.sp) }
                     } else null,
                     keyboardOptions = KeyboardOptions(
                         capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words,
@@ -1028,7 +1046,7 @@ private fun AddSourceDialog(
                 )
                 OutlinedTextField(
                     value = url, onValueChange = { url = it },
-                    label = { Text("Source URL") }, singleLine = true,
+                    label = { Text(stringResource(R.string.sources_source_url)) }, singleLine = true,
                     isError = url.isNotBlank() && !urlValid,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
                     supportingText = if (url.isNotBlank() && !urlValid) {
@@ -1077,7 +1095,7 @@ private fun AddSourceDialog(
                 onClick = { if (canSubmit) onAdd(url.trim(), label.trim(), category) },
                 enabled = canSubmit,
                 modifier = Modifier.testTag(HostShieldTestTags.Sources.ConfirmAddButton)
-            ) { Text("Add source", color = Teal, fontWeight = FontWeight.SemiBold) }
+            ) { Text(stringResource(R.string.sources_add_source), color = Teal, fontWeight = FontWeight.SemiBold) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) }
