@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.29-blue)
+![Version](https://img.shields.io/badge/version-6.9.30-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -419,6 +419,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.30** | Local DNS server LAN abuse controls now apply a global per-window query cap in addition to the per-client limit. |
 | **6.9.29** | Blocklist regex matching now enforces a per-rule execution deadline, and decision-cache entries are tied to the blocklist snapshot that produced them. |
 | **6.9.26** | Premium UX polish pass: shared screen headers, square icon actions, selected filters, inline actions, clearer source/log/rule/settings states, and more compact-screen-safe row layouts. |
 | **6.9.25** | Backup schema v2 search history, empty-catch logging, unused resource cleanup, DoH3 dead-code annotation. |

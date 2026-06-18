@@ -68,6 +68,38 @@ class LocalDnsServerPolicyTest {
     }
 
     @Test
+    fun `rate limiter applies global budget across rotated clients`() {
+        var now = 10_000L
+        val limiter = LocalDnsClientRateLimiter(
+            maxQueriesPerWindow = 2,
+            maxGlobalQueriesPerWindow = 3,
+            windowMillis = 1_000L,
+            nowMillis = { now }
+        )
+
+        assertTrue(limiter.tryAcquire(InetAddress.getByName("192.168.1.20")))
+        assertTrue(limiter.tryAcquire(InetAddress.getByName("192.168.1.21")))
+        assertTrue(limiter.tryAcquire(InetAddress.getByName("192.168.1.22")))
+        assertFalse(limiter.tryAcquire(InetAddress.getByName("192.168.1.23")))
+
+        now += 1_000L
+        assertTrue(limiter.tryAcquire(InetAddress.getByName("192.168.1.23")))
+    }
+
+    @Test
+    fun `per-client rejection does not consume global budget`() {
+        val limiter = LocalDnsClientRateLimiter(
+            maxQueriesPerWindow = 1,
+            maxGlobalQueriesPerWindow = 2,
+            nowMillis = { 15_000L }
+        )
+
+        assertTrue(limiter.tryAcquire(InetAddress.getByName("192.168.1.20")))
+        assertFalse(limiter.tryAcquire(InetAddress.getByName("192.168.1.20")))
+        assertTrue(limiter.tryAcquire(InetAddress.getByName("192.168.1.21")))
+    }
+
+    @Test
     fun `udp response keeps responses within safe datagram size`() {
         val query = buildQuery("example.com")
         val response = byteArrayOf(1, 2, 3)

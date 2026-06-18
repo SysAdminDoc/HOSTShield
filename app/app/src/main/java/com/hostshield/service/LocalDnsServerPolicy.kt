@@ -1,7 +1,6 @@
 package com.hostshield.service
 
 import java.net.InetAddress
-import java.util.concurrent.ConcurrentHashMap
 
 internal const val LOCAL_DNS_MAX_UDP_RESPONSE_BYTES = 1472
 
@@ -42,39 +41,47 @@ internal fun buildTruncatedDnsResponse(query: ByteArray): ByteArray {
 
 internal class LocalDnsClientRateLimiter(
     private val maxQueriesPerWindow: Int = 20,
+    private val maxGlobalQueriesPerWindow: Int = 100,
     private val windowMillis: Long = 1_000L,
     private val maxTrackedClients: Int = 256,
     private val nowMillis: () -> Long = System::currentTimeMillis
 ) {
     private data class Window(var startedAtMillis: Long, var count: Int)
 
-    private val windows = ConcurrentHashMap<String, Window>()
+    private val windows = HashMap<String, Window>()
+    private var globalWindow = Window(startedAtMillis = 0L, count = 0)
 
+    @Synchronized
     fun tryAcquire(address: InetAddress): Boolean {
         val now = nowMillis()
         val key = address.hostAddress ?: address.hostName
-        var allowed = false
+        val clientWindow = currentWindow(windows[key], now)
+        val currentGlobalWindow = currentWindow(globalWindow, now)
 
-        windows.compute(key) { _, existing ->
-            val window = if (existing == null || now - existing.startedAtMillis >= windowMillis) {
-                Window(startedAtMillis = now, count = 0)
-            } else {
-                existing
-            }
-            if (window.count < maxQueriesPerWindow) {
-                window.count += 1
-                allowed = true
-            }
-            window
-        }
+        if (clientWindow.count >= maxQueriesPerWindow) return false
+        if (currentGlobalWindow.count >= maxGlobalQueriesPerWindow) return false
+
+        clientWindow.count += 1
+        currentGlobalWindow.count += 1
+        windows[key] = clientWindow
+        globalWindow = currentGlobalWindow
 
         if (windows.size > maxTrackedClients) {
             windows.entries.removeIf { now - it.value.startedAtMillis >= windowMillis }
         }
-        return allowed
+        return true
     }
 
+    @Synchronized
     fun clear() {
         windows.clear()
+        globalWindow = Window(startedAtMillis = 0L, count = 0)
     }
+
+    private fun currentWindow(existing: Window?, now: Long): Window =
+        if (existing == null || now - existing.startedAtMillis >= windowMillis) {
+            Window(startedAtMillis = now, count = 0)
+        } else {
+            existing
+        }
 }

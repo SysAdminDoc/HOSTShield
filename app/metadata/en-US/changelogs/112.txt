@@ -1,0 +1,1 @@
+v6.9.30: Local DNS server throttling now applies a global query budget in addition to the per-client limit, preventing spoofed or rotating LAN source addresses from bypassing abuse controls.

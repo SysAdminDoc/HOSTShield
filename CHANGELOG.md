@@ -3,6 +3,13 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.30] - 2026-06-17
+
+### Security
+- Local DNS server abuse controls now enforce a global per-window query budget
+  alongside the existing per-client cap, preventing spoofed source rotation
+  from bypassing LAN DNS throttling.
+
 ## [v6.9.29] - 2026-06-17
 
 ### Security

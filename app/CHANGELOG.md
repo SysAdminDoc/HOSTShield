@@ -1,3 +1,21 @@
+# HostShield v6.9.30
+
+**Release Date:** 2026-06-17
+**Version Code:** 112
+
+## Local DNS Global Rate Limit
+
+### Security
+- LocalDnsServer now enforces a global per-window query budget in addition to
+  the existing per-client limit, so spoofed or rotating LAN source addresses
+  cannot bypass throttling.
+
+### Tests
+- Added LocalDnsServerPolicy coverage for global-budget enforcement,
+  per-client rejection behavior, and window reset behavior.
+
+---
+
 # HostShield v6.9.29
 
 **Release Date:** 2026-06-17
