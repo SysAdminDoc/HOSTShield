@@ -1,3 +1,16 @@
+# HostShield v6.9.44
+
+**Release Date:** 2026-06-18
+**Version Code:** 126
+
+## Launcher Icon Resources
+
+### Changed
+- Launcher icon resources now live in the unqualified adaptive-icon directory
+  and include a monochrome layer for Android themed icons.
+
+---
+
 # HostShield v6.9.43
 
 **Release Date:** 2026-06-18

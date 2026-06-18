@@ -3,6 +3,12 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.44] - 2026-06-18
+
+### Changed
+- Launcher icon resources now live in the unqualified adaptive-icon directory
+  and include a monochrome layer for Android themed icons.
+
 ## [v6.9.43] - 2026-06-18
 
 ### Changed

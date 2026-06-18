@@ -1,0 +1,1 @@
+v6.9.44: Launcher icon resources now live in the unqualified adaptive-icon directory and include a monochrome layer for Android themed icons.
