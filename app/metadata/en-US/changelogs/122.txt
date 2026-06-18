@@ -1,0 +1,1 @@
+v6.9.40: Widget metadata now keeps Android 12+ target-cell sizing in qualified resources while base widget definitions stay valid for API 26-30.

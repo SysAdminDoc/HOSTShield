@@ -1,3 +1,16 @@
+# HostShield v6.9.40
+
+**Release Date:** 2026-06-18
+**Version Code:** 122
+
+## API-Qualified Widget Metadata
+
+### Fixed
+- Widget provider metadata now keeps Android 12+ target-cell sizing in
+  `xml-v31` resources while base widget definitions remain valid for API 26-30.
+
+---
+
 # HostShield v6.9.39
 
 **Release Date:** 2026-06-18

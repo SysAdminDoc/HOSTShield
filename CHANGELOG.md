@@ -3,6 +3,12 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.40] - 2026-06-18
+
+### Fixed
+- Widget metadata now keeps Android 12+ target-cell sizing in `xml-v31`
+  resources while the base widget definitions stay valid for API 26-30.
+
 ## [v6.9.39] - 2026-06-18
 
 ### Fixed
