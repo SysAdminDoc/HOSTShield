@@ -96,6 +96,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val githubUnavailableMessage = stringResource(R.string.settings_github_unavailable)
 
     // Re-check battery status when returning from system settings
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -736,7 +737,7 @@ fun SettingsScreen(
                     if (!openHostShieldGitHubRepository(context)) {
                         Toast.makeText(
                             context,
-                            context.getString(R.string.settings_github_unavailable),
+                            githubUnavailableMessage,
                             Toast.LENGTH_SHORT
                         ).show()
                     }
