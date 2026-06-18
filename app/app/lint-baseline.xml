@@ -3,50 +3,6 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 29 (current min is 26): `android.net.VpnService#isAlwaysOn`"
-        errorLine1="            alwaysOn = try { isAlwaysOn() } catch (_: Exception) { false },"
-        errorLine2="                             ~~~~~~~~~~">
-        <location
-            file="src/main/java/com/hostshield/service/DnsVpnService.kt"
-            line="2359"
-            column="30"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 29 (current min is 26): `android.net.VpnService#isLockdownEnabled`"
-        errorLine1="            lockdownEnabled = try { isLockdownEnabled() } catch (_: Exception) { false },"
-        errorLine2="                                    ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/hostshield/service/DnsVpnService.kt"
-            line="2360"
-            column="37"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 29 (current min is 26): `android.service.quicksettings.Tile#setSubtitle`"
-        errorLine1="        tile.subtitle = when {"
-        errorLine2="             ~~~~~~~~">
-        <location
-            file="src/main/java/com/hostshield/service/HostShieldTileService.kt"
-            line="112"
-            column="14"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 29 (current min is 26): `android.service.quicksettings.Tile#setSubtitle`"
-        errorLine1="        tile.subtitle = when {"
-        errorLine2="                      ~">
-        <location
-            file="src/main/java/com/hostshield/service/HostShieldTileService.kt"
-            line="112"
-            column="23"/>
-    </issue>
-
-    <issue
-        id="NewApi"
         message="`android:windowLightNavigationBar` requires API level 27 (current min is 26)"
         errorLine1="        &lt;item name=&quot;android:windowLightNavigationBar&quot;>false&lt;/item>"
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">

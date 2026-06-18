@@ -2440,8 +2440,16 @@ class DnsVpnService : VpnService() {
         val snapshot = Android16VpnRecoveryDetector.Snapshot(
             sdkInt = Build.VERSION.SDK_INT,
             vpnRunning = isRunning,
-            alwaysOn = try { isAlwaysOn() } catch (_: Exception) { false },
-            lockdownEnabled = try { isLockdownEnabled() } catch (_: Exception) { false },
+            alwaysOn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try { isAlwaysOn() } catch (_: Exception) { false }
+            } else {
+                false
+            },
+            lockdownEnabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try { isLockdownEnabled() } catch (_: Exception) { false }
+            } else {
+                false
+            },
             tunFdValid = vpnInterface?.fileDescriptor?.valid() == true,
             hasValidatedPhysicalNetwork = hasValidatedPhysicalNetwork(),
             elapsedSinceVpnStartMs = SystemClock.elapsedRealtime() - vpnEstablishedAt,

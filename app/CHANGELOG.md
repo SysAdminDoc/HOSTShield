@@ -1,3 +1,17 @@
+# HostShield v6.9.38
+
+**Release Date:** 2026-06-18
+**Version Code:** 120
+
+## Older Android Runtime Guards
+
+### Fixed
+- Android 8 and 9 devices now skip API 29-only VPN always-on/lockdown status
+  checks and Quick Settings tile subtitles, avoiding unavailable platform
+  method calls on supported older releases.
+
+---
+
 # HostShield v6.9.37
 
 **Release Date:** 2026-06-18

@@ -109,14 +109,16 @@ class HostShieldTileService : TileService() {
         val tile = qsTile ?: return
         tile.state = if (isEnabled) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         tile.label = "HostShield"
-        tile.subtitle = when {
-            !isEnabled -> "Off"
-            method == BlockMethod.VPN -> {
-                val count = DnsVpnService.currentBlockedCount
-                if (count > 0) "$count blocked today" else "VPN"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            tile.subtitle = when {
+                !isEnabled -> "Off"
+                method == BlockMethod.VPN -> {
+                    val count = DnsVpnService.currentBlockedCount
+                    if (count > 0) "$count blocked today" else "VPN"
+                }
+                method == BlockMethod.ROOT_HOSTS -> "Root"
+                else -> "Off"
             }
-            method == BlockMethod.ROOT_HOSTS -> "Root"
-            else -> "Off"
         }
         try {
             tile.icon = Icon.createWithResource(this, R.drawable.ic_shield)

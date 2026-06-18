@@ -1,0 +1,1 @@
+v6.9.38: Older Android releases now skip API 29-only VPN status and Quick Settings subtitle calls instead of relying on unavailable platform methods.

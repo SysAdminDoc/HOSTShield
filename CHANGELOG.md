@@ -3,6 +3,13 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.38] - 2026-06-18
+
+### Fixed
+- Older Android releases now skip API 29-only VPN status and Quick Settings
+  subtitle calls instead of relying on exception handling around unavailable
+  platform methods.
+
 ## [v6.9.37] - 2026-06-18
 
 ### Changed
