@@ -112,17 +112,6 @@
     </issue>
 
     <issue
-        id="UnspecifiedRegisterReceiverFlag"
-        message="`receiver` is missing `RECEIVER_EXPORTED` or `RECEIVER_NOT_EXPORTED` flag for unprotected broadcasts registered for com.hostshield.STATUS_RESULT"
-        errorLine1="            targetContext.registerReceiver(receiver, filter, permission, null)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/androidTest/java/com/hostshield/service/AutomationReceiverConnectedTest.kt"
-            line="194"
-            column="13"/>
-    </issue>
-
-    <issue
         id="GradleDependency"
         message="A newer version of `compileSdk` than 36 is available: 37"
         errorLine1="        compileSdk = 36"

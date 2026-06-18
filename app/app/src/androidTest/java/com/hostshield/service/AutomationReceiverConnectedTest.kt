@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -181,18 +182,14 @@ class AutomationReceiverConnectedTest {
     private fun registerStatusReceiver(receiver: BroadcastReceiver) {
         val filter = IntentFilter(AutomationActionContract.STATUS_RESULT)
         val permission = "${targetContext.packageName}.permission.AUTOMATION"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            targetContext.registerReceiver(
-                receiver,
-                filter,
-                permission,
-                null,
-                Context.RECEIVER_EXPORTED,
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            targetContext.registerReceiver(receiver, filter, permission, null)
-        }
+        ContextCompat.registerReceiver(
+            targetContext,
+            receiver,
+            filter,
+            permission,
+            null,
+            ContextCompat.RECEIVER_EXPORTED,
+        )
     }
 
     private suspend fun waitForAudit(action: String, result: String): AutomationAuditEntry =
