@@ -211,17 +211,6 @@
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.compose:compose-bom than 2026.05.00 is available: 2026.05.01"
-        errorLine1="composeBom = &quot;2026.05.00&quot;"
-        errorLine2="             ~~~~~~~~~~~~">
-        <location
-            file="$HOME/repos/HostShield/app/gradle/libs.versions.toml"
-            line="13"
-            column="14"/>
-    </issue>
-
-    <issue
         id="NewerVersionAvailable"
         message="A newer version of org.jetbrains.kotlin.plugin.compose than 2.3.21 is available: 2.4.0"
         errorLine1="kotlin = &quot;2.3.21&quot;"
