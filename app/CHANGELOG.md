@@ -1,3 +1,16 @@
+# HostShield v6.9.39
+
+**Release Date:** 2026-06-18
+**Version Code:** 121
+
+## API-Qualified Theme Resources
+
+### Fixed
+- The API 27-only light-navigation-bar theme setting now lives in a
+  `values-v27` resource override instead of the API 26 base theme.
+
+---
+
 # HostShield v6.9.38
 
 **Release Date:** 2026-06-18

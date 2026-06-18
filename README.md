@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.38-blue)
+![Version](https://img.shields.io/badge/version-6.9.39-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -419,6 +419,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.39** | Moved the API 27-only light-navigation-bar theme setting into a qualified resource so the base theme stays valid for API 26. |
 | **6.9.38** | Older Android releases now skip API 29-only VPN status and Quick Settings subtitle calls instead of relying on unavailable platform methods. |
 | **6.9.37** | Updated the lint-reported stable Compose BOM and Tink dependencies while keeping Lifecycle pinned to the current compile SDK line. |
 | **6.9.36** | Home stats and source-management labels now use Android string resources instead of hardcoded Compose text, improving localization readiness and reducing unused-resource lint noise. |

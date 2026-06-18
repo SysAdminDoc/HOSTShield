@@ -1,0 +1,1 @@
+v6.9.39: Moved the API 27-only light-navigation-bar theme setting into a qualified resource so the base theme stays valid for API 26.

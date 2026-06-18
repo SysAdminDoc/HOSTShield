@@ -3,6 +3,12 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.39] - 2026-06-18
+
+### Fixed
+- Moved the API 27-only light-navigation-bar theme attribute out of the base
+  API 26 resource set, removing the last baseline-suppressed `NewApi` finding.
+
 ## [v6.9.38] - 2026-06-18
 
 ### Fixed
