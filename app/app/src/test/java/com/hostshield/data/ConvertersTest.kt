@@ -36,8 +36,20 @@ class ConvertersTest {
     }
 
     @Test
+    fun `SourceCategory blank fallback`() {
+        val result = converters.toSourceCategory("")
+        assertEquals(SourceCategory.CUSTOM, result)
+    }
+
+    @Test
     fun `RuleType unknown fallback`() {
         val result = converters.toRuleType("INVALID_VALUE")
+        assertEquals(RuleType.BLOCK, result)
+    }
+
+    @Test
+    fun `RuleType long corrupted fallback`() {
+        val result = converters.toRuleType("INVALID_".repeat(40))
         assertEquals(RuleType.BLOCK, result)
     }
 
@@ -53,6 +65,12 @@ class ConvertersTest {
     @Test
     fun `SourceHealth unknown fallback`() {
         val result = converters.toSourceHealth("INVALID_VALUE")
+        assertEquals(SourceHealth.UNKNOWN, result)
+    }
+
+    @Test
+    fun `SourceHealth lowercase fallback`() {
+        val result = converters.toSourceHealth("ok")
         assertEquals(SourceHealth.UNKNOWN, result)
     }
 }

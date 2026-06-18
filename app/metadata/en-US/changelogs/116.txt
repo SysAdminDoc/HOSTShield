@@ -1,0 +1,1 @@
+v6.9.34: Room enum converter fallbacks now log bounded warnings when corrupted or future enum values are read from the database.

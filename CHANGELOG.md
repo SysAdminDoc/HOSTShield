@@ -3,6 +3,17 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.34] - 2026-06-18
+
+### Fixed
+- Room enum converter fallbacks now emit bounded warning logs when corrupted
+  or future enum values are read, preserving compatibility while surfacing
+  database drift early.
+
+### Tests
+- Added converter fallback coverage for blank, lowercase, and long corrupted
+  enum values.
+
 ## [v6.9.33] - 2026-06-18
 
 ### Performance

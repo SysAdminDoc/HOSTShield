@@ -1,3 +1,19 @@
+# HostShield v6.9.34
+
+**Release Date:** 2026-06-18
+**Version Code:** 116
+
+## Converter Fallback Visibility
+
+### Fixed
+- Room enum converter fallbacks now log bounded warnings when corrupted or
+  future enum values are read, while preserving safe defaults.
+
+### Tests
+- Added JVM coverage for blank, lowercase, and long corrupted enum fallbacks.
+
+---
+
 # HostShield v6.9.33
 
 **Release Date:** 2026-06-18
