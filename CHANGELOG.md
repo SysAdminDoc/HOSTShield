@@ -3,6 +3,13 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.31] - 2026-06-18
+
+### Changed
+- Settings exports now share one destination artifact model for generated
+  content and cached files, including correct filenames, MIME types, privacy
+  copy, Save As support for diagnostic ZIPs, and tested file/content streaming.
+
 ## [v6.9.30] - 2026-06-17
 
 ### Security

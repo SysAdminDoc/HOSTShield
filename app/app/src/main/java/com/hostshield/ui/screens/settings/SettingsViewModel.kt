@@ -24,21 +24,95 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.OutputStream
 import javax.inject.Inject
 
 // ══════════════════════════════════════════════════════════════
 // Settings view model
 // ══════════════════════════════════════════════════════════════
 
+enum class ExportArtifactKind {
+    RULES_JSON,
+    FIREWALL_RULES,
+    SHAREABLE_BLOCKLIST,
+    STATS_CSV,
+    DIAGNOSTIC_ZIP,
+    PCAP,
+    BACKUP
+}
+
+data class ExportArtifact(
+    val kind: ExportArtifactKind,
+    val fileName: String,
+    val mimeType: String,
+    val privacyNotice: String,
+    val shareSubject: String,
+    val chooserTitle: String,
+    val sizeBytes: Long,
+    val content: String? = null,
+    val filePath: String? = null,
+    val requestId: Long = System.nanoTime()
+)
+
+internal fun buildContentExportArtifact(
+    kind: ExportArtifactKind,
+    fileName: String,
+    mimeType: String,
+    privacyNotice: String,
+    shareSubject: String,
+    chooserTitle: String,
+    content: String
+): ExportArtifact =
+    ExportArtifact(
+        kind = kind,
+        fileName = fileName,
+        mimeType = mimeType,
+        privacyNotice = privacyNotice,
+        shareSubject = shareSubject,
+        chooserTitle = chooserTitle,
+        sizeBytes = content.toByteArray(Charsets.UTF_8).size.toLong(),
+        content = content
+    )
+
+internal fun buildFileExportArtifact(
+    kind: ExportArtifactKind,
+    file: File,
+    mimeType: String,
+    privacyNotice: String,
+    shareSubject: String,
+    chooserTitle: String
+): ExportArtifact =
+    ExportArtifact(
+        kind = kind,
+        fileName = file.name,
+        mimeType = mimeType,
+        privacyNotice = privacyNotice,
+        shareSubject = shareSubject,
+        chooserTitle = chooserTitle,
+        sizeBytes = file.length(),
+        filePath = file.absolutePath
+    )
+
+internal fun ExportArtifact.writeExportBytesTo(output: OutputStream) {
+    when {
+        content != null -> output.write(content.toByteArray(Charsets.UTF_8))
+        filePath != null -> File(filePath).inputStream().use { it.copyTo(output) }
+        else -> error("Export artifact has no content")
+    }
+}
+
 sealed interface PcapExportState {
     data object Idle : PcapExportState
     data object Exporting : PcapExportState
     data class Ready(
-        val filePath: String,
-        val fileName: String,
-        val sizeBytes: Long,
+        val artifact: ExportArtifact,
         val mode: String
-    ) : PcapExportState
+    ) : PcapExportState {
+        val filePath: String get() = artifact.filePath.orEmpty()
+        val fileName: String get() = artifact.fileName
+        val sizeBytes: Long get() = artifact.sizeBytes
+    }
     data object Empty : PcapExportState
     data class Failed(val error: String) : PcapExportState
 }
@@ -46,7 +120,12 @@ sealed interface PcapExportState {
 sealed interface DiagnosticExportState {
     data object Idle : DiagnosticExportState
     data object Generating : DiagnosticExportState
-    data class Ready(val filePath: String, val sizeBytes: Long) : DiagnosticExportState
+    data class Ready(val artifact: ExportArtifact) : DiagnosticExportState {
+        val filePath: String get() = artifact.filePath.orEmpty()
+        val fileName: String get() = artifact.fileName
+        val sizeBytes: Long get() = artifact.sizeBytes
+        val privacyNotice: String get() = artifact.privacyNotice
+    }
     data class Failed(val error: String) : DiagnosticExportState
 }
 
@@ -80,7 +159,7 @@ data class SettingsUiState(
     val edeEnabled: Boolean = false,
     val isRootAvailable: Boolean = false,
     val systemInfo: Map<String, String> = emptyMap(),
-    val exportResult: String? = null,
+    val pendingExportSave: ExportArtifact? = null,
     val importMessage: String? = null,
     val backupMessage: String? = null,
     val backupDialog: BackupDialogState = BackupDialogState.None,
@@ -448,14 +527,20 @@ class SettingsViewModel @Inject constructor(
 
     /** Export rules JSON directly to a SAF URI. */
     fun exportRulesToUri(uri: Uri) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val rules = repository.getAllRules().first()
                 val sources = repository.getAllSources().first()
-                val json = importExport.exportJson(rules, sources)
-                getApplication<android.app.Application>().contentResolver.openOutputStream(uri)?.use {
-                    it.write(json.toByteArray())
-                }
+                val artifact = buildContentExportArtifact(
+                    kind = ExportArtifactKind.RULES_JSON,
+                    fileName = "hostshield_rules.json",
+                    mimeType = "application/json",
+                    privacyNotice = "Contains user rules and source URLs.",
+                    shareSubject = "HostShield Rules Export",
+                    chooserTitle = "Share Rules Export",
+                    content = importExport.exportJson(rules, sources)
+                )
+                writeExportArtifactToUri(artifact, uri)
                 _uiState.update { it.copy(importMessage = "Exported ${rules.size} rules") }
             } catch (e: Exception) {
                 android.util.Log.e("SettingsViewModel", "Rules export failed", e)
@@ -464,22 +549,31 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    /** Write the pending exportResult (shareable hosts file) to a SAF URI. */
-    fun writeShareableToUri(uri: Uri) {
-        viewModelScope.launch {
+    fun savePendingExportToUri(uri: Uri) {
+        val artifact = _uiState.value.pendingExportSave ?: return
+        viewModelScope.launch(Dispatchers.IO) {
             try {
-                val content = _uiState.value.exportResult
-                if (content != null) {
-                    getApplication<android.app.Application>().contentResolver.openOutputStream(uri)?.use {
-                        it.write(content.toByteArray())
-                    }
-                    _uiState.update { it.copy(exportResult = null, importMessage = "Shareable blocklist saved") }
+                writeExportArtifactToUri(artifact, uri)
+                _uiState.update { it.copy(pendingExportSave = null) }
+                when (artifact.kind) {
+                    ExportArtifactKind.STATS_CSV -> _csvMessage.value = "Stats CSV saved"
+                    else -> _uiState.update { it.copy(importMessage = "${artifact.fileName} saved") }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("SettingsViewModel", "Shareable blocklist export failed", e)
-                _uiState.update { it.copy(exportResult = null, importMessage = "Export failed. Choose another location and try again.") }
+                android.util.Log.e("SettingsViewModel", "Export save failed", e)
+                _uiState.update { it.copy(pendingExportSave = null) }
+                when (artifact.kind) {
+                    ExportArtifactKind.STATS_CSV -> _csvMessage.value = "Save failed. Choose another location."
+                    else -> _uiState.update {
+                        it.copy(importMessage = "Export failed. Choose another location and try again.")
+                    }
+                }
             }
         }
+    }
+
+    fun clearPendingExportSave() {
+        _uiState.update { it.copy(pendingExportSave = null) }
     }
 
     fun importFromUri(uri: Uri) {
@@ -502,7 +596,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun clearImportMessage() { _uiState.update { it.copy(importMessage = null) } }
-    fun clearExportResult() { _uiState.update { it.copy(exportResult = null) } }
+    fun clearExportResult() { clearPendingExportSave() }
     fun clearBackupMessage() { _uiState.update { it.copy(backupMessage = null) } }
 
     fun showBackupExportChoice() {
@@ -524,10 +618,23 @@ class SettingsViewModel @Inject constructor(
     /** Export user rules as a shareable hosts file that other blockers can subscribe to. */
     fun exportShareableBlocklist() {
         viewModelScope.launch {
-            val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-            val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-            val content = importExport.exportShareableHostsFile(blockRules, allowRules)
-            _uiState.update { it.copy(exportResult = content) }
+            try {
+                val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
+                val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
+                val artifact = buildContentExportArtifact(
+                    kind = ExportArtifactKind.SHAREABLE_BLOCKLIST,
+                    fileName = "hostshield_blocklist.txt",
+                    mimeType = "text/plain",
+                    privacyNotice = "Contains enabled block and allow domains intended for sharing.",
+                    shareSubject = "HostShield Shareable Blocklist",
+                    chooserTitle = "Share Blocklist",
+                    content = importExport.exportShareableHostsFile(blockRules, allowRules)
+                )
+                _uiState.update { it.copy(pendingExportSave = artifact, importMessage = null) }
+            } catch (e: Exception) {
+                android.util.Log.e("SettingsViewModel", "Shareable blocklist export failed", e)
+                _uiState.update { it.copy(importMessage = "Export failed. Try again.") }
+            }
         }
     }
 
@@ -536,8 +643,16 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val rules = firewallRuleDao.getAllRulesList()
-                val json = importExport.exportFirewallJson(rules)
-                _uiState.update { it.copy(exportResult = json) }
+                val artifact = buildContentExportArtifact(
+                    kind = ExportArtifactKind.FIREWALL_RULES,
+                    fileName = "hostshield_firewall_rules.json",
+                    mimeType = "application/json",
+                    privacyNotice = "Contains per-app firewall package names and network policy.",
+                    shareSubject = "HostShield Firewall Rules Export",
+                    chooserTitle = "Share Firewall Rules",
+                    content = importExport.exportFirewallJson(rules)
+                )
+                _uiState.update { it.copy(pendingExportSave = artifact, importMessage = null) }
             } catch (e: Exception) {
                 android.util.Log.e("SettingsViewModel", "Firewall export failed", e)
                 _uiState.update { it.copy(importMessage = "Firewall export failed. Try again.") }
@@ -551,10 +666,23 @@ class SettingsViewModel @Inject constructor(
      * Otherwise, plaintext JSON is written (backward-compatible).
      */
     fun backupToUri(uri: Uri, passphrase: String? = null) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val json = backupRestore.createBackup()
-                backupRestore.writeBackupToUri(getApplication(), uri, json, passphrase)
+                if (passphrase.isNullOrEmpty()) {
+                    val artifact = buildContentExportArtifact(
+                        kind = ExportArtifactKind.BACKUP,
+                        fileName = "hostshield_backup.json",
+                        mimeType = "application/json",
+                        privacyNotice = "Contains HostShield settings, rules, sources, profiles, and local preferences.",
+                        shareSubject = "HostShield Backup",
+                        chooserTitle = "Share Backup",
+                        content = json
+                    )
+                    writeExportArtifactToUri(artifact, uri)
+                } else {
+                    backupRestore.writeBackupToUri(getApplication(), uri, json, passphrase)
+                }
                 val suffix = if (!passphrase.isNullOrEmpty()) " (encrypted)" else ""
                 _uiState.update { it.copy(backupMessage = "Backup saved successfully$suffix") }
             } catch (e: Exception) {
@@ -615,10 +743,16 @@ class SettingsViewModel @Inject constructor(
                     else -> pcapExporter.exportAll(getApplication(), days)
                 }
                 if (file != null) {
+                    val artifact = buildFileExportArtifact(
+                        kind = ExportArtifactKind.PCAP,
+                        file = file,
+                        mimeType = "application/vnd.tcpdump.pcap",
+                        privacyNotice = "Contains DNS hostnames and connection destinations.",
+                        shareSubject = "HostShield PCAP Export ($mode)",
+                        chooserTitle = "Share PCAP"
+                    )
                     _uiState.update {
-                        it.copy(pcapExport = PcapExportState.Ready(
-                            file.absolutePath, file.name, file.length(), mode
-                        ))
+                        it.copy(pcapExport = PcapExportState.Ready(artifact, mode))
                     }
                 } else {
                     _uiState.update { it.copy(pcapExport = PcapExportState.Empty) }
@@ -637,20 +771,7 @@ class SettingsViewModel @Inject constructor(
         if (export !is PcapExportState.Ready) return
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val file = java.io.File(export.filePath)
-                val context = getApplication<android.app.Application>()
-                val uri = FileProvider.getUriForFile(
-                    context, "${context.packageName}.fileprovider", file
-                )
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/vnd.tcpdump.pcap"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    putExtra(Intent.EXTRA_SUBJECT, "HostShield PCAP Export (${export.mode})")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(Intent.createChooser(intent, "Share PCAP")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                shareExportArtifact(export.artifact)
             } catch (e: Exception) {
                 android.util.Log.e("Settings", "PCAP share failed: ${e.message}", e)
                 _uiState.update {
@@ -665,11 +786,8 @@ class SettingsViewModel @Inject constructor(
         if (export !is PcapExportState.Ready) return
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val source = java.io.File(export.filePath)
-                getApplication<android.app.Application>().contentResolver
-                    .openOutputStream(uri)?.use { out ->
-                        source.inputStream().use { it.copyTo(out) }
-                    }
+                writeExportArtifactToUri(export.artifact, uri)
+                deleteExportArtifact(export.artifact)
                 _uiState.update { it.copy(pcapExport = PcapExportState.Idle) }
                 _uiState.update { it.copy(backupMessage = "PCAP saved to chosen location") }
             } catch (e: Exception) {
@@ -684,7 +802,7 @@ class SettingsViewModel @Inject constructor(
     fun dismissPcapExport() {
         val export = _uiState.value.pcapExport
         if (export is PcapExportState.Ready) {
-            try { java.io.File(export.filePath).delete() } catch (_: Exception) {}
+            deleteExportArtifact(export.artifact)
         }
         _uiState.update { it.copy(pcapExport = PcapExportState.Idle) }
     }
@@ -773,8 +891,6 @@ class SettingsViewModel @Inject constructor(
     val csvMessage: StateFlow<String?> = _csvMessage.asStateFlow()
     private val _isExportingCsv = MutableStateFlow(false)
     val isExportingCsv: StateFlow<Boolean> = _isExportingCsv.asStateFlow()
-    private val _pendingCsv = MutableStateFlow<String?>(null)
-    val pendingCsv: StateFlow<String?> = _pendingCsv.asStateFlow()
 
     fun exportStatsCsv() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -808,7 +924,16 @@ class SettingsViewModel @Inject constructor(
                 sb.appendLine("Package,Label,Block Count")
                 topApps.forEach { sb.appendLine("${it.appPackage},${it.appLabel},${it.cnt}") }
 
-                _pendingCsv.value = sb.toString()
+                val artifact = buildContentExportArtifact(
+                    kind = ExportArtifactKind.STATS_CSV,
+                    fileName = "hostshield_stats_${java.time.LocalDate.now()}.csv",
+                    mimeType = "text/csv",
+                    privacyNotice = "Contains local DNS statistics, blocked domains, and app package labels.",
+                    shareSubject = "HostShield Statistics CSV",
+                    chooserTitle = "Share Statistics CSV",
+                    content = sb.toString()
+                )
+                _uiState.update { it.copy(pendingExportSave = artifact) }
                 _csvMessage.value = "CSV ready (${stats.size} days, ${topBlocked.size} domains, ${topApps.size} apps)"
             } catch (e: Exception) {
                 android.util.Log.e("SettingsViewModel", "CSV export failed", e)
@@ -820,21 +945,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun writeCsvToUri(uri: Uri) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val content = _pendingCsv.value
-                if (content != null) {
-                    getApplication<android.app.Application>().contentResolver.openOutputStream(uri)?.use {
-                        it.write(content.toByteArray())
-                    }
-                    _pendingCsv.value = null
-                    _csvMessage.value = "Stats CSV saved"
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("SettingsViewModel", "CSV save failed", e)
-                _csvMessage.value = "Save failed. Choose another location."
-            }
-        }
+        savePendingExportToUri(uri)
     }
 
     fun clearCsvMessage() { _csvMessage.value = null }
@@ -844,10 +955,16 @@ class SettingsViewModel @Inject constructor(
             _uiState.update { it.copy(diagnosticExport = DiagnosticExportState.Generating) }
             try {
                 val file = diagnosticExporter.generateZip(getApplication())
+                val artifact = buildFileExportArtifact(
+                    kind = ExportArtifactKind.DIAGNOSTIC_ZIP,
+                    file = file,
+                    mimeType = "application/zip",
+                    privacyNotice = "Contains device info, app configuration, local logs, and diagnostic events.",
+                    shareSubject = "HostShield Diagnostic Package",
+                    chooserTitle = "Share Diagnostic Package"
+                )
                 _uiState.update {
-                    it.copy(diagnosticExport = DiagnosticExportState.Ready(
-                        file.absolutePath, file.length()
-                    ))
+                    it.copy(diagnosticExport = DiagnosticExportState.Ready(artifact))
                 }
             } catch (e: Exception) {
                 android.util.Log.e("SettingsViewModel", "Diagnostic export failed", e)
@@ -865,20 +982,7 @@ class SettingsViewModel @Inject constructor(
         if (export !is DiagnosticExportState.Ready) return
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val file = java.io.File(export.filePath)
-                val context = getApplication<android.app.Application>()
-                val uri = FileProvider.getUriForFile(
-                    context, "${context.packageName}.fileprovider", file
-                )
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/zip"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    putExtra(Intent.EXTRA_SUBJECT, "HostShield Diagnostic Package")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(Intent.createChooser(intent, "Share Diagnostic Package")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                shareExportArtifact(export.artifact)
             } catch (e: Exception) {
                 android.util.Log.e("Settings", "Share failed: ${e.message}", e)
                 _uiState.update {
@@ -892,11 +996,83 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun saveDiagnosticReportToUri(uri: Uri) {
+        val export = _uiState.value.diagnosticExport
+        if (export !is DiagnosticExportState.Ready) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                writeExportArtifactToUri(export.artifact, uri)
+                deleteExportArtifact(export.artifact)
+                _uiState.update {
+                    it.copy(
+                        diagnosticExport = DiagnosticExportState.Idle,
+                        backupMessage = "Diagnostic package saved to chosen location"
+                    )
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SettingsViewModel", "Diagnostic save failed", e)
+                _uiState.update {
+                    it.copy(
+                        diagnosticExport = DiagnosticExportState.Failed(
+                            "Diagnostic package save failed. Choose another location."
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     fun dismissDiagnosticExport() {
         val export = _uiState.value.diagnosticExport
         if (export is DiagnosticExportState.Ready) {
-            try { java.io.File(export.filePath).delete() } catch (_: Exception) {}
+            deleteExportArtifact(export.artifact)
         }
         _uiState.update { it.copy(diagnosticExport = DiagnosticExportState.Idle) }
+    }
+
+    private fun writeExportArtifactToUri(artifact: ExportArtifact, uri: Uri) {
+        val resolver = getApplication<android.app.Application>().contentResolver
+        val output = resolver.openOutputStream(uri)
+            ?: error("Unable to open export destination")
+        output.use { artifact.writeExportBytesTo(it) }
+    }
+
+    private fun shareExportArtifact(artifact: ExportArtifact) {
+        val file = artifact.shareableFile()
+        val context = getApplication<android.app.Application>()
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = artifact.mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, artifact.shareSubject)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(
+            Intent.createChooser(intent, artifact.chooserTitle)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
+
+    private fun deleteExportArtifact(artifact: ExportArtifact) {
+        artifact.filePath?.let { path ->
+            try {
+                File(path).delete()
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun ExportArtifact.shareableFile(): File {
+        filePath?.let { return File(it) }
+        val dir = File(getApplication<android.app.Application>().cacheDir, "exports")
+        dir.mkdirs()
+        val file = File(dir, fileName)
+        file.outputStream().use { writeExportBytesTo(it) }
+        return file
     }
 }

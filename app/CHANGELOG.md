@@ -1,3 +1,25 @@
+# HostShield v6.9.31
+
+**Release Date:** 2026-06-18
+**Version Code:** 113
+
+## Export Destination Controller
+
+### Changed
+- Settings exports now route generated content and cached export files through a
+  shared artifact model with filename, MIME type, privacy copy, size, save, and
+  share metadata.
+- Firewall JSON, shareable blocklist, stats CSV, rules JSON, plaintext backup,
+  diagnostic ZIP, and PCAP saves now use the same destination writer.
+- Diagnostic ZIP exports now show explicit privacy copy and offer Share, Save
+  As, and Discard actions.
+
+### Tests
+- Added JVM coverage for content-backed and file-backed export artifacts,
+  including byte streaming and metadata.
+
+---
+
 # HostShield v6.9.30
 
 **Release Date:** 2026-06-17

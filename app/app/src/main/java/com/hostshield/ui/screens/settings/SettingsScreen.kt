@@ -127,19 +127,37 @@ fun SettingsScreen(
         uri?.let { viewModel.exportRulesToUri(it) }
     }
 
-    val shareableLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("text/plain")
+    val pendingJsonSaveLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
-        if (uri != null) viewModel.writeShareableToUri(uri)
-        else viewModel.clearExportResult()
+        if (uri != null) viewModel.savePendingExportToUri(uri)
+        else viewModel.clearPendingExportSave()
     }
 
-    // When exportResult is ready and user hasn't picked a file yet, offer share
-    val exportResult = state.exportResult
-    LaunchedEffect(exportResult) {
-        if (exportResult != null) {
-            // Auto-launch file picker
-            shareableLauncher.launch("hostshield_blocklist.txt")
+    val pendingTextSaveLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri != null) viewModel.savePendingExportToUri(uri)
+        else viewModel.clearPendingExportSave()
+    }
+
+    val pendingCsvSaveLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri != null) viewModel.savePendingExportToUri(uri)
+        else viewModel.clearPendingExportSave()
+    }
+
+    val pendingExportSave = state.pendingExportSave
+    LaunchedEffect(pendingExportSave?.requestId) {
+        pendingExportSave?.let { artifact ->
+            when (artifact.kind) {
+                ExportArtifactKind.FIREWALL_RULES,
+                ExportArtifactKind.RULES_JSON -> pendingJsonSaveLauncher.launch(artifact.fileName)
+                ExportArtifactKind.SHAREABLE_BLOCKLIST -> pendingTextSaveLauncher.launch(artifact.fileName)
+                ExportArtifactKind.STATS_CSV -> pendingCsvSaveLauncher.launch(artifact.fileName)
+                else -> Unit
+            }
         }
     }
 
@@ -162,6 +180,10 @@ fun SettingsScreen(
         val pcapSaveLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("application/vnd.tcpdump.pcap")
         ) { uri -> uri?.let { viewModel.savePcapToUri(it) } }
+
+        val diagnosticSaveLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/zip")
+        ) { uri -> uri?.let { viewModel.saveDiagnosticReportToUri(it) } }
 
         DnsSettingsSection(
             dohEnabled = state.dohEnabled,
@@ -423,13 +445,28 @@ fun SettingsScreen(
                 }
                 is DiagnosticExportState.Ready -> {
                     val sizeKb = (diagState.sizeBytes + 1023) / 1024
-                    Row(
+                    Text(
+                        stringResource(R.string.settings_diagnostic_ready_summary, diagState.fileName),
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                    Text(
+                        diagState.privacyNotice,
+                        color = Peach,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         OutlinedButton(
                             onClick = { viewModel.shareDiagnosticReport() },
-                            modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+                            modifier = Modifier.heightIn(min = 44.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal)
                         ) {
@@ -438,8 +475,18 @@ fun SettingsScreen(
                             Text("${stringResource(R.string.action_share)} (${sizeKb} KB)", fontSize = 11.sp)
                         }
                         OutlinedButton(
+                            onClick = { diagnosticSaveLauncher.launch(diagState.fileName) },
+                            modifier = Modifier.heightIn(min = 44.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Blue)
+                        ) {
+                            Icon(Icons.Filled.Save, null, modifier = Modifier.size(15.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(stringResource(R.string.action_save_as), fontSize = 11.sp)
+                        }
+                        OutlinedButton(
                             onClick = { viewModel.dismissDiagnosticExport() },
-                            modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+                            modifier = Modifier.heightIn(min = 44.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim)
                         ) {
@@ -465,17 +512,6 @@ fun SettingsScreen(
 
             val csvMessage by viewModel.csvMessage.collectAsStateWithLifecycle()
             val isExportingCsv by viewModel.isExportingCsv.collectAsStateWithLifecycle()
-
-            val csvLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.CreateDocument("text/csv")
-            ) { uri -> uri?.let { viewModel.writeCsvToUri(it) } }
-
-            val pendingCsv by viewModel.pendingCsv.collectAsStateWithLifecycle()
-            LaunchedEffect(pendingCsv) {
-                if (pendingCsv != null) {
-                    csvLauncher.launch("hostshield_stats_${java.time.LocalDate.now()}.csv")
-                }
-            }
 
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),

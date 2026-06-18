@@ -125,6 +125,7 @@
     <string name="settings_generate_diagnostic_sub">Device info, config, logs, event log ZIP</string>
     <string name="settings_generating_diagnostic">Generating diagnostic package…</string>
     <string name="settings_generating_diagnostic_sub">Building ZIP with device info, config, logs</string>
+    <string name="settings_diagnostic_ready_summary">Diagnostic package ready: %1$s</string>
     <string name="settings_export_failed">Export failed</string>
 
     <!-- Import from other blockers -->
