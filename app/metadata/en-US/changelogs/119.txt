@@ -1,0 +1,1 @@
+v6.9.37: Updated the lint-reported stable Compose BOM and Tink dependencies while keeping Lifecycle pinned to the current compile SDK line.

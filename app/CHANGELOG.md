@@ -1,3 +1,16 @@
+# HostShield v6.9.37
+
+**Release Date:** 2026-06-18
+**Version Code:** 119
+
+## Dependency Freshness
+
+### Changed
+- Updated Compose BOM to 2026.06.00 and Tink to 1.22.0, while keeping
+  Lifecycle pinned to the current compile SDK line.
+
+---
+
 # HostShield v6.9.36
 
 **Release Date:** 2026-06-18

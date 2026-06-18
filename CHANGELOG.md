@@ -3,6 +3,12 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.37] - 2026-06-18
+
+### Changed
+- Updated the lint-reported stable Compose BOM and Tink refreshes while
+  keeping Lifecycle pinned to the current compile SDK line.
+
 ## [v6.9.36] - 2026-06-18
 
 ### Changed
