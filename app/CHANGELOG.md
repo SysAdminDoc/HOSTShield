@@ -1,3 +1,24 @@
+# HostShield v6.9.32
+
+**Release Date:** 2026-06-18
+**Version Code:** 114
+
+## Threat Review and Cache Policy Hardening
+
+### Security
+- DNS cache hits, stale-cache responses, and encrypted fail-closed stale
+  fallbacks now run the same post-forward CNAME and threat-intel IP checks as
+  live upstream responses.
+- App-scoped threat-intel allow rules now suppress threat-intel checks only for
+  the allowed app/domain pair, while leaving other local policy checks intact.
+
+### Changed
+- DNS Logs now includes a Threat review filter for recent threat-intel blocks.
+- Threat-review copy now labels the matched domain or resolved IP and clarifies
+  domain-wide versus app-scoped recovery actions.
+
+---
+
 # HostShield v6.9.31
 
 **Release Date:** 2026-06-18

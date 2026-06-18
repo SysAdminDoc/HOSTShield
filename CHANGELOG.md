@@ -3,6 +3,18 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.32] - 2026-06-18
+
+### Security
+- DNS cache hits, stale-cache responses, and encrypted fail-closed stale
+  fallbacks now run the same post-forward CNAME and threat-intel IP checks as
+  live upstream responses.
+
+### Changed
+- Threat-intel false-positive recovery now has a dedicated Logs review filter
+  and clearer domain/app scope labels; app-scoped threat allows suppress
+  threat-intel checks only for that allowed app/domain pair.
+
 ## [v6.9.31] - 2026-06-18
 
 ### Changed

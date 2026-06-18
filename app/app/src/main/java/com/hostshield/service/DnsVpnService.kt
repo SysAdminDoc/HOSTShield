@@ -1195,10 +1195,21 @@ class DnsVpnService : VpnService() {
                     reason = "app_rule_allow",
                     source = "Per-app DNS rule",
                     matchedValue = app.first,
-                    precedence = "per-app allow rule skips shared blocklist"
+                    precedence = "per-app allow rule skips shared blocklist and threat intel for this app"
                 ))
                 val pCopy = packet.copyOf(length)
-                serviceScope.launch { forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset) }
+                serviceScope.launch {
+                    forwardEncrypted(
+                        dns,
+                        domain,
+                        pCopy,
+                        if (isV6) 0 else headerOffset,
+                        app,
+                        isV6,
+                        headerOffset,
+                        skipThreatIntelChecks = true
+                    )
+                }
                 allowedCount.incrementAndGet()
                 return
             }
@@ -1266,7 +1277,18 @@ class DnsVpnService : VpnService() {
             if (cacheResult != null) {
                 if (!cacheResult.isStale) {
                     PrivacyLog.d(TAG, "CACHE HIT $domain ($qtype)")
-                    logAsync(domain, false, app, qtype)
+                    val pfResult = postForwardChecks(
+                        cacheResult.response,
+                        dns,
+                        domain,
+                        app,
+                        latencyMs = 0,
+                        upstreamServer = "DNS cache"
+                    )
+                    if (pfResult.blocked) {
+                        if (pfResult.blockResponse != null) wrapAndSend(packet, headerOffset, isV6, pfResult.blockResponse)
+                        return
+                    }
                     wrapAndSend(packet, headerOffset, isV6, cacheResult.response)
                     allowedCount.incrementAndGet()
                     if (cacheResult.needsPrefetch) {
@@ -1280,6 +1302,18 @@ class DnsVpnService : VpnService() {
                     return
                 } else {
                     PrivacyLog.d(TAG, "SERVE-STALE $domain ($qtype) — refreshing in background")
+                    val pfResult = postForwardChecks(
+                        cacheResult.response,
+                        dns,
+                        domain,
+                        app,
+                        latencyMs = 0,
+                        upstreamServer = "DNS stale cache"
+                    )
+                    if (pfResult.blocked) {
+                        if (pfResult.blockResponse != null) wrapAndSend(packet, headerOffset, isV6, pfResult.blockResponse)
+                        return
+                    }
                     wrapAndSend(packet, headerOffset, isV6, cacheResult.response)
                     allowedCount.incrementAndGet()
                     val pCopy = packet.copyOf(length)
@@ -1711,7 +1745,8 @@ class DnsVpnService : VpnService() {
         domain: String,
         app: Pair<String, String>,
         latencyMs: Int,
-        upstreamServer: String
+        upstreamServer: String,
+        skipThreatIntelChecks: Boolean = false
     ): PostForwardResult {
         val qtype = parseDnsQueryType(dns)
 
@@ -1738,7 +1773,7 @@ class DnsVpnService : VpnService() {
 
         // 2. Threat intelligence IP check
         val resolvedIps = CnameCloakDetector.extractAnswerIps(respBytes)
-        if (threatIntelEnabled) {
+        if (threatIntelEnabled && !skipThreatIntelChecks) {
             for (ip in resolvedIps) {
                 val threat = threatIntelManager.isIpMalicious(ip)
                 if (threat != null) {
@@ -1783,7 +1818,8 @@ class DnsVpnService : VpnService() {
 
     private suspend fun forwardUdpPlaintext(dns: ByteArray, domain: String, orig: ByteArray,
                                             headerOffset: Int, isV6: Boolean,
-                                            app: Pair<String, String> = Pair("", "")) {
+                                            app: Pair<String, String> = Pair("", ""),
+                                            skipThreatIntelChecks: Boolean = false) {
         val sock = DatagramSocket()
         try {
             val startMs = System.currentTimeMillis()
@@ -1807,7 +1843,7 @@ class DnsVpnService : VpnService() {
             val respBytes = retryTruncatedUdpOverTcp(dns, buf.copyOf(rp.length), responseUpstream)
             val latencyMs = (System.currentTimeMillis() - startMs).toInt()
 
-            val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, responseUpstream)
+            val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, responseUpstream, skipThreatIntelChecks)
             if (pfResult.blocked) {
                 if (pfResult.blockResponse != null) wrapAndSend(orig, headerOffset, isV6, pfResult.blockResponse)
                 return
@@ -1815,7 +1851,7 @@ class DnsVpnService : VpnService() {
 
             wrapAndSend(orig, headerOffset, isV6, respBytes)
         } catch (_: Exception) {
-            serveStale(dns, domain, orig, headerOffset, isV6)
+            serveStale(dns, domain, orig, headerOffset, isV6, app, skipThreatIntelChecks)
         } finally {
             try { sock.close() } catch (_: Exception) { }
         }
@@ -1866,12 +1902,33 @@ class DnsVpnService : VpnService() {
         }
     }
 
-    private fun serveStale(dns: ByteArray, domain: String, orig: ByteArray, headerOffset: Int, isV6: Boolean) {
+    private suspend fun serveStale(
+        dns: ByteArray,
+        domain: String,
+        orig: ByteArray,
+        headerOffset: Int,
+        isV6: Boolean,
+        app: Pair<String, String> = Pair("", ""),
+        skipThreatIntelChecks: Boolean = false
+    ) {
         val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
         val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
         val stale = dnsCache.getStale(domain, qtypeNum, txId)
         if (stale != null) {
             PrivacyLog.i(TAG, "SERVE-STALE $domain (upstream failed, returning expired cache)")
+            val pfResult = postForwardChecks(
+                stale,
+                dns,
+                domain,
+                app,
+                latencyMs = 0,
+                upstreamServer = "DNS stale cache",
+                skipThreatIntelChecks = skipThreatIntelChecks
+            )
+            if (pfResult.blocked) {
+                if (pfResult.blockResponse != null) wrapAndSend(orig, headerOffset, isV6, pfResult.blockResponse)
+                return
+            }
             wrapAndSend(orig, headerOffset, isV6, stale)
         }
     }
@@ -1888,14 +1945,36 @@ class DnsVpnService : VpnService() {
      * stale cached answer when one exists, otherwise return SERVFAIL so the
      * client fails fast.
      */
-    private fun failClosedEncrypted(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
-                                    transport: String, wrapV6: Boolean = false, v6Hdr: Int = 0) {
+    private suspend fun failClosedEncrypted(
+        dns: ByteArray,
+        domain: String,
+        orig: ByteArray,
+        ihl: Int,
+        transport: String,
+        wrapV6: Boolean = false,
+        v6Hdr: Int = 0,
+        app: Pair<String, String> = Pair("", ""),
+        skipThreatIntelChecks: Boolean = false
+    ) {
         val headerOffset = if (wrapV6) v6Hdr else ihl
         val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
         val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
         val stale = dnsCache.getStale(domain, qtypeNum, txId)
         if (stale != null) {
             PrivacyLog.i(TAG, "FAIL-CLOSED $transport $domain — serving stale cache (no plaintext fallback)")
+            val pfResult = postForwardChecks(
+                stale,
+                dns,
+                domain,
+                app,
+                latencyMs = 0,
+                upstreamServer = "$transport stale cache",
+                skipThreatIntelChecks = skipThreatIntelChecks
+            )
+            if (pfResult.blocked) {
+                if (pfResult.blockResponse != null) wrapAndSend(orig, headerOffset, wrapV6, pfResult.blockResponse)
+                return
+            }
             wrapAndSend(orig, headerOffset, wrapV6, stale)
             return
         }
@@ -1951,7 +2030,8 @@ class DnsVpnService : VpnService() {
 
     private suspend fun forwardDoH(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                     app: Pair<String, String> = Pair("", ""),
-                                    wrapV6: Boolean = false, v6Hdr: Int = 0) {
+                                    wrapV6: Boolean = false, v6Hdr: Int = 0,
+                                    skipThreatIntelChecks: Boolean = false) {
         val hdr = if (wrapV6) v6Hdr else ihl
         try {
             val startMs = System.currentTimeMillis()
@@ -1964,7 +2044,7 @@ class DnsVpnService : VpnService() {
                     DohResolver.Transport.DOH -> "DoH:${dohResult.provider.name}"
                 }
 
-                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
+                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel, skipThreatIntelChecks)
                 if (pfResult.blocked) {
                     if (pfResult.blockResponse != null) wrapAndSend(orig, hdr, wrapV6, pfResult.blockResponse)
                     return
@@ -1973,11 +2053,11 @@ class DnsVpnService : VpnService() {
                 wrapAndSend(orig, hdr, wrapV6, resp)
             }
             else {
-                failClosedEncrypted(dns, domain, orig, ihl, "DoH", wrapV6, v6Hdr)
+                failClosedEncrypted(dns, domain, orig, ihl, "DoH", wrapV6, v6Hdr, app, skipThreatIntelChecks)
             }
         } catch (e: Exception) {
             PrivacyLog.w(TAG, "DoH forward failed for $domain (${e.javaClass.simpleName}) — failing closed")
-            failClosedEncrypted(dns, domain, orig, ihl, "DoH", wrapV6, v6Hdr)
+            failClosedEncrypted(dns, domain, orig, ihl, "DoH", wrapV6, v6Hdr, app, skipThreatIntelChecks)
         }
     }
 
@@ -1987,7 +2067,8 @@ class DnsVpnService : VpnService() {
      */
     private suspend fun forwardDoQ(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                     app: Pair<String, String> = Pair("", ""),
-                                    wrapV6: Boolean = false, v6Hdr: Int = 0) {
+                                    wrapV6: Boolean = false, v6Hdr: Int = 0,
+                                    skipThreatIntelChecks: Boolean = false) {
         try {
             val startMs = System.currentTimeMillis()
             val resp = doqResolver.resolve(dns, doqProvider)
@@ -1995,7 +2076,7 @@ class DnsVpnService : VpnService() {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
                 val upstreamLabel = "DoQ:${doqProvider.name}"
 
-                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel)
+                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel, skipThreatIntelChecks)
                 if (pfResult.blocked) {
                     if (pfResult.blockResponse != null) wrapAndSend(orig, if (wrapV6) v6Hdr else ihl, wrapV6, pfResult.blockResponse)
                     return
@@ -2003,67 +2084,69 @@ class DnsVpnService : VpnService() {
 
                 wrapAndSend(orig, if (wrapV6) v6Hdr else ihl, wrapV6, resp)
             } else {
-                if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-                else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr)
+                if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+                else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr, app, skipThreatIntelChecks)
             }
         } catch (e: Exception) {
             PrivacyLog.w(TAG, "DoQ forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
-            if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr)
+            if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+            else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr, app, skipThreatIntelChecks)
         }
     }
 
     private suspend fun forwardWireGuard(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                           app: Pair<String, String> = Pair("", ""),
-                                          wrapV6: Boolean = false, v6Hdr: Int = 0) {
+                                          wrapV6: Boolean = false, v6Hdr: Int = 0,
+                                          skipThreatIntelChecks: Boolean = false) {
         val hdr = if (wrapV6) v6Hdr else ihl
         try {
             val startMs = System.currentTimeMillis()
             val resp = wireGuardProxy.resolveDns(dns)
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, "WireGuard")
+                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, "WireGuard", skipThreatIntelChecks)
                 if (pfResult.blocked) {
                     if (pfResult.blockResponse != null) wrapAndSend(orig, hdr, wrapV6, pfResult.blockResponse)
                     return
                 }
                 wrapAndSend(orig, hdr, wrapV6, resp)
             } else {
-                if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-                else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-                else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr)
+                if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+                else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+                else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr, app, skipThreatIntelChecks)
             }
         } catch (e: Exception) {
             PrivacyLog.w(TAG, "WireGuard forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
-            if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr)
+            if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+            else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+            else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr, app, skipThreatIntelChecks)
         }
     }
 
     private suspend fun forwardDoT(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                     app: Pair<String, String> = Pair("", ""),
-                                    wrapV6: Boolean = false, v6Hdr: Int = 0) {
+                                    wrapV6: Boolean = false, v6Hdr: Int = 0,
+                                    skipThreatIntelChecks: Boolean = false) {
         val hdr = if (wrapV6) v6Hdr else ihl
         try {
             val startMs = System.currentTimeMillis()
             val resp = dotResolver.resolve(dns, dotProvider)
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, "DoT:${dotProvider.name}")
+                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, "DoT:${dotProvider.name}", skipThreatIntelChecks)
                 if (pfResult.blocked) {
                     if (pfResult.blockResponse != null) wrapAndSend(orig, hdr, wrapV6, pfResult.blockResponse)
                     return
                 }
                 wrapAndSend(orig, hdr, wrapV6, resp)
             } else {
-                if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-                else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr)
+                if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+                else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr, app, skipThreatIntelChecks)
             }
         } catch (e: Exception) {
             PrivacyLog.w(TAG, "DoT forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
-            if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr)
+            if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+            else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr, app, skipThreatIntelChecks)
         }
     }
 
@@ -2074,13 +2157,14 @@ class DnsVpnService : VpnService() {
      */
     private suspend fun forwardEncrypted(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
                                           app: Pair<String, String> = Pair("", ""),
-                                          wrapV6: Boolean = false, v6Hdr: Int = 0) {
+                                          wrapV6: Boolean = false, v6Hdr: Int = 0,
+                                          skipThreatIntelChecks: Boolean = false) {
         when {
-            useWireGuard -> forwardWireGuard(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            useDoQ -> forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            useDoT -> forwardDoT(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            useDoH -> forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr)
-            else -> forwardUdpPlaintext(dns, domain, orig, if (wrapV6) v6Hdr else ihl, wrapV6, app)
+            useWireGuard -> forwardWireGuard(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+            useDoQ -> forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+            useDoT -> forwardDoT(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+            useDoH -> forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
+            else -> forwardUdpPlaintext(dns, domain, orig, if (wrapV6) v6Hdr else ihl, wrapV6, app, skipThreatIntelChecks)
         }
     }
 

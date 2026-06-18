@@ -92,6 +92,13 @@ data class DedupedLogEntry(
     val decisionPrecedence: String = ""
 )
 
+private data class LogFilters(
+    val query: String,
+    val blocked: Boolean?,
+    val queryType: String?,
+    val threatIntelOnly: Boolean
+)
+
 @HiltViewModel
 class LogsViewModel @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
@@ -116,6 +123,9 @@ class LogsViewModel @Inject constructor(
     private val _queryTypeFilter = MutableStateFlow<String?>(null)
     val queryTypeFilter = _queryTypeFilter.asStateFlow()
 
+    private val _threatIntelOnly = MutableStateFlow(false)
+    val threatIntelOnly = _threatIntelOnly.asStateFlow()
+
     // Authoritative set of blocked hostnames — loaded from DB + blocklist on init,
     // updated instantly on block/allow actions. Persists across sessions via DB.
     private val _blockedHostnames = MutableStateFlow<Set<String>>(emptySet())
@@ -124,8 +134,13 @@ class LogsViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
+    private val filters: Flow<LogFilters> =
+        combine(_searchQuery, _showBlocked, _queryTypeFilter, _threatIntelOnly) { query, blocked, queryType, threatIntelOnly ->
+            LogFilters(query, blocked, queryType, threatIntelOnly)
+        }
+
     val deduped: StateFlow<List<DedupedLogEntry>> =
-        combine(logs, _searchQuery, _showBlocked, _blockedHostnames, _queryTypeFilter) { logList, query, blockedFilter, blockedSet, qTypeFilter ->
+        combine(logs, _blockedHostnames, filters) { logList, blockedSet, filterState ->
             logList
                 .groupBy { it.hostname.lowercase() }
                 .map { (hostname, entries) ->
@@ -150,9 +165,10 @@ class LogsViewModel @Inject constructor(
                     )
                 }
                 .filter { entry ->
-                    (query.isBlank() || entry.hostname.contains(query, ignoreCase = true) || entry.appPackage.contains(query, ignoreCase = true)) &&
-                    (blockedFilter == null || entry.blocked == blockedFilter) &&
-                    (qTypeFilter == null || entry.queryType.equals(qTypeFilter, ignoreCase = true))
+                    (filterState.query.isBlank() || entry.hostname.contains(filterState.query, ignoreCase = true) || entry.appPackage.contains(filterState.query, ignoreCase = true)) &&
+                    (filterState.blocked == null || entry.blocked == filterState.blocked) &&
+                    (filterState.queryType == null || entry.queryType.equals(filterState.queryType, ignoreCase = true)) &&
+                    (!filterState.threatIntelOnly || entry.isThreatIntelBlock())
                 }
                 .sortedByDescending { it.latestTimestamp }
         }
@@ -215,6 +231,7 @@ class LogsViewModel @Inject constructor(
     fun clearSearchHistory() { _searchHistory.value = emptyList() }
     fun setFilter(blocked: Boolean?) { _showBlocked.value = blocked }
     fun setQueryTypeFilter(type: String?) { _queryTypeFilter.value = type }
+    fun setThreatIntelOnly(enabled: Boolean) { _threatIntelOnly.value = enabled }
 
     fun blockDomain(hostname: String) {
         val host = hostname.lowercase()
@@ -384,6 +401,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val logs by viewModel.logs.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val blockedFilter by viewModel.showBlocked.collectAsStateWithLifecycle()
+    val threatIntelOnly by viewModel.threatIntelOnly.collectAsStateWithLifecycle()
     val blockedSet by viewModel.blockedHostnames.collectAsStateWithLifecycle()
     val pinnedSet by viewModel.pinnedDomains.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -553,6 +571,13 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            HostShieldFilterChip(
+                label = "Threat review",
+                selected = threatIntelOnly,
+                onClick = { viewModel.setThreatIntelOnly(!threatIntelOnly) },
+                accent = Red,
+                semanticsLabel = "Threat intel review queue filter",
+            )
             val types = listOf(null to "All types", "A" to "A", "AAAA" to "AAAA", "CNAME" to "CNAME", "MX" to "MX", "TXT" to "TXT")
             types.forEach { (type, label) ->
                 HostShieldFilterChip(
@@ -567,7 +592,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
 
         Spacer(Modifier.height(8.dp))
 
-        val hasActiveFilters = query.isNotBlank() || blockedFilter != null || queryTypeFilter != null
+        val hasActiveFilters = query.isNotBlank() || blockedFilter != null || queryTypeFilter != null || threatIntelOnly
         if (deduped.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -579,7 +604,11 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                     icon = if (hasActiveFilters) Icons.Filled.FilterAltOff else Icons.Filled.Dns,
                     title = if (hasActiveFilters) "No matching DNS activity" else "No DNS activity yet",
                     message = if (hasActiveFilters) {
-                        "No captured query matches the current search and filter combination."
+                        if (threatIntelOnly) {
+                            "No recent threat-intel block matches the current search and filter combination."
+                        } else {
+                            "No captured query matches the current search and filter combination."
+                        }
                     } else {
                         "Captured DNS queries will appear here with verdicts, apps, timing, and rule actions."
                     },
@@ -590,6 +619,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                             viewModel.setSearch("")
                             viewModel.setFilter(null)
                             viewModel.setQueryTypeFilter(null)
+                            viewModel.setThreatIntelOnly(false)
                         }
                     } else {
                         null
@@ -1144,6 +1174,12 @@ private fun ThreatIntelReviewSection(
     onAllowDomain: () -> Unit,
     onAllowForApp: (() -> Unit)?
 ) {
+    val matchKind = when (entry.decisionReason) {
+        "threat_intel_ip" -> "resolved IP"
+        else -> "domain"
+    }
+    val source = entry.decisionSource.ifBlank { "Threat feed" }
+    val matchedValue = entry.matchedValue.ifBlank { entry.hostname }
     Surface(shape = RoundedCornerShape(10.dp), color = Red.copy(alpha = 0.08f)) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1153,14 +1189,24 @@ private fun ThreatIntelReviewSection(
             }
             Spacer(Modifier.height(6.dp))
             Text(
-                "${entry.decisionSource.ifBlank { "Threat feed" }} matched ${entry.matchedValue.ifBlank { entry.hostname }}.",
+                "$source flagged $matchKind $matchedValue.",
                 color = TextSecondary,
                 fontSize = 11.sp,
                 lineHeight = 15.sp
             )
+            Text(
+                if (entry.decisionReason == "threat_intel_ip") {
+                    "Allowing the domain keeps this destination reachable while leaving threat feeds enabled for other apps and hosts."
+                } else {
+                    "Use the narrowest allow scope that matches the false positive."
+                },
+                color = TextDim,
+                fontSize = 10.sp,
+                lineHeight = 14.sp
+            )
             if (entry.appPackage.isNotBlank()) {
                 Text(
-                    "Scope recovery to ${entry.appLabel.ifBlank { entry.appPackage }} when only this app is affected.",
+                    "App scope only affects ${entry.appLabel.ifBlank { entry.appPackage }}.",
                     color = TextDim,
                     fontSize = 10.sp,
                     lineHeight = 14.sp
@@ -1168,9 +1214,9 @@ private fun ThreatIntelReviewSection(
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ThreatReviewAction("Allow Domain", Green, onAllowDomain)
+                ThreatReviewAction("Allow domain", Green, onAllowDomain)
                 if (onAllowForApp != null) {
-                    ThreatReviewAction("Allow for App", Blue, onAllowForApp)
+                    ThreatReviewAction("Allow app only", Blue, onAllowForApp)
                 }
             }
         }
