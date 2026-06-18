@@ -145,17 +145,6 @@
     </issue>
 
     <issue
-        id="UnusedResources"
-        message="The resource `R.string.app_name` appears to be unused"
-        errorLine1="    &lt;string name=&quot;app_name&quot;>HostShield&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="3"
-            column="13"/>
-    </issue>
-
-    <issue
         id="UseKtx"
         message="Use the KTX extension function `SQLiteDatabase.transaction` instead?"
         errorLine1="            db.beginTransaction()"
