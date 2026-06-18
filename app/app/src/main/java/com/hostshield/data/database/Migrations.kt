@@ -22,6 +22,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - v15: Added host_sources.last_http_status for source failure feedback
  * - v16: Added dns_logs decision provenance columns
  * - v17: Enable default AdAway and StevenBlack Unified built-in sources
+ * - v18: Added dns_logs(app_package, hostname) index for app-domain aggregation
  */
 object Migrations {
 
@@ -278,6 +279,17 @@ object Migrations {
         }
     }
 
+    val MIGRATION_17_18 = object : Migration(17, 18) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_dns_logs_app_package_hostname
+                ON dns_logs (app_package, hostname)
+                """.trimIndent()
+            )
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
     val ALL = arrayOf(
         MIGRATION_1_2,
@@ -295,6 +307,7 @@ object Migrations {
         MIGRATION_13_14,
         MIGRATION_14_15,
         MIGRATION_15_16,
-        MIGRATION_16_17
+        MIGRATION_16_17,
+        MIGRATION_17_18
     )
 }

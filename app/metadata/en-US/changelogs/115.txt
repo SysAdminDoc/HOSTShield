@@ -1,0 +1,1 @@
+v6.9.33: Added a Room migration and covering index for per-app DNS domain aggregation to keep app drill-downs responsive on large logs.

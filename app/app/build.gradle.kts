@@ -35,8 +35,8 @@ android {
         applicationId = "com.hostshield"
         minSdk = 26
         targetSdk = 36
-        versionCode = 114
-        versionName = "6.9.32"
+        versionCode = 115
+        versionName = "6.9.33"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

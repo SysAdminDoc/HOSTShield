@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.32-blue)
+![Version](https://img.shields.io/badge/version-6.9.33-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -419,6 +419,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.33** | Added a Room migration and covering index for per-app DNS domain aggregation to keep app drill-downs responsive on large logs. |
 | **6.9.32** | DNS cache and stale-cache responses now run post-forward CNAME/threat checks, app-scoped threat allows behave consistently, and Logs has a threat-review queue filter. |
 | **6.9.31** | Settings exports now use a shared destination artifact model with correct filenames, MIME types, privacy copy, Save As for diagnostics, and tested file/content streaming. |
 | **6.9.30** | Local DNS server LAN abuse controls now apply a global per-window query cap in addition to the per-client limit. |

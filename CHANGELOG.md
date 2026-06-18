@@ -3,6 +3,16 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.33] - 2026-06-18
+
+### Performance
+- Added Room schema version 18 with a covering `dns_logs(app_package, hostname)`
+  index so per-app domain aggregation remains responsive on large DNS logs.
+
+### Tests
+- Extended the Android migration test fixture to assert the new index exists
+  after every supported historical migration path.
+
 ## [v6.9.32] - 2026-06-18
 
 ### Security

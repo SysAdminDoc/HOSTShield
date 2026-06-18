@@ -112,6 +112,7 @@ class HostShieldMigrationTest {
         assertColumn(db, "firewall_rules", "lan_allowed")
         assertColumn(db, "app_dns_rules", "created_at")
         assertIndex(db, "index_dns_logs_app_package_blocked_timestamp")
+        assertIndex(db, "index_dns_logs_app_package_hostname")
         assertIndex(db, "index_host_sources_enabled")
         assertIndex(db, "index_host_sources_category")
         assertIndex(db, "index_user_rules_enabled_type")
@@ -288,8 +289,9 @@ class HostShieldMigrationTest {
             }
 
             insertHostSource("https://fixture.hostshield.test/hosts.txt", "Fixture Hosts", 1)
-            insertHostSource("https://adaway.org/hosts.txt", "AdAway Default", 0)
-            insertHostSource("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "StevenBlack Unified", 0)
+            val builtInEnabled = if (version >= 17) 1 else 0
+            insertHostSource("https://adaway.org/hosts.txt", "AdAway Default", builtInEnabled)
+            insertHostSource("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "StevenBlack Unified", builtInEnabled)
         }
 
         private fun createUserRules(db: SupportSQLiteDatabase, version: Int) {
@@ -353,6 +355,9 @@ class HostShieldMigrationTest {
             }
             if (version >= 13) {
                 db.execSQL("CREATE INDEX index_dns_logs_app_package_blocked_timestamp ON dns_logs (app_package, blocked, timestamp)")
+            }
+            if (version >= 18) {
+                db.execSQL("CREATE INDEX index_dns_logs_app_package_hostname ON dns_logs (app_package, hostname)")
             }
 
             val insertColumns = mutableListOf("hostname", "blocked", "timestamp")

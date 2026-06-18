@@ -75,6 +75,7 @@ data class UserRule(
         Index(value = ["blocked", "timestamp"]),  // composite for filtered log queries
         Index(value = ["hostname"]),
         Index(value = ["app_package"]),
+        Index(value = ["app_package", "hostname"]),  // composite for per-app domain aggregation
         Index(value = ["app_package", "blocked", "timestamp"])  // composite for per-app drill-down
     ]
 )

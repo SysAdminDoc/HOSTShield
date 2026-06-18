@@ -1,3 +1,20 @@
+# HostShield v6.9.33
+
+**Release Date:** 2026-06-18
+**Version Code:** 115
+
+## Per-App DNS Log Index
+
+### Performance
+- Added Room schema version 18 with a covering `dns_logs(app_package, hostname)`
+  index for app-domain aggregation in app drill-downs.
+
+### Tests
+- Extended the migration test harness to assert the index is present after all
+  supported historical migration paths.
+
+---
+
 # HostShield v6.9.32
 
 **Release Date:** 2026-06-18
