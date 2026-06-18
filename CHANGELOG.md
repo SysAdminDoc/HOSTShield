@@ -3,6 +3,13 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.41] - 2026-06-18
+
+### Security
+- Hardened the WebRTC leak-test WebView by disabling file/content access,
+  blocking navigation, bounding bridge payloads, parsing JSON safely, and
+  removing the JavaScript bridge after each probe.
+
 ## [v6.9.40] - 2026-06-18
 
 ### Fixed

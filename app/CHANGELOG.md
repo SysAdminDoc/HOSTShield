@@ -1,3 +1,17 @@
+# HostShield v6.9.41
+
+**Release Date:** 2026-06-18
+**Version Code:** 123
+
+## WebRTC Leak-Test WebView Hardening
+
+### Security
+- The WebRTC leak-test WebView now disables file/content access, blocks
+  navigation, bounds JavaScript bridge payloads, parses bridge JSON safely, and
+  removes the JavaScript bridge after each probe.
+
+---
+
 # HostShield v6.9.40
 
 **Release Date:** 2026-06-18

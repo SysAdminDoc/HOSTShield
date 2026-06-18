@@ -1,0 +1,1 @@
+v6.9.41: Hardened the WebRTC leak-test WebView with stricter settings, safe bridge parsing, blocked navigation, and bridge cleanup after each probe.

@@ -1,13 +1,18 @@
 package com.hostshield.util
 
+import android.annotation.SuppressLint
+import android.os.Looper
 import android.util.Log
 import android.webkit.JavascriptInterface
+import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
 import java.net.Inet6Address
 import java.net.InetAddress
 import java.net.NetworkInterface
@@ -29,6 +34,9 @@ import kotlin.coroutines.resume
 object LeakTester {
 
     private const val TAG = "LeakTester"
+    private const val LEAK_TEST_BRIDGE = "LeakBridge"
+    private const val LEAK_TEST_BASE_URL = "https://localhost/"
+    private const val MAX_BRIDGE_PAYLOAD_BYTES = 4096
 
     // ── WebRTC Leak Test ──────────────────────────────────────
 
@@ -82,28 +90,31 @@ object LeakTester {
     /**
      * Run WebRTC leak test using a WebView.
      *
-     * Must be called from the main thread (WebView requirement).
-     * Creates a WebView, runs JavaScript to discover IPs via RTCPeerConnection,
-     * then compares discovered IPs against the VPN's assigned IP.
+     * Must be called from the main thread (WebView requirement). Runs a
+     * self-contained JavaScript probe in a hardened WebView, then removes the
+     * bridge and disables JavaScript before returning.
      *
      * @param webView A WebView instance (caller must provide — can be hidden)
      * @param vpnIp The IP address assigned by the VPN tunnel (null if VPN not active)
      * @return WebRtcLeakResult with discovered IPs and leak status
      */
+    @SuppressLint("SetJavaScriptEnabled")
     suspend fun testWebRtcLeak(webView: WebView, vpnIp: String?): WebRtcLeakResult {
         return try {
             val result = withTimeoutOrNull(10_000L) {
                 suspendCancellableCoroutine { cont ->
+                    fun complete(result: WebRtcLeakResult) {
+                        cleanupLeakTestWebView(webView)
+                        if (cont.isActive) {
+                            cont.resume(result)
+                        }
+                    }
+
                     val bridge = object {
                         @JavascriptInterface
                         fun onComplete(ipsJson: String) {
                             try {
-                                // Parse JSON array of IPs
-                                val ips = ipsJson
-                                    .removeSurrounding("[", "]")
-                                    .split(",")
-                                    .map { it.trim().removeSurrounding("\"") }
-                                    .filter { it.isNotBlank() && it != "0.0.0.0" }
+                                val ips = parseBridgeIps(ipsJson)
 
                                 val leaked = if (vpnIp != null) {
                                     ips.any { it != vpnIp && !LanDetector.isPrivateIp(it) }
@@ -111,29 +122,28 @@ object LeakTester {
                                     false // Can't determine leak without knowing VPN IP
                                 }
 
-                                if (cont.isActive) {
-                                    cont.resume(WebRtcLeakResult(
-                                        leaked = leaked,
-                                        discoveredIps = ips,
-                                        vpnIp = vpnIp
-                                    ))
-                                }
+                                complete(WebRtcLeakResult(
+                                    leaked = leaked,
+                                    discoveredIps = ips,
+                                    vpnIp = vpnIp
+                                ))
                             } catch (e: Exception) {
-                                if (cont.isActive) {
-                                    cont.resume(WebRtcLeakResult(
-                                        leaked = false, discoveredIps = emptyList(),
-                                        vpnIp = vpnIp, error = e.message
-                                    ))
-                                }
+                                complete(WebRtcLeakResult(
+                                    leaked = false,
+                                    discoveredIps = emptyList(),
+                                    vpnIp = vpnIp,
+                                    error = e.message
+                                ))
                             }
                         }
                     }
 
-                    webView.settings.javaScriptEnabled = true
-                    webView.addJavascriptInterface(bridge, "LeakBridge")
-                    webView.webViewClient = WebViewClient()
+                    cont.invokeOnCancellation { cleanupLeakTestWebView(webView) }
+
+                    configureLeakTestWebView(webView)
+                    webView.addJavascriptInterface(bridge, LEAK_TEST_BRIDGE)
                     webView.loadDataWithBaseURL(
-                        "https://localhost",
+                        LEAK_TEST_BASE_URL,
                         "<html><body><script>$WEBRTC_LEAK_JS</script></body></html>",
                         "text/html", "utf-8", null
                     )
@@ -150,6 +160,58 @@ object LeakTester {
                 leaked = false, discoveredIps = emptyList(),
                 vpnIp = vpnIp, error = e.message
             )
+        }
+    }
+
+    private fun parseBridgeIps(ipsJson: String): List<String> {
+        require(ipsJson.length <= MAX_BRIDGE_PAYLOAD_BYTES) { "Leak probe returned too much data" }
+        val values = JSONArray(ipsJson)
+        return buildList {
+            for (index in 0 until values.length()) {
+                val ip = values.optString(index).trim()
+                if (ip.isNotBlank() && ip != "0.0.0.0") add(ip)
+            }
+        }.distinct()
+    }
+
+    @Suppress("DEPRECATION")
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun configureLeakTestWebView(webView: WebView) {
+        webView.settings.apply {
+            javaScriptEnabled = true
+            javaScriptCanOpenWindowsAutomatically = false
+            allowFileAccess = false
+            allowContentAccess = false
+            domStorageEnabled = false
+            databaseEnabled = false
+            mediaPlaybackRequiresUserGesture = true
+            allowFileAccessFromFileURLs = false
+            allowUniversalAccessFromFileURLs = false
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            safeBrowsingEnabled = true
+        }
+        webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean = true
+
+            @Deprecated("Kept for pre-N WebView navigation callbacks.")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean = true
+        }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun cleanupLeakTestWebView(webView: WebView) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            webView.post { cleanupLeakTestWebView(webView) }
+            return
+        }
+        try {
+            webView.removeJavascriptInterface(LEAK_TEST_BRIDGE)
+            webView.stopLoading()
+            webView.loadUrl("about:blank")
+            webView.settings.javaScriptEnabled = false
+            webView.webViewClient = WebViewClient()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to clean up WebRTC leak WebView: ${e.message}")
         }
     }
 

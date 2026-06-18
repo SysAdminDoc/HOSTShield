@@ -178,17 +178,6 @@
     </issue>
 
     <issue
-        id="SetJavaScriptEnabled"
-        message="Using `setJavaScriptEnabled` can introduce XSS vulnerabilities into your application, review carefully"
-        errorLine1="                    webView.settings.javaScriptEnabled = true"
-        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/hostshield/util/LeakTester.kt"
-            line="132"
-            column="21"/>
-    </issue>
-
-    <issue
         id="ObsoleteSdkInt"
         message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
         <location
