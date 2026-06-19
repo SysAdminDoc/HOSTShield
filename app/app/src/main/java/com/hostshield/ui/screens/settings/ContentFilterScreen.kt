@@ -8,7 +8,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +26,7 @@ import com.hostshield.service.ContentCategory
 import com.hostshield.service.ContentFilterManager
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityToggle
+import com.hostshield.ui.components.HostShieldBackHeader
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -77,17 +77,13 @@ fun ContentFilterScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Text(
-                "Content Filtering",
-                style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary,
-                modifier = Modifier.accessibilityHeading()
-            )
-        }
+        HostShieldBackHeader(
+            title = "Content Filtering",
+            subtitle = "${enabled.size} active categories · ${viewModel.totalDomainCount} indexed domains",
+            onBack = onBack,
+            horizontalPadding = 0.dp,
+            verticalPadding = 0.dp,
+        )
 
         // Summary card
         GlassCard(modifier = Modifier.fillMaxWidth()) {
@@ -105,11 +101,11 @@ fun ContentFilterScreen(
                 Spacer(Modifier.width(14.dp))
                 Column {
                     Text(
-                        "${enabled.size} categories active",
+                        if (enabled.isEmpty()) "No categories active" else "${enabled.size} categories active",
                         color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        "${viewModel.totalDomainCount} domains indexed",
+                        "Local DNS rules update immediately",
                         color = TextDim, fontSize = 12.sp,
                     )
                 }

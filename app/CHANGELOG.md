@@ -1,3 +1,22 @@
+# HostShield v6.9.45
+
+**Release Date:** 2026-06-19
+**Version Code:** 127
+
+## Premium Secondary-Screen Polish
+
+### Changed
+- Shared Android UI primitives now provide a consistent back header and more
+  resilient empty-state action layout.
+- App exclusions, DNS tools, TLS fingerprints, automation audit, app privacy,
+  content filtering, crash reports, connection logs, and app DNS logs now share
+  clearer headers, segmented controls, metric summaries, loading states, and
+  calmer empty-state guidance.
+- App exclusions now load installed packages off the UI thread and show a
+  first-class loading state on large devices.
+
+---
+
 # HostShield v6.9.44
 
 **Release Date:** 2026-06-18

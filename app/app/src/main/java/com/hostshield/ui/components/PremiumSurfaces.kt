@@ -6,6 +6,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,6 +46,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hostshield.ui.theme.Surface1
@@ -59,6 +63,47 @@ data class HostShieldSegmentOption<T>(
     val accent: Color,
     val icon: ImageVector? = null,
 )
+
+@Composable
+fun HostShieldBackHeader(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    horizontalPadding: Dp = 8.dp,
+    verticalPadding: Dp = 8.dp,
+    actions: (@Composable RowScope.() -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .size(48.dp)
+                .semantics {
+                    role = Role.Button
+                    contentDescription = "Back"
+                },
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = null,
+                tint = TextPrimary,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        HostShieldScreenHeader(
+            title = title,
+            subtitle = subtitle,
+            modifier = Modifier.weight(1f),
+            actions = actions,
+        )
+    }
+}
 
 @Composable
 fun HostShieldScreenHeader(
@@ -472,8 +517,16 @@ fun HostShieldStatusBanner(
             }
             if (onDismiss != null) {
                 Spacer(Modifier.width(8.dp))
-                IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.Filled.Close, contentDescription = "Dismiss $title", tint = TextDim, modifier = Modifier.size(16.dp))
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .semantics {
+                            role = Role.Button
+                            contentDescription = "Dismiss $title"
+                        },
+                ) {
+                    Icon(Icons.Filled.Close, contentDescription = null, tint = TextDim, modifier = Modifier.size(16.dp))
                 }
             }
         }
@@ -549,6 +602,7 @@ fun HostShieldLoadingState(
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 fun HostShieldEmptyState(
     icon: ImageVector,
     title: String,
@@ -561,7 +615,11 @@ fun HostShieldEmptyState(
     onSecondaryAction: (() -> Unit)? = null,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$title. $message"
+            },
         shape = RoundedCornerShape(12.dp),
         color = Surface1.copy(alpha = 0.92f),
         border = BorderStroke(1.dp, Surface3.copy(alpha = 0.75f)),
@@ -594,12 +652,22 @@ fun HostShieldEmptyState(
             )
             if (primaryActionLabel != null && onPrimaryAction != null) {
                 Spacer(Modifier.height(16.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     Surface(
                         onClick = onPrimaryAction,
                         shape = RoundedCornerShape(8.dp),
                         color = accent.copy(alpha = 0.16f),
-                        modifier = Modifier.heightIn(min = 44.dp),
+                        border = BorderStroke(1.dp, accent.copy(alpha = 0.22f)),
+                        modifier = Modifier
+                            .heightIn(min = 44.dp)
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = primaryActionLabel
+                            },
                     ) {
                         Text(
                             primaryActionLabel,
@@ -613,8 +681,14 @@ fun HostShieldEmptyState(
                         Surface(
                             onClick = onSecondaryAction,
                             shape = RoundedCornerShape(8.dp),
-                            color = Surface2,
-                            modifier = Modifier.heightIn(min = 44.dp),
+                            color = Surface2.copy(alpha = 0.86f),
+                            border = BorderStroke(1.dp, Surface3.copy(alpha = 0.48f)),
+                            modifier = Modifier
+                                .heightIn(min = 44.dp)
+                                .semantics {
+                                    role = Role.Button
+                                    contentDescription = secondaryActionLabel
+                                },
                         ) {
                             Text(
                                 secondaryActionLabel,

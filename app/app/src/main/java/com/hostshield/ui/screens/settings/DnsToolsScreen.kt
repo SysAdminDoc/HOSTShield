@@ -1,6 +1,7 @@
 package com.hostshield.ui.screens.settings
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,7 +10,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,6 +35,10 @@ import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
+import com.hostshield.ui.components.HostShieldActionIconButton
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldSegmentOption
+import com.hostshield.ui.components.HostShieldSegmentedTabs
 import com.hostshield.ui.theme.*
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -407,38 +411,32 @@ fun DnsToolsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Text(
-                "DNS Tools",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary,
-                modifier = Modifier.weight(1f).accessibilityHeading()
-            )
-            IconButton(
-                onClick = { viewModel.refreshStatus() },
-                modifier = Modifier.accessibilityAction("Refresh DNS status")
-            ) {
-                Icon(Icons.Filled.Refresh, "Refresh", tint = Teal)
-            }
-        }
+        HostShieldBackHeader(
+            title = "DNS Tools",
+            subtitle = "${state.blocklistSize} domains loaded · ${state.resolverHealth.size} resolvers tracked",
+            onBack = onBack,
+            actions = {
+                HostShieldActionIconButton(
+                    icon = Icons.Filled.Refresh,
+                    contentDescription = "Refresh DNS status",
+                    onClick = { viewModel.refreshStatus() },
+                    modifier = Modifier.accessibilityAction("Refresh DNS status"),
+                )
+            },
+        )
 
-        // Tabs
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            TabPill("Lookup", state.tab == DnsToolsTab.LOOKUP, Teal) { viewModel.setTab(DnsToolsTab.LOOKUP) }
-            TabPill("Status", state.tab == DnsToolsTab.STATUS, Blue) { viewModel.setTab(DnsToolsTab.STATUS) }
-            TabPill("Config", state.tab == DnsToolsTab.CONFIG, Yellow) { viewModel.setTab(DnsToolsTab.CONFIG) }
-            TabPill("Diag", state.tab == DnsToolsTab.DIAG, Peach) { viewModel.setTab(DnsToolsTab.DIAG) }
-        }
+        HostShieldSegmentedTabs(
+            options = listOf(
+                HostShieldSegmentOption(DnsToolsTab.LOOKUP, "Lookup", Teal, Icons.Filled.Search),
+                HostShieldSegmentOption(DnsToolsTab.STATUS, "Status", Blue, Icons.Filled.Dns),
+                HostShieldSegmentOption(DnsToolsTab.CONFIG, "Config", Yellow, Icons.Filled.Settings),
+                HostShieldSegmentOption(DnsToolsTab.DIAG, "Diag", Peach, Icons.Filled.BugReport),
+            ),
+            selected = state.tab,
+            onSelected = { viewModel.setTab(it) },
+            modifier = Modifier.padding(horizontal = 16.dp),
+            semanticsLabel = "DNS tools section",
+        )
 
         Spacer(Modifier.height(12.dp))
 
@@ -925,13 +923,14 @@ private fun GlassInfoCard(title: String, content: @Composable ColumnScope.() -> 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = Surface2
+        color = Surface1.copy(alpha = 0.94f),
+        border = BorderStroke(1.dp, Surface3.copy(alpha = 0.58f)),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 title,
-                color = TextDim,
-                fontSize = 10.sp,
+                color = TextSecondary,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.sp,
                 modifier = Modifier.accessibilityHeading()
@@ -939,17 +938,5 @@ private fun GlassInfoCard(title: String, content: @Composable ColumnScope.() -> 
             Spacer(Modifier.height(8.dp))
             content()
         }
-    }
-}
-
-@Composable
-private fun TabPill(label: String, selected: Boolean, accent: Color, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick, shape = RoundedCornerShape(10.dp),
-        color = if (selected) accent.copy(alpha = 0.15f) else Surface2,
-        modifier = Modifier.accessibilitySelection("$label DNS tools tab", selected)
-    ) {
-        Text(label, modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-            color = if (selected) accent else TextDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }

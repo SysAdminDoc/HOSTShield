@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +29,12 @@ import com.hostshield.data.database.FirewallTopApp
 import com.hostshield.data.model.ConnectionLogEntry
 import com.hostshield.service.NflogReader
 import com.hostshield.ui.components.ConfirmDestructiveDialog
+import com.hostshield.ui.components.HostShieldActionIconButton
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldMetricTile
+import com.hostshield.ui.components.HostShieldSegmentOption
+import com.hostshield.ui.components.HostShieldSegmentedTabs
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -85,84 +90,76 @@ fun ConnectionLogScreen(
     var showClearLogsDialog by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Connection Log", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier.size(6.dp).clip(CircleShape)
-                            .background(if (isReading) Green else Red)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        if (isReading) "$liveCount blocked connections" else "NFLOG reader inactive",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isReading) TextSecondary else Red
-                    )
-                }
-            }
-            IconButton(
-                onClick = { showClearLogsDialog = true },
-                enabled = logs.isNotEmpty()
-            ) {
-                Icon(
-                    Icons.Filled.DeleteSweep,
-                    "Clear connection log",
-                    tint = if (logs.isNotEmpty()) Red else TextDim.copy(alpha = 0.35f)
+        HostShieldBackHeader(
+            title = "Connection Log",
+            subtitle = if (isReading) "$liveCount live blocks · $blockedCount total" else "NFLOG reader inactive",
+            onBack = onBack,
+            actions = {
+                HostShieldActionIconButton(
+                    icon = Icons.Filled.DeleteSweep,
+                    contentDescription = "Clear connection log",
+                    onClick = { showClearLogsDialog = true },
+                    accent = Red,
+                    enabled = logs.isNotEmpty(),
                 )
             }
-        }
+        )
 
-        // Stats bar
-        Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(10.dp),
-            color = Surface2
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                StatItem("Total Blocked", blockedCount.toString(), Red)
-                StatItem("Today", logs.count {
+            HostShieldMetricTile(
+                value = formatCompactCount(blockedCount),
+                label = "total blocked",
+                accent = Red,
+                modifier = Modifier.weight(1f),
+            )
+            HostShieldMetricTile(
+                value = formatCompactCount(
+                    logs.count {
                     it.timestamp > System.currentTimeMillis() - 86_400_000L
-                }.toString(), Teal)
-                StatItem("Apps", topApps.size.toString(), Blue)
-            }
+                    }
+                ),
+                label = "today",
+                accent = Teal,
+                modifier = Modifier.weight(1f),
+            )
+            HostShieldMetricTile(
+                value = "${topApps.size}",
+                label = "apps",
+                accent = Blue,
+                modifier = Modifier.weight(1f),
+            )
         }
 
         Spacer(Modifier.height(8.dp))
 
-        // Tab bar
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            TabPill("Live Log", tab == ConnLogTab.LIVE, Teal) { viewModel.setTab(ConnLogTab.LIVE) }
-            TabPill("Top Blocked Apps", tab == ConnLogTab.TOP_APPS, Red) { viewModel.setTab(ConnLogTab.TOP_APPS) }
-        }
+        HostShieldSegmentedTabs(
+            options = listOf(
+                HostShieldSegmentOption(ConnLogTab.LIVE, "Live", Teal, Icons.Filled.ListAlt),
+                HostShieldSegmentOption(ConnLogTab.TOP_APPS, "Top Apps", Red, Icons.Filled.Apps),
+            ),
+            selected = tab,
+            onSelected = { viewModel.setTab(it) },
+            modifier = Modifier.padding(horizontal = 16.dp),
+            semanticsLabel = "Connection log view",
+        )
 
         Spacer(Modifier.height(8.dp))
 
         when (tab) {
             ConnLogTab.LIVE -> {
                 if (logs.isEmpty()) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Filled.Shield, null, tint = TextDim, modifier = Modifier.size(48.dp))
-                            Spacer(Modifier.height(8.dp))
-                            Text("No blocked connections yet", color = TextDim)
-                            Text("Apply iptables rules from Firewall > Network tab", color = TextDim, fontSize = 11.sp)
-                        }
-                    }
+                    HostShieldEmptyState(
+                        icon = Icons.Filled.Shield,
+                        title = "No blocked connections yet",
+                        message = "Apply network firewall rules from Firewall, then blocked root-mode traffic appears here.",
+                        accent = Teal,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+                    )
                 } else {
                     LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp)) {
                         items(logs, key = { it.id }) { entry ->
@@ -174,19 +171,13 @@ fun ConnectionLogScreen(
             }
             ConnLogTab.TOP_APPS -> {
                 if (topApps.isEmpty()) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Filled.Apps, null, tint = TextDim, modifier = Modifier.size(48.dp))
-                            Spacer(Modifier.height(8.dp))
-                            Text("No blocked apps yet", color = TextSecondary, fontWeight = FontWeight.Medium)
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "Apps will appear here after firewall rules block network traffic.",
-                                color = TextDim,
-                                fontSize = 11.sp,
-                            )
-                        }
-                    }
+                    HostShieldEmptyState(
+                        icon = Icons.Filled.Apps,
+                        title = "No blocked apps yet",
+                        message = "Apps are ranked here after firewall rules block their network traffic.",
+                        accent = Red,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+                    )
                 } else {
                     LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp)) {
                         items(topApps, key = { it.uid }) { app ->
@@ -304,28 +295,10 @@ private fun ConnectionLogRow(entry: ConnectionLogEntry, timeFmt: SimpleDateForma
     }
 }
 
-@Composable
-private fun StatItem(label: String, value: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, color = color, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text(label, color = TextDim, fontSize = 9.sp)
-    }
-}
-
-@Composable
-private fun TabPill(label: String, selected: Boolean, accent: Color, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(10.dp),
-        color = if (selected) accent.copy(alpha = 0.15f) else Surface2
-    ) {
-        Text(
-            label,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-            color = if (selected) accent else TextDim,
-            fontSize = 12.sp, fontWeight = FontWeight.SemiBold
-        )
-    }
+private fun formatCompactCount(n: Int): String = when {
+    n >= 1_000_000 -> "${n / 1_000_000}.${(n % 1_000_000) / 100_000}M"
+    n >= 1_000 -> "${n / 1_000}.${(n % 1_000) / 100}K"
+    else -> n.toString()
 }
 
 /** Map raw interface names to human-readable labels. */

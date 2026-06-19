@@ -3,6 +3,12 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.45] - 2026-06-19
+
+### Changed
+- Refined secondary Android UI surfaces with shared back headers, segmented
+  controls, responsive empty/loading states, and smoother app-exclusion loading.
+
 ## [v6.9.44] - 2026-06-18
 
 ### Changed

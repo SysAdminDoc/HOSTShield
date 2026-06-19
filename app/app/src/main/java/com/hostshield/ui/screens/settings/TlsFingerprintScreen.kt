@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableIntStateOf
@@ -22,7 +21,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import com.hostshield.ui.components.ConfirmDestructiveDialog
+import com.hostshield.ui.components.HostShieldActionIconButton
+import com.hostshield.ui.components.HostShieldBackHeader
 import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldSegmentOption
+import com.hostshield.ui.components.HostShieldSegmentedTabs
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.TlsFingerprinter
@@ -79,12 +82,29 @@ fun TlsFingerprintScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
+        HostShieldBackHeader(
+            title = "TLS Fingerprints",
+            subtitle = "${viewModel.fingerprints.size} captures · ${viewModel.groupedByApp.size} apps",
+            onBack = onBack,
+            horizontalPadding = 0.dp,
+            verticalPadding = 0.dp,
+            actions = {
+                HostShieldActionIconButton(
+                    icon = Icons.Filled.Refresh,
+                    contentDescription = "Refresh fingerprints",
+                    onClick = { viewModel.refresh() },
+                    accent = Teal,
+                )
+                if (viewModel.fingerprints.isNotEmpty()) {
+                    HostShieldActionIconButton(
+                        icon = Icons.Filled.DeleteSweep,
+                        contentDescription = "Clear fingerprints",
+                        onClick = { showClearFingerprintsDialog = true },
+                        accent = Red,
+                    )
+                }
             }
-            Text("TLS Fingerprints", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
-        }
+        )
 
         // Summary
         GlassCard(modifier = Modifier.fillMaxWidth()) {
@@ -112,48 +132,18 @@ fun TlsFingerprintScreen(
                         color = TextDim, fontSize = 11.sp,
                     )
                 }
-                Row {
-                    IconButton(onClick = { viewModel.refresh() }, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Filled.Refresh, "Refresh fingerprints", tint = Teal, modifier = Modifier.size(18.dp))
-                    }
-                    if (viewModel.fingerprints.isNotEmpty()) {
-                        IconButton(onClick = { showClearFingerprintsDialog = true }, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Filled.DeleteSweep, "Clear fingerprints", tint = Red, modifier = Modifier.size(18.dp))
-                        }
-                    }
-                }
             }
         }
 
-        // View mode toggle
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            TlsFingerprintViewModel.ViewMode.entries.forEach { mode ->
-                val selected = viewModel.viewMode == mode
-                FilterChip(
-                    selected = selected,
-                    onClick = { viewModel.setMode(mode) },
-                    label = {
-                        Text(
-                            when (mode) {
-                                TlsFingerprintViewModel.ViewMode.TIMELINE -> "Timeline"
-                                TlsFingerprintViewModel.ViewMode.BY_APP -> "By App"
-                            },
-                            fontSize = 12.sp,
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        containerColor = Surface2,
-                        labelColor = TextDim,
-                        selectedContainerColor = Sky.copy(alpha = 0.15f),
-                        selectedLabelColor = Sky,
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                )
-            }
-        }
+        HostShieldSegmentedTabs(
+            options = listOf(
+                HostShieldSegmentOption(TlsFingerprintViewModel.ViewMode.TIMELINE, "Timeline", Sky, Icons.Filled.Timeline),
+                HostShieldSegmentOption(TlsFingerprintViewModel.ViewMode.BY_APP, "By App", Teal, Icons.Filled.Apps),
+            ),
+            selected = viewModel.viewMode,
+            onSelected = { viewModel.setMode(it) },
+            semanticsLabel = "TLS fingerprint view",
+        )
 
         if (viewModel.fingerprints.isEmpty()) {
             HostShieldEmptyState(

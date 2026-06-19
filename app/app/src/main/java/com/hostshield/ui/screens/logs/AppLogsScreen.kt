@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,6 +27,11 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.data.database.AppDomainStat
 import com.hostshield.data.database.DnsLogDao
 import com.hostshield.data.model.DnsLogEntry
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldMetricTile
+import com.hostshield.ui.components.HostShieldSegmentOption
+import com.hostshield.ui.components.HostShieldSegmentedTabs
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -62,81 +66,50 @@ fun AppLogsScreen(
     val timeFmt = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text("App DNS Log", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-                Text(packageName, color = TextDim, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            Text("${logs.size} queries", color = TextDim, fontSize = 11.sp, modifier = Modifier.padding(end = 12.dp))
-        }
+        HostShieldBackHeader(
+            title = "App DNS Log",
+            subtitle = "$packageName · ${logs.size} queries",
+            onBack = onBack,
+        )
 
-        // Stats summary
         val blocked = logs.count { it.blocked }
         val allowed = logs.size - blocked
-        Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(10.dp),
-            color = Surface2
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("$allowed", color = Green, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text("Allowed", color = TextDim, fontSize = 9.sp)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("$blocked", color = Red, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text("Blocked", color = TextDim, fontSize = 9.sp)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${domains.size}", color = Blue, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text("Domains", color = TextDim, fontSize = 9.sp)
-                }
-            }
+            HostShieldMetricTile("$allowed", "allowed", Green, Modifier.weight(1f))
+            HostShieldMetricTile("$blocked", "blocked", Red, Modifier.weight(1f))
+            HostShieldMetricTile("${domains.size}", "domains", Blue, Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(8.dp))
 
-        // Tab toggle
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Surface(
-                onClick = { showDomains = true },
-                shape = RoundedCornerShape(10.dp),
-                color = if (showDomains) Teal.copy(alpha = 0.15f) else Surface2
-            ) {
-                Text("Domains", modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                    color = if (showDomains) Teal else TextDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            }
-            Surface(
-                onClick = { showDomains = false },
-                shape = RoundedCornerShape(10.dp),
-                color = if (!showDomains) Blue.copy(alpha = 0.15f) else Surface2
-            ) {
-                Text("Timeline", modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                    color = if (!showDomains) Blue else TextDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            }
-        }
+        HostShieldSegmentedTabs(
+            options = listOf(
+                HostShieldSegmentOption(true, "Domains", Teal, Icons.Filled.Dns),
+                HostShieldSegmentOption(false, "Timeline", Blue, Icons.Filled.History),
+            ),
+            selected = showDomains,
+            onSelected = { showDomains = it },
+            modifier = Modifier.padding(horizontal = 16.dp),
+            semanticsLabel = "App DNS log view",
+        )
 
         Spacer(Modifier.height(8.dp))
 
         if (showDomains) {
             // Domain breakdown
             if (domains.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No DNS queries from this app", color = TextDim, fontSize = 14.sp)
-                }
+                HostShieldEmptyState(
+                    icon = Icons.Filled.Dns,
+                    title = "No domains recorded",
+                    message = "Domains appear here after this app makes DNS requests while HostShield is active.",
+                    accent = Teal,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+                )
             } else {
                 LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)) {
                     items(domains, key = { it.hostname }) { stat ->
@@ -164,9 +137,13 @@ fun AppLogsScreen(
         } else {
             // Timeline view
             if (logs.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No recent queries", color = TextDim, fontSize = 14.sp)
-                }
+                HostShieldEmptyState(
+                    icon = Icons.Filled.History,
+                    title = "No recent queries",
+                    message = "The timeline fills as this app sends DNS traffic through HostShield.",
+                    accent = Blue,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+                )
             } else {
                 LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)) {
                     items(logs, key = { it.id }) { entry ->

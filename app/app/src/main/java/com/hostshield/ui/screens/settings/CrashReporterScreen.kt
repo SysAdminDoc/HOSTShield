@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableIntStateOf
@@ -22,6 +21,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.ui.components.ConfirmDestructiveDialog
+import com.hostshield.ui.components.HostShieldActionIconButton
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.CrashReport
@@ -75,14 +77,38 @@ fun CrashReporterScreen(
             .fillMaxSize()
             .background(Color.Black)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
+        HostShieldBackHeader(
+            title = "Crash Reports",
+            subtitle = if (viewModel.reports.isEmpty()) "No local crashes recorded" else "${viewModel.reports.size} local reports",
+            onBack = onBack,
+            horizontalPadding = 0.dp,
+            actions = {
+                HostShieldActionIconButton(
+                    icon = Icons.Filled.Refresh,
+                    contentDescription = "Refresh crash reports",
+                    onClick = { viewModel.refresh() },
+                    enabled = !viewModel.isLoading,
+                )
+                if (viewModel.reports.isNotEmpty()) {
+                    HostShieldActionIconButton(
+                        icon = Icons.Filled.DeleteSweep,
+                        contentDescription = "Clear crash reports",
+                        onClick = { showClearReportsDialog = true },
+                        accent = Red,
+                    )
+                }
             }
-            Text("Crash Reports", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+        )
+
+        if (viewModel.isLoading) {
+            HostShieldLoadingState(
+                title = "Reading local reports",
+                message = "Crash reports stay on this device until you export or clear them.",
+            )
+            return@Column
         }
 
         // Summary
@@ -115,20 +141,6 @@ fun CrashReporterScreen(
                     )
                     Text("Stored locally, never sent to any server", color = TextDim, fontSize = 11.sp)
                 }
-                if (viewModel.reports.isNotEmpty()) {
-                    IconButton(
-                        onClick = { showClearReportsDialog = true },
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Icon(Icons.Filled.DeleteSweep, "Clear crash reports", tint = Red, modifier = Modifier.size(18.dp))
-                    }
-                }
-            }
-        }
-
-        if (viewModel.isLoading) {
-            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Teal, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
             }
         }
 

@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +26,11 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.ui.accessibility.accessibilityAction
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
+import com.hostshield.ui.components.HostShieldActionIconButton
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldLoadingState
+import com.hostshield.ui.components.HostShieldMetricTile
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.AppPrivacyScorer
@@ -73,36 +77,29 @@ fun AppPrivacyScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "App Privacy Report",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = TextPrimary,
-                    modifier = Modifier.accessibilityHeading()
+        HostShieldBackHeader(
+            title = "App Privacy",
+            subtitle = "Tracker SDKs and DNS behavior by app",
+            onBack = onBack,
+            actions = {
+                HostShieldActionIconButton(
+                    icon = Icons.Filled.Refresh,
+                    contentDescription = "Refresh app privacy reports",
+                    onClick = { viewModel.loadReports() },
+                    enabled = !state.isLoading,
+                    modifier = Modifier.accessibilityAction("Refresh app privacy reports", !state.isLoading),
                 )
-                Text("Privacy grade for each app based on DNS behavior", color = TextDim, fontSize = 11.sp)
             }
-            IconButton(
-                onClick = { viewModel.loadReports() },
-                enabled = !state.isLoading,
-                modifier = Modifier.accessibilityAction("Refresh app privacy reports", !state.isLoading)
-            ) {
-                Icon(Icons.Filled.Refresh, "Refresh", tint = Teal)
-            }
-        }
+        )
 
         if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    color = Teal,
-                    modifier = Modifier.accessibilityLiveRegion("Loading app privacy reports")
-                )
-            }
+            HostShieldLoadingState(
+                title = "Analyzing installed apps",
+                message = "Scanning tracker SDKs and recent DNS behavior locally on this device.",
+                modifier = Modifier
+                    .padding(horizontal = 20.dp, vertical = 20.dp)
+                    .accessibilityLiveRegion("Loading app privacy reports"),
+            )
             return
         }
 
@@ -113,27 +110,15 @@ fun AppPrivacyScreen(
             // Summary
             if (state.reports.isNotEmpty()) {
                 item {
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            val color = gradeColor(if (state.averageScore >= 75) "B" else if (state.averageScore >= 50) "C" else "D")
-                            Box(
-                                modifier = Modifier.size(48.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    progress = { state.averageScore / 100f },
-                                    modifier = Modifier.size(48.dp),
-                                    color = color, trackColor = Surface3, strokeWidth = 4.dp
-                                )
-                                Text("${state.averageScore}", color = color, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            }
-                            Spacer(Modifier.width(16.dp))
-                            Column {
-                                Text("Average Privacy Score", color = TextPrimary, fontWeight = FontWeight.SemiBold)
-                                Text("${state.reports.size} apps analyzed, ${state.worstApps} need attention, ${state.totalTrackerSdks} tracker SDKs",
-                                    color = TextDim, fontSize = 11.sp)
-                            }
-                        }
+                    val color = gradeColor(if (state.averageScore >= 75) "B" else if (state.averageScore >= 50) "C" else "D")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        HostShieldMetricTile("${state.averageScore}", "avg score", color, Modifier.weight(1f))
+                        HostShieldMetricTile("${state.reports.size}", "apps", Mauve, Modifier.weight(1f))
+                        HostShieldMetricTile("${state.worstApps}", "review", Peach, Modifier.weight(1f))
+                        HostShieldMetricTile("${state.totalTrackerSdks}", "trackers", Red, Modifier.weight(1f))
                     }
                 }
             }
@@ -145,14 +130,12 @@ fun AppPrivacyScreen(
 
             if (state.reports.isEmpty()) {
                 item {
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(32.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Filled.PrivacyTip, null, tint = TextDim, modifier = Modifier.size(40.dp))
-                            Spacer(Modifier.height(12.dp))
-                            Text("No app data yet", color = TextSecondary, fontSize = 13.sp)
-                            Text("DNS logs are needed to analyze app behavior", color = TextDim, fontSize = 11.sp)
-                        }
-                    }
+                    HostShieldEmptyState(
+                        icon = Icons.Filled.PrivacyTip,
+                        title = "No app data yet",
+                        message = "Run protection for a while so HostShield can grade apps from local DNS activity and embedded tracker signals.",
+                        accent = Mauve,
+                    )
                 }
             }
 

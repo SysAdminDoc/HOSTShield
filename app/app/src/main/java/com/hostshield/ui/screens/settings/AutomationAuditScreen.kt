@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material3.*
@@ -33,6 +32,10 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.BuildConfig
 import com.hostshield.data.database.AutomationAuditDao
 import com.hostshield.data.model.AutomationAuditEntry
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldSegmentOption
+import com.hostshield.ui.components.HostShieldSegmentedTabs
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -61,30 +64,21 @@ fun AutomationAuditScreen(
     Column(
         modifier = Modifier.fillMaxSize().background(Color.Black)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Text("Automation", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-        }
+        HostShieldBackHeader(
+            title = "Automation",
+            subtitle = "${entries.size} recent command events",
+            onBack = onBack,
+        )
 
-        @OptIn(ExperimentalMaterial3Api::class)
-        PrimaryTabRow(
-            selectedTabIndex = selectedTab,
-            containerColor = Color.Black,
-            contentColor = Blue,
+        HostShieldSegmentedTabs(
+            options = listOf(
+                HostShieldSegmentOption(0, "Audit Log", Blue, Icons.AutoMirrored.Filled.ReceiptLong),
+                HostShieldSegmentOption(1, "Commands", Teal, Icons.Filled.Terminal),
+            ),
+            selected = selectedTab,
+            onSelected = { selectedTab = it },
             modifier = Modifier.padding(horizontal = 16.dp)
-        ) {
-            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                Text("Audit Log", modifier = Modifier.padding(12.dp), fontSize = 13.sp)
-            }
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                Text("Commands", modifier = Modifier.padding(12.dp), fontSize = 13.sp)
-            }
-        }
+        )
 
         when (selectedTab) {
             0 -> AuditLogTab(entries, dateFormat)
@@ -96,14 +90,13 @@ fun AutomationAuditScreen(
 @Composable
 private fun AuditLogTab(entries: List<AutomationAuditEntry>, dateFormat: SimpleDateFormat) {
     if (entries.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.AutoMirrored.Filled.ReceiptLong, null, tint = TextDim, modifier = Modifier.size(48.dp))
-                Spacer(Modifier.height(12.dp))
-                Text("No automation commands recorded", color = TextDim, fontSize = 14.sp)
-                Text("Commands from Tasker, ADB, or other apps appear here", color = TextDim, fontSize = 11.sp)
-            }
-        }
+        HostShieldEmptyState(
+            icon = Icons.AutoMirrored.Filled.ReceiptLong,
+            title = "No automation commands recorded",
+            message = "Tasker, ADB, and trusted app commands will appear here with caller, result, and timing details.",
+            accent = Blue,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

@@ -1,0 +1,1 @@
+v6.9.45: Refines secondary UI surfaces with shared headers, segmented controls, responsive empty/loading states, and smoother app-exclusion loading.
