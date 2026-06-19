@@ -20,7 +20,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.ViewModel
@@ -70,7 +69,12 @@ class WebDavSyncViewModel @Inject constructor(
 
     fun saveCredentials(url: String, user: String, pass: String) {
         viewModelScope.launch {
-            prefs.setWebdavUrl(url.trim())
+            val normalizedUrl = WebDavSync.normalizedServerUrlOrNull(url)
+            if (normalizedUrl == null) {
+                message = "Use a complete HTTPS WebDAV URL."
+                return@launch
+            }
+            prefs.setWebdavUrl(normalizedUrl)
             prefs.setWebdavUsername(user.trim())
             if (pass.isNotBlank()) {
                 prefs.setWebdavPassword(pass)
@@ -88,6 +92,11 @@ class WebDavSyncViewModel @Inject constructor(
 
     fun testConnection(url: String, user: String, pass: String) {
         viewModelScope.launch(Dispatchers.IO) {
+            val normalizedUrl = WebDavSync.normalizedServerUrlOrNull(url)
+            if (normalizedUrl == null) {
+                message = "Use a complete HTTPS WebDAV URL."
+                return@launch
+            }
             val password = resolvePassword(pass)
             if (password.isBlank()) {
                 message = "Enter a WebDAV password or app token"
@@ -99,7 +108,7 @@ class WebDavSyncViewModel @Inject constructor(
             hasListedRemoteFiles = false
             try {
                 val creds = WebDavSync.Credentials(user.trim(), password)
-                val files = webDavSync.listFiles(url.trim(), creds, "/")
+                val files = webDavSync.listFiles(normalizedUrl, creds, "/")
                 if (files != null) {
                     remoteFiles = files
                     hasListedRemoteFiles = true
@@ -122,6 +131,11 @@ class WebDavSyncViewModel @Inject constructor(
 
     fun syncBackup(url: String, user: String, pass: String, data: ByteArray) {
         viewModelScope.launch(Dispatchers.IO) {
+            val normalizedUrl = WebDavSync.normalizedServerUrlOrNull(url)
+            if (normalizedUrl == null) {
+                message = "Use a complete HTTPS WebDAV URL."
+                return@launch
+            }
             val password = resolvePassword(pass)
             if (password.isBlank()) {
                 message = "Enter a WebDAV password or app token"
@@ -133,7 +147,7 @@ class WebDavSyncViewModel @Inject constructor(
                 val creds = WebDavSync.Credentials(user.trim(), password)
                 val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
                 val remotePath = "/hostshield_backup_$ts.json"
-                val success = webDavSync.upload(url.trim(), creds, remotePath, data)
+                val success = webDavSync.upload(normalizedUrl, creds, remotePath, data)
                 message = if (success) "Backup uploaded to $remotePath" else "Upload failed"
             } catch (e: Exception) {
                 android.util.Log.w("WebDavSync", "Backup upload failed", e)
@@ -200,7 +214,7 @@ fun WebDavSyncScreen(
                     singleLine = true,
                     isError = url.isNotBlank() && !urlIsValid,
                     supportingText = if (url.isNotBlank() && !urlIsValid) {
-                        { Text("Use a complete http:// or https:// WebDAV URL.", color = Red, fontSize = 11.sp) }
+                        { Text("Use a complete https:// WebDAV URL.", color = Red, fontSize = 11.sp) }
                     } else null,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Uri,
@@ -356,7 +370,5 @@ private fun formatSize(bytes: Long): String = when {
 }
 
 private fun isValidWebDavUrl(value: String): Boolean {
-    val parsed = value.trim().toUri()
-    val scheme = parsed.scheme?.lowercase()
-    return (scheme == "https" || scheme == "http") && !parsed.host.isNullOrBlank()
+    return WebDavSync.normalizedServerUrlOrNull(value) != null
 }

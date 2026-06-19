@@ -90,6 +90,57 @@ class ImportExportUtilTest {
         assertEquals(listOf("https://lists.example.com/hosts.txt"), result.sources.map { it.url })
     }
 
+    @Test
+    fun `hosts import validates allowlist convention hosts`() = runBlocking {
+        val content = """
+            #allow# Allowed.Example.COM.
+            #allow# bad domain.example
+            # allow *.trusted.example
+            #allow# localhost
+        """.trimIndent()
+
+        val result = ImportExportUtil().importHostsFormat(content)
+
+        assertEquals(listOf("allowed.example.com", "*.trusted.example"), result.allowlist.map { it.hostname })
+        assertEquals(listOf(false, true), result.allowlist.map { it.isWildcard })
+    }
+
+    @Test
+    fun `AdAway import rejects redirects with invalid IP addresses`() = runBlocking {
+        val content = """
+            {
+              "redirect_hosts": [
+                {"hostname": "safe.example.com", "ip": "10.0.0.5"},
+                {"hostname": "unsafe.example.com", "ip": "999.1.1.1"}
+              ]
+            }
+        """.trimIndent()
+
+        val result = ImportExportUtil().importAdAwayBackup(content)
+
+        assertEquals(listOf("safe.example.com"), result.redirects.map { it.hostname })
+        assertEquals(listOf("10.0.0.5"), result.redirects.map { it.redirectIp })
+    }
+
+    @Test
+    fun `Pi-hole import normalizes exact domains and rejects malformed entries`() = runBlocking {
+        val content = """
+            id,type,domain,enabled,comment
+            1,1,Ads.Example.COM.,1,
+            2,1,bad domain.example,1,
+            3,0,Allowed.Example.ORG.,1,
+            4,0,localhost,1,
+            5,3,(a+)+$,1,
+            6,3,^ads[0-9]+\\.example$,1,
+        """.trimIndent()
+
+        val result = ImportExportUtil().importPiholeFormat(content)
+
+        assertEquals(listOf("ads.example.com", "^ads[0-9]+\\\\.example$"), result.blocklist.map { it.hostname })
+        assertEquals(listOf("allowed.example.org"), result.allowlist.map { it.hostname })
+        assertEquals(listOf(false, true), result.blocklist.map { it.isRegex })
+    }
+
     // Helper that mimics the hosts file parsing logic
     private fun parseHostsContent(content: String): Set<String> {
         val localhost = setOf("localhost", "localhost.localdomain", "local",

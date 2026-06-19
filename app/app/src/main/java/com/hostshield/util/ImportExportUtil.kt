@@ -175,8 +175,13 @@ class ImportExportUtil @Inject constructor() {
             // Allowlist convention
             if (line.startsWith("#allow#") || line.startsWith("# allow ")) {
                 val host = line.substringAfter("#allow#").substringAfter("# allow ").trim()
-                if (host.isNotEmpty() && host.contains('.')) {
-                    allow.add(UserRule(hostname = host.lowercase(), type = RuleType.ALLOW))
+                val normalized = normalizedRuleHost(host, host.trim().startsWith("*."))
+                if (normalized != null) {
+                    allow.add(UserRule(
+                        hostname = normalized,
+                        type = RuleType.ALLOW,
+                        isWildcard = normalized.startsWith("*.")
+                    ))
                 }
                 return@forEach
             }
@@ -281,7 +286,7 @@ class ImportExportUtil @Inject constructor() {
                 val obj = arr.optJSONObject(i) ?: continue
                 val host = obj.optString("hostname", "").trim().lowercase()
                 val ip = obj.optString("ip", "")
-                if (host.isNotEmpty() && isValidHost(host)) {
+                if (host.isNotEmpty() && isValidHost(host) && isIpLike(ip)) {
                     redirects.add(UserRule(hostname = host, type = RuleType.REDIRECT, redirectIp = ip))
                 }
             }
@@ -521,8 +526,12 @@ class ImportExportUtil @Inject constructor() {
                 if (isRegex && !isSafeRegex(domain)) return@forEach
 
                 when (type) {
-                    0 -> allow.add(UserRule(hostname = domain, type = RuleType.ALLOW, enabled = enabled, isRegex = isRegex))
-                    1 -> block.add(UserRule(hostname = domain, type = RuleType.BLOCK, enabled = enabled, isRegex = isRegex))
+                    0 -> normalizedRuleHost(domain, false)?.let {
+                        allow.add(UserRule(hostname = it, type = RuleType.ALLOW, enabled = enabled))
+                    }
+                    1 -> normalizedRuleHost(domain, false)?.let {
+                        block.add(UserRule(hostname = it, type = RuleType.BLOCK, enabled = enabled))
+                    }
                     2 -> allow.add(UserRule(hostname = domain, type = RuleType.ALLOW, enabled = enabled, isRegex = true))
                     3 -> block.add(UserRule(hostname = domain, type = RuleType.BLOCK, enabled = enabled, isRegex = true))
                 }

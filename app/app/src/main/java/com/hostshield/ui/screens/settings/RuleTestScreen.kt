@@ -38,12 +38,34 @@ import com.hostshield.ui.components.HostShieldBackHeader
 import com.hostshield.ui.components.HostShieldCompactState
 import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.components.HostShieldPanelHeader
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val RULE_TEST_SCREEN_TAG = "RuleTestScreen"
+private val RULE_TEST_DOMAIN_REGEX = Regex(
+    """^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"""
+)
+
+internal fun normalizeRuleTestDomain(rawDomain: String): String? {
+    val domain = rawDomain.trim().trimEnd('.').lowercase()
+    if (domain.isBlank() || domain.length > 253) return null
+    if (domain.any { it.isWhitespace() }) return null
+    if (domain.any { it !in 'a'..'z' && it !in '0'..'9' && it != '-' && it != '.' }) return null
+    return if (RULE_TEST_DOMAIN_REGEX.matches(domain)) domain else null
+}
+
+internal fun normalizeRuleTestDomains(rawDomains: String, limit: Int = 100): List<String> =
+    rawDomains.lineSequence()
+        .mapNotNull { normalizeRuleTestDomain(it) }
+        .distinct()
+        .take(limit)
+        .toList()
 
 data class RuleTestResult(
     val domain: String,
@@ -56,7 +78,9 @@ data class RuleTestState(
     val results: List<RuleTestResult> = emptyList(),
     val isTesting: Boolean = false,
     val batchInput: String = "",
-    val batchResults: List<RuleTestResult> = emptyList()
+    val batchResults: List<RuleTestResult> = emptyList(),
+    val message: String? = null,
+    val messageIsError: Boolean = false
 )
 
 @HiltViewModel
@@ -67,36 +91,78 @@ class RuleTestViewModel @Inject constructor(
     private val _state = MutableStateFlow(RuleTestState())
     val state = _state.asStateFlow()
 
-    fun setTestDomain(d: String) { _state.update { it.copy(testDomain = d) } }
-    fun setBatchInput(s: String) { _state.update { it.copy(batchInput = s) } }
+    fun setTestDomain(d: String) { _state.update { it.copy(testDomain = d, message = null) } }
+    fun setBatchInput(s: String) { _state.update { it.copy(batchInput = s, message = null) } }
+    fun clearMessage() { _state.update { it.copy(message = null, messageIsError = false) } }
 
     fun testDomain() {
-        val domain = _state.value.testDomain.trim().lowercase()
-        if (domain.isBlank()) return
-
-        viewModelScope.launch(Dispatchers.IO) {
-            _state.update { it.copy(isTesting = true) }
-            val result = testSingleDomain(domain)
+        if (_state.value.isTesting) return
+        val domain = normalizeRuleTestDomain(_state.value.testDomain)
+        if (domain == null) {
             _state.update {
                 it.copy(
-                    isTesting = false,
-                    results = listOf(result) + it.results.take(29)
+                    message = "Enter a valid domain such as ads.example.com.",
+                    messageIsError = true
                 )
+            }
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _state.update { it.copy(isTesting = true, message = null, messageIsError = false) }
+            try {
+                val result = testSingleDomain(domain)
+                _state.update {
+                    it.copy(
+                        isTesting = false,
+                        results = listOf(result) + it.results.take(29)
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w(RULE_TEST_SCREEN_TAG, "Single rule test failed for $domain", e)
+                _state.update {
+                    it.copy(
+                        isTesting = false,
+                        message = "Rule test could not complete. Refresh sources and try again.",
+                        messageIsError = true
+                    )
+                }
             }
         }
     }
 
     fun testBatch() {
-        val domains = _state.value.batchInput.lines()
-            .map { it.trim().lowercase() }
-            .filter { it.isNotBlank() && it.contains('.') }
-            .distinct().take(100)
-        if (domains.isEmpty()) return
+        if (_state.value.isTesting) return
+        val domains = normalizeRuleTestDomains(_state.value.batchInput)
+        if (domains.isEmpty()) {
+            _state.update {
+                it.copy(
+                    message = "Paste at least one valid domain, one per line.",
+                    messageIsError = true
+                )
+            }
+            return
+        }
 
         viewModelScope.launch(Dispatchers.IO) {
-            _state.update { it.copy(isTesting = true) }
-            val results = domains.map { testSingleDomain(it) }
-            _state.update { it.copy(isTesting = false, batchResults = results) }
+            _state.update { it.copy(isTesting = true, message = null, messageIsError = false) }
+            try {
+                val results = domains.map { testSingleDomain(it) }
+                _state.update { it.copy(isTesting = false, batchResults = results) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w(RULE_TEST_SCREEN_TAG, "Batch rule test failed", e)
+                _state.update {
+                    it.copy(
+                        isTesting = false,
+                        message = "Batch test could not complete. Try fewer domains or refresh the blocklists.",
+                        messageIsError = true
+                    )
+                }
+            }
         }
     }
 
@@ -202,6 +268,18 @@ fun RuleTestScreen(
                         title = "No test results yet",
                         message = "Enter one domain or paste a batch to see the matching rule path before making changes.",
                         accent = Teal,
+                    )
+                }
+            }
+
+            state.message?.let { message ->
+                item {
+                    HostShieldStatusBanner(
+                        icon = if (state.messageIsError) Icons.Filled.Error else Icons.Filled.Info,
+                        title = if (state.messageIsError) "Rule test needs attention" else "Rule test ready",
+                        message = message,
+                        accent = if (state.messageIsError) Yellow else Teal,
+                        onDismiss = { viewModel.clearMessage() },
                     )
                 }
             }

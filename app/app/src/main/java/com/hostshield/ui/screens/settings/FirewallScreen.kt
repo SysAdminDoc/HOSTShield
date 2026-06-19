@@ -47,6 +47,7 @@ import com.hostshield.ui.components.HostShieldSegmentedTabs
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -96,6 +97,8 @@ class FirewallViewModel @Inject constructor(
     val tab = _tab.asStateFlow()
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing = _isSyncing.asStateFlow()
+    private val _isApplyingIptables = MutableStateFlow(false)
+    val isApplyingIptables = _isApplyingIptables.asStateFlow()
 
     fun setSearchQuery(q: String) { _searchQuery.value = q }
     fun toggleShowSystem() { _showSystem.update { !it } }
@@ -166,15 +169,50 @@ class FirewallViewModel @Inject constructor(
 
     fun applyIptables() {
         viewModelScope.launch(Dispatchers.IO) {
-            iptablesManager.applyRules()
-            nflogReader.start()
+            if (_isApplyingIptables.value) return@launch
+            _isApplyingIptables.value = true
+            _error.value = null
+            try {
+                val applied = iptablesManager.applyRules()
+                if (applied) {
+                    try {
+                        nflogReader.start()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        android.util.Log.w("FirewallViewModel", "Firewall logging failed to start", e)
+                        _error.value = "Firewall applied, but block logging could not start."
+                    }
+                } else if (iptablesManager.lastError.value.isBlank()) {
+                    _error.value = "Could not apply iptables rules. Confirm root access and try again."
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("FirewallViewModel", "Failed to apply iptables rules", e)
+                _error.value = "Could not apply iptables rules. Confirm root access and try again."
+            } finally {
+                _isApplyingIptables.value = false
+            }
         }
     }
 
     fun clearIptables() {
         viewModelScope.launch(Dispatchers.IO) {
-            nflogReader.stop()
-            iptablesManager.clearRules()
+            if (_isApplyingIptables.value) return@launch
+            _isApplyingIptables.value = true
+            _error.value = null
+            try {
+                nflogReader.stop()
+                iptablesManager.clearRules()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("FirewallViewModel", "Failed to clear iptables rules", e)
+                _error.value = "Could not clear iptables rules. Confirm root access and try again."
+            } finally {
+                _isApplyingIptables.value = false
+            }
         }
     }
 
@@ -187,15 +225,32 @@ class FirewallViewModel @Inject constructor(
     fun runDiagnostic() {
         viewModelScope.launch(Dispatchers.IO) {
             _isDiagnosing.value = true
-            _diagnosticOutput.value = iptablesManager.dumpFullDiagnostic()
-            _isDiagnosing.value = false
+            _error.value = null
+            try {
+                _diagnosticOutput.value = iptablesManager.dumpFullDiagnostic()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("FirewallViewModel", "Firewall diagnostic failed", e)
+                _diagnosticOutput.value = ""
+                _error.value = "Firewall diagnostic could not run. Confirm root access and try again."
+            } finally {
+                _isDiagnosing.value = false
+            }
         }
     }
 
     fun exportScript(callback: (String) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            val script = iptablesManager.exportAsScript()
-            callback(script)
+            try {
+                val script = iptablesManager.exportAsScript()
+                callback(script)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("FirewallViewModel", "Firewall script export failed", e)
+                _error.value = "Firewall script export failed. Try again after refreshing rules."
+            }
         }
     }
 
@@ -253,6 +308,7 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
     val iptablesActive by viewModel.iptablesActive.collectAsStateWithLifecycle()
     val iptablesError by viewModel.iptablesError.collectAsStateWithLifecycle()
     val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
+    val isApplyingIptables by viewModel.isApplyingIptables.collectAsStateWithLifecycle()
     val diagOutput by viewModel.diagnosticOutput.collectAsStateWithLifecycle()
     val isDiagnosing by viewModel.isDiagnosing.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -297,7 +353,7 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
         if (error != null) {
             HostShieldStatusBanner(
                 icon = Icons.Filled.Error,
-                title = "Firewall sync failed",
+                title = "Firewall action failed",
                 message = error ?: "",
                 accent = Red,
                 onDismiss = { viewModel.clearError() },
@@ -333,7 +389,7 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
 
         when (tab) {
             FirewallTab.DNS -> DnsFirewallTab(viewModel, allApps, blocked, excluded, searchQuery, showSystem, filter)
-            FirewallTab.NETWORK -> NetworkFirewallTab(viewModel, firewallRules, searchQuery, showSystem, iptablesActive, iptablesError, isSyncing, diagOutput, isDiagnosing)
+            FirewallTab.NETWORK -> NetworkFirewallTab(viewModel, firewallRules, searchQuery, showSystem, iptablesActive, iptablesError, isSyncing, isApplyingIptables, diagOutput, isDiagnosing)
             FirewallTab.CONTEXT -> ContextFirewallTab(viewModel, firewallRules, searchQuery, showSystem)
         }
     }
@@ -464,6 +520,7 @@ private fun NetworkFirewallTab(
     iptablesActive: Boolean,
     iptablesError: String,
     isSyncing: Boolean,
+    isApplyingIptables: Boolean,
     diagOutput: String,
     isDiagnosing: Boolean
 ) {
@@ -513,16 +570,22 @@ private fun NetworkFirewallTab(
     ) {
         Button(
             onClick = { viewModel.applyIptables() },
+            enabled = !isApplyingIptables,
             modifier = Modifier.weight(1f),
             colors = ButtonDefaults.buttonColors(containerColor = Teal),
             shape = RoundedCornerShape(10.dp)
         ) {
-            Icon(Icons.Filled.PlayArrow, null, modifier = Modifier.size(16.dp))
+            if (isApplyingIptables) {
+                CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Filled.PlayArrow, null, modifier = Modifier.size(16.dp))
+            }
             Spacer(Modifier.width(4.dp))
-            Text("Apply", fontSize = 12.sp)
+            Text(if (isApplyingIptables) "Working" else "Apply", fontSize = 12.sp)
         }
         OutlinedButton(
             onClick = { viewModel.clearIptables() },
+            enabled = !isApplyingIptables,
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Red)

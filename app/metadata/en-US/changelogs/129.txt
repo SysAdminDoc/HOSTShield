@@ -1,0 +1,5 @@
+HostShield v6.9.47 diagnostic and import hardening
+
+- Requires HTTPS WebDAV server URLs, rejects embedded URL credentials, and fails closed for malformed sync endpoints.
+- Prevents DNS benchmark, leak-test, rule-test, overlap-analysis, QR-import, and firewall actions from getting stuck after failures.
+- Normalizes rule-test and imported allowlist/Pi-hole/AdAway hosts before saving them to local rule state.

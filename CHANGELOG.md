@@ -3,6 +3,19 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.47] - 2026-06-19
+
+### Security
+- WebDAV sync now requires HTTPS URLs consistently in the UI and service layer,
+  rejects embedded credentials, and fails closed for malformed server URLs.
+
+### Fixed
+- DNS benchmark, DNS leak testing, rule testing, overlap analysis, QR import,
+  and firewall root actions now clear running states reliably and show calm,
+  actionable failure messages instead of failing silently.
+- Import paths now normalize and reject malformed allowlist, AdAway redirect,
+  and Pi-hole exact-domain entries before they can pollute local rule state.
+
 ## [v6.9.46] - 2026-06-19
 
 ### Changed

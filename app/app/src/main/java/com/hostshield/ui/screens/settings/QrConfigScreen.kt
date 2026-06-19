@@ -42,6 +42,7 @@ import com.hostshield.util.QrConfigSharing
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -101,15 +102,23 @@ class QrConfigViewModel @Inject constructor(
     fun importFromString(input: String) {
         if (isApplyingImport) return
         viewModelScope.launch {
-            val config = qrSharing.decodeConfig(input.trim())
-            if (config == null) {
-                importResult = "Invalid QR data - must start with HS:"
+            try {
                 pendingImportPlan = null
-                return@launch
+                val config = qrSharing.decodeConfig(input.trim())
+                if (config == null) {
+                    importResult = "Invalid QR data - must start with HS:"
+                    return@launch
+                }
+                val plan = withContext(Dispatchers.IO) { importer.preview(config) }
+                pendingImportPlan = if (plan.hasChanges) plan else null
+                importResult = importPreviewMessage(plan)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(QR_CONFIG_TAG, "QR import preview failed", e)
+                pendingImportPlan = null
+                importResult = "Import preview failed. Check the code and try again."
             }
-            val plan = withContext(Dispatchers.IO) { importer.preview(config) }
-            pendingImportPlan = if (plan.hasChanges) plan else null
-            importResult = importPreviewMessage(plan)
         }
     }
 

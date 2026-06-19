@@ -1,3 +1,26 @@
+# HostShield v6.9.47
+
+**Release Date:** 2026-06-19
+**Version Code:** 129
+
+## Diagnostic and Import Hardening
+
+### Security
+- WebDAV sync now requires HTTPS server URLs consistently, rejects embedded URL
+  credentials, and keeps invalid server URLs inside normal failure states
+  instead of escaping as runtime errors.
+
+### Fixed
+- DNS benchmark, DNS leak testing, rule testing, source overlap analysis, QR
+  import preview, and firewall root actions now reset progress flags reliably
+  and surface actionable status messages when network, repository, parser, or
+  root operations fail.
+- Rule-tester input, hosts allowlist imports, AdAway redirect imports, and
+  Pi-hole exact-domain imports now normalize valid hosts and reject malformed
+  entries before they can enter local rule state.
+
+---
+
 # HostShield v6.9.46
 
 **Release Date:** 2026-06-19

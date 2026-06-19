@@ -2,6 +2,7 @@ package com.hostshield.util
 
 import com.hostshield.data.source.BoundedResponseReader
 import okhttp3.Credentials as OkHttpCredentials
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -59,13 +60,13 @@ class WebDavSync @Inject constructor(
         remotePath: String,
         data: ByteArray
     ): Boolean {
-        val url = buildUrl(serverUrl, remotePath)
-        val request = Request.Builder()
-            .url(url)
-            .header("Authorization", basicAuth(credentials))
-            .put(data.toRequestBody("application/octet-stream".toMediaType()))
-            .build()
         return try {
+            val url = buildUrl(serverUrl, remotePath)
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", basicAuth(credentials))
+                .put(data.toRequestBody("application/octet-stream".toMediaType()))
+                .build()
             httpClient.newCall(request).execute().use { response ->
                 response.code in 200..299
             }
@@ -83,13 +84,13 @@ class WebDavSync @Inject constructor(
         credentials: Credentials,
         remotePath: String
     ): ByteArray? {
-        val url = buildUrl(serverUrl, remotePath)
-        val request = Request.Builder()
-            .url(url)
-            .header("Authorization", basicAuth(credentials))
-            .get()
-            .build()
         return try {
+            val url = buildUrl(serverUrl, remotePath)
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", basicAuth(credentials))
+                .get()
+                .build()
             httpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
                     response.body.byteStream().use { stream ->
@@ -112,26 +113,25 @@ class WebDavSync @Inject constructor(
         credentials: Credentials,
         remotePath: String
     ): List<RemoteFile>? {
-        val url = buildUrl(serverUrl, remotePath)
-        val propfindBody = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <d:propfind xmlns:d="DAV:">
-              <d:prop>
-                <d:getcontentlength/>
-                <d:getlastmodified/>
-                <d:resourcetype/>
-              </d:prop>
-            </d:propfind>
-        """.trimIndent()
-
-        val request = Request.Builder()
-            .url(url)
-            .header("Authorization", basicAuth(credentials))
-            .header("Depth", "1")
-            .method("PROPFIND", propfindBody.toRequestBody("application/xml; charset=utf-8".toMediaType()))
-            .build()
-
         return try {
+            val url = buildUrl(serverUrl, remotePath)
+            val propfindBody = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <d:propfind xmlns:d="DAV:">
+                  <d:prop>
+                    <d:getcontentlength/>
+                    <d:getlastmodified/>
+                    <d:resourcetype/>
+                  </d:prop>
+                </d:propfind>
+            """.trimIndent()
+
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", basicAuth(credentials))
+                .header("Depth", "1")
+                .method("PROPFIND", propfindBody.toRequestBody("application/xml; charset=utf-8".toMediaType()))
+                .build()
             httpClient.newCall(request).execute().use { response ->
                 if (response.code == 207 || response.isSuccessful) {
                     val xml = BoundedResponseReader.readUtf8(
@@ -157,13 +157,13 @@ class WebDavSync @Inject constructor(
         credentials: Credentials,
         remotePath: String
     ): Boolean {
-        val url = buildUrl(serverUrl, remotePath)
-        val request = Request.Builder()
-            .url(url)
-            .header("Authorization", basicAuth(credentials))
-            .delete()
-            .build()
         return try {
+            val url = buildUrl(serverUrl, remotePath)
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", basicAuth(credentials))
+                .delete()
+                .build()
             httpClient.newCall(request).execute().use { response ->
                 response.code in 200..299
             }
@@ -180,13 +180,13 @@ class WebDavSync @Inject constructor(
         credentials: Credentials,
         remotePath: String
     ): Boolean {
-        val url = buildUrl(serverUrl, remotePath)
-        val request = Request.Builder()
-            .url(url)
-            .header("Authorization", basicAuth(credentials))
-            .method("MKCOL", null)
-            .build()
         return try {
+            val url = buildUrl(serverUrl, remotePath)
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", basicAuth(credentials))
+                .method("MKCOL", null)
+                .build()
             httpClient.newCall(request).execute().use { response ->
                 response.code in 200..299 || response.code == 405 // 405 = already exists
             }
@@ -203,13 +203,14 @@ class WebDavSync @Inject constructor(
         serverUrl: String,
         credentials: Credentials
     ): Boolean {
-        val request = Request.Builder()
-            .url(serverUrl.trimEnd('/') + "/")
-            .header("Authorization", basicAuth(credentials))
-            .header("Depth", "0")
-            .method("PROPFIND", null)
-            .build()
         return try {
+            val normalizedServerUrl = normalizeServerUrl(serverUrl)
+            val request = Request.Builder()
+                .url("$normalizedServerUrl/")
+                .header("Authorization", basicAuth(credentials))
+                .header("Depth", "0")
+                .method("PROPFIND", null)
+                .build()
             httpClient.newCall(request).execute().use { response ->
                 response.code == 207 || response.isSuccessful
             }
@@ -336,7 +337,7 @@ class WebDavSync @Inject constructor(
         OkHttpCredentials.basic(credentials.username, credentials.password)
 
     private fun buildUrl(serverUrl: String, remotePath: String): String {
-        val base = serverUrl.trimEnd('/')
+        val base = normalizeServerUrl(serverUrl)
         val decoded = try {
             java.net.URLDecoder.decode(remotePath, "UTF-8")
         } catch (_: Exception) { remotePath }
@@ -445,5 +446,17 @@ class WebDavSync @Inject constructor(
         private const val BACKUPS_DIR = "/HostShield/backups"
         private const val MAX_WEBDAV_DOWNLOAD_BYTES = 25L * 1024L * 1024L
         private const val MAX_WEBDAV_PROPFIND_BYTES = 1L * 1024L * 1024L
+
+        internal fun normalizeServerUrl(rawServerUrl: String): String {
+            val url = rawServerUrl.trim().toHttpUrl()
+            require(url.isHttps) { "WebDAV server URL must use HTTPS." }
+            require(url.username.isEmpty() && url.password.isEmpty()) {
+                "WebDAV credentials must be entered separately."
+            }
+            return url.toString().trimEnd('/')
+        }
+
+        internal fun normalizedServerUrlOrNull(rawServerUrl: String): String? =
+            runCatching { normalizeServerUrl(rawServerUrl) }.getOrNull()
     }
 }
