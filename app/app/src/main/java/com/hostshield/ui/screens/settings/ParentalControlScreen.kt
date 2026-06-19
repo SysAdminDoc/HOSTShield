@@ -8,7 +8,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableLongStateOf
@@ -29,10 +28,12 @@ import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.service.ContentCategory
 import com.hostshield.service.ParentalControlManager
 import com.hostshield.service.ParentalControlManager.AgeProfile
-import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldPanelHeader
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -241,17 +242,13 @@ fun ParentalControlScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Text(
-                "Parental Controls",
-                style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary,
-                modifier = Modifier.accessibilityHeading()
-            )
-        }
+        HostShieldBackHeader(
+            title = "Parental controls",
+            subtitle = if (enabled) "Active with ${currentProfile.label} restrictions" else "Disabled until you turn it on",
+            onBack = onBack,
+            horizontalPadding = 0.dp,
+            verticalPadding = 0.dp,
+        )
 
         // Enable toggle
         GlassCard(modifier = Modifier.fillMaxWidth()) {
@@ -268,7 +265,7 @@ fun ParentalControlScreen(
                 }
                 Spacer(Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Parental Controls", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Protection status", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     Text(
                         if (enabled) "Active — ${currentProfile.label}" else "Disabled",
                         color = if (enabled) Green else TextDim, fontSize = 12.sp,
@@ -291,12 +288,11 @@ fun ParentalControlScreen(
             // Age profile selector
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "Age Profile",
-                        color = TextPrimary,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.accessibilityHeading()
+                    HostShieldPanelHeader(
+                        icon = Icons.Filled.Groups,
+                        title = "Age profile",
+                        subtitle = "Choose the default restriction level",
+                        accent = Peach,
                     )
                     Spacer(Modifier.height(10.dp))
                     AgeProfile.entries.forEach { profile ->
@@ -339,11 +335,12 @@ fun ParentalControlScreen(
             // PIN management
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Lock, null, tint = Yellow, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("PIN Lock", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    }
+                    HostShieldPanelHeader(
+                        icon = Icons.Filled.Lock,
+                        title = "PIN lock",
+                        subtitle = if (viewModel.pinRequired) "Required before parental settings change" else "Not set",
+                        accent = Yellow,
+                    )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         if (viewModel.pinRequired) "PIN is set — required to change settings"
@@ -410,9 +407,11 @@ fun ParentalControlScreen(
             if (restrictions.isNotEmpty()) {
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            "Blocked Categories (${currentProfile.label})",
-                            color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                        HostShieldPanelHeader(
+                            icon = Icons.Filled.Block,
+                            title = "Blocked categories",
+                            subtitle = currentProfile.label,
+                            accent = Red,
                         )
                         Spacer(Modifier.height(8.dp))
                         restrictions.forEach { cat ->
@@ -434,18 +433,14 @@ fun ParentalControlScreen(
 
         // Message
         viewModel.message?.let { msg ->
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = if (msg.contains("Invalid")) Red.copy(alpha = 0.08f) else Green.copy(alpha = 0.08f),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(msg, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearMessage() }, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Filled.Close, "Dismiss parental control message", tint = TextDim, modifier = Modifier.size(14.dp))
-                    }
-                }
-            }
+            val isError = msg.contains("Invalid", ignoreCase = true)
+            HostShieldStatusBanner(
+                icon = if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
+                title = if (isError) "Parental control update failed" else "Parental controls updated",
+                message = msg,
+                accent = if (isError) Red else Green,
+                onDismiss = { viewModel.clearMessage() },
+            )
         }
 
         Spacer(Modifier.height(24.dp))

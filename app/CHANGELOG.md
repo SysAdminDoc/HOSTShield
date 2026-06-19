@@ -1,3 +1,24 @@
+# HostShield v6.9.46
+
+**Release Date:** 2026-06-19
+**Version Code:** 128
+
+## Premium Diagnostics and Policy Polish
+
+### Changed
+- Diagnostic and policy screens now use the shared HostShield header, action,
+  loading, status, and empty-state language across DNS leak testing, DNS
+  benchmark, hosts file tools, WebDAV sync, QR configuration, blocklist gallery,
+  app activity, network stats, firewall, and parental controls.
+- WebDAV connection tests now clear stale remote-file results before retrying
+  and convert connection/upload exceptions into calm status feedback.
+- Firewall DNS, network, and context tabs now show intentional empty states
+  when search, filters, syncing, or system-app visibility leave no rules shown.
+- QR export, DNS cache, resolver health, and rule-testing flows now provide
+  pre-action guidance instead of abrupt blank panels.
+
+---
+
 # HostShield v6.9.45
 
 **Release Date:** 2026-06-19

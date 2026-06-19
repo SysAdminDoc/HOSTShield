@@ -2,25 +2,26 @@ package com.hostshield.ui.screens.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.hostshield.ui.components.HostShieldActionIconButton
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldInlineAction
+import com.hostshield.ui.components.HostShieldLoadingState
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import com.hostshield.util.RootUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -103,53 +104,51 @@ fun HostsEditorScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Hosts editor", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
-                Text("${state.lineCount} lines, ${state.entryCount} entries", color = TextDim, fontSize = 11.sp)
-            }
-            if (state.isEdited) {
-                Button(
-                    onClick = { viewModel.save() },
-                    enabled = !state.isSaving,
-                    colors = ButtonDefaults.buttonColors(containerColor = Teal),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    if (state.isSaving) CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
-                    else Text("Save", fontSize = 12.sp)
+        HostShieldBackHeader(
+            title = "Hosts editor",
+            subtitle = "${state.lineCount} lines, ${state.entryCount} editable entries",
+            onBack = onBack,
+            actions = {
+                if (state.isEdited) {
+                    HostShieldInlineAction(
+                        label = if (state.isSaving) "Saving" else "Save",
+                        icon = Icons.Filled.Save,
+                        accent = Teal,
+                        enabled = !state.isSaving,
+                        onClick = { viewModel.save() },
+                    )
                 }
-            }
-            Spacer(Modifier.width(4.dp))
-            IconButton(onClick = { viewModel.loadHostsFile() }) {
-                Icon(Icons.Filled.Refresh, "Reload", tint = TextDim)
-            }
-        }
+                HostShieldActionIconButton(
+                    icon = Icons.Filled.Refresh,
+                    contentDescription = "Reload hosts file",
+                    accent = TextDim,
+                    enabled = !state.isLoading && !state.isSaving,
+                    onClick = { viewModel.loadHostsFile() },
+                )
+            },
+        )
 
         // Status message
         state.message?.let { msg ->
-            Surface(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(8.dp),
-                color = if (msg.contains("fail", ignoreCase = true)) Red.copy(alpha = 0.08f) else Teal.copy(alpha = 0.08f)
-            ) {
-                Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(msg, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearMessage() }, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Filled.Close, "Dismiss hosts editor message", tint = TextDim, modifier = Modifier.size(12.dp))
-                    }
-                }
-            }
+            val isError = msg.contains("fail", ignoreCase = true)
+            HostShieldStatusBanner(
+                icon = if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
+                title = if (isError) "Hosts update failed" else "Hosts file updated",
+                message = msg,
+                accent = if (isError) Red else Teal,
+                onDismiss = { viewModel.clearMessage() },
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
             Spacer(Modifier.height(4.dp))
         }
 
         if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Teal)
+            Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.TopCenter) {
+                HostShieldLoadingState(
+                    title = "Loading hosts file",
+                    message = "Reading the current system hosts file with root access.",
+                    accent = Teal,
+                )
             }
         } else {
             // Editor

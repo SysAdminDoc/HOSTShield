@@ -9,8 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +34,10 @@ import com.hostshield.data.model.RuleType
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldCompactState
+import com.hostshield.ui.components.HostShieldLoadingState
+import com.hostshield.ui.components.HostShieldPanelHeader
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -139,16 +143,11 @@ fun RuleTestScreen(
     val canTestSingle = state.testDomain.isNotBlank() && !state.isTesting
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Rule Tester", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
-                Text("Test if domains match your rules", color = TextDim, fontSize = 11.sp)
-            }
-        }
+        HostShieldBackHeader(
+            title = "Rule tester",
+            subtitle = "Preview how domains match block and allow rules",
+            onBack = onBack,
+        )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize().imePadding(),
@@ -169,7 +168,7 @@ fun RuleTestScreen(
                             onClick = { viewModel.testDomain() },
                             enabled = canTestSingle
                         ) {
-                            Icon(Icons.Filled.PlayArrow, "Test", tint = Teal)
+                            Icon(Icons.Filled.PlayArrow, "Test domain", tint = Teal)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -188,6 +187,25 @@ fun RuleTestScreen(
                 )
             }
 
+            if (state.isTesting) {
+                item {
+                    HostShieldLoadingState(
+                        title = "Testing rules",
+                        message = "Checking enabled user rules and source blocklists.",
+                        accent = Teal,
+                    )
+                }
+            } else if (state.results.isEmpty() && state.batchResults.isEmpty()) {
+                item {
+                    HostShieldCompactState(
+                        icon = Icons.Filled.Search,
+                        title = "No test results yet",
+                        message = "Enter one domain or paste a batch to see the matching rule path before making changes.",
+                        accent = Teal,
+                    )
+                }
+            }
+
             // Single results
             itemsIndexed(
                 state.results,
@@ -199,13 +217,18 @@ fun RuleTestScreen(
             // Batch test
             item {
                 Spacer(Modifier.height(8.dp))
-                Text("BATCH TEST", color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
-                Spacer(Modifier.height(6.dp))
+                HostShieldPanelHeader(
+                    icon = Icons.AutoMirrored.Filled.FormatListBulleted,
+                    title = "Batch test",
+                    subtitle = "Up to 100 unique domains, one per line",
+                    accent = Blue,
+                )
+                Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = state.batchInput,
                     onValueChange = { viewModel.setBatchInput(it) },
                     label = { Text("Batch domains") },
-                    placeholder = { Text("One domain per line...", color = TextDim) },
+                    placeholder = { Text("ads.example.com\nmetrics.example.net", color = TextDim) },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp, max = 140.dp),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     maxLines = 10, shape = RoundedCornerShape(8.dp),
@@ -221,7 +244,7 @@ fun RuleTestScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Teal),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                ) { Text("Test All", fontSize = 12.sp) }
+                ) { Text("Test all", fontSize = 12.sp) }
             }
 
             // Batch results

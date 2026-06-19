@@ -1,0 +1,5 @@
+HostShield v6.9.46 premium diagnostics and policy polish
+
+- Unified secondary diagnostics and policy screens around shared HostShield headers, actions, loading states, status banners, and empty states.
+- Refined firewall, parental controls, QR configuration, WebDAV sync, hosts tools, blocklist gallery, app activity, network stats, and DNS diagnostics for clearer next steps.
+- Hardened WebDAV feedback so failed connection and upload attempts clear stale results and show actionable status messages.

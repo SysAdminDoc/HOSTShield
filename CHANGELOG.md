@@ -3,6 +3,14 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.46] - 2026-06-19
+
+### Changed
+- Extended premium UI polish across diagnostics, firewall, parental controls,
+  QR configuration, WebDAV sync, hosts tools, blocklist gallery, and app
+  activity with shared headers, calmer state feedback, and clearer empty
+  guidance.
+
 ## [v6.9.45] - 2026-06-19
 
 ### Changed

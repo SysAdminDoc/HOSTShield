@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,8 +26,10 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.service.NetworkStatsTracker
 import com.hostshield.service.NetworkStatsTracker.AppNetStats
 import com.hostshield.service.formatBytes
-import com.hostshield.ui.accessibility.accessibilityAction
-import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.components.HostShieldActionIconButton
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldMetricTile
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -59,53 +60,42 @@ fun NetworkStatsScreen(
     val totalTx by viewModel.totalTx.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Text(
-                "Network Stats",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary,
-                modifier = Modifier.weight(1f).accessibilityHeading()
-            )
-            IconButton(
-                onClick = { viewModel.refresh() },
-                modifier = Modifier.accessibilityAction("Refresh network stats")
-            ) {
-                Icon(Icons.Filled.Refresh, "Refresh", tint = Teal)
-            }
-        }
+        HostShieldBackHeader(
+            title = "Network stats",
+            subtitle = "Traffic by app from Android usage counters",
+            onBack = onBack,
+            actions = {
+                HostShieldActionIconButton(
+                    icon = Icons.Filled.Refresh,
+                    contentDescription = "Refresh network stats",
+                    accent = Teal,
+                    onClick = { viewModel.refresh() },
+                )
+            },
+        )
 
         // Overview cards
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OverviewCard(
+            HostShieldMetricTile(
                 modifier = Modifier.weight(1f),
-                icon = Icons.Filled.ArrowDownward,
                 label = "Download",
                 value = formatBytes(totalRx),
-                color = Teal
+                accent = Teal,
             )
-            OverviewCard(
+            HostShieldMetricTile(
                 modifier = Modifier.weight(1f),
-                icon = Icons.Filled.ArrowUpward,
                 label = "Upload",
                 value = formatBytes(totalTx),
-                color = Blue
+                accent = Blue,
             )
-            OverviewCard(
+            HostShieldMetricTile(
                 modifier = Modifier.weight(1f),
-                icon = Icons.Filled.Apps,
                 label = "Apps",
                 value = stats.size.toString(),
-                color = Yellow
+                accent = Yellow,
             )
         }
 
@@ -135,20 +125,19 @@ fun NetworkStatsScreen(
 
             if (stats.isEmpty()) {
                 item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Filled.DataUsage, null, tint = TextDim, modifier = Modifier.size(48.dp))
-                            Spacer(Modifier.height(8.dp))
-                            Text("No network stats available", color = TextDim)
-                            Text("Grant Usage Access permission in Settings", color = TextDim, fontSize = 11.sp)
-                        }
-                    }
+                    HostShieldEmptyState(
+                        icon = Icons.Filled.DataUsage,
+                        title = "No app traffic recorded",
+                        message = "Grant usage access and refresh after apps have used the network.",
+                        accent = Teal,
+                        primaryActionLabel = "Refresh stats",
+                        onPrimaryAction = { viewModel.refresh() },
+                    )
                 }
             }
         }
     }
 }
-
 @Composable
 private fun AppStatsRow(
     rank: Int,
@@ -215,30 +204,5 @@ private fun AppStatsRow(
             color = Teal, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
             textAlign = androidx.compose.ui.text.style.TextAlign.End
         )
-    }
-}
-
-@Composable
-private fun OverviewCard(
-    modifier: Modifier,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String,
-    color: Color
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = color.copy(alpha = 0.08f)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.height(4.dp))
-            Text(value, color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text(label, color = TextDim, fontSize = 9.sp)
-        }
     }
 }

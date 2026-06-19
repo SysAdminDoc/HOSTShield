@@ -6,18 +6,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -25,6 +21,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.hostshield.util.RootUtil
+import com.hostshield.ui.components.HostShieldActionIconButton
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldLoadingState
+import com.hostshield.ui.components.HostShieldMetricTile
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -86,29 +87,54 @@ fun HostsDiffScreen(viewModel: HostsDiffViewModel = hiltViewModel(), onBack: () 
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Hosts File", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
-                Text("${state.currentLineCount} lines, ${state.addedCount} blocked", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-            }
-            IconButton(onClick = { viewModel.refresh() }) { Icon(Icons.Filled.Refresh, "Refresh", tint = Teal) }
-        }
+        HostShieldBackHeader(
+            title = "Hosts file",
+            subtitle = "${state.currentLineCount} lines, ${state.addedCount} blocked entries",
+            onBack = onBack,
+            actions = {
+                HostShieldActionIconButton(
+                    icon = Icons.Filled.Refresh,
+                    contentDescription = "Refresh hosts file",
+                    accent = Teal,
+                    enabled = !state.isLoading,
+                    onClick = { viewModel.refresh() },
+                )
+            },
+        )
 
         if (state.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Teal) }
+            Box(Modifier.fillMaxSize().padding(20.dp), contentAlignment = Alignment.TopCenter) {
+                HostShieldLoadingState(
+                    title = "Reading hosts file",
+                    message = "Checking the active system hosts file with root access.",
+                    accent = Teal,
+                )
+            }
         } else if (state.error != null) {
-            Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-                Text("Error: ${state.error}", color = Red, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Box(Modifier.fillMaxSize().padding(20.dp), contentAlignment = Alignment.TopCenter) {
+                HostShieldEmptyState(
+                    icon = Icons.Filled.GppBad,
+                    title = "Could not read hosts file",
+                    message = state.error ?: "Check root access and try again.",
+                    accent = Red,
+                    primaryActionLabel = "Retry",
+                    onPrimaryAction = { viewModel.refresh() },
+                )
             }
         } else {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Surface(shape = RoundedCornerShape(6.dp), color = Green.copy(alpha = 0.1f)) {
-                    Text("+${state.addedCount} blocked", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-                Surface(shape = RoundedCornerShape(6.dp), color = Blue.copy(alpha = 0.1f)) {
-                    Text("${state.currentLineCount} lines", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), color = Blue, fontSize = 11.sp)
-                }
+                HostShieldMetricTile(
+                    value = state.addedCount.toString(),
+                    label = "Blocked",
+                    accent = Green,
+                    modifier = Modifier.weight(1f),
+                )
+                HostShieldMetricTile(
+                    value = state.currentLineCount.toString(),
+                    label = "Lines",
+                    accent = Blue,
+                    modifier = Modifier.weight(1f),
+                )
             }
 
             LazyColumn(contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {

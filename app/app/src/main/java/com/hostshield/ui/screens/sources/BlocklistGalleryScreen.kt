@@ -11,7 +11,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,7 +28,9 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.ui.components.HostShieldBackHeader
 import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldFilterChip
 import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
@@ -175,17 +176,12 @@ fun BlocklistGalleryScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Blocklist Gallery", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
-                val total = state.lists.values.sumOf { it.size }
-                Text("$total curated lists across ${state.lists.size} categories", color = TextDim, fontSize = 11.sp)
-            }
-        }
+        val total = state.lists.values.sumOf { it.size }
+        HostShieldBackHeader(
+            title = "Blocklist gallery",
+            subtitle = "$total curated lists across ${state.lists.size} categories",
+            onBack = onBack,
+        )
 
         // Category chips
         Row(
@@ -193,34 +189,18 @@ fun BlocklistGalleryScreen(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            FilterChip(
+            HostShieldFilterChip(
+                label = "All",
                 selected = selectedCategory == null,
                 onClick = { selectedCategory = null },
-                label = { Text("All", fontSize = 11.sp) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Teal.copy(alpha = 0.15f),
-                    selectedLabelColor = Teal
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    borderColor = Surface3, selectedBorderColor = Teal.copy(alpha = 0.3f),
-                    enabled = true, selected = selectedCategory == null
-                )
+                accent = Teal,
             )
             SourceCategory.entries.filter { state.lists.containsKey(it) }.forEach { category ->
-                FilterChip(
+                HostShieldFilterChip(
+                    label = category.name.lowercase().replaceFirstChar { it.uppercase() },
                     selected = selectedCategory == category,
                     onClick = { selectedCategory = category },
-                    label = { Text(category.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 11.sp) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = galleryCategoryColor(category).copy(alpha = 0.15f),
-                        selectedLabelColor = galleryCategoryColor(category)
-                    ),
-                    border = FilterChipDefaults.filterChipBorder(
-                        borderColor = Surface3,
-                        selectedBorderColor = galleryCategoryColor(category).copy(alpha = 0.3f),
-                        enabled = true,
-                        selected = selectedCategory == category
-                    )
+                    accent = galleryCategoryColor(category),
                 )
             }
         }

@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hostshield.R
 import com.hostshield.ui.theme.Surface1
 import com.hostshield.ui.theme.Surface2
 import com.hostshield.ui.theme.Surface3
@@ -74,6 +76,8 @@ fun HostShieldBackHeader(
     verticalPadding: Dp = 8.dp,
     actions: (@Composable RowScope.() -> Unit)? = null,
 ) {
+    val backLabel = stringResource(R.string.action_back)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -86,7 +90,7 @@ fun HostShieldBackHeader(
                 .size(48.dp)
                 .semantics {
                     role = Role.Button
-                    contentDescription = "Back"
+                    contentDescription = backLabel
                 },
         ) {
             Icon(

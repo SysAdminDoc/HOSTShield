@@ -8,14 +8,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -28,11 +26,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldPanelHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
-import com.hostshield.util.BackupRestoreUtil
 import com.hostshield.util.WebDavSync
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +56,8 @@ class WebDavSyncViewModel @Inject constructor(
     var message by mutableStateOf<String?>(null)
         private set
     var remoteFiles by mutableStateOf<List<WebDavSync.RemoteFile>>(emptyList())
+        private set
+    var hasListedRemoteFiles by mutableStateOf(false)
         private set
     var hasSavedPassword by mutableStateOf(false)
         private set
@@ -93,11 +94,15 @@ class WebDavSyncViewModel @Inject constructor(
                 return@launch
             }
             isSyncing = true
+            message = null
+            remoteFiles = emptyList()
+            hasListedRemoteFiles = false
             try {
                 val creds = WebDavSync.Credentials(user.trim(), password)
                 val files = webDavSync.listFiles(url.trim(), creds, "/")
                 if (files != null) {
                     remoteFiles = files
+                    hasListedRemoteFiles = true
                     message = if (files.isEmpty()) {
                         "Connected - no remote files found"
                     } else {
@@ -106,6 +111,9 @@ class WebDavSyncViewModel @Inject constructor(
                 } else {
                     message = "Connection failed - check URL and credentials"
                 }
+            } catch (e: Exception) {
+                android.util.Log.w("WebDavSync", "Connection test failed", e)
+                message = "Connection failed - check URL and credentials"
             } finally {
                 isSyncing = false
             }
@@ -120,12 +128,16 @@ class WebDavSyncViewModel @Inject constructor(
                 return@launch
             }
             isSyncing = true
+            message = null
             try {
                 val creds = WebDavSync.Credentials(user.trim(), password)
                 val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
                 val remotePath = "/hostshield_backup_$ts.json"
                 val success = webDavSync.upload(url.trim(), creds, remotePath, data)
                 message = if (success) "Backup uploaded to $remotePath" else "Upload failed"
+            } catch (e: Exception) {
+                android.util.Log.w("WebDavSync", "Backup upload failed", e)
+                message = "Upload failed - check server settings and retry"
             } finally {
                 isSyncing = false
             }
@@ -161,17 +173,12 @@ fun WebDavSyncScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Text("WebDAV Sync", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
-        }
-
-        Text(
-            "Sync backups to a WebDAV server (Nextcloud, ownCloud, WebDAV-compatible storage).",
-            color = TextDim, fontSize = 12.sp, lineHeight = 16.sp,
-            modifier = Modifier.padding(horizontal = 4.dp),
+        HostShieldBackHeader(
+            title = "WebDAV sync",
+            subtitle = "Keep encrypted backups on your own WebDAV storage",
+            onBack = onBack,
+            horizontalPadding = 0.dp,
+            verticalPadding = 0.dp,
         )
 
         // Server configuration
@@ -281,8 +288,13 @@ fun WebDavSyncScreen(
         if (viewModel.remoteFiles.isNotEmpty()) {
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Remote Files", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(8.dp))
+                    HostShieldPanelHeader(
+                        icon = Icons.Filled.Folder,
+                        title = "Remote files",
+                        subtitle = "${viewModel.remoteFiles.size} items returned from the server",
+                        accent = Blue,
+                    )
+                    Spacer(Modifier.height(10.dp))
                     viewModel.remoteFiles.take(20).forEach { file ->
                         Row(
                             modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(),
@@ -312,6 +324,13 @@ fun WebDavSyncScreen(
                     }
                 }
             }
+        } else if (viewModel.hasListedRemoteFiles && !viewModel.isSyncing) {
+            HostShieldEmptyState(
+                icon = Icons.Filled.CloudDone,
+                title = "Connected, no remote files found",
+                message = "The server accepted the credentials. HostShield backups will appear here after the first upload.",
+                accent = Blue,
+            )
         }
 
         // Message

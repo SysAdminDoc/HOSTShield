@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableFloatStateOf
@@ -22,6 +21,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.DnsBenchmark
@@ -75,17 +77,12 @@ fun DnsBenchmarkScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Text("DNS Benchmark", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
-        }
-
-        Text(
-            "Test latency to popular DNS resolvers. Results are sorted by average response time.",
-            color = TextDim, fontSize = 12.sp, lineHeight = 16.sp,
-            modifier = Modifier.padding(horizontal = 4.dp),
+        HostShieldBackHeader(
+            title = "DNS benchmark",
+            subtitle = "Compare resolver latency and reliability",
+            onBack = onBack,
+            horizontalPadding = 0.dp,
+            verticalPadding = 0.dp,
         )
 
         // Run button
@@ -103,11 +100,16 @@ fun DnsBenchmarkScreen(
             } else {
                 Icon(Icons.Filled.Speed, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Run Benchmark", fontWeight = FontWeight.SemiBold)
+                Text("Run benchmark", fontWeight = FontWeight.SemiBold)
             }
         }
 
         if (viewModel.isRunning) {
+            HostShieldLoadingState(
+                title = "Benchmark running",
+                message = "Testing resolver response time. ${(viewModel.progress * 100).toInt()}% complete.",
+                accent = Teal,
+            )
             LinearProgressIndicator(
                 progress = { viewModel.progress },
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)),
@@ -193,6 +195,15 @@ fun DnsBenchmarkScreen(
                     }
                 }
             }
+        } else if (!viewModel.isRunning) {
+            HostShieldEmptyState(
+                icon = Icons.Filled.Speed,
+                title = "No benchmark results yet",
+                message = "Run a short latency test to see which resolver is fastest from this device and network.",
+                accent = Teal,
+                primaryActionLabel = "Run benchmark",
+                onPrimaryAction = { viewModel.runBenchmark() },
+            )
         }
 
         Spacer(Modifier.height(24.dp))

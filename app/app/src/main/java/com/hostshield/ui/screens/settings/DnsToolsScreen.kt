@@ -37,6 +37,7 @@ import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.components.HostShieldActionIconButton
 import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldCompactState
 import com.hostshield.ui.components.HostShieldSegmentOption
 import com.hostshield.ui.components.HostShieldSegmentedTabs
 import com.hostshield.ui.theme.*
@@ -582,7 +583,12 @@ private fun StatusTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
         item {
             GlassInfoCard("Resolver Health (24h)") {
                 if (state.resolverHealth.isEmpty()) {
-                    Text("No resolver health data yet", color = TextDim, fontSize = 12.sp)
+                    HostShieldCompactState(
+                        icon = Icons.Filled.MonitorHeart,
+                        title = "No resolver health data yet",
+                        message = "Health samples appear after DNS resolvers are used for lookups.",
+                        accent = Blue,
+                    )
                 } else {
                     state.resolverHealth.forEachIndexed { index, resolver ->
                         ResolverHealthRow(resolver)
@@ -622,7 +628,12 @@ private fun StatusTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
                     Spacer(Modifier.height(4.dp))
                 }
                 if (state.cacheEntries.isEmpty()) {
-                    Text("No cached entries", color = TextDim, fontSize = 11.sp)
+                    HostShieldCompactState(
+                        icon = Icons.Filled.Storage,
+                        title = "DNS cache is empty",
+                        message = "Cached lookups will appear here after HostShield resolves domains.",
+                        accent = Teal,
+                    )
                 }
             }
         }

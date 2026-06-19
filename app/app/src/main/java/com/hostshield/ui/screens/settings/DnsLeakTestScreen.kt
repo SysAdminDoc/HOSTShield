@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +22,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldInlineAction
+import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -156,37 +159,35 @@ fun DnsLeakTestScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary) }
-            Column(modifier = Modifier.weight(1f)) {
-                Text("DNS leak test", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
-                Text("Verify DNS queries go through HostShield", color = TextDim, fontSize = 11.sp)
-            }
-            Button(
-                onClick = { viewModel.runTest() },
-                enabled = !state.isRunning,
-                colors = ButtonDefaults.buttonColors(containerColor = Teal),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                if (state.isRunning) {
-                    CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
-                    Spacer(Modifier.width(6.dp))
-                }
-                Text(if (state.isRunning) "Testing" else "Run test", fontSize = 12.sp)
-            }
-        }
-
-        if (state.progress.isNotEmpty()) {
-            Text(state.progress, color = TextDim, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp))
-        }
+        HostShieldBackHeader(
+            title = "DNS leak test",
+            subtitle = "Verify DNS queries are filtered through HostShield",
+            onBack = onBack,
+            actions = {
+                HostShieldInlineAction(
+                    label = if (state.isRunning) "Testing" else "Run test",
+                    icon = Icons.Filled.PlayArrow,
+                    accent = Teal,
+                    enabled = !state.isRunning,
+                    onClick = { viewModel.runTest() },
+                )
+            },
+        )
 
         LazyColumn(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            if (state.isRunning && state.progress.isNotEmpty()) {
+                item {
+                    HostShieldLoadingState(
+                        title = "Testing DNS routing",
+                        message = state.progress,
+                        accent = Teal,
+                    )
+                }
+            }
+
             // Overall result
             state.overallPass?.let { pass ->
                 item {
@@ -210,13 +211,13 @@ fun DnsLeakTestScreen(
                             Spacer(Modifier.width(16.dp))
                             Column {
                                 Text(
-                                    if (pass) "No DNS Leaks Detected" else "Potential DNS Leak",
+                                    if (pass) "No DNS leaks detected" else "Potential DNS leak",
                                     color = if (pass) Green else Red,
                                     fontWeight = FontWeight.Bold, fontSize = 16.sp
                                 )
                                 Text(
-                                    if (pass) "Your DNS queries are routed through HostShield"
-                                    else "Some queries may bypass HostShield filtering",
+                                    if (pass) "DNS queries appear to stay inside HostShield filtering."
+                                    else "Some queries may be bypassing HostShield filtering.",
                                     color = TextSecondary, fontSize = 12.sp
                                 )
                             }
@@ -243,7 +244,7 @@ fun DnsLeakTestScreen(
                                         color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium
                                     )
                                     Text(
-                                        "${state.blockedTestDomain} ${if (state.blockedCorrectly == true) "correctly blocked" else "was not blocked"}",
+                                        "${state.blockedTestDomain} ${if (state.blockedCorrectly == true) "was blocked as expected" else "resolved normally"}",
                                         color = TextDim, fontSize = 11.sp
                                     )
                                 }
@@ -276,7 +277,7 @@ fun DnsLeakTestScreen(
                                     Text(addr, color = TextDim, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
                                 }
                             } else {
-                                Text("NXDOMAIN (expected)", color = Green, fontSize = 10.sp)
+                                Text("NXDOMAIN, expected for random test domains", color = Green, fontSize = 10.sp)
                             }
                         }
                         Text("${result.latencyMs}ms", color = TextDim, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
@@ -286,18 +287,14 @@ fun DnsLeakTestScreen(
 
             if (state.results.isEmpty() && !state.isRunning) {
                 item {
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(32.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(Icons.Filled.VerifiedUser, null, tint = TextDim, modifier = Modifier.size(40.dp))
-                            Spacer(Modifier.height(12.dp))
-                            Text("Tap Run test to check for DNS leaks", color = TextSecondary, fontSize = 13.sp)
-                            Spacer(Modifier.height(4.dp))
-                            Text("Tests random domains, blocked domains, and connectivity", color = TextDim, fontSize = 11.sp)
-                        }
-                    }
+                    HostShieldEmptyState(
+                        icon = Icons.Filled.VerifiedUser,
+                        title = "No leak test has run yet",
+                        message = "Run a quick check against random domains, blocked domains, and a known connectivity host.",
+                        accent = Teal,
+                        primaryActionLabel = "Run leak test",
+                        onPrimaryAction = { viewModel.runTest() },
+                    )
                 }
             }
 

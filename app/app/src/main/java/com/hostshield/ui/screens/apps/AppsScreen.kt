@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,7 +34,7 @@ import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.ui.accessibility.accessibilityAction
-import com.hostshield.ui.accessibility.accessibilityHeading
+import com.hostshield.ui.components.HostShieldBackHeader
 import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldMetricTile
 import com.hostshield.util.RootUtil
@@ -130,31 +129,22 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
     val blockedQueries = remember(apps) { apps.sumOf { it.blockedQueries } }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = {
+        HostShieldBackHeader(
+            title = if (selectedApp != null) {
+                apps.find { it.appPackage == selectedApp }?.appLabel ?: selectedApp.orEmpty()
+            } else {
+                "App activity"
+            },
+            subtitle = if (selectedApp == null) {
+                "${apps.size} apps tracked"
+            } else {
+                selectedApp.orEmpty()
+            },
+            onBack = {
                 if (selectedApp != null) viewModel.selectApp(null) else onBack()
-            }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    if (selectedApp != null) apps.find { it.appPackage == selectedApp }?.appLabel ?: selectedApp ?: ""
-                    else "App Activity",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary,
-                    modifier = Modifier.accessibilityHeading()
-                )
-                if (selectedApp == null) {
-                    Text("${apps.size} apps tracked", color = TextSecondary, fontSize = 12.sp)
-                } else {
-                    Text(selectedApp ?: "", color = TextDim, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                }
-            }
-        }
+            },
+            verticalPadding = 12.dp,
+        )
 
         if (selectedApp == null) {
             if (apps.isNotEmpty()) {

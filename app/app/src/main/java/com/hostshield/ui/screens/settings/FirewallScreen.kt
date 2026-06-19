@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,10 +35,16 @@ import com.hostshield.data.model.FirewallRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.service.IptablesManager
 import com.hostshield.service.NflogReader
-import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
+import com.hostshield.ui.components.HostShieldActionIconButton
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldLoadingState
+import com.hostshield.ui.components.HostShieldSegmentOption
+import com.hostshield.ui.components.HostShieldSegmentedTabs
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -268,81 +273,61 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
     }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "Firewall",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = TextPrimary,
-                    modifier = Modifier.accessibilityHeading()
+        HostShieldBackHeader(
+            title = "Firewall",
+            subtitle = when (tab) {
+                FirewallTab.DNS -> "${blocked.size} apps DNS-blocked"
+                FirewallTab.NETWORK -> if (iptablesActive) "$blockedRuleCount network rules active" else "iptables inactive"
+                FirewallTab.CONTEXT -> "${firewallRules.count { it.blockScreenOff || it.blockBackground || it.blockMetered }} context rules"
+            },
+            onBack = onBack,
+            actions = {
+                HostShieldActionIconButton(
+                    icon = if (showSystem) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    contentDescription = if (showSystem) "Hide system apps" else "Show system apps",
+                    accent = Teal,
+                    selected = showSystem,
+                    onClick = { viewModel.toggleShowSystem() },
+                    modifier = Modifier.accessibilityToggle("Show system apps", showSystem),
                 )
-                Text(
-                    when (tab) {
-                        FirewallTab.DNS -> "${blocked.size} DNS-blocked"
-                        FirewallTab.NETWORK -> if (iptablesActive) "$blockedRuleCount rules active" else "iptables inactive"
-                        FirewallTab.CONTEXT -> "${firewallRules.count { it.blockScreenOff || it.blockBackground || it.blockMetered }} context rules"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = when (tab) { FirewallTab.DNS -> Red; FirewallTab.NETWORK -> if (iptablesActive) Teal else TextDim; FirewallTab.CONTEXT -> Mauve }
-                )
-            }
-            IconButton(
-                onClick = { viewModel.toggleShowSystem() },
-                modifier = Modifier.accessibilityToggle("Show system apps", showSystem)
-            ) {
-                Icon(
-                    if (showSystem) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                    if (showSystem) "Hide system apps" else "Show system apps",
-                    tint = if (showSystem) Teal else TextDim
-                )
-            }
-        }
+            },
+        )
 
         // Error banner
         if (error != null) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                shape = RoundedCornerShape(10.dp),
-                color = Red.copy(alpha = 0.1f)
-            ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Error, null, tint = Red, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(error ?: "", color = Red, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Filled.Close, "Dismiss", tint = Red, modifier = Modifier.size(14.dp))
-                    }
-                }
-            }
+            HostShieldStatusBanner(
+                icon = Icons.Filled.Error,
+                title = "Firewall sync failed",
+                message = error ?: "",
+                accent = Red,
+                onDismiss = { viewModel.clearError() },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
         }
 
         // Loading indicator
         if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = Teal,
-                    modifier = Modifier.size(24.dp).accessibilityLiveRegion("Loading firewall apps"),
-                    strokeWidth = 2.dp
-                )
-            }
+            HostShieldLoadingState(
+                title = "Syncing installed apps",
+                message = "Preparing app firewall controls.",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    .accessibilityLiveRegion("Loading firewall apps"),
+                accent = Teal,
+            )
         }
 
         // Tab selector
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TabPill("DNS Block", tab == FirewallTab.DNS, Red) { viewModel.setTab(FirewallTab.DNS) }
-            TabPill("Network", tab == FirewallTab.NETWORK, Teal) { viewModel.setTab(FirewallTab.NETWORK) }
-            TabPill("Context", tab == FirewallTab.CONTEXT, Mauve) { viewModel.setTab(FirewallTab.CONTEXT) }
-        }
+        HostShieldSegmentedTabs(
+            options = listOf(
+                HostShieldSegmentOption(FirewallTab.DNS, "DNS", Red, Icons.Filled.Dns),
+                HostShieldSegmentOption(FirewallTab.NETWORK, "Network", Teal, Icons.Filled.Security),
+                HostShieldSegmentOption(FirewallTab.CONTEXT, "Context", Mauve, Icons.Filled.Tune),
+            ),
+            selected = tab,
+            onSelected = { viewModel.setTab(it) },
+            semanticsLabel = "Firewall mode",
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
 
         Spacer(Modifier.height(8.dp))
 
@@ -420,6 +405,17 @@ private fun DnsFirewallTab(
     }
 
     LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)) {
+        if (filteredApps.isEmpty()) {
+            item {
+                HostShieldEmptyState(
+                    icon = Icons.Filled.SearchOff,
+                    title = "No apps match this firewall view",
+                    message = "Adjust the search, switch filters, or show system apps to broaden the list.",
+                    accent = Red,
+                )
+            }
+        }
+
         items(filteredApps, key = { it.packageName }) { app ->
             val isBlocked = app.packageName in blocked
             val isExcluded = app.packageName in excluded
@@ -625,16 +621,27 @@ private fun NetworkFirewallTab(
     }
 
     if (isSyncing) {
-        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(
-                color = Teal,
-                modifier = Modifier.size(24.dp).accessibilityLiveRegion("Syncing firewall rules"),
-                strokeWidth = 2.dp
-            )
-        }
+        HostShieldLoadingState(
+            title = "Syncing firewall rules",
+            message = "Refreshing installed app rules before applying network controls.",
+            accent = Teal,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                .accessibilityLiveRegion("Syncing firewall rules"),
+        )
     }
 
     LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp)) {
+        if (filtered.isEmpty() && !isSyncing) {
+            item {
+                HostShieldEmptyState(
+                    icon = Icons.Filled.Security,
+                    title = "No network firewall rules shown",
+                    message = "Sync installed apps, clear the search, or show system apps to populate this view.",
+                    accent = Teal,
+                )
+            }
+        }
+
         items(filtered, key = { it.uid }) { rule ->
             val anyBlocked = !rule.wifiAllowed || !rule.mobileAllowed
 
@@ -734,6 +741,17 @@ private fun ContextFirewallTab(
     }
 
     LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp)) {
+        if (filtered.isEmpty()) {
+            item {
+                HostShieldEmptyState(
+                    icon = Icons.Filled.Tune,
+                    title = "No context rules shown",
+                    message = "Clear the search or show system apps to configure context-aware blocking.",
+                    accent = Mauve,
+                )
+            }
+        }
+
         items(filtered, key = { "ctx_${it.uid}" }) { rule ->
             val hasContext = rule.blockScreenOff || rule.blockBackground || rule.blockMetered
 

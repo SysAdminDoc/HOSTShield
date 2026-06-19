@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,6 +27,11 @@ import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.domain.parser.HostsParser
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldInlineAction
+import com.hostshield.ui.components.HostShieldLoadingState
+import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -141,43 +145,44 @@ fun OverlapAnalysisScreen(
     val nf = NumberFormat.getNumberInstance()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Overlap analysis", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
-                Text("Find redundant domains across sources", color = TextDim, fontSize = 11.sp)
-            }
-            Button(
-                onClick = { viewModel.analyze() },
-                enabled = !state.isAnalyzing,
-                colors = ButtonDefaults.buttonColors(containerColor = Teal),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                if (state.isAnalyzing) {
-                    CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
-                    Spacer(Modifier.width(6.dp))
-                }
-                Text(if (state.isAnalyzing) "Analyzing" else "Analyze", fontSize = 12.sp)
-            }
-        }
-
-        if (state.progress.isNotEmpty()) {
-            Text(
-                state.progress, color = TextDim, fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-            )
-        }
+        HostShieldBackHeader(
+            title = "Overlap analysis",
+            subtitle = "Find redundant domains across enabled sources",
+            onBack = onBack,
+            actions = {
+                HostShieldInlineAction(
+                    label = if (state.isAnalyzing) "Analyzing" else "Analyze",
+                    icon = Icons.Filled.Analytics,
+                    accent = Teal,
+                    enabled = !state.isAnalyzing,
+                    onClick = { viewModel.analyze() },
+                )
+            },
+        )
 
         LazyColumn(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            if (state.progress.isNotEmpty()) {
+                item {
+                    if (state.isAnalyzing) {
+                        HostShieldLoadingState(
+                            title = "Analyzing source overlap",
+                            message = state.progress,
+                            accent = Teal,
+                        )
+                    } else {
+                        HostShieldStatusBanner(
+                            icon = Icons.Filled.Info,
+                            title = "Analysis needs more sources",
+                            message = state.progress,
+                            accent = Yellow,
+                        )
+                    }
+                }
+            }
+
             // Summary card
             if (state.totalUnique > 0) {
                 item {
@@ -316,18 +321,14 @@ fun OverlapAnalysisScreen(
             // Empty state
             if (!state.isAnalyzing && state.pairs.isEmpty() && state.totalUnique == 0) {
                 item {
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier.padding(32.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.CompareArrows, null, tint = TextDim, modifier = Modifier.size(40.dp))
-                            Spacer(Modifier.height(12.dp))
-                            Text("Tap Analyze to compare your enabled sources", color = TextSecondary, fontSize = 13.sp)
-                            Spacer(Modifier.height(4.dp))
-                            Text("Find which lists have the most redundant domains", color = TextDim, fontSize = 11.sp)
-                        }
-                    }
+                    HostShieldEmptyState(
+                        icon = Icons.AutoMirrored.Filled.CompareArrows,
+                        title = "No overlap analysis yet",
+                        message = "Compare enabled block sources to find duplicate coverage and list redundancy.",
+                        accent = Teal,
+                        primaryActionLabel = "Analyze sources",
+                        onPrimaryAction = { viewModel.analyze() },
+                    )
                 }
             }
 

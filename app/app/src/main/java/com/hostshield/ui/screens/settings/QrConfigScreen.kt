@@ -12,7 +12,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +32,9 @@ import androidx.lifecycle.viewModelScope
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.hostshield.R
+import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldCompactState
+import com.hostshield.ui.components.HostShieldPanelHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.util.QrConfigImporter
 import com.hostshield.util.QrImportPlan
@@ -187,17 +189,12 @@ fun QrConfigScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back), tint = TextPrimary)
-            }
-            Text(stringResource(R.string.qr_screen_title), style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
-        }
-
-        Text(
-            stringResource(R.string.qr_screen_description),
-            color = TextDim, fontSize = 12.sp, lineHeight = 16.sp,
-            modifier = Modifier.padding(horizontal = 4.dp),
+        HostShieldBackHeader(
+            title = stringResource(R.string.qr_screen_title),
+            subtitle = stringResource(R.string.qr_screen_description),
+            onBack = onBack,
+            horizontalPadding = 0.dp,
+            verticalPadding = 0.dp,
         )
 
         // Generate QR section
@@ -206,11 +203,12 @@ fun QrConfigScreen(
                 modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.QrCode2, null, tint = Teal, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.qr_export_configuration), color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                }
+                HostShieldPanelHeader(
+                    icon = Icons.Filled.QrCode2,
+                    title = stringResource(R.string.qr_export_configuration),
+                    subtitle = "Share rules, sources, and DNS preferences as one code",
+                    accent = Teal,
+                )
                 Spacer(Modifier.height(12.dp))
 
                 Button(
@@ -256,6 +254,16 @@ fun QrConfigScreen(
                         viewModel.configSummary,
                         color = TextDim, fontSize = 11.sp,
                     )
+                } ?: run {
+                    if (!viewModel.isGenerating) {
+                        Spacer(Modifier.height(12.dp))
+                        HostShieldCompactState(
+                            icon = Icons.Filled.PrivacyTip,
+                            title = "No export code generated",
+                            message = "Generate a QR code only when you are ready to share this device's HostShield configuration.",
+                            accent = Teal,
+                        )
+                    }
                 }
             }
         }
@@ -289,11 +297,12 @@ fun QrConfigScreen(
         // Import section
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.QrCodeScanner, null, tint = Blue, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.qr_import_configuration), color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                }
+                HostShieldPanelHeader(
+                    icon = Icons.Filled.QrCodeScanner,
+                    title = stringResource(R.string.qr_import_configuration),
+                    subtitle = "Preview changes before anything is applied",
+                    accent = Blue,
+                )
                 Spacer(Modifier.height(8.dp))
                 Text(
                     stringResource(R.string.qr_import_hint),
