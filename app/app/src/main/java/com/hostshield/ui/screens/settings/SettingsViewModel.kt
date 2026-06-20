@@ -181,6 +181,7 @@ data class SettingsUiState(
     val accentColor: String = "teal",
     val highContrastAmoled: Boolean = false,
     val dynamicColor: Boolean = false,
+    val themeMode: String = "dark",
     val scheduleEnabled: Boolean = false,
     val scheduleStart: String = "22:00",
     val scheduleEnd: String = "07:00",
@@ -325,7 +326,7 @@ class SettingsViewModel @Inject constructor(
                 prefs.dynamicColor,
                 prefs.blockedApps
             ) { notification, accent, highContrast, dynamic, apps ->
-                UiPrefs(notification, accent, highContrast, dynamic, apps.size)
+                UiPrefs(notification, accent, highContrast, dynamic, "dark", apps.size)
             }.collect { p ->
                 _uiState.update {
                     it.copy(
@@ -336,6 +337,12 @@ class SettingsViewModel @Inject constructor(
                         firewalledApps = p.firewalledApps
                     )
                 }
+            }
+        }
+
+        viewModelScope.launch {
+            prefs.themeMode.collect { mode ->
+                _uiState.update { it.copy(themeMode = mode) }
             }
         }
 
@@ -418,6 +425,7 @@ class SettingsViewModel @Inject constructor(
         val accentColor: String,
         val highContrastAmoled: Boolean,
         val dynamicColor: Boolean,
+        val themeMode: String,
         val firewalledApps: Int
     )
     private data class SchedulePrefs(val enabled: Boolean, val start: String, val end: String, val mode: String)
@@ -504,6 +512,7 @@ class SettingsViewModel @Inject constructor(
     fun setAccentColor(color: String) { viewModelScope.launch { prefs.setAccentColor(color) } }
     fun setHighContrastAmoled(enabled: Boolean) { viewModelScope.launch { prefs.setHighContrastAmoled(enabled) } }
     fun setDynamicColor(enabled: Boolean) { viewModelScope.launch { prefs.setDynamicColor(enabled) } }
+    fun setThemeMode(mode: String) { viewModelScope.launch { prefs.setThemeMode(mode) } }
 
     fun setScheduleEnabled(v: Boolean) {
         viewModelScope.launch {

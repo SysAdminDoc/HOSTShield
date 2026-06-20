@@ -178,10 +178,12 @@ class MainActivity : ComponentActivity() {
             val highContrastAmoled by prefs.highContrastAmoled.collectAsState(initial = false)
             val accentColor by prefs.accentColor.collectAsState(initial = "teal")
             val dynamicColor by prefs.dynamicColor.collectAsState(initial = false)
+            val themeMode by prefs.themeMode.collectAsState(initial = "dark")
             HostShieldTheme(
                 highContrastAmoled = highContrastAmoled,
                 accentColor = accentColor,
                 dynamicColor = dynamicColor,
+                themeMode = themeMode,
             ) {
                 val isFirstLaunch by prefs.isFirstLaunch.collectAsState(initial = true)
                 var isRootAvailable by remember { mutableStateOf<Boolean?>(null) }

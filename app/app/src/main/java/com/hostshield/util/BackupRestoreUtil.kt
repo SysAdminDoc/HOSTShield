@@ -220,6 +220,7 @@ class BackupRestoreUtil @Inject constructor(
         prefsObj.put("accent_color", prefs.accentColor.first())
         prefsObj.put("high_contrast_amoled", prefs.highContrastAmoled.first())
         prefsObj.put("dynamic_color", prefs.dynamicColor.first())
+        prefsObj.put("theme_mode", prefs.themeMode.first())
         prefsObj.put("show_notification", prefs.showNotification.first())
         prefsObj.put("pinned_domains", JSONArray(prefs.pinnedDomains.first().toList()))
         prefsObj.put("search_history", JSONArray(prefs.searchHistory.first()))
@@ -426,6 +427,7 @@ class BackupRestoreUtil @Inject constructor(
             if (p.has("accent_color")) prefs.setAccentColor(p.getString("accent_color"))
             if (p.has("high_contrast_amoled")) prefs.setHighContrastAmoled(p.getBoolean("high_contrast_amoled"))
             if (p.has("dynamic_color")) prefs.setDynamicColor(p.getBoolean("dynamic_color"))
+            if (p.has("theme_mode")) prefs.setThemeMode(p.getString("theme_mode"))
             if (p.has("show_notification")) prefs.setShowNotification(p.getBoolean("show_notification"))
             if (p.has("pinned_domains")) {
                 val pinArr = p.getJSONArray("pinned_domains")

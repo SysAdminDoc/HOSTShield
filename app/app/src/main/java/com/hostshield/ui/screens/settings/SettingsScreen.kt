@@ -545,6 +545,19 @@ fun SettingsScreen(
 
         // Appearance
         SettingsSection(stringResource(R.string.section_appearance), Icons.Filled.Visibility, Mauve) {
+            Text(stringResource(R.string.label_theme_mode), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("dark" to stringResource(R.string.theme_dark), "light" to stringResource(R.string.theme_light), "system" to stringResource(R.string.theme_system)).forEach { (key, label) ->
+                    FilterChip(
+                        selected = state.themeMode == key,
+                        onClick = { viewModel.setThemeMode(key) },
+                        label = { Text(label, fontSize = 12.sp) }
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+
             SettingsToggle(
                 stringResource(R.string.settings_high_contrast),
                 stringResource(R.string.settings_high_contrast_sub),

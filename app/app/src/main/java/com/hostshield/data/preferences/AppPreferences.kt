@@ -149,6 +149,10 @@ class AppPreferences @Inject constructor(
     val dynamicColor: Flow<Boolean> get() = ui.dynamicColor
     suspend fun setDynamicColor(enabled: Boolean) = ui.setDynamicColor(enabled)
 
+    // ── Theme Mode (dark/light/system) ──────────────────────
+    val themeMode: Flow<String> get() = ui.themeMode
+    suspend fun setThemeMode(mode: String) = ui.setThemeMode(mode)
+
     // ── Auto Backup ──────────────────────────────────────────
     val autoBackupEnabled: Flow<Boolean> get() = sync.autoBackupEnabled
     suspend fun setAutoBackupEnabled(enabled: Boolean) = sync.setAutoBackupEnabled(enabled)

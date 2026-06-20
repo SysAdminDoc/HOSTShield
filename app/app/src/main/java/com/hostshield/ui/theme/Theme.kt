@@ -202,7 +202,7 @@ internal fun hostShieldPalette(
     return base.withAccent(accentColor)
 }
 
-private fun HostShieldPalette.withAccent(accentColor: String): HostShieldPalette = when (accentColor.lowercase()) {
+internal fun HostShieldPalette.withAccent(accentColor: String): HostShieldPalette = when (accentColor.lowercase()) {
     "blue" -> copy(
         teal = blue,
         tealBright = sky,
@@ -235,6 +235,59 @@ private fun HostShieldPalette.withAccent(accentColor: String): HostShieldPalette
     )
     else -> this
 }
+
+internal val LightHostShieldPalette = HostShieldPalette(
+    black = Color(0xFFF5F5F8),
+    surface0 = Color(0xFFFFFFFF),
+    surface1 = Color(0xFFF5F5F8),
+    surface2 = Color(0xFFEBEBF0),
+    surface3 = Color(0xFFDCDCE5),
+    surface4 = Color(0xFFCCCCD8),
+    teal = Color(0xFF00897B),
+    tealBright = Color(0xFF00695C),
+    tealDim = Color(0xFF4DB6AC),
+    tealGlow = Color(0xFF009688),
+    mauve = Color(0xFF7E57C2),
+    mauveDim = Color(0xFFB39DDB),
+    green = Color(0xFF388E3C),
+    red = Color(0xFFD32F2F),
+    yellow = Color(0xFFF9A825),
+    blue = Color(0xFF1976D2),
+    peach = Color(0xFFE64A19),
+    flamingo = Color(0xFFD81B60),
+    sky = Color(0xFF0288D1),
+    textPrimary = Color(0xFF1C1B1F),
+    textSecondary = Color(0xFF49454F),
+    textDim = Color(0xFF79747E)
+)
+
+internal fun hostShieldLightColorScheme(palette: HostShieldPalette) = lightColorScheme(
+    primary = palette.teal,
+    onPrimary = Color.White,
+    primaryContainer = palette.tealDim.copy(alpha = 0.12f),
+    onPrimaryContainer = palette.teal,
+    secondary = palette.mauve,
+    onSecondary = Color.White,
+    secondaryContainer = palette.mauveDim.copy(alpha = 0.12f),
+    onSecondaryContainer = palette.mauve,
+    tertiary = palette.peach,
+    onTertiary = Color.White,
+    error = palette.red,
+    onError = Color.White,
+    errorContainer = palette.red.copy(alpha = 0.08f),
+    onErrorContainer = palette.red,
+    background = palette.black,
+    onBackground = palette.textPrimary,
+    surface = palette.surface0,
+    onSurface = palette.textPrimary,
+    surfaceVariant = palette.surface2,
+    onSurfaceVariant = palette.textSecondary,
+    outline = palette.surface4,
+    outlineVariant = palette.surface3,
+    inverseSurface = Color(0xFF313033),
+    inverseOnSurface = Color(0xFFF4EFF4),
+    surfaceTint = palette.teal
+)
 
 internal fun hostShieldColorScheme(
     palette: HostShieldPalette,
@@ -348,24 +401,37 @@ fun HostShieldTheme(
     highContrastAmoled: Boolean = false,
     accentColor: String = "teal",
     dynamicColor: Boolean = false,
+    themeMode: String = "dark",
     content: @Composable () -> Unit
 ) {
-    val palette = hostShieldPalette(highContrastAmoled, accentColor)
-    val view = LocalView.current
+    val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = when (themeMode) {
+        "light" -> false
+        "system" -> isSystemDark
+        else -> true
+    }
 
-    val useDynamic = dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val colorScheme = if (useDynamic) {
-        dynamicDarkColorScheme(LocalContext.current)
+    val palette = if (isDark) {
+        hostShieldPalette(highContrastAmoled, accentColor)
     } else {
-        hostShieldColorScheme(palette, highContrastAmoled)
+        LightHostShieldPalette.withAccent(accentColor)
+    }
+
+    val view = LocalView.current
+    val useDynamic = dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val colorScheme = when {
+        useDynamic && isDark -> dynamicDarkColorScheme(LocalContext.current)
+        useDynamic && !isDark -> dynamicLightColorScheme(LocalContext.current)
+        isDark -> hostShieldColorScheme(palette, highContrastAmoled)
+        else -> hostShieldLightColorScheme(palette)
     }
 
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars = false
-                isAppearanceLightNavigationBars = false
+                isAppearanceLightStatusBars = !isDark
+                isAppearanceLightNavigationBars = !isDark
             }
             @Suppress("DEPRECATION")
             if (Build.VERSION.SDK_INT < 35) {
