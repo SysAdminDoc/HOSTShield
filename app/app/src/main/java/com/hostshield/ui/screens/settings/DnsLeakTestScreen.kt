@@ -200,7 +200,7 @@ fun DnsLeakTestScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "DNS leak test",
             subtitle = "Verify DNS queries are filtered through HostShield",

@@ -83,7 +83,7 @@ fun AppExclusionsScreen(viewModel: AppExclusionsViewModel = hiltViewModel(), onB
         installedApps.filter { (showSystem || !it.isSystem) && (searchQuery.isBlank() || it.label.contains(searchQuery, true) || it.packageName.contains(searchQuery, true)) }
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "App Exclusions",
             subtitle = if (allApps == null) "Loading installed apps" else "${excluded.size} excluded · ${filteredApps.size} visible",

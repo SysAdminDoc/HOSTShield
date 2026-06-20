@@ -69,7 +69,7 @@ fun SourcesScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Black)
     ) {
         if (isLoading) {
             Box(

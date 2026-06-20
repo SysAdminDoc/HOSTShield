@@ -306,7 +306,7 @@ private fun HostShieldMainApp(activity: MainActivity) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = Color.Black,
+        containerColor = Black,
         contentWindowInsets = WindowInsets.systemBars,
         bottomBar = {
             if (showBottomBar) {
@@ -377,7 +377,7 @@ private fun HostShieldMainApp(activity: MainActivity) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(Color.Black),
+                .background(Black),
             enterTransition = { fadeIn(tween(150)) },
             exitTransition = { fadeOut(tween(150)) }
         ) {

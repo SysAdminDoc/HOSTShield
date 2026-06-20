@@ -128,7 +128,7 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
     val totalQueries = remember(apps) { apps.sumOf { it.totalQueries } }
     val blockedQueries = remember(apps) { apps.sumOf { it.blockedQueries } }
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = if (selectedApp != null) {
                 apps.find { it.appPackage == selectedApp }?.appLabel ?: selectedApp.orEmpty()

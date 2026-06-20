@@ -86,7 +86,7 @@ class HostsDiffViewModel @Inject constructor(private val rootUtil: RootUtil) : V
 fun HostsDiffScreen(viewModel: HostsDiffViewModel = hiltViewModel(), onBack: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "Hosts file",
             subtitle = "${state.currentLineCount} lines, ${state.addedCount} blocked entries",

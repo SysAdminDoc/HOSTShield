@@ -76,7 +76,7 @@ fun AppPrivacyScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "App Privacy",
             subtitle = "Tracker SDKs and DNS behavior by app",

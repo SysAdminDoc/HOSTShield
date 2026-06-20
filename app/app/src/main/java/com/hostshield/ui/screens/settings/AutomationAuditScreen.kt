@@ -62,7 +62,7 @@ fun AutomationAuditScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(Color.Black)
+        modifier = Modifier.fillMaxSize().background(Black)
     ) {
         HostShieldBackHeader(
             title = "Automation",

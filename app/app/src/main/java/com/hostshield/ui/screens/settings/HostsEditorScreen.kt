@@ -103,7 +103,7 @@ fun HostsEditorScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "Hosts editor",
             subtitle = "${state.lineCount} lines, ${state.entryCount} editable entries",

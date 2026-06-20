@@ -42,7 +42,7 @@ fun DnsToolsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "DNS Tools",
             subtitle = "${state.blocklistSize} domains loaded · ${state.resolverHealth.size} resolvers tracked",

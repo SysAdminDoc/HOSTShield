@@ -175,7 +175,7 @@ fun BlocklistGalleryScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         val total = state.lists.values.sumOf { it.size }
         HostShieldBackHeader(
             title = "Blocklist gallery",

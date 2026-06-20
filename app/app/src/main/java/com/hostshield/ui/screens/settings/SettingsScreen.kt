@@ -165,7 +165,7 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Black)
             .verticalScroll(rememberScrollState())
             .imePadding()
             .padding(horizontal = 20.dp, vertical = 16.dp),
@@ -558,13 +558,15 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(8.dp))
 
-            SettingsToggle(
-                stringResource(R.string.settings_high_contrast),
-                stringResource(R.string.settings_high_contrast_sub),
-                Icons.Filled.Visibility,
-                state.highContrastAmoled
-            ) {
-                viewModel.setHighContrastAmoled(it)
+            if (state.themeMode != "light") {
+                SettingsToggle(
+                    stringResource(R.string.settings_high_contrast),
+                    stringResource(R.string.settings_high_contrast_sub),
+                    Icons.Filled.Visibility,
+                    state.highContrastAmoled
+                ) {
+                    viewModel.setHighContrastAmoled(it)
+                }
             }
 
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {

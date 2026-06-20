@@ -74,7 +74,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val blockedCount by viewModel.blockedCount.collectAsStateWithLifecycle()
     val backAction = onBack
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         // Header
         HostShieldScreenHeader(
             title = "DNS Logs",

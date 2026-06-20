@@ -221,7 +221,7 @@ fun OverlapAnalysisScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val nf = NumberFormat.getNumberInstance()
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "Overlap analysis",
             subtitle = "Find redundant domains across enabled sources",

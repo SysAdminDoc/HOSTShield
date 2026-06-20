@@ -59,7 +59,7 @@ fun NetworkStatsScreen(
     val totalRx by viewModel.totalRx.collectAsStateWithLifecycle()
     val totalTx by viewModel.totalTx.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "Network stats",
             subtitle = "Traffic by app from Android usage counters",

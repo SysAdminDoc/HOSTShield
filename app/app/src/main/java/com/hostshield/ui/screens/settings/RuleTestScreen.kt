@@ -208,7 +208,7 @@ fun RuleTestScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val canTestSingle = state.testDomain.isNotBlank() && !state.isTesting
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "Rule tester",
             subtitle = "Preview how domains match block and allow rules",

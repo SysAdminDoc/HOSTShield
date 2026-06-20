@@ -69,7 +69,7 @@ fun OnboardingScreen(
         modifier = Modifier
             .fillMaxSize()
             .systemBarsPadding()
-            .background(Color.Black)
+            .background(Black)
     ) {
         AnimatedContent(
             targetState = page,

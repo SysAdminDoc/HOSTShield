@@ -65,7 +65,7 @@ fun AppLogsScreen(
     var showDomains by remember { mutableStateOf(true) }
     val timeFmt = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "App DNS Log",
             subtitle = "$packageName · ${logs.size} queries",

@@ -89,7 +89,7 @@ fun ConnectionLogScreen(
     val timeFmt = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
     var showClearLogsDialog by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "Connection Log",
             subtitle = if (isReading) "$liveCount live blocks · $blockedCount total" else "NFLOG reader inactive",
