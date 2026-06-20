@@ -1,7 +1,10 @@
 package com.hostshield.service
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.hostshield.data.database.ConnectionLogDao
@@ -29,6 +32,7 @@ class LogCleanupWorker @AssistedInject constructor(
     companion object {
         const val WORK_NAME = "hostshield_log_cleanup"
         private const val CONNECTION_LOG_RETENTION_DAYS = 3
+        private const val NOTIFICATION_ID_CLEANUP = 201
 
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<LogCleanupWorker>(
@@ -74,10 +78,35 @@ class LogCleanupWorker @AssistedInject constructor(
             Log.i("LogCleanup", "Cleaned $totalDeleted DNS logs (retention: ${retentionDays}d), " +
                 "connection logs (retention: ${CONNECTION_LOG_RETENTION_DAYS}d)")
 
+            if (totalDeleted > 0) {
+                notifyCleanup(totalDeleted, retentionDays)
+            }
+
             Result.success()
         } catch (e: Exception) {
             Log.e("LogCleanup", "Cleanup failed: ${e.message}", e)
             Result.failure()
         }
+    }
+
+    private fun notifyCleanup(deletedCount: Int, retentionDays: Int) {
+        val nm = applicationContext.getSystemService(NotificationManager::class.java) ?: return
+        NotificationChannel(
+            DnsVpnService.ALERT_CHANNEL_ID,
+            "HostShield Alerts",
+            NotificationManager.IMPORTANCE_LOW,
+        ).apply { description = "Source health and system alerts" }
+            .let { nm.createNotificationChannel(it) }
+
+        val text = "$deletedCount old DNS log entries removed (retention: ${retentionDays}d)"
+        val notification = NotificationCompat.Builder(applicationContext, DnsVpnService.ALERT_CHANNEL_ID)
+            .setContentTitle("Log cleanup complete")
+            .setContentText(text)
+            .setSmallIcon(android.R.drawable.ic_menu_delete)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        nm.notify(NOTIFICATION_ID_CLEANUP, notification)
     }
 }
