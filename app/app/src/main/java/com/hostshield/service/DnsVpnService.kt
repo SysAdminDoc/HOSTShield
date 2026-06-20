@@ -277,14 +277,13 @@ class DnsVpnService : VpnService() {
     @Volatile private var dotProvider = DotResolver.Provider.CLOUDFLARE
     @Volatile private var useDoQ = false
     @Volatile private var doqProvider = DoqResolver.Provider.ADGUARD
-    private var useWireGuard = false
-    private var dnsTrapEnabled = true
+    @Volatile private var useWireGuard = false
+    @Volatile private var dnsTrapEnabled = true
     @Volatile private var threatIntelEnabled = false
     @Volatile private var dnsOnlyMode = false
     @Volatile private var safeSearchEnabled = false
     @Volatile private var contentFilterCategories: Set<ContentCategory> = emptySet()
-    // Block response: "nxdomain", "zero_ip", "refused"
-    private var blockResponseType = "nxdomain"
+    @Volatile private var blockResponseType = "nxdomain"
     private var edeEnabled = false
     // Custom upstream DNS — updated live by startDnsConfigObserver()
     @Volatile private var upstreamDnsServers = UPSTREAM_DNS.toList()

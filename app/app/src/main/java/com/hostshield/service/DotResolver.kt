@@ -130,7 +130,7 @@ class DotResolver @Inject constructor() {
             Provider.ADGUARD -> "ADGUARD"
         }
         val providerPins = DohPinManifest.providers.firstOrNull { it.providerId == dohProviderId }
-            ?: return true // no pins configured — pass (system trust only)
+            ?: return false // fail closed — missing pins are a configuration error, not a pass
         val expectedHashes = providerPins.pins.map { it.value.removePrefix("sha256/") }.toSet()
 
         for (cert in peerCertificates) {
