@@ -91,7 +91,10 @@ data class StatsUiState(
     val threatIntelFeedImpact: List<ThreatIntelFeedImpact> = emptyList(),
     val threatIntelTopDomains: List<ThreatIntelTopDomain> = emptyList(),
     val threatIntelTopApps: List<ThreatIntelTopApp> = emptyList(),
-    val threatIntelDailyImpact: List<ThreatIntelDailyImpact> = emptyList()
+    val threatIntelDailyImpact: List<ThreatIntelDailyImpact> = emptyList(),
+    val latencyP50: Float = 0f,
+    val latencyP95: Float = 0f,
+    val latencyP99: Float = 0f
 ) {
     val avgLatencyMs: Double
         get() = if (hourlyLatency.isNotEmpty()) hourlyLatency.map { it.avgMs }.average() else 0.0
@@ -204,6 +207,20 @@ class StatsViewModel @Inject constructor(
         viewModelScope.launch { repository.getMostQueriedDomains(weekStart, 15).collect { m -> _uiState.update { it.copy(mostQueried = m) } } }
         viewModelScope.launch { repository.getDailyBreakdown(weekStart).collect { d -> _uiState.update { it.copy(dailyTrend = d) } } }
         viewModelScope.launch { repository.getHourlyLatency(todayStart).collect { l -> _uiState.update { it.copy(hourlyLatency = l) } } }
+        viewModelScope.launch {
+            repository.getLatencyValues(weekStart).collect { rows ->
+                if (rows.isNotEmpty()) {
+                    val values = rows.map { it.value }
+                    _uiState.update {
+                        it.copy(
+                            latencyP50 = percentile(values, 50),
+                            latencyP95 = percentile(values, 95),
+                            latencyP99 = percentile(values, 99)
+                        )
+                    }
+                }
+            }
+        }
         viewModelScope.launch { repository.getQueryTypeDistribution(weekStart).collect { d -> _uiState.update { it.copy(queryTypeDistribution = d) } } }
         viewModelScope.launch { repository.getThreatIntelFeedImpact(last24hStart, weekStart).collect { impact -> _uiState.update { it.copy(threatIntelFeedImpact = impact) } } }
         viewModelScope.launch { repository.getThreatIntelTopDomains(weekStart).collect { domains -> _uiState.update { it.copy(threatIntelTopDomains = domains) } } }
@@ -285,6 +302,11 @@ class StatsViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun percentile(sorted: List<Float>, p: Int): Float {
+        val idx = (sorted.size * p / 100).coerceIn(0, sorted.size - 1)
+        return sorted[idx]
     }
 
     private fun syncThreatIntelHealth() {
@@ -384,6 +406,14 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text("Avg: ${"%.0f".format(state.avgLatencyMs)}ms", color = Peach, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                             Text("Peak: ${state.peakLatencyMs}ms", color = Red, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                        }
+                        if (state.latencyP50 > 0f) {
+                            Spacer(Modifier.height(4.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Text("p50: ${"%.0f".format(state.latencyP50)}ms", color = TextDim, fontSize = 10.sp)
+                                Text("p95: ${"%.0f".format(state.latencyP95)}ms", color = Yellow, fontSize = 10.sp)
+                                Text("p99: ${"%.0f".format(state.latencyP99)}ms", color = Red.copy(alpha = 0.7f), fontSize = 10.sp)
+                            }
                         }
                     } else {
                         HostShieldCompactState(

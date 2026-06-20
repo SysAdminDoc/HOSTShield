@@ -27,6 +27,7 @@ class DnsLogRepository @Inject constructor(
     fun getMostQueriedDomains(since: Long, limit: Int = 30): Flow<List<TopHostname>> = logDao.getMostQueriedDomains(since, limit)
     fun getDailyBreakdown(since: Long): Flow<List<DailyBreakdown>> = logDao.getDailyBreakdown(since)
     fun getHourlyLatency(since: Long): Flow<List<HourlyLatency>> = logDao.getHourlyLatency(since)
+    fun getLatencyValues(since: Long): Flow<List<SingleFloat>> = logDao.getLatencyValues(since)
     fun getQueryTypeDistribution(since: Long): Flow<List<QueryTypeStat>> = logDao.getQueryTypeDistribution(since)
     fun getThreatIntelFeedImpact(dayStart: Long, weekStart: Long, limit: Int = 8): Flow<List<ThreatIntelFeedImpact>> =
         logDao.getThreatIntelFeedImpact(dayStart, weekStart, limit)

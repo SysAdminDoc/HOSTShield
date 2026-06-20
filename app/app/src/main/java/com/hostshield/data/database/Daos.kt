@@ -252,6 +252,13 @@ interface DnsLogDao {
     """)
     fun getHourlyLatency(since: Long): Flow<List<HourlyLatency>>
 
+    @Query("""
+        SELECT response_time_ms as value
+        FROM dns_logs WHERE timestamp > :since AND response_time_ms > 0 AND blocked = 0
+        ORDER BY response_time_ms ASC
+    """)
+    fun getLatencyValues(since: Long): Flow<List<SingleFloat>>
+
     /** Top most-queried domains overall (trackers detection). */
     @Query("""
         SELECT hostname, COUNT(*) as cnt
@@ -432,6 +439,8 @@ data class TopApp(
 )
 
 data class HourlyStat(val hour: Int, val cnt: Int)
+
+data class SingleFloat(val value: Float)
 
 data class AppDomainStat(
     val hostname: String,
