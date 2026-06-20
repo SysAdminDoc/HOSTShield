@@ -3,6 +3,16 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.50] - 2026-06-20
+
+### Added
+- Tracker company attribution view showing top tracking companies by blocked
+  query count with percentage breakdown in Stats.
+- Top allowed domains (7d) card in Stats alongside existing top blocked.
+- LocaleConfig generation (`generateLocaleConfig`) for Android per-app language
+  preferences readiness.
+- VPN coexistence guide for Tailscale, Mullvad, and WireGuard in README FAQ.
+
 ## [v6.9.49] - 2026-06-20
 
 ### Added
