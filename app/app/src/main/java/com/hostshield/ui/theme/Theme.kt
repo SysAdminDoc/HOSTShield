@@ -261,6 +261,31 @@ internal val LightHostShieldPalette = HostShieldPalette(
     textDim = Color(0xFF79747E)
 )
 
+internal fun paletteFromDynamicScheme(scheme: ColorScheme): HostShieldPalette = HostShieldPalette(
+    black = scheme.background,
+    surface0 = scheme.surface,
+    surface1 = scheme.surfaceContainerLow,
+    surface2 = scheme.surfaceContainer,
+    surface3 = scheme.surfaceContainerHigh,
+    surface4 = scheme.surfaceContainerHighest,
+    teal = scheme.primary,
+    tealBright = scheme.primaryContainer,
+    tealDim = scheme.primary.copy(alpha = 0.6f),
+    tealGlow = scheme.primary,
+    mauve = scheme.secondary,
+    mauveDim = scheme.secondary.copy(alpha = 0.6f),
+    green = scheme.primary,
+    red = scheme.error,
+    yellow = scheme.tertiary,
+    blue = scheme.secondary,
+    peach = scheme.tertiary,
+    flamingo = scheme.tertiary.copy(alpha = 0.8f),
+    sky = scheme.secondary.copy(alpha = 0.8f),
+    textPrimary = scheme.onBackground,
+    textSecondary = scheme.onSurfaceVariant,
+    textDim = scheme.outline
+)
+
 internal fun hostShieldLightColorScheme(palette: HostShieldPalette) = lightColorScheme(
     primary = palette.teal,
     onPrimary = Color.White,
@@ -411,19 +436,23 @@ fun HostShieldTheme(
         else -> true
     }
 
-    val palette = if (isDark) {
-        hostShieldPalette(highContrastAmoled, accentColor)
-    } else {
-        LightHostShieldPalette.withAccent(accentColor)
-    }
-
     val view = LocalView.current
     val useDynamic = dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val colorScheme = when {
         useDynamic && isDark -> dynamicDarkColorScheme(LocalContext.current)
         useDynamic && !isDark -> dynamicLightColorScheme(LocalContext.current)
-        isDark -> hostShieldColorScheme(palette, highContrastAmoled)
-        else -> hostShieldLightColorScheme(palette)
+        isDark -> hostShieldColorScheme(
+            hostShieldPalette(highContrastAmoled, accentColor), highContrastAmoled
+        )
+        else -> hostShieldLightColorScheme(LightHostShieldPalette.withAccent(accentColor))
+    }
+
+    val palette = if (useDynamic) {
+        paletteFromDynamicScheme(colorScheme)
+    } else if (isDark) {
+        hostShieldPalette(highContrastAmoled, accentColor)
+    } else {
+        LightHostShieldPalette.withAccent(accentColor)
     }
 
     if (!view.isInEditMode) {
