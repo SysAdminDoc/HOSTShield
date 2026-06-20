@@ -3,6 +3,23 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.51] - 2026-06-20
+
+### Security
+- `DnsVpnService`: added missing `@Volatile` to `useWireGuard`,
+  `dnsTrapEnabled`, and `blockResponseType` fields that are written on IO and
+  read from the packet loop. `useWireGuard` without volatile could cause a
+  DNS leak to plaintext if the JVM cached a stale value.
+- `DotResolver`: SPKI pin verification now fails closed when no pins are
+  configured for a provider, matching the DoH pinning behavior.
+
+### Fixed
+- Light mode was completely broken across all 30 screens — each used
+  hardcoded `Color.Black` (#000000) instead of the theme-aware palette
+  `Black` which maps to light gray in light mode.
+- High-contrast AMOLED toggle is now hidden in light mode since it only
+  affects dark palette variants.
+
 ## [v6.9.50] - 2026-06-20
 
 ### Added
