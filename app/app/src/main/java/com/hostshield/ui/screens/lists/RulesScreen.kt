@@ -29,12 +29,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
-import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
@@ -46,37 +43,6 @@ import com.hostshield.ui.components.HostShieldScreenHeader
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.BackupRestoreUtil
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-
-@HiltViewModel
-class RulesViewModel @Inject constructor(
-    private val repository: HostShieldRepository
-) : ViewModel() {
-    val rules: StateFlow<List<UserRule>> = repository.getAllRules()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    fun addRule(hostname: String, type: RuleType, redirectIp: String = "", comment: String = "", isRegex: Boolean = false) {
-        val isWild = !isRegex && hostname.startsWith("*.")
-        viewModelScope.launch {
-            repository.addRule(UserRule(
-                hostname = hostname.trim().let { if (isRegex) it else it.lowercase() },
-                type = type, redirectIp = redirectIp,
-                comment = comment, isWildcard = isWild, isRegex = isRegex
-            ))
-        }
-    }
-
-    fun toggleRule(id: Long, enabled: Boolean) {
-        viewModelScope.launch { repository.toggleRule(id, enabled) }
-    }
-
-    fun deleteRule(rule: UserRule) {
-        viewModelScope.launch { repository.deleteRule(rule) }
-    }
-}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
