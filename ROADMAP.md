@@ -1,7 +1,7 @@
 # HostShield Roadmap
 
-Last refreshed: 2026-06-16
-Baseline: v6.9.26, versionCode 108
+Last refreshed: 2026-06-17
+Baseline: v6.9.45, versionCode 127
 
 ## Principles
 
@@ -106,12 +106,6 @@ Google Play package-visibility policy.
 
 | ID | Feature | Description | User Value | Business Value | Evidence | Effort | Impact | Priority | Confidence |
 |---|---|---|---|---|---|---|---|---|---|
-| HS-2026-06-P1-004 | Connected top-flow test completion | Extend `TopFlowComposeTest` from affordance smoke coverage into actual behavior checks for VPN toggle state, backup export/import, diagnostics ZIP contents, Play flavor app-visibility constraints, RTL/pseudolocale layout, and real source/rule persistence after process recreation. | Core workflows stay reliable across dependency updates. | Reduces regression risk in the most visible app flows. | `TopFlowComposeTest.kt`, `HostShieldTestTags.kt`, `MainActivity.kt`, `SettingsScreen.kt` | M | High | P1 | Medium |
-| HS-2026-06-P2-005 | PCAPng diagnostic export | Add optional PCAPng export with interface metadata, app UID/package comments, DNS query annotations, connection-log annotations, and a clear privacy warning before sharing. Keep synthetic PCAP for lightweight compatibility. | Advanced users can diagnose breakage in Wireshark without losing app context. | Differentiates HostShield from basic DNS blockers while preserving local-first diagnostics. | `PcapExporter.kt`, `DiagnosticExporter.kt`; E093 | M | Medium | P2 | Medium |
-| HS-2026-06-P1-008 | Backup schema v2 and encrypted backup UI | Add a Settings passphrase flow for encrypted export/import, replace the `ENCRYPTED:` sentinel with typed UI state, introduce backup schema v2 for v6.x preferences, and add real roundtrip tests through `BackupRestoreUtil`. | Users can safely move a full HostShield setup between devices without losing modern DNS/security settings. | Protects the app's local-first portability promise and reduces recovery/support failures. | `SettingsScreen.kt`, `SettingsViewModel.kt`, `BackupRestoreUtil.kt`, `AppPreferences.kt`, `BackupCryptoTest.kt` | M | High | P1 | High |
-| HS-2026-06-P2-009 | Diagnostics and PCAP export UX/test seam | Make diagnostic ZIP generation return observable state before sharing, add SAF/share paths for PCAP exports, show privacy warnings for DNS/app metadata, and add tests for ZIP contents and empty/non-empty PCAP outcomes. | Users can retrieve useful diagnostics intentionally and understand what they are sharing. | Improves support evidence quality without adding telemetry. | `DiagnosticExporter.kt`, `PcapExporter.kt`, `SettingsViewModel.kt`, `SettingsScreen.kt`, `TopFlowComposeTest.kt` | M | Medium | P2 | High |
-| HS-2026-06-P2-010 | PCAPng metadata export v1 | Add an opt-in `.pcapng` writer that emits Section Header, Interface Description, Enhanced Packet, optional Name Resolution, Interface Statistics, and HostShield metadata comments/custom options for app package, app label, rule verdict, source log row id, and redaction mode. Keep classic `.pcap` available as the default compatibility export until the PCAPng path is verified in Wireshark. | Power users get Wireshark-ready captures with enough local context to debug blocked DNS and firewall behavior. | Differentiates HostShield diagnostics without adding telemetry or raw packet capture scope. | `PcapExporter.kt`, `PcapExporterTest.kt`, `DiagnosticExporter.kt`; E096, E099 | M | Medium | P2 | Medium |
-| HS-2026-06-P1-011 | Unified export destination controller | Normalize backup, rules, CSV, diagnostic ZIP, and PCAP exports around one ViewModel state model: pending generation, generated file/bytes, save-as via SAF, share via FileProvider, failure, and cleanup. Use explicit privacy-copy per export type. | Users stop seeing cache-only success messages and can always save or share generated evidence intentionally. | Reduces duplicated export logic and creates testable seams for connected UI coverage. | `SettingsScreen.kt`, `SettingsViewModel.kt`, `ProtectionSettingsSection.kt`, `file_paths.xml`, `AndroidManifest.xml`; E097, E098 | M | High | P1 | High |
 | HS-2026-06-P2-015 | Threat-intel false-positive review workflow | From a threat-blocked log row, show feed, matched value, age, and user actions to allowlist domain, IP/CIDR, or app with clear scope. Include a local review queue for recent threat-intel blocks and export only summaries in diagnostics unless the user includes raw IOC details. | Users can recover quickly from a bad feed hit without disabling all malware protection. | Reduces churn from false positives while keeping local-first privacy boundaries. | `DnsVpnService.kt`, `LogsScreen.kt`, `RulesScreen.kt`, `DiagnosticExporter.kt`; E104, E105 | M | Medium | P2 | Medium |
 
 ## Engineering Quality & Bug Backlog — 2026-06-13
@@ -124,79 +118,12 @@ privacy tool is the highest-severity class of defect.
 
 ### Code Architecture & Maintainability
 
-- [ ] **P1 — Decompose `DnsVpnService.kt` (~2,462 LOC god-class, ~22 responsibilities, no direct tests).** Extract `DnsQueryProcessor`, a `DnsForwarder` strategy family, `DnsLogManager`, `BlocklistManager`, `VpnRecoveryMonitor`, and `VpnNotificationController` so each becomes unit-testable. Highest maintainability risk in the repo.
-- [ ] **P2 — Move StatsScreen inline business logic to ViewModel.** `StatsScreen` computes latency/percentage/health-threshold logic inline (344-349, 414-418, 460-464). Lift to derived `StateFlow` in the ViewModel.
-
-### CI, Static Analysis & Tests
-
-- [ ] **P2 — Add detekt/ktlint on top of Android lint.** Android lint + `ci.yml` (unit tests + `lintFullDebug` on push/PR) shipped in v6.9.10. detekt/ktlint still pending — gated on a detekt release that supports Kotlin 2.3.x (detekt 1.23.x tops out well below this toolchain).
-- [ ] **P3 — Run instrumented (`androidTest`) suite in CI.** Migration, Compose-flow, and automation-receiver tests exist but never run on a CI emulator, so the Room migration safety net isn't exercised per release.
 
 ## Next - v6.7 / v7.0 Design
 
-### UI Test Coverage
-
-- [ ] **Connected top-flow Compose UI tests.** Extend the current smoke tests to verify real VPN start/stop state, backup export/import file behavior, encrypted-backup passphrase handling, diagnostic ZIP generation, PCAP export state, Play-flavor app visibility constraints, process-recreation persistence, and RTL/pseudolocale layout safety. Sources: L031, L033, L034, E011, E012.
-
-### Android Platform Resilience
-
-- [ ] **Foreground-service connected validation matrix.** Run a small instrumented or manual adb matrix for each start caller: BootReceiver restore, BlockingScheduleWorker, PauseResumeWorker, AutomationReceiver, HostShieldTileService, RootDnsService.start(), DnsProxyService.start(), and DnsVpnService ACTION_START. Each row should assert caller context, Android version, service type, expected exception/recovery behavior, prefs side effects, and diagnostic event output, including forced `FGS_INTRODUCE_TIME_LIMITS` coverage on Android 15+. Sources: L030, E085, E086.
-- [ ] **Android 16 VPN recovery validation pass.** The app already has Android 16 always-on VPN recovery detection; refresh it against current public Android 16 VPN bug reports and add a connected-device script that validates the advisory after app update / zero-inbound-packet conditions where reproducible. Sources: L030, E087, E094.
-
-### Documentation, Automation, And Release Gates
-
-### Backup, Diagnostics, And Export
-
-- [ ] **PCAPng metadata export v1.** Add an opt-in `.pcapng` export path with
-  Section Header, Interface Description, Enhanced Packet, optional Name
-  Resolution, Interface Statistics, and HostShield comments/custom options. Gate
-  app labels, package names, DNS hostnames, connection destinations, and TLS
-  secret material behind separate privacy toggles. Sources: L032, L035, E096,
-  E099, E100.
-- [ ] **Unified export destination controller.** Use one ViewModel/export state
-  model for backup, rules, CSV, diagnostic ZIP, and PCAP output: generated,
-  pending save-as, pending share, saved, shared, failed, and cleanup. Back it
-  with SAF for persistent save-as and FileProvider for temporary sharing.
-  Sources: L031, L034, L035, E097, E098.
-
 ### Distribution
 
-- [ ] **Obtainium install docs.** Add a tested Obtainium configuration for GitHub release APK installs. Sources: E075, L011.
-- [ ] **Play distribution declaration notes.** Document Play Console declaration notes for the full flavor, explain the play flavor's package-visibility fallback behavior, and verify the Play AAB artifact against those notes before submission. Sources: L008, L011, E005, E006, E088.
-- [ ] **IzzyOnDroid/reproducible build readiness.** Generate fresh metadata, current changelogs, license/dependency inventory, reproducibility notes, and release checksums. Current `app/metadata/en-US` copy is stale and should be treated as a blocker for non-GitHub publication. Sources: E073, E074.
 
-### Privacy Analytics
-
-- [ ] **Exodus signature refresh pipeline.** Mirror and version tracker signatures from Exodus-compatible sources into a local cache with a frozen mini-corpus test. Sources: L027, E067, E068.
-- [ ] **DuckDuckGo Tracker Radar ingestion.** Add optional local tracker-domain dataset refresh for network-based tracker classification. Sources: E069, L027.
-- [ ] **Threat-intel false-positive review.** Let users jump from a blocked
-  log row to a scoped allowlist action by domain, IP/CIDR, or app while keeping
-  raw IOC details out of diagnostics unless explicitly included. Sources: L036,
-  E104.
-
-## Later - v7.x
-
-### Architecture
-
-- [ ] **Firestack/tun2socks feasibility spike.** Prototype whether a Go/gomobile TUN layer improves throughput, UID attribution, userspace firewall rules, WireGuard routing, and split DNS enough to justify migration complexity. Sources: E017, E018, E015.
-- [ ] **No-root userspace per-app firewall.** If the TUN spike succeeds, implement UID-keyed block/allow rules in VPN mode using Android-supported attribution where available and graceful fallback where not. Sources: E001, E030.
-- [ ] **Connection-state-aware rules.** Add block-on-screen-off, metered/unmetered, background-only, until-unlock, and network profile rules across root and VPN paths. Sources: E015, E030.
-
-### Advanced DNS
-
-- [ ] **DNSCrypt engine spike.** Implement the first hidden `DnsCryptEngine` facade and package-size/performance spike using an audited upstream extraction or `dnscrypt-proxy`/gomobile prototype, without exposing a normal settings toggle. Acceptance: certificate validation, X25519/XChaCha20-Poly1305 primitives, anonymized relay wrapping, fail-closed resolver health, and corpus tests are all present before UI exposure. Sources: L020, L021, E037, E038, E039, E040, E041, E095.
-- [ ] **ODoH resolver path.** Build target/proxy support only after diagnostics and resolver health are in place. Sources: L020, E046.
-- [ ] **Extended DNS Errors UI.** Parse and display EDE reason codes in query details and resolver health. Sources: E047.
-- [ ] **SVCB/HTTPS/ECH awareness.** Expand existing SVCB parsing into policy and diagnostics for ECH-enabled domains. Sources: E051.
-- [ ] **DNSSEC validation toggle.** Keep opt-in and visibly explain operational failure modes. Sources: E047, E051.
-- [ ] **Smart/Split DNS routing.** Domain-keyed resolver routing after resolver health and diagnostics mature. Sources: E016.
-
-### Local Ecosystem
-
-- [ ] **Self-hosted encrypted sync server.** LAN/self-hosted sync for rules, allowlists, sources, and profiles with end-to-end encryption and manual export/import fallback. No hosted account dependency. Sources: E020, E037.
-- [ ] **Desktop companion resolver CLI.** Small Windows/macOS/Linux companion for shared resolver/blocklist testing before any GUI. Sources: E037.
-- [ ] **Read-only LAN household dashboard.** Optional local dashboard for parental/review mode, bound to localhost by default and LAN only by explicit user action. Sources: E020, E024.
-- [ ] **Tailscale and GrapheneOS compatibility guides.** Document VPN coexistence and hardened Android behavior with explicit caveats. Sources: E076, E077, E078.
 
 ## Watchlist
 
@@ -725,94 +652,7 @@ dependency/licensing review, and implementation-test corpus design.
 - Web: `Android 15 VpnService dataSync foreground service timeout`
 - Web: `dnscrypt-proxy gomobile Android AAR DNSCrypt client`
 
-## Research-Driven Additions -- 2026-06-09
-
-### P1 -- High
-
-### P2 -- Medium
-
-- [ ] P2 -- Remove Tink dependency after v7.0
-  Why: Legacy EncryptedSharedPreferences migration has shipped since v6.4.0 (6 versions). Tink is only used in `SecureStore.LegacyEncryptedPreferencesReader`. The migration sets `KEY_LEGACY_MIGRATION_DONE=true` and never calls Tink again. Safe to remove after v7.0 if no `legacy_secure_migration` diagnostic events are observed in crash reports.
-  Touches: `app/app/build.gradle.kts` (remove tink-android), `SecureStore.kt` (remove LegacyEncryptedPreferencesReader), `proguard-rules.pro` (remove Tink dontwarn)
-  Complexity: S
-
-- [ ] P2 -- Add network-aware SSID-based profile switching
-  Why: Blokada and RethinkDNS offer automatic profile switching by Wi-Fi SSID (e.g., aggressive blocking at coffee shops, relaxed at home). HostShield has profiles but no automatic SSID-based profile selection.
-  Evidence: `IptablesManager.kt` (NetworkCallback), `ProfileRepository.kt`, Blokada network-aware profiles feature.
-  Touches: `IptablesManager.kt` or new NetworkCallback, `ProfileRepository.kt`, `SettingsScreen.kt` or new profile-network mapping UI
-  Acceptance: Users can associate a blocking profile with a Wi-Fi SSID. When connecting to that SSID, the profile activates automatically. Manual override is always available.
-  Complexity: M
-
-- [ ] P2 -- Android 16 Pixel fast-network-switching compatibility
-  Why: InviZible Pro v7.4.0 added an option to control fast network switching and disabled it by default for Pixel devices on Android 16, suggesting a platform-specific VPN stability issue. HostShield's VPN reconnect logic should be verified.
-  Evidence: InviZible Pro v7.4.0 changelog; `DnsVpnService.kt` network callback handling (NetworkChangeReceiver removed — dead on minSdk 26).
-  Touches: `DnsVpnService.kt`, possible new setting
-  Acceptance: Verified that rapid Wi-Fi/cellular transitions on Pixel Android 16 do not cause VPN tunnel corruption or DNS resolution failure. Documented workaround if needed.
-  Complexity: S
-
-## Research-Driven Additions -- 2026-06-09 (Pass 2)
-
-### P1 -- High
-
-### P2 -- Medium
-
-- [ ] P2 -- DDR-based encrypted-DNS upgrade advisory (RFC 9462)
-  Why: No Android DNS blocker auto-discovers the local resolver's encrypted endpoint while Apple, Windows, Quad9, and Cloudflare ship DDR today -- a leapfrog feature that stays consistent with fail-closed pinning by only one-tap-applying known pinned providers and labeling everything else opportunistic.
-  Evidence: RFC 9462 (`_dns.resolver.arpa` SVCB), https://datatracker.ietf.org/doc/rfc9462/; NextDNS DDR feature-request thread; existing DoH pin manifest in `DohResolver.kt`.
-  Touches: new `DdrProbe` util, `DnsToolsScreen` or Home advisory card, `DohResolver`/`DotResolver` provider config
-  Acceptance: on network change an opt-in probe queries `_dns.resolver.arpa` SVCB via the system resolver, surfaces discovered encrypted endpoints with a verification status, and one tap applies a matching pinned provider; no automatic switch to unpinned endpoints.
-  Complexity: M
-
-- [ ] P2 -- NAT64/DNS64 awareness for custom encrypted upstreams (needs live validation)
-  Why: on IPv6-only carrier networks, forwarding DNS to a non-DNS64 upstream (pinned DoH) breaks IPv4-only destinations because no AAAA synthesis occurs; detecting Pref64 via ipv4only.arpa and synthesizing AAAA preserves connectivity.
-  Evidence: RFC 7050 / RFC 8880; `rg "ipv4only|Pref64|DNS64"` over `app/app/src/main` finds no synthesis logic (only a dns64.dns.google bypass-list entry in `BlocklistHolder.kt`).
-  Touches: `DnsVpnService.kt` forward paths, new `Dns64Synthesizer` util, `DiagnosticExporter` network section
-  Acceptance: Pref64 is discovered on NAT64 networks (or an emulated fixture), AAAA synthesis applies to A-only answers when an encrypted upstream is active, unit tests cover fixture prefixes, and diagnostics record detection; live-device validation gates default-on.
-  Complexity: L
-
-### P3 -- Low
-
-- [ ] P3 -- Material 3 Expressive motion/shape adoption pass
-  Why: Compose Material3 1.4+ ships the new MotionScheme and expressive shape/progress components; HostShield's BOM 2026.05.00 already includes the APIs, and a scoped motion/shape refresh keeps the premium UI current without a redesign.
-  Evidence: https://m3.material.io/blog/m3-expressive-motion-theming; `app/app/build.gradle.kts` composeBom 2026.05.00; v6.5.1 polish-pass baseline.
-  Touches: `ui/theme/*`, shared components (cards, progress indicators, chart containers)
-  Acceptance: MotionScheme applied app-wide, updated progress/shape tokens on Home/Stats/Sources, no layout regressions under font scaling, before/after screenshots reviewed.
-  Complexity: M
-
-## Research-Driven Additions
-
-### P1
-
-### P2
-
-## Research-Driven Additions — 2026-06-13
-
-### P1
-
-### P2
-
-- [ ] P2 — Newly Registered Domain (NRD) blocking
-  Why: NextDNS's most differentiated security feature, paywalled at $1.99/mo. Domains registered within the last 30 days are disproportionately used for phishing, malware C2, and spam. No open-source Android DNS blocker implements this. HostShield can offer it locally at zero recurring cost.
-  Evidence: NextDNS NRD feature; https://nextdns.io/; Quad9 threat intelligence approach; URLhaus feed analysis showing high NRD prevalence in malware domains.
-  Touches: New `NrdChecker` util, `BlocklistHolder.kt` decision path, `DnsVpnService.kt` block-reason attribution, NRD feed/data source integration, Settings toggle, `DnsLogEntry` block-reason field.
-  Acceptance: Domains younger than a configurable threshold (default 30 days) are blocked when NRD protection is enabled; block reason is attributed as "newly registered" in logs; a curated NRD feed or WHOIS-based age check provides the data; false-positive rate is documented.
-  Complexity: L
-
 ### P3
-
-- [ ] P3 — Typosquatting and IDN homograph detection
-  Why: NextDNS detects lookalike domains (e.g., `paypai.com`, Cyrillic `а` substituted for Latin `a`). This catches phishing domains that bypass blocklists because they are newly created or not yet reported. Local-first detection using Levenshtein distance against a curated brand list requires no cloud service.
-  Evidence: NextDNS typosquatting/homograph protection feature; IDN homograph attack Wikipedia documentation; Unicode confusable characters database (unicode.org/reports/tr39/).
-  Touches: New `HomographDetector` util, `BlocklistHolder.kt` or `DnsVpnService.kt` decision path, curated brand/domain list, `DnsLogEntry` block-reason attribution.
-  Acceptance: Known confusable substitutions of popular domains (configurable brand list) are detected and blocked or warned; IDN domains with mixed-script characters are flagged; detection runs locally with no network calls; false-positive rate on legitimate IDN domains is documented.
-  Complexity: L
-
-- [ ] P3 — DGA (Domain Generation Algorithm) heuristic detection
-  Why: NextDNS detects algorithmically-generated domains used by botnets. HostShield's threat intel is feed-based and cannot catch zero-day DGA domains not yet in any feed. A lightweight entropy/n-gram classifier running locally can flag high-entropy random-looking domains for review or blocking.
-  Evidence: NextDNS DGA detection feature; academic literature on DGA detection via character entropy and n-gram frequency; Quad9 threat intelligence approach.
-  Touches: New `DgaClassifier` util, `BlocklistHolder.kt` or `DnsVpnService.kt` decision path, Settings toggle (off by default), `DnsLogEntry` block-reason attribution, false-positive review integration with threat-intel allowlisting.
-  Acceptance: A lightweight classifier flags domains exceeding an entropy/n-gram threshold; flagged domains are blocked (strict mode) or logged-only (monitor mode); classifier does not require network access; known CDN/cloud random-subdomain patterns are allowlisted; false-positive rate on legitimate domains is < 0.1%.
-  Complexity: L
 
 - [ ] P3 — Tracker company attribution view
   Why: TrackerControl and NextDNS show "tracking companies" (Google, Facebook, Amazon, etc.) as a first-class concept, not just blocked domains. This turns raw block data into a privacy story users can understand and act on. HostShield's tracker scanner (405 SDK signatures) already has company metadata but does not surface it in DNS log analytics.
@@ -828,119 +668,10 @@ dependency/licensing review, and implementation-test corpus design.
   Acceptance: StatsScreen shows top 10 blocked domains, top 10 allowed domains, per-app block counts, block rate percentage over 24h/7d, and category distribution; drill-down from any stat opens filtered log view; all computation is local with no network calls.
   Complexity: M
 
-## Research-Driven Additions — 2026-06-14
-
-These items are net-new vs. the existing roadmap. The 2026-06-14 research pass
-confirmed the prior RESEARCH.md top opportunities (one-tap allowlist, EDE
-emission, YouTube Restricted Mode, log retention, temporary-bypass UX, Cronet
-CVE, targetSdk 36) are all shipped or moot, so none are re-added. DDR, NAT64,
-DNSCrypt spike, ODoH, EDE parse/display, SVCB-ECH awareness, DNSSEC, resolver
-tests, the `DnsVpnService` decomposition, and the analytics/tracker items above
-already exist and are deliberately excluded.
-
-### P1
-
-- [ ] P1 — Android 17 (API 37) Certificate Transparency readiness for pinned encrypted DNS
-  Why: Targeting API 37 enables Certificate Transparency by default for system-trust TLS. Because the encrypted-DNS stack is fail-closed (no plaintext fallback), a pinned DoH/DoT provider whose cert is not CT-logged would fail CT verification and produce a total DNS outage — the highest-severity defect class for this app (same impact as the GitHub #1 leak). Must be audited before any targetSdk 37 bump.
-  Evidence: https://developer.android.com/privacy-and-security/certificate-transparency-policy ; `app/app/src/main/res/xml/network_security_config.xml` (system trust anchors, no per-domain config); `DohResolver.kt`/`DotResolver.kt` CertificatePinner usage; https://developer.android.com/about/versions/17/behavior-changes-17
-  Touches: `network_security_config.xml` (add `<domainEncryption>`/CT opt-out per provider as needed), `DohResolver.kt`, `DotResolver.kt`, `DohPinManifest.kt`, a provider-cert CT-status audit doc/test.
-  Acceptance: Every default and user-selectable DoH/DoT provider cert is verified CT-logged, or a per-domain CT opt-out is declared; an instrumented or documented check confirms encrypted DNS still resolves on an API-37 build; no fail-closed outage on CT enforcement.
-  Complexity: M
-
-### P2
-
-
-
-- [ ] P2 — Android 17 ACCESS_LOCAL_NETWORK readiness audit
-  Why: Android 17 (API 37) enforces the new `ACCESS_LOCAL_NETWORK` permission for LAN access by default. The core resolver path is exempt (DNS to/from a local DNS server on port 53), but the LAN-exposed Local DNS server on non-:53 ports and any LAN probing would be blocked without the permission. Needs an audit before targeting API 37.
-  Evidence: https://developer.android.com/privacy-and-security/local-network-permission (port-53 DNS exemption); `LocalDnsServer.kt` (LAN bind + abuse controls), captive-portal/connectivity probes, any mDNS/NSD usage.
-  Touches: `AndroidManifest.xml` (declare `ACCESS_LOCAL_NETWORK` if needed), `LocalDnsServer.kt`, `CaptivePortalHandler.kt`, runtime-permission request flow, docs.
-  Acceptance: An audit enumerates every LAN-touching call site and whether it falls under the :53 exemption; the LAN DNS server (non-:53) and any LAN probe declare/request the permission and degrade gracefully when denied on API 37; core port-53 resolution verified unaffected.
-  Complexity: M
-
 ### P3
-
-
-- [ ] P3 — Android 17 ECH opt-in for the DoH/DoT transport
-  Why: Distinct from the existing "SVCB/HTTPS/ECH awareness" item (which parses the `ech` SVCB param for *resolved domains*). Android 17 adds platform Encrypted Client Hello for the app's *own* TLS connections via `<domainEncryption>` in network security config, hiding the SNI of HostShield's DoH/DoT resolver connections — anti-censorship hardening consistent with fail-closed pinning.
-  Evidence: https://developer.android.com/about/versions/17/behavior-changes-17 (ECH via `<domainEncryption>`); `res/xml/network_security_config.xml`; `DohResolver.kt`/`DotResolver.kt`.
-  Touches: `network_security_config.xml` (`<domainEncryption>` opportunistic/enabled per resolver host), settings toggle, docs; gated on minSdk/targetSdk reaching API 37.
-  Acceptance: On API-37 builds, DoH/DoT resolver connections negotiate ECH when the resolver supports it (opportunistic by default), with a user toggle; no regression when the resolver lacks ECH; fail-closed pinning preserved.
-  Complexity: M
-
-- [ ] P3 — Battery-friendly mode (doze-aware resolver tuning)
-  Why: Battery drain is the recurring real-world complaint against always-on VPN-mode DNS firewalls (RethinkDNS users report ~16% drain with DNS+firewall). HostShield already has Doze/App-Standby resilience (v6.5.3) but no user-facing battery-optimization mode; leading on a measurable low-power path is a differentiator.
-  Evidence: https://www.saashub.com/compare-rethinkdns-vs-netguard (battery-drain reports); existing `DnsVpnService.kt` watchdog (60s heartbeat), `DohResolver` provider racing/EMA, `DnsCache` serve-stale.
-  Touches: `DnsVpnService.kt` (watchdog cadence under battery saver), `DohResolver.kt` (cap concurrent provider probing), `DnsCache.kt` (extend serve-stale window), a setting + PowerManager battery-saver observer.
-  Acceptance: A battery-saver-aware mode reduces watchdog frequency, caps DoH provider racing to the fastest known provider, and widens serve-stale on low battery; measured drain reduction documented; resolution correctness and fail-closed behavior unchanged.
-  Complexity: M
-
-## Research-Driven Additions — 2026-06-14 (Pass 2)
-
-Net-new vs. the existing roadmap and vs. the 2026-06-14 (Pass 1) additions above.
-This pass re-verified every Pass-1 code claim against the v6.9.10 source. Items
-confirmed already-shipped and therefore NOT added: per-app VPN exclusion
-(`AppExclusionsScreen.kt`, `addDisallowedApplication`), QR config share/import
-(`QrConfigImporter.kt`), custom-URL blocklist subscriptions (`SourceRepository`/
-`SourceDownloader`), fastest-upstream auto-pick (`DohResolver.getFastestProvider`).
-The Android 15+ `dataSync` 6h foreground-service cap is moot — all protection
-services declare FGS type `systemExempted`, not `dataSync`.
-
-### P2
-
-- [ ] P2 — Android Developer Verification readiness (Sept 2026 deadline)
-  Why: Google's mandatory developer verification for sideload-installable apps on certified Android devices begins September 2026 (Brazil, Indonesia, Singapore, Thailand first, then global). HostShield's primary distribution lanes are GitHub release APK, F-Droid/IzzyOnDroid, and Obtainium — all sideload paths affected. Without a verified developer identity + registered package/signing-key, the APK may stop installing on certified devices post-rollout. Distinct from the existing Play/Obtainium/IzzyOnDroid items, which do not address verification identity.
-  Evidence: https://blog.accrescent.app/posts/android-developer-verification/ ; https://accrescent.app/docs/guide/publish/requirements.html ; existing distribution items in this ROADMAP (Obtainium/Play/IzzyOnDroid).
-  Touches: release/signing process docs (`tools/release-provenance.ps1`, `app/metadata/en-US/*`), README distribution section, GitHub release workflow notes; no app-code change.
-  Acceptance: A documented plan exists for registering the HostShield package + signing-key fingerprint under Google's developer-verification program (or an explicit decision to remain unverified with the device-compatibility consequences stated); the release docs name the responsible identity and key-custody path; verified before the global rollout reaches the project's user base.
-  Complexity: S
-
-### P3
-
-
-## Research-Driven Additions
-
-### P1
-
-
-
-## Audit Findings — 2026-06-15
-
-### P1
-
-### P2
-
-
-### P3
-
-- [ ] P3 — ~60+ hardcoded English strings in Home, Stats, Warnings, DNS Settings, Sources dialogs
-  Why: Breaks localization. Existing pattern uses `stringResource()` in other files.
-  Where: `HomeComponents.kt`, `HomeStatsSection.kt`, `HomeWarningsSection.kt`, `DnsSettingsSection.kt`, `SettingsScreen.kt`, `SourcesScreen.kt`
-
-## Research-Driven Additions
-
-### P0 - Critical Security and Data Safety
-
-### P1 - Reliability and Hardening
-
-- [ ] P1 -- Add APK signing lineage and key-rotation drill
-  Why: The existing developer-verification item registers the current package/signing key, but it does not prove update survivability after release-key loss, compromise, or planned rotation across GitHub/F-Droid/Obtainium installs.
-  Evidence: `app/app/build.gradle.kts` signing configuration; `hostshield-release.keystore`; https://source.android.com/docs/security/features/apksigning/v3 ; https://source.android.com/docs/security/features/apksigning/v3-1
-  Touches: release signing docs, `tools/release-provenance.ps1`, `.github/workflows/release.yml`, release verification notes, private key-custody procedure.
-  Acceptance: A documented rotation drill creates an APK signing lineage, signs test APKs with old/new keys, verifies install/update behavior on API 28/33/37, records current and rotated fingerprints, and states the recovery path if the production key is lost or compromised.
-  Complexity: M
-
-### P2 - Evidence Quality and Observability
 
 
 ### P3 - Operational Maturity
-
-- [ ] P3 -- Ship a startup and protection-enable Baseline Profile
-  Why: HostShield is a Compose-heavy VPN utility where first launch, onboarding, and enabling protection are latency-sensitive, but no baseline profile module or plugin is configured.
-  Evidence: `app/app/build.gradle.kts`; `app/app/src/main/java/com/hostshield/MainActivity.kt`; `app/app/src/main/java/com/hostshield/ui/screens/onboarding/OnboardingScreen.kt`; https://developer.android.com/topic/performance/baselineprofiles/overview ; https://developer.android.com/develop/ui/compose/performance/baseline-profiles
-  Touches: Gradle plugin/dependencies, new baseline profile or macrobenchmark module, `MainActivity.kt`, onboarding/Home/Settings critical flows, CI release verification.
-  Acceptance: Release builds include a generated Baseline Profile for cold start, onboarding, Home load, and protection-enable paths; CI can regenerate or verify the profile; startup metrics before/after are recorded.
-  Complexity: M
 
 - [ ] P3 -- Move from pseudolocale scaffolding to real i18n and LocaleConfig readiness
   Why: Debug pseudolocales and some string resources exist, but the app has no real locale configuration and still contains hardcoded user-facing English in Compose surfaces.
@@ -949,50 +680,135 @@ services declare FGS type `systemExempted`, not `dataSync`.
   Acceptance: Top Home/Settings/DNS/QR/backup flows use string resources for user-facing copy, pseudolocale/RTL tests cover those flows, and `generateLocaleConfig` is either enabled with the first real locale or explicitly documented as deferred until translations ship.
   Complexity: M
 
-## Research-Driven Additions
+## Research-Driven Additions — 2026-06-19
 
 ### P1
 
-- [ ] P1 — Respect scoped AdGuard DNS rules instead of globalizing them
-  Why: Scoped `$app=`, `$client=`, and `$ctag=` DNS rules are safety boundaries; applying their base domain globally can create false positives and makes imported custom rules less trustworthy.
-  Evidence: `app/app/src/main/java/com/hostshield/domain/parser/AdblockRuleParser.kt`; https://adguard-dns.io/kb/general/dns-filtering-syntax/ ; https://github.com/AdguardTeam/Adguardhome/wiki/Clients
-  Touches: `AdblockRuleParser.kt`, `HostsParser.kt`, DNS rule matching in `BlocklistHolder.kt`/`DnsVpnService.kt`, parser tests, custom-source import validation.
-  Acceptance: Scoped rules are either honored against Android package/client metadata or safely skipped with a parser warning; no `$app=`, `$client=`, or `$ctag=` rule can block globally unless explicitly unscoped; unit tests cover positive, negated, malformed, and mixed scoped-rule imports.
+- [ ] P1 — Add predictive back gesture support across all navigation
+  Why: Android 16 enforces predictive back for apps targeting SDK 36+. HostShield has zero `BackHandler` usage and no `enableOnBackInvokedCallback` manifest flag. Back navigation will break or show the system default animation instead of in-app transitions.
+  Evidence: `AndroidManifest.xml` missing `enableOnBackInvokedCallback`; Grep for `BackHandler|predictiveBack` returns zero hits across `ui/`; Android 16 behavior changes docs.
+  Touches: `app/app/src/main/AndroidManifest.xml`, `ui/navigation/Navigation.kt`, all 31+ screen composables with back navigation.
+  Acceptance: `android:enableOnBackInvokedCallback="true"` in manifest; all screens with `onBack` parameters use `BackHandler` or Compose predictive back APIs; back gestures show preview animation on Android 14+.
   Complexity: M
 
-- [ ] P1 — Verify release attestations and publish user verification commands
-  Why: Release CI now generates APK/AAB/SBOM attestations, but users and maintainers still lack a release-blocking verification step and copy-ready provenance commands.
-  Evidence: `.github/workflows/release.yml`; `tools/release-provenance.ps1`; https://docs.github.com/en/actions/concepts/security/artifact-attestations ; https://cli.github.com/manual/gh_attestation_verify
-  Touches: `.github/workflows/release.yml`, `tools/release-provenance.ps1`, `tools/check-release-docs.ps1`, `README.md`, `app/README.md`.
-  Acceptance: Release CI verifies APK, AAB, and SBOM attestations with repo/workflow identity constraints; release provenance includes exact `gh attestation verify` commands for `SysAdminDoc/HostShield`; docs check fails if those commands drift.
+- [ ] P1 — Add DoH/DoT provider pin-sets to `network_security_config.xml`
+  Why: HostShield pins DoH/DoT certificates only in OkHttp code (`DohPinManifest.kt`). The existing `network_security_config.xml` disables cleartext and whitelists the captive portal host, but has no `<pin-set>` entries. Adding declarative pin-sets provides defense-in-depth and prepares for Android 17 ECH opt-in.
+  Evidence: `app/app/src/main/res/xml/network_security_config.xml` exists with base-config only; `DohPinManifest.kt` has SPKI pins for 7 providers; Android network security config docs.
+  Touches: `app/app/src/main/res/xml/network_security_config.xml`.
+  Acceptance: XML config declares `<pin-set>` for each DoH/DoT provider domain matching `DohPinManifest.kt` pins; unit test validates XML pin-set entries match code pin manifest; existing captive portal cleartext exception preserved.
   Complexity: S
 
-- [ ] P1 — Gate DoH/DoT pin manifest freshness and live-chain drift
-  Why: `DohPinManifest` records review/expiry dates and DoT reuses those pins, but CI does not fail before a review-due/expired pin or provider-chain rotation can cause encrypted-DNS outage.
-  Evidence: `app/app/src/main/java/com/hostshield/service/DohPinManifest.kt`; `app/app/src/main/java/com/hostshield/service/DotResolver.kt`; OkHttp `CertificatePinner` behavior.
-  Touches: `DohPinManifest.kt`, new pin-audit test or script, `tools/check-release-docs.ps1`, release workflow, diagnostics.
-  Acceptance: A deterministic test fails on review-due or expired pins; an optional live-chain audit validates each configured provider has at least one pinned SPKI in the verified chain; diagnostics and release provenance report pin freshness.
+- [ ] P1 — Add DNS query deduplication (in-flight coalescing)
+  Why: Concurrent identical DNS queries (same domain + qtype) all independently hit upstream, wasting bandwidth and exposing HostShield to amplification from chatty apps. Pi-hole v6 and RethinkDNS both coalesce in-flight queries — the first query goes upstream, subsequent identical queries wait for the same response.
+  Evidence: `DnsVpnService.kt` `forwardUdp`/`forwardDoH`/`forwardDoT` have no pending-query tracking; Pi-hole v6 blog; RethinkDNS firestack query dedup.
+  Touches: `service/DnsVpnService.kt`, `service/DnsCache.kt`, new `DnsQueryDeduplicator.kt`.
+  Acceptance: Identical queries within a configurable window (e.g., 2s) share a single upstream resolution; cache hit rate improves measurably; unit test verifies dedup behavior for concurrent identical queries and distinct queries.
   Complexity: M
 
 ### P2
 
-- [ ] P2 — Add curated blocklist source provenance and license metadata gate
-  Why: The curated gallery is a trust surface, but entries lack homepage, license, maintainer, issue-report URL, last-reviewed date, mirror policy, and format/license compatibility checks.
-  Evidence: `app/app/src/main/assets/curated_blocklists.json`; `app/app/src/main/java/com/hostshield/data/repository/SourceRepository.kt`; https://github.com/AdguardTeam/HostlistsRegistry ; https://github.com/StevenBlack/hosts
-  Touches: `curated_blocklists.json`, `SourceRepository.kt`, `BlocklistGalleryScreen.kt`, `CuratedBlocklistsCatalogTest.kt`, release-doc checks.
-  Acceptance: Every curated source has license/provenance/review metadata; tests reject duplicate URLs, non-HTTPS URLs, missing issue/homepage/license fields, stale review dates, and unsupported formats; gallery rows surface license/provenance details without adding clutter.
-  Complexity: M
-
-- [ ] P2 — Add automated accessibility regression gates for key Compose flows
-  Why: HostShield has accessibility modifiers and connected smoke flows, but no gate catches missing labels, broken semantics, live-region regressions, or undersized touch targets before release.
-  Evidence: `app/app/src/main/java/com/hostshield/ui/accessibility/AccessibilityModifiers.kt`; `app/app/src/androidTest/java/com/hostshield/ui/TopFlowComposeTest.kt`; https://developer.android.com/develop/ui/compose/accessibility/testing ; https://developer.android.com/training/testing/espresso/accessibility-checking
-  Touches: `TopFlowComposeTest.kt`, `HostShieldTestTags.kt`, shared Compose components, Home/Sources/Rules/Logs/Settings/DNS Tools/Parental screens.
-  Acceptance: Connected tests assert labels/content descriptions, switch/tab state descriptions, live regions, focusable actions, and minimum 48dp targets on the top flows; suppressions are narrow and documented if a framework limitation blocks a check.
-  Complexity: M
-
-- [ ] P2 — Expand release truth checks to root evidence docs
-  Why: Root docs still carry product/security claims outside the current release-doc gate, including stale generated logo prompt copy that mentions removed offline GeoIP support.
-  Evidence: `LOGO_PROMPTS.md`; `CLAUDE.md`; `tools/check-release-docs.ps1`; `RESEARCH.md`
-  Touches: `tools/check-release-docs.ps1`, `LOGO_PROMPTS.md`, `CLAUDE.md`, release-doc validation patterns.
-  Acceptance: Release-doc validation reads all root product-claim docs or explicitly excludes generated/developer-only docs; stale phrases for removed features, experimental transports, SDK versions, and resolver posture fail the check.
+- [ ] P2 — Add Dynamic Color / Material You support
+  Why: Every major competitor (AdGuard, RethinkDNS, Blokada) supports Android 12+ dynamic color theming. HostShield's theme is hardcoded AMOLED palette with 6 accent colors but no `dynamicDarkColorScheme()` / `dynamicLightColorScheme()`. This is one of the most common user expectations for modern Android apps.
+  Evidence: `ui/theme/Theme.kt` uses `darkColorScheme()` with static colors, no `DynamicColor` import; AdGuard v4.0 blog shows dynamic color; Android dynamic color docs.
+  Touches: `ui/theme/Theme.kt`, `data/preferences/UiPreferences.kt` (new pref), `ui/screens/settings/SettingsScreen.kt`.
+  Acceptance: New "System colors" option in Settings alongside existing accent colors; when enabled on Android 12+, theme derives from wallpaper; falls back to existing AMOLED palette on older Android or when disabled; high-contrast AMOLED mode still works independently.
   Complexity: S
+
+- [ ] P2 — Extract co-located ViewModels to separate files
+  Why: 7+ screens (StatsScreen 1,314 LOC, LogsScreen 1,282 LOC, SettingsScreen 1,218 LOC, SourcesScreen 1,166 LOC, DnsToolsScreen 953 LOC, FirewallScreen 913 LOC, OnboardingScreen 845 LOC) embed `@HiltViewModel` classes in the same file as composables. This makes ViewModels harder to test independently and inflates file sizes.
+  Evidence: Grep for `@HiltViewModel` shows 18 ViewModels, most co-located with their screen composable; `StatsScreen.kt` has `StatsViewModel` starting at line 173 within the same 1,314-line file.
+  Touches: Extract each ViewModel to `<Screen>ViewModel.kt` alongside the screen file.
+  Acceptance: Each extracted ViewModel is in its own file; existing tests still pass; no behavioral change.
+  Complexity: S
+
+- [ ] P2 — Add ViewModel Flow testing with Turbine
+  Why: 18 ViewModels manage complex state via StateFlow/SharedFlow but have zero Flow-testing assertions. Turbine is the standard library for testing Kotlin Flows in Android and would catch state ordering bugs.
+  Evidence: `app/app/build.gradle.kts` has no Turbine dependency; 382 test methods exist but none test ViewModel state emissions; `HomeViewModel.kt` (976 LOC) has complex combined Flow logic.
+  Touches: `app/gradle/libs.versions.toml` (add Turbine), `app/app/build.gradle.kts`, new test files for HomeViewModel, StatsViewModel, LogsViewModel, SourcesViewModel.
+  Acceptance: Turbine dependency added; at least 4 ViewModels have Flow emission tests covering initial state, loading, success, and error states; CI passes.
+  Complexity: M
+
+- [ ] P2 — Add Robolectric for Android-dependent unit tests
+  Why: 48 unit test files use JUnit4 only. Code that depends on Android APIs (Context, SharedPreferences, Resources) requires instrumented tests or Robolectric. Currently, any Android-dependent test must run on a device.
+  Evidence: No Robolectric dependency in `libs.versions.toml`; `BackupRestoreUtilTest.kt` uses synthetic JSON instead of exercising real Android URI paths; `DiagnosticExporterTest.kt` similarly avoids Android APIs.
+  Touches: `app/gradle/libs.versions.toml`, `app/app/build.gradle.kts`, existing test files that mock Android APIs.
+  Acceptance: Robolectric configured; at least 3 existing tests converted to use Robolectric for Context/Resources access; CI passes.
+  Complexity: M
+
+- [ ] P2 — Add Bloom filter pre-check to BlocklistHolder
+  Why: The hash set fast path handles exact matches in O(1), but negative lookups (allowed domains) still traverse the trie. A Bloom filter (~1MB for 200K domains, <0.1% false positive) can fast-reject queries not in any blocklist, skipping both hash set and trie. This matters for the 60-70% of queries that are allowed.
+  Evidence: `BlocklistHolder.kt` `isBlocked()` checks hash set then walks trie; `DnsCache.kt` comments note 60-70% cache hit rate; Pi-hole and AdGuard Home both use pre-filter structures for fast rejection.
+  Touches: `domain/BlocklistHolder.kt`.
+  Acceptance: Bloom filter populated during `update()`/`updateAsync()`; `isBlocked()` checks Bloom filter before trie for non-cached domains; unit test verifies no false negatives and measures lookup speedup.
+  Complexity: M
+
+- [ ] P2 — Harden AdGuard `$app=` and `$client=` modifier handling
+  Why: `AdblockRuleParser.kt` ignores `$app=` and `$client=` scope-limiting modifiers but still applies the base domain rule globally. This means an imported AdGuard rule like `||tracker.com^$app=com.example` blocks tracker.com for ALL apps, not just com.example. Silent global fallback is wrong for a security utility.
+  Evidence: `AdblockRuleParser.kt` strips modifiers; RESEARCH.md "Verified" section confirms this; AdGuard DNS filtering syntax docs define `$app=` as Android package scope.
+  Touches: `domain/parser/AdblockRuleParser.kt`, `domain/BlocklistHolder.kt`, `service/DnsVpnService.kt` (needs app UID context in block check), `AdblockRuleParserTest.kt`.
+  Acceptance: Rules with `$app=` are either applied only to the specified package (preferred) or rejected with a diagnostic log entry explaining the unsupported modifier. Rules are never silently applied globally when a scope modifier is present.
+  Complexity: L
+
+### P3
+
+- [ ] P3 — Add DNS query latency percentile tracking (p50/p95/p99)
+  Why: The Home sparkline shows average latency. NextDNS and Cloudflare Gateway show percentile breakdowns. Percentiles reveal tail latency from slow providers or network transitions that averages hide.
+  Evidence: `DnsLogEntry` has `responseTimeMs`; `StatsScreen.kt` aggregates average latency; NextDNS analytics dashboard shows p50/p95/p99.
+  Touches: `DnsLogDao` (percentile queries), `StatsScreen.kt`, `StatsViewModel.kt`.
+  Acceptance: Stats shows p50, p95, p99 latency for 24h and 7d windows alongside existing average; data derived from existing Room log entries.
+  Complexity: S
+
+- [ ] P3 — Add per-app bandwidth attribution in stats
+  Why: RethinkDNS shows per-app DNS query counts and data usage. HostShield has per-app DNS logs but no aggregated bandwidth view. Users want to know which apps generate the most DNS traffic.
+  Evidence: `DnsLogDao` has per-app query methods; `AppsScreen.kt` shows app list; RethinkDNS per-app connection stats.
+  Touches: `DnsLogDao` (aggregation queries), `StatsScreen.kt` or `AppsScreen.kt`.
+  Acceptance: Stats or Apps screen shows top 10 apps by DNS query count and block count for 24h/7d; tapping an app opens filtered logs.
+  Complexity: S
+
+- [ ] P3 — Add light theme option
+  Why: CLAUDE.md says "Include a light theme option when practical." HostShield is dark-only. Some users need light themes for outdoor readability, accessibility, or preference.
+  Evidence: `Theme.kt` only defines dark color schemes (`darkColorScheme()`); no light palette exists; user preferences page has no theme toggle beyond accent color and high-contrast.
+  Touches: `ui/theme/Theme.kt` (add light palette), `data/preferences/UiPreferences.kt`, `ui/screens/settings/SettingsScreen.kt`.
+  Acceptance: Settings offers Dark/Light/System theme choice; light theme uses Material 3 light color scheme with HostShield accent colors; system option follows Android dark mode setting.
+  Complexity: M
+
+- [ ] P3 — Add curated blocklist source metadata (license, homepage, maintainer)
+  Why: `curated_blocklists.json` has labels, URLs, categories, and entry estimates but no license field, maintainer, homepage, last-reviewed date, or format compatibility tag. AdGuard HostlistsRegistry models richer source metadata. Users and auditors need to know which blocklists are GPL-compatible.
+  Evidence: `app/app/src/main/assets/curated_blocklists.json`; AdGuard HostlistsRegistry JSON schema; `CuratedBlocklistsCatalogTest.kt` validates structure but not metadata completeness.
+  Touches: `app/app/src/main/assets/curated_blocklists.json`, `CuratedBlocklistsCatalogTest.kt`.
+  Acceptance: Each curated source has `license`, `homepage`, and `last_reviewed` fields; catalog test validates all sources have these fields; gallery UI shows license badge.
+  Complexity: S
+
+- [ ] P3 — Add scheduled DNS log retention cleanup notification
+  Why: `LogCleanupWorker` silently prunes logs older than the configured retention period. Users may not realize old logs were deleted, especially if they set a short retention.
+  Evidence: `service/LogCleanupWorker.kt` exists; no notification is sent after cleanup; PCAPdroid notifies users about data retention.
+  Touches: `service/LogCleanupWorker.kt`, string resources.
+  Acceptance: After cleanup, a summary notification shows how many entries were purged and the current retention setting; notification is optional (can be disabled in Settings).
+  Complexity: S
+
+- [ ] P3 — Document and test VPN coexistence with Tailscale, Mullvad, and WireGuard
+  Why: "Does it work with other VPNs?" is the #1 FAQ. Root mode works alongside VPNs, but specific coexistence patterns (Tailscale MagicDNS, Mullvad DNS leak prevention, WireGuard split-tunnel) need tested documentation.
+  Evidence: README FAQ section; community complaints about VPN conflicts on Reddit r/privacy; Tailscale/WireGuard Android VPN behavior.
+  Touches: `README.md` FAQ section, optional `docs/vpn-coexistence.md`.
+  Acceptance: README FAQ has tested guidance for Tailscale, Mullvad, and WireGuard coexistence in both VPN and root modes; known conflicts are documented with workarounds.
+  Complexity: S
+
+## Audit Findings — 2026-06-17
+
+- [ ] P2 — Lifecycle 2.11 requires API 37 compile-SDK readiness
+  Why: AndroidX Lifecycle 2.11.0 fails AAR metadata on the current compileSdk 36 line; adopting it safely should be bundled with the API 37 readiness audit instead of bypassing the guard.
+  Where: `app/gradle/libs.versions.toml`, `app/app/build.gradle.kts`
+
+## Audit Findings — 2026-06-18
+
+- [ ] P1 — Reconcile `systemExempted` foreground-service declarations with exact-alarm permissions
+  Why: Release lint still baselines `ForegroundServicePermission` for protection services; changing service types or permissions needs Android 15+ behavior validation and Play-policy review.
+  Where: `app/app/src/main/AndroidManifest.xml`, foreground service start paths.
+
+- [ ] P1 — Review battery-optimization exemption request against Play policy and flavor behavior
+  Why: Release lint still baselines `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; removing, flavor-gating, or rewording this affects protection reliability and store compliance.
+  Where: `app/app/src/main/java/com/hostshield/util/BatteryOptimizationUtil.kt`, Settings battery optimization flow.
+
+- [ ] P2 — Plan the remaining toolchain/dependency refresh as a compatibility batch
+  Why: Remaining lint/dependency baseline entries cover target/compile SDK, KSP, core-ktx, Kotlin, serialization, Vico, and JSON; several likely need coordinated Android 17/API 37 readiness and visual/chart regression checks.
+  Where: `app/app/build.gradle.kts`, `app/gradle/libs.versions.toml`, chart and serialization call sites.
