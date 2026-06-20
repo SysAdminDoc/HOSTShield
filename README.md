@@ -398,6 +398,15 @@ HostShield focuses on local DNS blocking with a curated gallery of 50+ blocklist
 **Does it work with other VPNs?**
 In VPN mode: no — Android only allows one VPN at a time. In root mode: yes — iptables rules work alongside any VPN.
 
+**VPN coexistence guides:**
+
+| VPN | VPN Mode | Root Mode |
+|-----|----------|-----------|
+| **Tailscale** | Not compatible (both need VPN slot). Use root mode or proxy mode. | Works. HostShield iptables rules filter DNS alongside Tailscale's tunnel. Tailscale MagicDNS handles `.ts.net` domains outside HostShield. |
+| **Mullvad** | Not compatible. | Works. Mullvad routes all traffic through WireGuard; HostShield filters DNS via iptables before it enters the tunnel. Mullvad's DNS leak protection is additive. |
+| **WireGuard** | Not compatible. | Works. Set HostShield's local DNS (`127.0.0.1:5454`) as the WireGuard interface DNS, or let iptables NAT redirect DNS queries before they reach the tunnel. |
+| **Proxy mode** | Use HostShield in proxy mode (no VPN slot) alongside any VPN. DNS filtering works via local proxy on the device. | N/A |
+
 **What happens on Android 15/16 if protection is killed or denied at boot?**
 Protection services use Android's `systemExempted` foreground-service type for VPN/root/proxy filtering, and each service records timeout events before shutting down cleanly. If Android denies a boot or background restart, HostShield records `foreground_service_start_failed` in the local diagnostic export and the Home screen asks the user to reopen the app and enable protection again.
 
