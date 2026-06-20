@@ -87,6 +87,7 @@ class HostShieldRepository @Inject constructor(
     fun getHourlyBlocked(since: Long): Flow<List<HourlyStat>> = logs.getHourlyBlocked(since)
     fun getHourlyTotal(since: Long): Flow<List<HourlyStat>> = logs.getHourlyTotal(since)
     fun getAllAppsWithCounts(): Flow<List<AppQueryStat>> = logs.getAllAppsWithCounts()
+    fun getTopAppsSince(since: Long, limit: Int = 10): Flow<List<AppQueryStat>> = logs.getTopAppsSince(since, limit)
     fun getDomainsForApp(pkg: String, limit: Int = 200): Flow<List<AppDomainStat>> = logs.getDomainsForApp(pkg, limit)
     fun getMostQueriedDomains(since: Long, limit: Int = 30): Flow<List<TopHostname>> = logs.getMostQueriedDomains(since, limit)
     fun getDailyBreakdown(since: Long): Flow<List<DailyBreakdown>> = logs.getDailyBreakdown(since)

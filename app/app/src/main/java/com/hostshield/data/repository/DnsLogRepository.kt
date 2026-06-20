@@ -23,6 +23,7 @@ class DnsLogRepository @Inject constructor(
     fun getHourlyBlocked(since: Long): Flow<List<HourlyStat>> = logDao.getHourlyBlocked(since)
     fun getHourlyTotal(since: Long): Flow<List<HourlyStat>> = logDao.getHourlyTotal(since)
     fun getAllAppsWithCounts(): Flow<List<AppQueryStat>> = logDao.getAllAppsWithCounts()
+    fun getTopAppsSince(since: Long, limit: Int = 10): Flow<List<AppQueryStat>> = logDao.getTopAppsSince(since, limit)
     fun getDomainsForApp(pkg: String, limit: Int = 200): Flow<List<AppDomainStat>> = logDao.getDomainsForApp(pkg, limit)
     fun getMostQueriedDomains(since: Long, limit: Int = 30): Flow<List<TopHostname>> = logDao.getMostQueriedDomains(since, limit)
     fun getDailyBreakdown(since: Long): Flow<List<DailyBreakdown>> = logDao.getDailyBreakdown(since)

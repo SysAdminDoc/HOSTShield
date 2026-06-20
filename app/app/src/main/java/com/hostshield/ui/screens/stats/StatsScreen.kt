@@ -398,6 +398,49 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
             }
         }
 
+        // Per-App DNS Activity (24h / 7d)
+        if (state.topApps24h.isNotEmpty() || state.topApps7d.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(2.dp))
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(Green.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Filled.PhoneAndroid, null, tint = Green, modifier = Modifier.size(14.dp))
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Text("Per-App DNS Activity", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        var show7d by remember { mutableStateOf(false) }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(selected = !show7d, onClick = { show7d = false }, label = { Text("24h", fontSize = 11.sp) })
+                            FilterChip(selected = show7d, onClick = { show7d = true }, label = { Text("7d", fontSize = 11.sp) })
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        val apps = if (show7d) state.topApps7d else state.topApps24h
+                        if (apps.isEmpty()) {
+                            Text("No per-app data for this period.", color = TextDim, fontSize = 11.sp)
+                        } else {
+                            apps.forEachIndexed { idx, app ->
+                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("${idx + 1}.", color = TextDim, modifier = Modifier.width(24.dp), fontSize = 11.sp)
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(app.appLabel.ifEmpty { app.appPackage }, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+                                        if (app.appLabel.isNotEmpty()) Text(app.appPackage, color = TextDim, fontSize = 10.sp, maxLines = 1)
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("${nf.format(app.totalQueries)} queries", color = Green, fontSize = 10.sp)
+                                        Text("${nf.format(app.blockedQueries)} blocked", color = Red.copy(alpha = 0.7f), fontSize = 10.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Network Insights: Most aggressively queried domains
         item {
             Spacer(Modifier.height(2.dp))

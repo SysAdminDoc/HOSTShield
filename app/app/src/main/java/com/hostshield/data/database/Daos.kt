@@ -218,6 +218,15 @@ interface DnsLogDao {
     """)
     fun getAllAppsWithCounts(): Flow<List<AppQueryStat>>
 
+    @Query("""
+        SELECT app_package, app_label,
+            COUNT(*) as total_queries,
+            SUM(CASE WHEN blocked = 1 THEN 1 ELSE 0 END) as blocked_queries
+        FROM dns_logs WHERE app_package != '' AND timestamp > :since
+        GROUP BY app_package ORDER BY total_queries DESC LIMIT :limit
+    """)
+    fun getTopAppsSince(since: Long, limit: Int = 10): Flow<List<AppQueryStat>>
+
     /** Trending blocked domains: compare last 24h vs previous 24h. */
     @Query("""
         SELECT hostname, COUNT(*) as cnt FROM dns_logs
