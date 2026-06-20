@@ -3,6 +3,19 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.49] - 2026-06-20
+
+### Added
+- Light theme option with Dark/Light/System mode selector in Settings.
+- Per-app DNS query and block count attribution (24h/7d) in Stats.
+- Robolectric test infrastructure for Android-dependent unit tests.
+- Turbine + MockK ViewModel Flow tests for Rules, Sources, Logs, and Firewall
+  ViewModels (24 assertions).
+
+### Changed
+- Extracted ViewModels from 6 large screen files (Stats, Logs, Sources,
+  Firewall, DnsTools, Rules) into dedicated ViewModel files for testability.
+
 ## [v6.9.48] - 2026-06-19
 
 ### Added
