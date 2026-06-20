@@ -3,6 +3,24 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.48] - 2026-06-19
+
+### Added
+- Dynamic Color / Material You theme support on Android 12+ (opt-in in
+  Settings > Appearance as "System colors").
+- DNS latency percentile tracking (p50/p95/p99) in the Stats DNS Latency card.
+- Log cleanup notification showing purged entry count and retention setting.
+- Curated blocklist source metadata: license, homepage, and review date for
+  all 51 sources with catalog test validation.
+
+### Security
+- Defense-in-depth DoH/DoT certificate pin-sets in `network_security_config.xml`
+  alongside existing OkHttp-level pins.
+
+### Changed
+- Enabled predictive back gesture support (`enableOnBackInvokedCallback`) for
+  Android 14+ system back animations.
+
 ## [v6.9.47] - 2026-06-19
 
 ### Security
