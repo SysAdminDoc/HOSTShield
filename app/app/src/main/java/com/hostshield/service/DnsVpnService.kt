@@ -1626,12 +1626,13 @@ class DnsVpnService : VpnService() {
      * Full TCP state machine handling is complex (NetGuard does it in native C).
      * We take a pragmatic approach:
      *
-     * - SYN packets: If the DNS payload would be blocked (we check the TCP
-     *   data for DNS query when present), send RST. For SYN-only (no data),
-     *   send RST to reject the connection immediately.
-     * - Data packets: Extract the DNS query (2-byte length prefix + DNS message),
-     *   check against blocklist. If blocked, send RST. If allowed, drop the
-     *   packet — app times out and retries with UDP (which we fully handle).
+     * - SYN packets: Send RST to reject the connection immediately. If the SYN
+     *   carries a DNS payload, check it against the blocklist first.
+     * - Data packets with parseable DNS: Check against blocklist. If blocked,
+     *   send RST. If allowed, drop — app times out and retries via UDP.
+     * - Data packets with unparseable DNS (EDNS, zone transfers, fragmented):
+     *   Drop silently. Sending RST here would break legitimate TCP DNS for
+     *   allowed domains.
      *
      * This prevents TCP DNS bypass of blocking without implementing a full
      * TCP state machine. Allowed TCP DNS queries fall back to UDP on timeout
@@ -1649,6 +1650,7 @@ class DnsVpnService : VpnService() {
         val payloadStart = tcpOff + dataOff
         val payloadLen = length - payloadStart
 
+        val isSyn = (tcpFlags and 0x02) != 0
         var hostname: String? = null
         if (payloadLen > 14) {
             val dnsLen = ((packet[payloadStart].toInt() and 0xFF) shl 8) or
@@ -1658,6 +1660,8 @@ class DnsVpnService : VpnService() {
                 hostname = parseDnsQueryDomain(dns)
             }
         }
+
+        if (hostname == null && !isSyn) return
 
         val blocked = if (hostname != null) isDomainBlocked(hostname) else true
 
