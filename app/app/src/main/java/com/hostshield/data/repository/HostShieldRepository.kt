@@ -81,6 +81,7 @@ class HostShieldRepository @Inject constructor(
     fun getBlockedLogs(limit: Int = 500): Flow<List<DnsLogEntry>> = logs.getBlockedLogs(limit)
     fun searchLogs(query: String, limit: Int = 200): Flow<List<DnsLogEntry>> = logs.searchLogs(query, limit)
     fun getTopBlocked(limit: Int = 20): Flow<List<TopHostname>> = logs.getTopBlocked(limit)
+    fun getTopAllowed(since: Long, limit: Int = 10): Flow<List<TopHostname>> = logs.getTopAllowed(since, limit)
     fun getTopBlockedApps(limit: Int = 20): Flow<List<TopApp>> = logs.getTopBlockedApps(limit)
     fun getBlockedCountSince(since: Long): Flow<Int> = logs.getBlockedCountSince(since)
     fun getTotalCountSince(since: Long): Flow<Int> = logs.getTotalCountSince(since)

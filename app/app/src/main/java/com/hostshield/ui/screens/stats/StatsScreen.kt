@@ -356,7 +356,29 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
         if (state.topDomains.isNotEmpty()) {
             val maxCount = state.topDomains.firstOrNull()?.cnt ?: 1
             itemsIndexed(state.topDomains) { index, item ->
-                DomainBar(rank = index + 1, hostname = item.hostname, count = item.cnt, maxCount = maxCount)
+                DomainBar(rank = index + 1, hostname = item.hostname, count = item.cnt, maxCount = maxCount, barColor = Red)
+            }
+        }
+
+        // Top allowed domains
+        if (state.topAllowed.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(2.dp))
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(Green.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Filled.CheckCircle, null, tint = Green, modifier = Modifier.size(14.dp))
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Text("Top Allowed (7d)", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        }
+                    }
+                }
+            }
+            val maxAllowed = state.topAllowed.firstOrNull()?.cnt ?: 1
+            itemsIndexed(state.topAllowed) { index, item ->
+                DomainBar(rank = index + 1, hostname = item.hostname, count = item.cnt, maxCount = maxAllowed, barColor = Green)
             }
         }
 
@@ -965,16 +987,16 @@ private fun MiniStat(modifier: Modifier, label: String, value: String, color: Co
 }
 
 @Composable
-private fun DomainBar(rank: Int, hostname: String, count: Int, maxCount: Int) {
+private fun DomainBar(rank: Int, hostname: String, count: Int, maxCount: Int, barColor: Color = Red) {
     val fraction = if (maxCount > 0) count.toFloat() / maxCount else 0f
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text("$rank.", color = TextDim, modifier = Modifier.width(24.dp), fontSize = 11.sp)
         Box(modifier = Modifier.weight(1f)) {
-            Box(modifier = Modifier.fillMaxWidth(fraction.coerceIn(0.04f, 1f)).height(22.dp).background(Red.copy(alpha = 0.08f), RoundedCornerShape(4.dp)))
+            Box(modifier = Modifier.fillMaxWidth(fraction.coerceIn(0.04f, 1f)).height(22.dp).background(barColor.copy(alpha = 0.08f), RoundedCornerShape(4.dp)))
             Text(hostname, modifier = Modifier.align(Alignment.CenterStart).padding(start = 8.dp), color = TextPrimary, fontSize = 11.sp, maxLines = 1, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
         }
         Spacer(Modifier.width(8.dp))
-        Text(NumberFormat.getNumberInstance().format(count), color = Red, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(44.dp))
+        Text(NumberFormat.getNumberInstance().format(count), color = barColor, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(44.dp))
     }
 }
 
