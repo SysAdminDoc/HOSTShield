@@ -251,6 +251,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.truth)
+    testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
     testImplementation(libs.androidx.room.testing)
     // BackupRestoreUtil unit tests use org.json.JSONObject directly; without
     // this the stubbed Android JSONObject throws `not mocked` and three tests
