@@ -3,6 +3,19 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.52] - 2026-06-20
+
+### Fixed
+- Dynamic color (Material You) now derives custom palette tokens from the
+  wallpaper-based color scheme, preventing visual conflicts between Material
+  surfaces and custom-token UI when system colors are enabled.
+- TCP DNS data packets with unparseable DNS payloads (EDNS, zone transfers,
+  fragmented) are now dropped silently instead of receiving RST, fixing
+  breakage of legitimate TCP DNS for allowed domains. SYN packets still
+  receive RST to reject blocked connections immediately.
+- DoT resolver now tries all configured providers on failure instead of
+  giving up after the primary, matching DoH's multi-provider failover.
+
 ## [v6.9.51] - 2026-06-20
 
 ### Security
