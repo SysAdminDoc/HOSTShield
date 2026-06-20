@@ -117,6 +117,8 @@
     <string name="settings_qr_config_sub">Share config via QR code</string>
     <string name="settings_high_contrast">High-contrast AMOLED</string>
     <string name="settings_high_contrast_sub">Pure-black surfaces, brighter text, and stronger warning states</string>
+    <string name="settings_dynamic_color">System colors</string>
+    <string name="settings_dynamic_color_sub">Use your wallpaper palette for Material You theming</string>
     <string name="settings_crash_reports">Crash reports</string>
     <string name="settings_crash_reports_sub">View stored crash logs</string>
     <string name="settings_tls_fingerprints">TLS fingerprints</string>

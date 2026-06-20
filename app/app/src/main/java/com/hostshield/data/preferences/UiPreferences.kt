@@ -18,6 +18,7 @@ class UiPreferences @Inject constructor(
     internal object Keys {
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val HIGH_CONTRAST_AMOLED = booleanPreferencesKey("high_contrast_amoled")
+        val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val SHOW_NOTIFICATION = booleanPreferencesKey("show_notification")
         val PINNED_DOMAINS = stringPreferencesKey("pinned_domains")
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
@@ -28,6 +29,9 @@ class UiPreferences @Inject constructor(
 
     val highContrastAmoled: Flow<Boolean> = ds.data.map { it[Keys.HIGH_CONTRAST_AMOLED] ?: false }
     suspend fun setHighContrastAmoled(enabled: Boolean) = ds.edit { it[Keys.HIGH_CONTRAST_AMOLED] = enabled }
+
+    val dynamicColor: Flow<Boolean> = ds.data.map { it[Keys.DYNAMIC_COLOR] ?: false }
+    suspend fun setDynamicColor(enabled: Boolean) = ds.edit { it[Keys.DYNAMIC_COLOR] = enabled }
 
     val showNotification: Flow<Boolean> = ds.data.map { it[Keys.SHOW_NOTIFICATION] ?: true }
     suspend fun setShowNotification(show: Boolean) = ds.edit { it[Keys.SHOW_NOTIFICATION] = show }

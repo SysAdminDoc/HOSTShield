@@ -1,6 +1,7 @@
 package com.hostshield.ui.theme
 
 import android.app.Activity
+import android.os.Build
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -10,6 +11,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -345,10 +347,19 @@ private val HostShieldShapes = Shapes(
 fun HostShieldTheme(
     highContrastAmoled: Boolean = false,
     accentColor: String = "teal",
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val palette = hostShieldPalette(highContrastAmoled, accentColor)
     val view = LocalView.current
+
+    val useDynamic = dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val colorScheme = if (useDynamic) {
+        dynamicDarkColorScheme(LocalContext.current)
+    } else {
+        hostShieldColorScheme(palette, highContrastAmoled)
+    }
+
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
@@ -357,7 +368,7 @@ fun HostShieldTheme(
                 isAppearanceLightNavigationBars = false
             }
             @Suppress("DEPRECATION")
-            if (android.os.Build.VERSION.SDK_INT < 35) {
+            if (Build.VERSION.SDK_INT < 35) {
                 window.statusBarColor = palette.black.toArgb()
                 window.navigationBarColor = palette.black.toArgb()
             }
@@ -369,7 +380,7 @@ fun HostShieldTheme(
         LocalHostShieldPalette provides palette,
     ) {
         MaterialTheme(
-            colorScheme = hostShieldColorScheme(palette, highContrastAmoled),
+            colorScheme = colorScheme,
             typography = HostShieldTypography,
             shapes = HostShieldShapes,
             content = content

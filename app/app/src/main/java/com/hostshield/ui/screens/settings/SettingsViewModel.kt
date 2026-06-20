@@ -180,6 +180,7 @@ data class SettingsUiState(
     val updateMessage: String? = null,
     val accentColor: String = "teal",
     val highContrastAmoled: Boolean = false,
+    val dynamicColor: Boolean = false,
     val scheduleEnabled: Boolean = false,
     val scheduleStart: String = "22:00",
     val scheduleEnd: String = "07:00",
@@ -321,15 +322,17 @@ class SettingsViewModel @Inject constructor(
                 prefs.showNotification,
                 prefs.accentColor,
                 prefs.highContrastAmoled,
+                prefs.dynamicColor,
                 prefs.blockedApps
-            ) { notification, accent, highContrast, apps ->
-                UiPrefs(notification, accent, highContrast, apps.size)
+            ) { notification, accent, highContrast, dynamic, apps ->
+                UiPrefs(notification, accent, highContrast, dynamic, apps.size)
             }.collect { p ->
                 _uiState.update {
                     it.copy(
                         showNotification = p.showNotification,
                         accentColor = p.accentColor,
                         highContrastAmoled = p.highContrastAmoled,
+                        dynamicColor = p.dynamicColor,
                         firewalledApps = p.firewalledApps
                     )
                 }
@@ -414,6 +417,7 @@ class SettingsViewModel @Inject constructor(
         val showNotification: Boolean,
         val accentColor: String,
         val highContrastAmoled: Boolean,
+        val dynamicColor: Boolean,
         val firewalledApps: Int
     )
     private data class SchedulePrefs(val enabled: Boolean, val start: String, val end: String, val mode: String)
@@ -499,6 +503,7 @@ class SettingsViewModel @Inject constructor(
     fun setEdeEnabled(enabled: Boolean) { viewModelScope.launch { prefs.setEdeEnabled(enabled) } }
     fun setAccentColor(color: String) { viewModelScope.launch { prefs.setAccentColor(color) } }
     fun setHighContrastAmoled(enabled: Boolean) { viewModelScope.launch { prefs.setHighContrastAmoled(enabled) } }
+    fun setDynamicColor(enabled: Boolean) { viewModelScope.launch { prefs.setDynamicColor(enabled) } }
 
     fun setScheduleEnabled(v: Boolean) {
         viewModelScope.launch {

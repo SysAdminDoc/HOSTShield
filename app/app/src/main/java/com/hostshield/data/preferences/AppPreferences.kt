@@ -145,6 +145,10 @@ class AppPreferences @Inject constructor(
     val highContrastAmoled: Flow<Boolean> get() = ui.highContrastAmoled
     suspend fun setHighContrastAmoled(enabled: Boolean) = ui.setHighContrastAmoled(enabled)
 
+    // ── Dynamic Color (Material You) ────────────────────────
+    val dynamicColor: Flow<Boolean> get() = ui.dynamicColor
+    suspend fun setDynamicColor(enabled: Boolean) = ui.setDynamicColor(enabled)
+
     // ── Auto Backup ──────────────────────────────────────────
     val autoBackupEnabled: Flow<Boolean> get() = sync.autoBackupEnabled
     suspend fun setAutoBackupEnabled(enabled: Boolean) = sync.setAutoBackupEnabled(enabled)

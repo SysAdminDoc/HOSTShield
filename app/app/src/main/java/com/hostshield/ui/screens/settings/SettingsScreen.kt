@@ -554,6 +554,17 @@ fun SettingsScreen(
                 viewModel.setHighContrastAmoled(it)
             }
 
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                SettingsToggle(
+                    stringResource(R.string.settings_dynamic_color),
+                    stringResource(R.string.settings_dynamic_color_sub),
+                    Icons.Filled.Palette,
+                    state.dynamicColor
+                ) {
+                    viewModel.setDynamicColor(it)
+                }
+            }
+
             Spacer(Modifier.height(12.dp))
             Text(stringResource(R.string.label_accent_color), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
             Spacer(Modifier.height(6.dp))
