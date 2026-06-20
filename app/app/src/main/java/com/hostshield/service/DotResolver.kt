@@ -59,6 +59,20 @@ class DotResolver @Inject constructor() {
      * @return The raw DNS response bytes, or null on failure.
      */
     fun resolve(dns: ByteArray, provider: Provider = Provider.CLOUDFLARE): ByteArray? {
+        val result = resolveWithProvider(dns, provider)
+        if (result != null) return result
+        for (fallback in Provider.entries) {
+            if (fallback == provider) continue
+            val fbResult = resolveWithProvider(dns, fallback)
+            if (fbResult != null) {
+                Log.i(TAG, "DoT failover: ${provider.name} failed, resolved via ${fallback.name}")
+                return fbResult
+            }
+        }
+        return null
+    }
+
+    private fun resolveWithProvider(dns: ByteArray, provider: Provider): ByteArray? {
         var socket: SSLSocket? = null
         return try {
             // Use "TLS" (not "TLSv1.3") so the platform negotiates the best
