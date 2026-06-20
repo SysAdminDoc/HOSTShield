@@ -122,6 +122,10 @@ android {
     // than the JVM-mocked stubs that throw `not mocked` at runtime. Pre-v6.5
     // unit tests for BackupRestoreUtil were dead because of this; flipping the
     // flag makes them executable on a normal JVM without Robolectric.
+    androidResources {
+        generateLocaleConfig = true
+    }
+
     testOptions {
         unitTests.isReturnDefaultValues = true
         unitTests.isIncludeAndroidResources = true
