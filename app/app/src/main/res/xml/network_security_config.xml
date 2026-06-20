@@ -10,4 +10,44 @@
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">connectivitycheck.gstatic.com</domain>
     </domain-config>
+    <!-- Defense-in-depth pin-sets for DoH/DoT providers.
+         These mirror the SPKI pins in DohPinManifest.kt (intermediate CA primary,
+         root CA backup). OkHttp CertificatePinner is the primary enforcement layer;
+         these declarative pins add a second Android-platform-level gate. -->
+    <domain-config>
+        <domain includeSubdomains="true">cloudflare-dns.com</domain>
+        <domain includeSubdomains="true">one.one.one.one</domain>
+        <pin-set expiration="2027-06-13">
+            <pin digest="SHA-256">zGgA4OU4DjJdvpRYUqbi5Vh2g9W5Oc/PgKihy9mkLsE=</pin>
+            <pin digest="SHA-256">oyD01TTXvpfBro3QSZc1vIlcMjrdLTiL/M9mLCPX+Zo=</pin>
+        </pin-set>
+    </domain-config>
+    <domain-config>
+        <domain includeSubdomains="true">dns.google</domain>
+        <pin-set expiration="2027-06-13">
+            <pin digest="SHA-256">YPtHaftLw6/0vnc2BnNKGF54xiCA28WFcccjkA4ypCM=</pin>
+            <pin digest="SHA-256">hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=</pin>
+        </pin-set>
+    </domain-config>
+    <domain-config>
+        <domain includeSubdomains="true">dns.quad9.net</domain>
+        <pin-set expiration="2027-06-13">
+            <pin digest="SHA-256">qBRjZmOmkSNJL0p70zek7odSIzqs/muR4Jk9xYyCP+E=</pin>
+            <pin digest="SHA-256">uUwZgwDOxcBXrQcntwu+kYFpkiVkOaezL0WYEZ3anJc=</pin>
+        </pin-set>
+    </domain-config>
+    <domain-config>
+        <domain includeSubdomains="true">dns.nextdns.io</domain>
+        <pin-set expiration="2027-06-13">
+            <pin digest="SHA-256">xwyjb5aN7tSRWj02XSZa2cKGLxXLdKHUBfLT/7twjhQ=</pin>
+            <pin digest="SHA-256">sLVjNUaFYfW7n6EtgBeEpjOlcnBdNPMrZDRF36iwBdE=</pin>
+        </pin-set>
+    </domain-config>
+    <domain-config>
+        <domain includeSubdomains="true">dns.adguard-dns.com</domain>
+        <pin-set expiration="2027-06-13">
+            <pin digest="SHA-256">3fLLVjRIWnCqDqIETU2OcnMP7EzmN/Z3Q/jQ8cIaAoc=</pin>
+            <pin digest="SHA-256">ICGRfpgmOUXIWcQ/HXPLQTkFPEFPoDyjvH7ohhQpjzs=</pin>
+        </pin-set>
+    </domain-config>
 </network-security-config>
