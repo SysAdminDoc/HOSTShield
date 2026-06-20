@@ -18,6 +18,7 @@ class DnsLogRepository @Inject constructor(
     fun searchLogs(query: String, limit: Int = 200): Flow<List<DnsLogEntry>> = logDao.searchLogs(query, limit)
     fun getTopBlocked(limit: Int = 20): Flow<List<TopHostname>> = logDao.getTopBlocked(limit)
     fun getTopAllowed(since: Long, limit: Int = 10): Flow<List<TopHostname>> = logDao.getTopAllowed(since, limit)
+    fun getTopTrackerOwners(since: Long, limit: Int = 10): Flow<List<TrackerOwnerStat>> = logDao.getTopTrackerOwners(since, limit)
     fun getTopBlockedApps(limit: Int = 20): Flow<List<TopApp>> = logDao.getTopBlockedApps(limit)
     fun getBlockedCountSince(since: Long): Flow<Int> = logDao.getBlockedCountSince(since)
     fun getTotalCountSince(since: Long): Flow<Int> = logDao.getTotalCountSince(since)

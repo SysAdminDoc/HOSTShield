@@ -420,6 +420,40 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
             }
         }
 
+        // Tracker Company Attribution
+        if (state.topTrackerOwners.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(2.dp))
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(Flamingo.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Filled.Business, null, tint = Flamingo, modifier = Modifier.size(14.dp))
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Text("Tracking Companies (7d)", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        val totalTrackerQueries = state.topTrackerOwners.sumOf { it.cnt }.coerceAtLeast(1)
+                        state.topTrackerOwners.forEachIndexed { idx, owner ->
+                            val pct = owner.cnt.toFloat() / totalTrackerQueries
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("${idx + 1}.", color = TextDim, modifier = Modifier.width(24.dp), fontSize = 11.sp)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(owner.owner, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+                                    Text(owner.category, color = TextDim, fontSize = 10.sp)
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(nf.format(owner.cnt), color = Flamingo, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Text("${(pct * 100).toInt()}%", color = TextDim, fontSize = 10.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Per-App DNS Activity (24h / 7d)
         if (state.topApps24h.isNotEmpty() || state.topApps7d.isNotEmpty()) {
             item {

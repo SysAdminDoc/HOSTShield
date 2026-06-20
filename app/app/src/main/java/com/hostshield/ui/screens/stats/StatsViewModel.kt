@@ -68,7 +68,8 @@ data class StatsUiState(
     val latencyP99: Float = 0f,
     val topApps24h: List<com.hostshield.data.database.AppQueryStat> = emptyList(),
     val topApps7d: List<com.hostshield.data.database.AppQueryStat> = emptyList(),
-    val topAllowed: List<TopHostname> = emptyList()
+    val topAllowed: List<TopHostname> = emptyList(),
+    val topTrackerOwners: List<com.hostshield.data.database.TrackerOwnerStat> = emptyList()
 ) {
     val avgLatencyMs: Double
         get() = if (hourlyLatency.isNotEmpty()) hourlyLatency.map { it.avgMs }.average() else 0.0
@@ -203,6 +204,7 @@ class StatsViewModel @Inject constructor(
         viewModelScope.launch { repository.getTopAppsSince(last24hStart).collect { apps -> _uiState.update { it.copy(topApps24h = apps) } } }
         viewModelScope.launch { repository.getTopAppsSince(weekStart).collect { apps -> _uiState.update { it.copy(topApps7d = apps) } } }
         viewModelScope.launch { repository.getTopAllowed(weekStart).collect { d -> _uiState.update { it.copy(topAllowed = d) } } }
+        viewModelScope.launch { repository.getTopTrackerOwners(weekStart).collect { owners -> _uiState.update { it.copy(topTrackerOwners = owners) } } }
         pollCacheStats()
         loadVpnStability()
         loadThreatIntelHealth()
