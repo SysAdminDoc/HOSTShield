@@ -97,6 +97,16 @@ class CuratedBlocklistsCatalogTest {
     }
 
     @Test
+    fun `every list has license homepage and last_reviewed`() {
+        readCatalog().forEach { item ->
+            assertFalse("${item.label}: license must not be blank", item.license.isBlank())
+            assertFalse("${item.label}: homepage must not be blank", item.homepage.isBlank())
+            assertTrue("${item.label}: homepage must be HTTPS", item.homepage.startsWith("https://"))
+            assertFalse("${item.label}: last_reviewed must not be blank", item.lastReviewed.isBlank())
+        }
+    }
+
+    @Test
     fun `valid categories only`() {
         val validCategories = setOf("ADS", "TRACKERS", "MALWARE", "ADULT", "SOCIAL", "CRYPTO", "ALLOWLIST")
         val file = listOf(
@@ -134,7 +144,10 @@ class CuratedBlocklistsCatalogTest {
                     label = item.getString("label"),
                     url = item.getString("url"),
                     entries = item.getString("entries"),
-                    warning = item.optString("warning")
+                    warning = item.optString("warning"),
+                    license = item.optString("license"),
+                    homepage = item.optString("homepage"),
+                    lastReviewed = item.optString("last_reviewed")
                 )
             }
             result[catName] = items
@@ -146,6 +159,9 @@ class CuratedBlocklistsCatalogTest {
         val label: String,
         val url: String,
         val entries: String,
-        val warning: String
+        val warning: String,
+        val license: String,
+        val homepage: String,
+        val lastReviewed: String
     )
 }

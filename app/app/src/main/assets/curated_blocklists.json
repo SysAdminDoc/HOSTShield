@@ -6,6 +6,9 @@
         "label": "StevenBlack Unified",
         "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
         "description": "Consolidated hosts from multiple curated sources",
+        "license": "MIT",
+        "homepage": "https://github.com/StevenBlack/hosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~130K",
         "recommended": true
       },
@@ -13,6 +16,9 @@
         "label": "AdAway Default",
         "url": "https://adaway.org/hosts.txt",
         "description": "Conservative, minimal ad-blocking list",
+        "license": "CC-BY-3.0",
+        "homepage": "https://adaway.org",
+        "last_reviewed": "2026-06-19",
         "entries": "~400",
         "recommended": true
       },
@@ -20,6 +26,9 @@
         "label": "Peter Lowe's List",
         "url": "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext",
         "description": "Lightweight, zero false positives",
+        "license": "CC-BY-SA-4.0",
+        "homepage": "https://pgl.yoyo.org/adservers/",
+        "last_reviewed": "2026-06-19",
         "entries": "~3K",
         "recommended": true
       },
@@ -27,6 +36,9 @@
         "label": "OISD Small",
         "url": "https://small.oisd.nl/",
         "description": "Well-curated aggregate with minimal false positives",
+        "license": "CC-BY-SA-4.0",
+        "homepage": "https://oisd.nl",
+        "last_reviewed": "2026-06-19",
         "entries": "~70K",
         "recommended": true
       },
@@ -34,48 +46,72 @@
         "label": "OISD Big",
         "url": "https://big.oisd.nl/",
         "description": "Comprehensive aggregate blocklist",
+        "license": "CC-BY-SA-4.0",
+        "homepage": "https://oisd.nl",
+        "last_reviewed": "2026-06-19",
         "entries": "~200K+"
       },
       {
         "label": "OISD NSFW",
         "url": "https://nsfw.oisd.nl/",
         "description": "Adult content domains",
+        "license": "CC-BY-SA-4.0",
+        "homepage": "https://oisd.nl",
+        "last_reviewed": "2026-06-19",
         "entries": "~50K"
       },
       {
         "label": "GoodbyeAds",
         "url": "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Hosts/GoodbyeAds.txt",
         "description": "Aggressive list including streaming/YouTube ads",
+        "license": "MIT",
+        "homepage": "https://github.com/jerryn70/GoodbyeAds",
+        "last_reviewed": "2026-06-19",
         "entries": "~300K"
       },
       {
         "label": "1Hosts Lite",
         "url": "https://o0.pages.dev/Lite/hosts.txt",
         "description": "Balanced ad blocking with low breakage",
+        "license": "MPL-2.0",
+        "homepage": "https://github.com/badmojr/1Hosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~55K"
       },
       {
         "label": "1Hosts Pro",
         "url": "https://o0.pages.dev/Pro/hosts.txt",
         "description": "Aggressive ad + tracker blocking",
+        "license": "MPL-2.0",
+        "homepage": "https://github.com/badmojr/1Hosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~150K"
       },
       {
         "label": "AdGuard DNS Filter",
         "url": "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt",
         "description": "AdGuard's primary DNS filter",
+        "license": "GPL-3.0",
+        "homepage": "https://github.com/AdguardTeam/AdGuardSDNSFilter",
+        "last_reviewed": "2026-06-19",
         "entries": "~45K"
       },
       {
         "label": "Dan Pollock's List",
         "url": "https://someonewhocares.org/hosts/zero/hosts",
         "description": "Long-running manually curated list",
+        "license": "Permissive",
+        "homepage": "https://someonewhocares.org/hosts/",
+        "last_reviewed": "2026-06-19",
         "entries": "~15K"
       },
       {
         "label": "Lightswitch05 Ads",
         "url": "https://www.github.developerdan.com/hosts/lists/ads-and-tracking-extended.txt",
         "description": "Ads and tracking domains extended list",
+        "license": "MIT",
+        "homepage": "https://github.com/lightswitch05/hosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~50K"
       }
     ]
@@ -87,6 +123,9 @@
         "label": "HaGeZi Light (Multi-Light)",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/light.txt",
         "description": "Relaxed HaGeZi multi-source protection for ads, trackers, metrics, and some badware",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~164K",
         "recommended": true,
         "tier": "Relaxed",
@@ -96,6 +135,9 @@
         "label": "HaGeZi Multi Normal",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/multi.txt",
         "description": "All-round HaGeZi multi-source protection for ads, tracking, telemetry, phishing, malware, scams, and cryptojacking",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~337K",
         "recommended": true,
         "tier": "Relaxed/Balanced",
@@ -105,6 +147,9 @@
         "label": "HaGeZi Multi Pro",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt",
         "description": "Recommended HaGeZi extended protection with broader privacy, fake, scam, and badware coverage",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~456K",
         "recommended": true,
         "tier": "Balanced",
@@ -114,6 +159,9 @@
         "label": "HaGeZi Multi Pro++",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.plus.txt",
         "description": "More aggressive HaGeZi tier for stronger tracking, telemetry, fake, scam, and cryptojacking blocking",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~542K",
         "tier": "Balanced/Aggressive",
         "warning": "Experienced users only; referral and affiliate flows may break and need allowlisting."
@@ -122,6 +170,9 @@
         "label": "HaGeZi Multi Ultimate",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/ultimate.txt",
         "description": "Strict HaGeZi tier with the broadest multi-source privacy and security coverage",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~646K",
         "tier": "Aggressive",
         "warning": "High breakage risk; upstream warns about Meta, WhatsApp, Windows/Xbox, location, and IP-tracker restrictions."
@@ -130,42 +181,63 @@
         "label": "EasyPrivacy (hosts)",
         "url": "https://v.firebog.net/hosts/Easyprivacy.txt",
         "description": "Tracker domains from EasyPrivacy filter",
+        "license": "GPL-3.0",
+        "homepage": "https://easylist.to",
+        "last_reviewed": "2026-06-19",
         "entries": "~15K"
       },
       {
         "label": "DuckDuckGo Tracker Radar",
         "url": "https://raw.githubusercontent.com/nicecream/nicecream/master/nicecream-tracker-blocklist.txt",
         "description": "Tracker domains identified by DDG Tracker Radar",
+        "license": "Apache-2.0",
+        "homepage": "https://github.com/nicecream/nicecream",
+        "last_reviewed": "2026-06-19",
         "entries": "~20K"
       },
       {
         "label": "NextDNS CNAME Cloaking",
         "url": "https://raw.githubusercontent.com/nicecream/cname-trackers/master/trackers/combined_original_list.txt",
         "description": "CNAME cloaking tracker domains",
+        "license": "MIT",
+        "homepage": "https://github.com/nicecream/cname-trackers",
+        "last_reviewed": "2026-06-19",
         "entries": "~5K"
       },
       {
         "label": "Disconnect Tracking",
         "url": "https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt",
         "description": "Disconnect.me tracker list used by Firefox",
+        "license": "GPL-3.0",
+        "homepage": "https://disconnect.me",
+        "last_reviewed": "2026-06-19",
         "entries": "~2K"
       },
       {
         "label": "Lightswitch05 Tracking",
         "url": "https://www.github.developerdan.com/hosts/lists/tracking-aggressive-extended.txt",
         "description": "Aggressive tracking domain blocklist",
+        "license": "MIT",
+        "homepage": "https://github.com/lightswitch05/hosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~30K"
       },
       {
         "label": "Perflyst Smart TV Tracking",
         "url": "https://raw.githubusercontent.com/nicecream/PiHoleBlocklist/master/SmartTV.txt",
         "description": "Block Smart TV telemetry (Samsung, LG, Vizio, etc.)",
+        "license": "MIT",
+        "homepage": "https://github.com/nicecream/PiHoleBlocklist",
+        "last_reviewed": "2026-06-19",
         "entries": "~500"
       },
       {
         "label": "Windows Spy Blocker",
         "url": "https://raw.githubusercontent.com/nicecream/WindowsSpyBlocker/master/data/hosts/spy.txt",
         "description": "Block Windows telemetry on your network",
+        "license": "MIT",
+        "homepage": "https://github.com/nicecream/WindowsSpyBlocker",
+        "last_reviewed": "2026-06-19",
         "entries": "~400"
       }
     ]
@@ -177,6 +249,9 @@
         "label": "URLHaus Malware Filter",
         "url": "https://malware-filter.gitlab.io/malware-filter/urlhaus-filter-hosts.txt",
         "description": "Known malware distribution domains from abuse.ch",
+        "license": "CC0-1.0",
+        "homepage": "https://gitlab.com/malware-filter/urlhaus-filter",
+        "last_reviewed": "2026-06-19",
         "entries": "~5K",
         "recommended": true
       },
@@ -184,6 +259,9 @@
         "label": "HaGeZi Threat Intelligence",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/tif.txt",
         "description": "Full HaGeZi TIF security feed for malware, cryptojacking, spam, scams, and phishing",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~1.4M",
         "recommended": true,
         "tier": "Security/Full",
@@ -193,6 +271,9 @@
         "label": "HaGeZi TIF Mini",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.mini.txt",
         "description": "Size-optimized HaGeZi threat intelligence feed for mobile and constrained blockers",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~163K",
         "recommended": true,
         "tier": "Security/Mini",
@@ -202,6 +283,9 @@
         "label": "HaGeZi DynDNS",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/dyndns.txt",
         "description": "Dynamic DNS services frequently abused for phishing, malware, and command-and-control",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~1.5K",
         "tier": "Infrastructure",
         "warning": "Can block legitimate personal or lab hostnames that depend on dynamic DNS providers."
@@ -210,6 +294,9 @@
         "label": "HaGeZi Newly Registered Domains (7d)",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/nrd7.txt",
         "description": "Domains registered from seven days ago through yesterday, a common threat-actor staging window",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~2.5M",
         "tier": "Threat Intel",
         "warning": "Very large and high false-positive risk; resource-intensive and should be paired with a tested allowlist."
@@ -218,6 +305,9 @@
         "label": "HaGeZi Most Abused TLDs",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/spam-tlds.txt",
         "description": "High-abuse top-level domains from Spamhaus, Cloudflare Radar, Netcraft, and community sources",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~445 TLD rules",
         "recommended": true,
         "tier": "TLD",
@@ -227,30 +317,45 @@
         "label": "Phishing Army",
         "url": "https://phishing.army/download/phishing_army_blocklist.txt",
         "description": "Phishing and scam domains",
+        "license": "CC-BY-NC-4.0",
+        "homepage": "https://phishing.army",
+        "last_reviewed": "2026-06-19",
         "entries": "~10K"
       },
       {
         "label": "RPiList Malware",
         "url": "https://v.firebog.net/hosts/RPiList-Malware.txt",
         "description": "Curated malware domain list",
+        "license": "Unknown",
+        "homepage": "https://firebog.net",
+        "last_reviewed": "2026-06-19",
         "entries": "~2K"
       },
       {
         "label": "RPiList Phishing",
         "url": "https://v.firebog.net/hosts/RPiList-Phishing.txt",
         "description": "Curated phishing domain list",
+        "license": "Unknown",
+        "homepage": "https://firebog.net",
+        "last_reviewed": "2026-06-19",
         "entries": "~3K"
       },
       {
         "label": "Stamparm Malware",
         "url": "https://raw.githubusercontent.com/nicecream/blackbook/master/blackbook.txt",
         "description": "Daily-updated malware domains from honeypots",
+        "license": "MIT",
+        "homepage": "https://github.com/nicecream/blackbook",
+        "last_reviewed": "2026-06-19",
         "entries": "~25K"
       },
       {
         "label": "NoCoin Cryptojacking",
         "url": "https://raw.githubusercontent.com/nicecream/NoCoin/master/hosts.txt",
         "description": "Browser-based cryptocurrency mining domains",
+        "license": "MIT",
+        "homepage": "https://github.com/nicecream/NoCoin",
+        "last_reviewed": "2026-06-19",
         "entries": "~700"
       }
     ]
@@ -262,24 +367,36 @@
         "label": "StevenBlack Porn",
         "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn-only/hosts",
         "description": "Adult content domains from StevenBlack",
+        "license": "MIT",
+        "homepage": "https://github.com/StevenBlack/hosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~30K"
       },
       {
         "label": "StevenBlack Fakenews+Gambling+Porn",
         "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts",
         "description": "Extended list blocking adult, gambling, fake news",
+        "license": "MIT",
+        "homepage": "https://github.com/StevenBlack/hosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~80K"
       },
       {
         "label": "Sinfool Pornhosts",
         "url": "https://raw.githubusercontent.com/nicecream/pornhosts/master/hosts",
         "description": "Comprehensive adult content blocklist",
+        "license": "MIT",
+        "homepage": "https://github.com/nicecream/pornhosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~45K"
       },
       {
         "label": "HaGeZi Gambling",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/gambling.txt",
         "description": "Online gambling and betting sites",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~10K"
       }
     ]
@@ -291,30 +408,45 @@
         "label": "StevenBlack Social",
         "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/social-only/hosts",
         "description": "Block Facebook, Instagram, Twitter, TikTok, etc.",
+        "license": "MIT",
+        "homepage": "https://github.com/StevenBlack/hosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~3K"
       },
       {
         "label": "Facebook Domains",
         "url": "https://raw.githubusercontent.com/nicecream/facebook-tracking-domains/master/domains",
         "description": "All known Facebook/Meta tracking domains",
+        "license": "MIT",
+        "homepage": "https://github.com/nicecream/facebook-tracking-domains",
+        "last_reviewed": "2026-06-19",
         "entries": "~50K"
       },
       {
         "label": "Lightswitch05 Facebook",
         "url": "https://www.github.developerdan.com/hosts/lists/facebook-extended.txt",
         "description": "Block all Facebook/Meta services",
+        "license": "MIT",
+        "homepage": "https://github.com/lightswitch05/hosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~8K"
       },
       {
         "label": "Lightswitch05 Google AMP",
         "url": "https://www.github.developerdan.com/hosts/lists/amp-hosts-extended.txt",
         "description": "Block Google AMP tracking domains",
+        "license": "MIT",
+        "homepage": "https://github.com/lightswitch05/hosts",
+        "last_reviewed": "2026-06-19",
         "entries": "~12K"
       },
       {
         "label": "TikTok Domains",
         "url": "https://raw.githubusercontent.com/nicecream/tiktok-blocklist/main/tiktok.txt",
         "description": "Block TikTok and ByteDance domains",
+        "license": "Unknown",
+        "homepage": "https://github.com/nicecream/tiktok-blocklist",
+        "last_reviewed": "2026-06-19",
         "entries": "~1K"
       }
     ]
@@ -326,12 +458,18 @@
         "label": "NoCoin Cryptojacking",
         "url": "https://raw.githubusercontent.com/nicecream/NoCoin/master/hosts.txt",
         "description": "Block in-browser cryptocurrency mining",
+        "license": "MIT",
+        "homepage": "https://github.com/nicecream/NoCoin",
+        "last_reviewed": "2026-06-19",
         "entries": "~700"
       },
       {
         "label": "ZeroDot1 CoinBlocker",
         "url": "https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser",
         "description": "Comprehensive crypto mining domain list",
+        "license": "GPL-3.0",
+        "homepage": "https://gitlab.com/ZeroDot1/CoinBlockerLists",
+        "last_reviewed": "2026-06-19",
         "entries": "~3K"
       }
     ]
@@ -343,6 +481,9 @@
         "label": "Anudeep's Whitelist",
         "url": "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt",
         "description": "Core Pi-hole allowlist for common service, CDN, account, and app false positives",
+        "license": "MIT",
+        "homepage": "https://github.com/anudeepND/whitelist",
+        "last_reviewed": "2026-06-19",
         "entries": "~191",
         "recommended": true,
         "tier": "Core",
@@ -352,6 +493,9 @@
         "label": "Anudeep's Optional Whitelist",
         "url": "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt",
         "description": "Service-specific optional unbreak list for streaming, shopping, assistants, and device features",
+        "license": "MIT",
+        "homepage": "https://github.com/anudeepND/whitelist",
+        "last_reviewed": "2026-06-19",
         "entries": "~144",
         "tier": "Optional",
         "warning": "Broader than the core allowlist; enable only when a service needs it."
@@ -360,6 +504,9 @@
         "label": "Anudeep's Referral Sites",
         "url": "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/referral-sites.txt",
         "description": "Affiliate/referral domains for cashback, coupons, and shopping redirects",
+        "license": "MIT",
+        "homepage": "https://github.com/anudeepND/whitelist",
+        "last_reviewed": "2026-06-19",
         "entries": "~77",
         "tier": "Referral",
         "warning": "Restores referral and cashback flows that aggressive privacy lists often block."
@@ -368,6 +515,9 @@
         "label": "HaGeZi Referral Allowlist",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt",
         "description": "Adblock-syntax referral and native tracker unbreak list for aggressive HaGeZi packs",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~1.6K",
         "recommended": true,
         "tier": "Referral/Native",
@@ -377,6 +527,9 @@
         "label": "HaGeZi Most Abused TLD Allowlist",
         "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/spam-tlds-adblock-allow.txt",
         "description": "Exceptions for legitimate domains inside HaGeZi's Most Abused TLDs pack",
+        "license": "Custom",
+        "homepage": "https://github.com/hagezi/dns-blocklists",
+        "last_reviewed": "2026-06-19",
         "entries": "~954",
         "tier": "TLD Exceptions",
         "warning": "Pair with Most Abused TLDs to reduce whole-TLD false positives."
