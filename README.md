@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.52-blue)
+![Version](https://img.shields.io/badge/version-6.9.53-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -81,7 +81,7 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 | **Trie + Hash Set Lookup** | O(1) hash set fast path for exact matches (~90% of queries), O(m) reversed-label trie for wildcards. 200K+ domains. |
 | **Filter Decision Cache** | LRU cache (8K entries) for `isBlocked()` results — skips trie entirely for hot domains |
 | **CNAME Cloaking Detection** | Inspects full CNAME chains + SVCB/HTTPS records (TYPE 64/65). Checks against main blocklist + dedicated AdGuard/NextDNS CNAME cloak databases |
-| **DNS Response Cache** | 2000-entry LRU with serve-stale (RFC 8767), negative caching (RFC 2308), SERVFAIL caching (RFC 9520), and Unbound-style prefetching |
+| **DNS Response Cache** | 2000-entry LRU with serve-stale (RFC 8767), negative caching (RFC 2308), SERVFAIL caching (RFC 9520), Unbound-style prefetching, and in-flight query coalescing |
 | **Serve-Stale (RFC 8767)** | Returns expired cache entries during WiFi/cellular transitions. 3-day stale window, 30s stale TTL. Background refresh on stale serve |
 | **Cache Prefetching** | When TTL < 10% remaining and domain queried 3+ times, serves from cache and refreshes in background. Near-zero latency for popular domains |
 | **Configurable TTL** | 60s minimum floor, 24h maximum ceiling. SOA-derived TTL for NXDOMAIN negative caching |
@@ -236,14 +236,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 
 **Signing**: Release artifacts require `KEYSTORE_FILE`, `STORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`. For local non-distribution release verification only, set `HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING=true` to use the Android debug keystore.
 
-**CI/CD**: `.github/workflows/release.yml` triggers on tag push (`v*`) — builds, signs, and uploads APK to GitHub Releases.
-
-**Attestation Verification**: Release APKs, AABs, and SBOMs carry GitHub artifact attestations. Verify with:
-
-```bash
-gh attestation verify HostShield-v*.apk --repo SysAdminDoc/HostShield
-gh attestation verify hostshield-bom.cdx.json --repo SysAdminDoc/HostShield
-```
+**Release flow**: Builds, tests, release-doc checks, provenance generation, and GitHub Release uploads run locally on this workstation. The repository intentionally ships without GitHub Actions workflows.
 
 ---
 
@@ -428,6 +421,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.53** | Coalesced concurrent identical DNS cache misses per route/qtype so only one upstream resolver call runs, while each app still receives a response with its own DNS transaction ID. Cache prefetch and serve-stale refreshes now update cache state without sending duplicate client responses. |
 | **6.9.45** | Refined secondary Android UI surfaces with shared headers, segmented controls, responsive empty/loading states, and smoother app-exclusion loading. |
 | **6.9.44** | Launcher icon resources now live in the unqualified adaptive-icon directory and include a monochrome layer for Android themed icons. |
 | **6.9.43** | Widget secondary labels now use at least 11sp text for better launcher readability and accessibility. |

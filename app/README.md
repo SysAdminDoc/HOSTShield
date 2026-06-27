@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.47-blue)
+![Version](https://img.shields.io/badge/version-6.9.53-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -8,7 +8,7 @@
 
 > System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, rate-limited GeoIP enrichment, and a professional AMOLED dark UI with an optional high-contrast mode.
 
-Current module baseline: v6.9.47, versionCode 129.
+Current module baseline: v6.9.53, versionCode 135.
 
 ## Quick Start
 
@@ -23,7 +23,7 @@ Current module baseline: v6.9.47, versionCode 129.
 |---------|-------------|
 | **DNS Blocking** | Trie-based O(m) domain lookup with 200K+ domains from curated blocklists |
 | **CNAME Cloaking Detection** | Inspects CNAME chains in DNS responses — catches first-party tracking that bypasses other blockers |
-| **DNS Response Cache** | 2000-entry LRU cache with serve-stale, negative caching, SERVFAIL caching, and prefetch |
+| **DNS Response Cache** | 2000-entry LRU cache with serve-stale, negative caching, SERVFAIL caching, prefetch, and in-flight query coalescing |
 | **VPN Mode** | Local DNS filtering via Android VPN API — no root required, per-app stats |
 | **Root Mode** | iptables DNS redirection and per-app firewall support for rooted devices |
 | **Per-App Firewall** | Block Wi-Fi, mobile data, or VPN per-app with iptables (root) |

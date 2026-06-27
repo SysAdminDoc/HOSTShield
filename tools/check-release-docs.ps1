@@ -19,7 +19,6 @@ function Test-RepoFile {
 $appBuild = Read-RepoFile "app/app/build.gradle.kts"
 $rootBuild = Read-RepoFile "app/build.gradle.kts"
 $versionCatalog = Read-RepoFile "app/gradle/libs.versions.toml"
-$releaseWorkflow = Read-RepoFile ".github/workflows/release.yml"
 $releaseProvenance = Read-RepoFile "tools/release-provenance.ps1"
 $osvPolicyScript = Read-RepoFile "tools/check-osv-report.ps1"
 $androidPageAlignmentScript = Read-RepoFile "tools/check-android-page-alignment.ps1"
@@ -69,6 +68,14 @@ $docs = @{
 }
 
 $failures = New-Object System.Collections.Generic.List[string]
+
+$workflowsDir = Join-Path $repoRoot ".github/workflows"
+if (Test-Path -LiteralPath $workflowsDir) {
+    $workflowFiles = @(Get-ChildItem -LiteralPath $workflowsDir -File -ErrorAction SilentlyContinue)
+    if ($workflowFiles.Count -gt 0) {
+        $failures.Add("GitHub Actions workflows are not allowed; remove files under .github/workflows.")
+    }
+}
 
 function Test-DohBypassDomain {
     param([Parameter(Mandatory = $true)][string]$Value)
@@ -225,7 +232,7 @@ $requiredPatterns = @{
         "com.hostshield.ACTION_SET_PROFILE",
         "duration_minutes",
         "v1-v15",
-        "gh attestation verify"
+        "without GitHub Actions workflows"
     )
     "app/README.md" = @(
         "fail-closed",
@@ -290,21 +297,6 @@ $releaseGatePatterns = @{
             "cyclonedx"
         )
     }
-    ".github/workflows/release.yml" = @{
-        Text = $releaseWorkflow
-        Patterns = @(
-            "cyclonedxBom",
-            "google/osv-scanner-action/osv-scanner-action@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8",
-            "check-osv-report.ps1",
-            "check-android-page-alignment.ps1",
-            "hostshield-bom.cdx.json",
-            "osv-results.json",
-            "android-page-alignment.txt",
-            "release-provenance.ps1",
-            "upload-artifact",
-            "gh attestation verify"
-        )
-    }
     "tools/release-provenance.ps1" = @{
         Text = $releaseProvenance
         Patterns = @(
@@ -316,7 +308,7 @@ $releaseGatePatterns = @{
             "osv-results.json",
             "android-page-alignment.txt",
             "16 KB",
-            "OSV policy fails release CI"
+            "OSV policy fails local release validation"
         )
     }
     "tools/check-osv-report.ps1" = @{

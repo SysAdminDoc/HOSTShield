@@ -652,25 +652,6 @@ dependency/licensing review, and implementation-test corpus design.
 - Web: `Android 15 VpnService dataSync foreground service timeout`
 - Web: `dnscrypt-proxy gomobile Android AAR DNSCrypt client`
 
-### P3
-
-- [ ] P3 — Tracker company attribution view
-  Why: TrackerControl and NextDNS show "tracking companies" (Google, Facebook, Amazon, etc.) as a first-class concept, not just blocked domains. This turns raw block data into a privacy story users can understand and act on. HostShield's tracker scanner (405 SDK signatures) already has company metadata but does not surface it in DNS log analytics.
-  Evidence: TrackerControl company-level statistics UI; NextDNS "Tracker Insights" percentage-of-traffic visualization; DuckDuckGo Tracker Radar dataset (company attribution).
-  Touches: `TrackerSignatureDb.kt`, `StatsScreen.kt`, `LogsScreen.kt`, new tracker-company aggregation in DAOs or ViewModel.
-  Acceptance: Stats or a dedicated privacy view shows top tracking companies by blocked query count with percentage breakdown; tapping a company shows its domains and affected apps; data is derived from existing tracker signatures and DNS logs with no network calls.
-  Complexity: M
-
-- [ ] P3 — Query analytics dashboard with block-rate trends and drill-down
-  Why: NextDNS, Control D, and Cloudflare Gateway all paywall analytics dashboards (top blocked/allowed domains, block rate over time, per-app breakdown, category distribution). HostShield's StatsScreen has 7-day trend charts but no drill-down into top domains, per-app breakdowns, or category-level analytics. Offering this locally differentiates against cloud services that charge $2-7/mo for equivalent visibility.
-  Evidence: NextDNS analytics dashboard; Control D audit trail; Cloudflare Gateway analytics; existing `StatsScreen.kt` and `Daos.kt` query capabilities.
-  Touches: `StatsScreen.kt`, `DnsLogDao`, new DAO queries for top-N blocked/allowed domains, per-app block counts, category distribution, block-rate-over-time aggregation.
-  Acceptance: StatsScreen shows top 10 blocked domains, top 10 allowed domains, per-app block counts, block rate percentage over 24h/7d, and category distribution; drill-down from any stat opens filtered log view; all computation is local with no network calls.
-  Complexity: M
-
-### P3
-
-
 ### P3 - Operational Maturity
 
 - [ ] P3 -- Move from pseudolocale scaffolding to real i18n and LocaleConfig readiness
@@ -682,37 +663,7 @@ dependency/licensing review, and implementation-test corpus design.
 
 ## Research-Driven Additions — 2026-06-19
 
-### P1
-
-- [ ] P1 — Add predictive back gesture support across all navigation
-  Why: Android 16 enforces predictive back for apps targeting SDK 36+. HostShield has zero `BackHandler` usage and no `enableOnBackInvokedCallback` manifest flag. Back navigation will break or show the system default animation instead of in-app transitions.
-  Evidence: `AndroidManifest.xml` missing `enableOnBackInvokedCallback`; Grep for `BackHandler|predictiveBack` returns zero hits across `ui/`; Android 16 behavior changes docs.
-  Touches: `app/app/src/main/AndroidManifest.xml`, `ui/navigation/Navigation.kt`, all 31+ screen composables with back navigation.
-  Acceptance: `android:enableOnBackInvokedCallback="true"` in manifest; all screens with `onBack` parameters use `BackHandler` or Compose predictive back APIs; back gestures show preview animation on Android 14+.
-  Complexity: M
-
-- [ ] P1 — Add DoH/DoT provider pin-sets to `network_security_config.xml`
-  Why: HostShield pins DoH/DoT certificates only in OkHttp code (`DohPinManifest.kt`). The existing `network_security_config.xml` disables cleartext and whitelists the captive portal host, but has no `<pin-set>` entries. Adding declarative pin-sets provides defense-in-depth and prepares for Android 17 ECH opt-in.
-  Evidence: `app/app/src/main/res/xml/network_security_config.xml` exists with base-config only; `DohPinManifest.kt` has SPKI pins for 7 providers; Android network security config docs.
-  Touches: `app/app/src/main/res/xml/network_security_config.xml`.
-  Acceptance: XML config declares `<pin-set>` for each DoH/DoT provider domain matching `DohPinManifest.kt` pins; unit test validates XML pin-set entries match code pin manifest; existing captive portal cleartext exception preserved.
-  Complexity: S
-
-- [ ] P1 — Add DNS query deduplication (in-flight coalescing)
-  Why: Concurrent identical DNS queries (same domain + qtype) all independently hit upstream, wasting bandwidth and exposing HostShield to amplification from chatty apps. Pi-hole v6 and RethinkDNS both coalesce in-flight queries — the first query goes upstream, subsequent identical queries wait for the same response.
-  Evidence: `DnsVpnService.kt` `forwardUdp`/`forwardDoH`/`forwardDoT` have no pending-query tracking; Pi-hole v6 blog; RethinkDNS firestack query dedup.
-  Touches: `service/DnsVpnService.kt`, `service/DnsCache.kt`, new `DnsQueryDeduplicator.kt`.
-  Acceptance: Identical queries within a configurable window (e.g., 2s) share a single upstream resolution; cache hit rate improves measurably; unit test verifies dedup behavior for concurrent identical queries and distinct queries.
-  Complexity: M
-
 ### P2
-
-- [ ] P2 — Add Dynamic Color / Material You support
-  Why: Every major competitor (AdGuard, RethinkDNS, Blokada) supports Android 12+ dynamic color theming. HostShield's theme is hardcoded AMOLED palette with 6 accent colors but no `dynamicDarkColorScheme()` / `dynamicLightColorScheme()`. This is one of the most common user expectations for modern Android apps.
-  Evidence: `ui/theme/Theme.kt` uses `darkColorScheme()` with static colors, no `DynamicColor` import; AdGuard v4.0 blog shows dynamic color; Android dynamic color docs.
-  Touches: `ui/theme/Theme.kt`, `data/preferences/UiPreferences.kt` (new pref), `ui/screens/settings/SettingsScreen.kt`.
-  Acceptance: New "System colors" option in Settings alongside existing accent colors; when enabled on Android 12+, theme derives from wallpaper; falls back to existing AMOLED palette on older Android or when disabled; high-contrast AMOLED mode still works independently.
-  Complexity: S
 
 - [ ] P2 — Extract co-located ViewModels to separate files
   Why: 7+ screens (StatsScreen 1,314 LOC, LogsScreen 1,282 LOC, SettingsScreen 1,218 LOC, SourcesScreen 1,166 LOC, DnsToolsScreen 953 LOC, FirewallScreen 913 LOC, OnboardingScreen 845 LOC) embed `@HiltViewModel` classes in the same file as composables. This makes ViewModels harder to test independently and inflates file sizes.
@@ -720,20 +671,6 @@ dependency/licensing review, and implementation-test corpus design.
   Touches: Extract each ViewModel to `<Screen>ViewModel.kt` alongside the screen file.
   Acceptance: Each extracted ViewModel is in its own file; existing tests still pass; no behavioral change.
   Complexity: S
-
-- [ ] P2 — Add ViewModel Flow testing with Turbine
-  Why: 18 ViewModels manage complex state via StateFlow/SharedFlow but have zero Flow-testing assertions. Turbine is the standard library for testing Kotlin Flows in Android and would catch state ordering bugs.
-  Evidence: `app/app/build.gradle.kts` has no Turbine dependency; 382 test methods exist but none test ViewModel state emissions; `HomeViewModel.kt` (976 LOC) has complex combined Flow logic.
-  Touches: `app/gradle/libs.versions.toml` (add Turbine), `app/app/build.gradle.kts`, new test files for HomeViewModel, StatsViewModel, LogsViewModel, SourcesViewModel.
-  Acceptance: Turbine dependency added; at least 4 ViewModels have Flow emission tests covering initial state, loading, success, and error states; CI passes.
-  Complexity: M
-
-- [ ] P2 — Add Robolectric for Android-dependent unit tests
-  Why: 48 unit test files use JUnit4 only. Code that depends on Android APIs (Context, SharedPreferences, Resources) requires instrumented tests or Robolectric. Currently, any Android-dependent test must run on a device.
-  Evidence: No Robolectric dependency in `libs.versions.toml`; `BackupRestoreUtilTest.kt` uses synthetic JSON instead of exercising real Android URI paths; `DiagnosticExporterTest.kt` similarly avoids Android APIs.
-  Touches: `app/gradle/libs.versions.toml`, `app/app/build.gradle.kts`, existing test files that mock Android APIs.
-  Acceptance: Robolectric configured; at least 3 existing tests converted to use Robolectric for Context/Resources access; CI passes.
-  Complexity: M
 
 - [ ] P2 — Add Bloom filter pre-check to BlocklistHolder
   Why: The hash set fast path handles exact matches in O(1), but negative lookups (allowed domains) still traverse the trie. A Bloom filter (~1MB for 200K domains, <0.1% false positive) can fast-reject queries not in any blocklist, skipping both hash set and trie. This matters for the 60-70% of queries that are allowed.
@@ -749,65 +686,11 @@ dependency/licensing review, and implementation-test corpus design.
   Acceptance: Rules with `$app=` are either applied only to the specified package (preferred) or rejected with a diagnostic log entry explaining the unsupported modifier. Rules are never silently applied globally when a scope modifier is present.
   Complexity: L
 
-### P3
-
-- [ ] P3 — Add DNS query latency percentile tracking (p50/p95/p99)
-  Why: The Home sparkline shows average latency. NextDNS and Cloudflare Gateway show percentile breakdowns. Percentiles reveal tail latency from slow providers or network transitions that averages hide.
-  Evidence: `DnsLogEntry` has `responseTimeMs`; `StatsScreen.kt` aggregates average latency; NextDNS analytics dashboard shows p50/p95/p99.
-  Touches: `DnsLogDao` (percentile queries), `StatsScreen.kt`, `StatsViewModel.kt`.
-  Acceptance: Stats shows p50, p95, p99 latency for 24h and 7d windows alongside existing average; data derived from existing Room log entries.
-  Complexity: S
-
-- [ ] P3 — Add per-app bandwidth attribution in stats
-  Why: RethinkDNS shows per-app DNS query counts and data usage. HostShield has per-app DNS logs but no aggregated bandwidth view. Users want to know which apps generate the most DNS traffic.
-  Evidence: `DnsLogDao` has per-app query methods; `AppsScreen.kt` shows app list; RethinkDNS per-app connection stats.
-  Touches: `DnsLogDao` (aggregation queries), `StatsScreen.kt` or `AppsScreen.kt`.
-  Acceptance: Stats or Apps screen shows top 10 apps by DNS query count and block count for 24h/7d; tapping an app opens filtered logs.
-  Complexity: S
-
-- [ ] P3 — Add light theme option
-  Why: CLAUDE.md says "Include a light theme option when practical." HostShield is dark-only. Some users need light themes for outdoor readability, accessibility, or preference.
-  Evidence: `Theme.kt` only defines dark color schemes (`darkColorScheme()`); no light palette exists; user preferences page has no theme toggle beyond accent color and high-contrast.
-  Touches: `ui/theme/Theme.kt` (add light palette), `data/preferences/UiPreferences.kt`, `ui/screens/settings/SettingsScreen.kt`.
-  Acceptance: Settings offers Dark/Light/System theme choice; light theme uses Material 3 light color scheme with HostShield accent colors; system option follows Android dark mode setting.
-  Complexity: M
-
-- [ ] P3 — Add curated blocklist source metadata (license, homepage, maintainer)
-  Why: `curated_blocklists.json` has labels, URLs, categories, and entry estimates but no license field, maintainer, homepage, last-reviewed date, or format compatibility tag. AdGuard HostlistsRegistry models richer source metadata. Users and auditors need to know which blocklists are GPL-compatible.
-  Evidence: `app/app/src/main/assets/curated_blocklists.json`; AdGuard HostlistsRegistry JSON schema; `CuratedBlocklistsCatalogTest.kt` validates structure but not metadata completeness.
-  Touches: `app/app/src/main/assets/curated_blocklists.json`, `CuratedBlocklistsCatalogTest.kt`.
-  Acceptance: Each curated source has `license`, `homepage`, and `last_reviewed` fields; catalog test validates all sources have these fields; gallery UI shows license badge.
-  Complexity: S
-
-- [ ] P3 — Add scheduled DNS log retention cleanup notification
-  Why: `LogCleanupWorker` silently prunes logs older than the configured retention period. Users may not realize old logs were deleted, especially if they set a short retention.
-  Evidence: `service/LogCleanupWorker.kt` exists; no notification is sent after cleanup; PCAPdroid notifies users about data retention.
-  Touches: `service/LogCleanupWorker.kt`, string resources.
-  Acceptance: After cleanup, a summary notification shows how many entries were purged and the current retention setting; notification is optional (can be disabled in Settings).
-  Complexity: S
-
-- [ ] P3 — Document and test VPN coexistence with Tailscale, Mullvad, and WireGuard
-  Why: "Does it work with other VPNs?" is the #1 FAQ. Root mode works alongside VPNs, but specific coexistence patterns (Tailscale MagicDNS, Mullvad DNS leak prevention, WireGuard split-tunnel) need tested documentation.
-  Evidence: README FAQ section; community complaints about VPN conflicts on Reddit r/privacy; Tailscale/WireGuard Android VPN behavior.
-  Touches: `README.md` FAQ section, optional `docs/vpn-coexistence.md`.
-  Acceptance: README FAQ has tested guidance for Tailscale, Mullvad, and WireGuard coexistence in both VPN and root modes; known conflicts are documented with workarounds.
-  Complexity: S
-
 ## Audit Findings — 2026-06-17
 
 - [ ] P2 — Lifecycle 2.11 requires API 37 compile-SDK readiness
   Why: AndroidX Lifecycle 2.11.0 fails AAR metadata on the current compileSdk 36 line; adopting it safely should be bundled with the API 37 readiness audit instead of bypassing the guard.
   Where: `app/gradle/libs.versions.toml`, `app/app/build.gradle.kts`
-
-## Audit Findings — 2026-06-18
-
-- [ ] P1 — Reconcile `systemExempted` foreground-service declarations with exact-alarm permissions
-  Why: Release lint still baselines `ForegroundServicePermission` for protection services; changing service types or permissions needs Android 15+ behavior validation and Play-policy review.
-  Where: `app/app/src/main/AndroidManifest.xml`, foreground service start paths.
-
-- [ ] P1 — Review battery-optimization exemption request against Play policy and flavor behavior
-  Why: Release lint still baselines `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; removing, flavor-gating, or rewording this affects protection reliability and store compliance.
-  Where: `app/app/src/main/java/com/hostshield/util/BatteryOptimizationUtil.kt`, Settings battery optimization flow.
 
 - [ ] P2 — Plan the remaining toolchain/dependency refresh as a compatibility batch
   Why: Remaining lint/dependency baseline entries cover target/compile SDK, KSP, core-ktx, Kotlin, serialization, Vico, and JSON; several likely need coordinated Android 17/API 37 readiness and visual/chart regression checks.

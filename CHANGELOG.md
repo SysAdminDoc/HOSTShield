@@ -3,6 +3,23 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.53] - 2026-06-27
+
+### Added
+- DNS cache misses now use an in-flight single-flight coordinator keyed by
+  domain, query type, and active upstream route, so concurrent identical
+  queries share one resolver call while each caller receives a response patched
+  with its own DNS transaction ID.
+
+### Fixed
+- Serve-stale and prefetch background refreshes now refresh DNS cache state
+  without sending duplicate DNS responses back to the original app packet.
+- Release documentation checks now enforce the local-only release process and
+  reject checked-in GitHub Actions workflows instead of requiring stale workflow
+  text.
+- Gradle/Kotlin build heap settings now match the current release compile
+  footprint so local release artifact builds do not crash the daemon.
+
 ## [v6.9.52] - 2026-06-20
 
 ### Fixed

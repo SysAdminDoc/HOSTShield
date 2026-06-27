@@ -1,0 +1,6 @@
+v6.9.53 - DNS query coalescing:
+- Concurrent identical DNS cache misses now share one upstream resolver call
+- Each app still receives a DNS response with its own transaction ID
+- Cache prefetch and serve-stale refreshes no longer send duplicate client responses
+- Release validation now enforces the local-only build and release flow
+- Local release builds use larger Gradle/Kotlin heaps to avoid daemon crashes

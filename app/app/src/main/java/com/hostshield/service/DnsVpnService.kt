@@ -318,6 +318,7 @@ class DnsVpnService : VpnService() {
 
     // DNS Response Cache — LRU with TTL-aware expiration
     private val dnsCache = DnsCache(maxEntries = 2000, maxNegativeEntries = 500)
+    private val dnsQueryDeduplicator = DnsQueryDeduplicator<UpstreamResolveResult>()
 
     // Stats accumulator — AtomicInteger for thread-safe increment from packet thread
     private val pendingBlockedStats = java.util.concurrent.atomic.AtomicInteger(0)
@@ -1291,10 +1292,9 @@ class DnsVpnService : VpnService() {
                     wrapAndSend(packet, headerOffset, isV6, cacheResult.response)
                     allowedCount.incrementAndGet()
                     if (cacheResult.needsPrefetch) {
-                        val pCopy = packet.copyOf(length)
                         serviceScope.launch {
                             try {
-                                forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset)
+                                refreshDnsCacheOnly(dns, domain, app)
                             } catch (e: Exception) { PrivacyLog.d(TAG, "Prefetch failed for $domain: ${e.message}") }
                         }
                     }
@@ -1315,10 +1315,9 @@ class DnsVpnService : VpnService() {
                     }
                     wrapAndSend(packet, headerOffset, isV6, cacheResult.response)
                     allowedCount.incrementAndGet()
-                    val pCopy = packet.copyOf(length)
                     serviceScope.launch {
                         try {
-                            forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset)
+                            refreshDnsCacheOnly(dns, domain, app)
                         } catch (e: Exception) { PrivacyLog.d(TAG, "Stale refresh failed for $domain: ${e.message}") }
                     }
                     return
@@ -1819,12 +1818,20 @@ class DnsVpnService : VpnService() {
         return PostForwardResult(blocked = false)
     }
 
-    private suspend fun forwardUdpPlaintext(dns: ByteArray, domain: String, orig: ByteArray,
-                                            headerOffset: Int, isV6: Boolean,
-                                            app: Pair<String, String> = Pair("", ""),
-                                            skipThreatIntelChecks: Boolean = false) {
+    private sealed class UpstreamResolveResult {
+        data class Success(
+            val response: ByteArray,
+            val latencyMs: Int,
+            val upstreamServer: String
+        ) : UpstreamResolveResult()
+
+        data class EncryptedFailure(val transport: String) : UpstreamResolveResult()
+        data object PlaintextFailure : UpstreamResolveResult()
+    }
+
+    private suspend fun resolveUdpPlaintext(dns: ByteArray): UpstreamResolveResult {
         val sock = DatagramSocket()
-        try {
+        return try {
             val startMs = System.currentTimeMillis()
             val primary = upstreamDnsServers.firstOrNull() ?: UPSTREAM_DNS[0]
             var responseUpstream = primary
@@ -1845,16 +1852,9 @@ class DnsVpnService : VpnService() {
             }
             val respBytes = retryTruncatedUdpOverTcp(dns, buf.copyOf(rp.length), responseUpstream)
             val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-
-            val pfResult = postForwardChecks(respBytes, dns, domain, app, latencyMs, responseUpstream, skipThreatIntelChecks)
-            if (pfResult.blocked) {
-                if (pfResult.blockResponse != null) wrapAndSend(orig, headerOffset, isV6, pfResult.blockResponse)
-                return
-            }
-
-            wrapAndSend(orig, headerOffset, isV6, respBytes)
+            UpstreamResolveResult.Success(respBytes, latencyMs, responseUpstream)
         } catch (_: Exception) {
-            serveStale(dns, domain, orig, headerOffset, isV6, app, skipThreatIntelChecks)
+            UpstreamResolveResult.PlaintextFailure
         } finally {
             try { sock.close() } catch (_: Exception) { }
         }
@@ -2024,6 +2024,7 @@ class DnsVpnService : VpnService() {
         // Flush cache so subsequent queries use the newly selected resolver
         // instead of answers cached from the previous one.
         dnsCache.clear()
+        dnsQueryDeduplicator.clear()
         PrivacyLog.i(TAG, "DNS config reloaded live: " +
             "DoH=${if (useDoH) dohProvider.name else "off"}, " +
             "DoT=${if (useDoT) dotProvider.name else "off"}, " +
@@ -2031,11 +2032,7 @@ class DnsVpnService : VpnService() {
             "upstream=${upstreamDnsServers.joinToString(",")}")
     }
 
-    private suspend fun forwardDoH(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
-                                    app: Pair<String, String> = Pair("", ""),
-                                    wrapV6: Boolean = false, v6Hdr: Int = 0,
-                                    skipThreatIntelChecks: Boolean = false) {
-        val hdr = if (wrapV6) v6Hdr else ihl
+    private suspend fun resolveDoH(dns: ByteArray, domain: String): UpstreamResolveResult {
         try {
             val startMs = System.currentTimeMillis()
             val dohResult = dohResolver.resolveWithMetadata(dns, dohProvider)
@@ -2047,20 +2044,14 @@ class DnsVpnService : VpnService() {
                     DohResolver.Transport.DOH -> "DoH:${dohResult.provider.name}"
                 }
 
-                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel, skipThreatIntelChecks)
-                if (pfResult.blocked) {
-                    if (pfResult.blockResponse != null) wrapAndSend(orig, hdr, wrapV6, pfResult.blockResponse)
-                    return
-                }
-
-                wrapAndSend(orig, hdr, wrapV6, resp)
+                return UpstreamResolveResult.Success(resp, latencyMs, upstreamLabel)
             }
             else {
-                failClosedEncrypted(dns, domain, orig, ihl, "DoH", wrapV6, v6Hdr, app, skipThreatIntelChecks)
+                return UpstreamResolveResult.EncryptedFailure("DoH")
             }
         } catch (e: Exception) {
             PrivacyLog.w(TAG, "DoH forward failed for $domain (${e.javaClass.simpleName}) — failing closed")
-            failClosedEncrypted(dns, domain, orig, ihl, "DoH", wrapV6, v6Hdr, app, skipThreatIntelChecks)
+            return UpstreamResolveResult.EncryptedFailure("DoH")
         }
     }
 
@@ -2068,10 +2059,7 @@ class DnsVpnService : VpnService() {
      * Forward DNS query via DNS-over-QUIC (RFC 9250).
      * Falls back to DoH (still encrypted) when enabled, otherwise fails closed.
      */
-    private suspend fun forwardDoQ(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
-                                    app: Pair<String, String> = Pair("", ""),
-                                    wrapV6: Boolean = false, v6Hdr: Int = 0,
-                                    skipThreatIntelChecks: Boolean = false) {
+    private suspend fun resolveDoQ(dns: ByteArray, domain: String): UpstreamResolveResult {
         try {
             val startMs = System.currentTimeMillis()
             val resp = doqResolver.resolve(dns, doqProvider)
@@ -2079,77 +2067,53 @@ class DnsVpnService : VpnService() {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
                 val upstreamLabel = "DoQ:${doqProvider.name}"
 
-                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, upstreamLabel, skipThreatIntelChecks)
-                if (pfResult.blocked) {
-                    if (pfResult.blockResponse != null) wrapAndSend(orig, if (wrapV6) v6Hdr else ihl, wrapV6, pfResult.blockResponse)
-                    return
-                }
-
-                wrapAndSend(orig, if (wrapV6) v6Hdr else ihl, wrapV6, resp)
+                return UpstreamResolveResult.Success(resp, latencyMs, upstreamLabel)
             } else {
-                if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-                else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr, app, skipThreatIntelChecks)
+                return if (useDoH) resolveDoH(dns, domain) else UpstreamResolveResult.EncryptedFailure("DoQ")
             }
         } catch (e: Exception) {
             PrivacyLog.w(TAG, "DoQ forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
-            if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-            else failClosedEncrypted(dns, domain, orig, ihl, "DoQ", wrapV6, v6Hdr, app, skipThreatIntelChecks)
+            return if (useDoH) resolveDoH(dns, domain) else UpstreamResolveResult.EncryptedFailure("DoQ")
         }
     }
 
-    private suspend fun forwardWireGuard(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
-                                          app: Pair<String, String> = Pair("", ""),
-                                          wrapV6: Boolean = false, v6Hdr: Int = 0,
-                                          skipThreatIntelChecks: Boolean = false) {
-        val hdr = if (wrapV6) v6Hdr else ihl
+    private suspend fun resolveWireGuard(dns: ByteArray, domain: String): UpstreamResolveResult {
         try {
             val startMs = System.currentTimeMillis()
             val resp = wireGuardProxy.resolveDns(dns)
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, "WireGuard", skipThreatIntelChecks)
-                if (pfResult.blocked) {
-                    if (pfResult.blockResponse != null) wrapAndSend(orig, hdr, wrapV6, pfResult.blockResponse)
-                    return
-                }
-                wrapAndSend(orig, hdr, wrapV6, resp)
+                return UpstreamResolveResult.Success(resp, latencyMs, "WireGuard")
             } else {
-                if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-                else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-                else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr, app, skipThreatIntelChecks)
+                return when {
+                    useDoQ -> resolveDoQ(dns, domain)
+                    useDoH -> resolveDoH(dns, domain)
+                    else -> UpstreamResolveResult.EncryptedFailure("WireGuard")
+                }
             }
         } catch (e: Exception) {
             PrivacyLog.w(TAG, "WireGuard forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
-            if (useDoQ) forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-            else if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-            else failClosedEncrypted(dns, domain, orig, ihl, "WireGuard", wrapV6, v6Hdr, app, skipThreatIntelChecks)
+            return when {
+                useDoQ -> resolveDoQ(dns, domain)
+                useDoH -> resolveDoH(dns, domain)
+                else -> UpstreamResolveResult.EncryptedFailure("WireGuard")
+            }
         }
     }
 
-    private suspend fun forwardDoT(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
-                                    app: Pair<String, String> = Pair("", ""),
-                                    wrapV6: Boolean = false, v6Hdr: Int = 0,
-                                    skipThreatIntelChecks: Boolean = false) {
-        val hdr = if (wrapV6) v6Hdr else ihl
+    private suspend fun resolveDoT(dns: ByteArray, domain: String): UpstreamResolveResult {
         try {
             val startMs = System.currentTimeMillis()
             val resp = dotResolver.resolve(dns, dotProvider)
             if (resp != null) {
                 val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val pfResult = postForwardChecks(resp, dns, domain, app, latencyMs, "DoT:${dotProvider.name}", skipThreatIntelChecks)
-                if (pfResult.blocked) {
-                    if (pfResult.blockResponse != null) wrapAndSend(orig, hdr, wrapV6, pfResult.blockResponse)
-                    return
-                }
-                wrapAndSend(orig, hdr, wrapV6, resp)
+                return UpstreamResolveResult.Success(resp, latencyMs, "DoT:${dotProvider.name}")
             } else {
-                if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-                else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr, app, skipThreatIntelChecks)
+                return if (useDoH) resolveDoH(dns, domain) else UpstreamResolveResult.EncryptedFailure("DoT")
             }
         } catch (e: Exception) {
             PrivacyLog.w(TAG, "DoT forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
-            if (useDoH) forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-            else failClosedEncrypted(dns, domain, orig, ihl, "DoT", wrapV6, v6Hdr, app, skipThreatIntelChecks)
+            return if (useDoH) resolveDoH(dns, domain) else UpstreamResolveResult.EncryptedFailure("DoT")
         }
     }
 
@@ -2162,16 +2126,119 @@ class DnsVpnService : VpnService() {
                                           app: Pair<String, String> = Pair("", ""),
                                           wrapV6: Boolean = false, v6Hdr: Int = 0,
                                           skipThreatIntelChecks: Boolean = false) {
-        when {
-            useWireGuard -> forwardWireGuard(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-            useDoQ -> forwardDoQ(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-            useDoT -> forwardDoT(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-            useDoH -> forwardDoH(dns, domain, orig, ihl, app, wrapV6, v6Hdr, skipThreatIntelChecks)
-            else -> forwardUdpPlaintext(dns, domain, orig, if (wrapV6) v6Hdr else ihl, wrapV6, app, skipThreatIntelChecks)
+        val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
+        val resolved = dnsQueryDeduplicator.getOrRun(
+            DnsQueryDeduplicator.Key(domain, qtypeNum, currentDnsRouteKey())
+        ) {
+            resolveConfiguredUpstream(dns, domain)
         }
+        if (resolved.shared) {
+            PrivacyLog.d(TAG, "DEDUP HIT $domain (${DnsPacketBuilder.queryTypeLabel(qtypeNum)})")
+        }
+        sendResolvedResponse(
+            resolved.value,
+            dns,
+            domain,
+            orig,
+            if (wrapV6) v6Hdr else ihl,
+            wrapV6,
+            app,
+            skipThreatIntelChecks
+        )
     }
 
     // ── DNS Answer Cache (Heuristic UID Attribution) ────────
+
+    private suspend fun refreshDnsCacheOnly(
+        dns: ByteArray,
+        domain: String,
+        app: Pair<String, String> = Pair("", "")
+    ) {
+        val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
+        val resolved = dnsQueryDeduplicator.getOrRun(
+            DnsQueryDeduplicator.Key(domain, qtypeNum, currentDnsRouteKey())
+        ) {
+            resolveConfiguredUpstream(dns, domain)
+        }.value
+
+        if (resolved is UpstreamResolveResult.Success) {
+            val response = patchDnsTransactionId(resolved.response, dns)
+            postForwardChecks(response, dns, domain, app, resolved.latencyMs, resolved.upstreamServer)
+        }
+    }
+
+    private suspend fun resolveConfiguredUpstream(dns: ByteArray, domain: String): UpstreamResolveResult =
+        when {
+            useWireGuard -> resolveWireGuard(dns, domain)
+            useDoQ -> resolveDoQ(dns, domain)
+            useDoT -> resolveDoT(dns, domain)
+            useDoH -> resolveDoH(dns, domain)
+            else -> resolveUdpPlaintext(dns)
+        }
+
+    private suspend fun sendResolvedResponse(
+        result: UpstreamResolveResult,
+        dns: ByteArray,
+        domain: String,
+        orig: ByteArray,
+        headerOffset: Int,
+        isV6: Boolean,
+        app: Pair<String, String>,
+        skipThreatIntelChecks: Boolean
+    ) {
+        when (result) {
+            is UpstreamResolveResult.Success -> {
+                val response = patchDnsTransactionId(result.response, dns)
+                val pfResult = postForwardChecks(
+                    response,
+                    dns,
+                    domain,
+                    app,
+                    result.latencyMs,
+                    result.upstreamServer,
+                    skipThreatIntelChecks
+                )
+                if (pfResult.blocked) {
+                    if (pfResult.blockResponse != null) wrapAndSend(orig, headerOffset, isV6, pfResult.blockResponse)
+                    return
+                }
+                wrapAndSend(orig, headerOffset, isV6, response)
+            }
+            is UpstreamResolveResult.EncryptedFailure -> {
+                failClosedEncrypted(
+                    dns,
+                    domain,
+                    orig,
+                    headerOffset,
+                    result.transport,
+                    isV6,
+                    headerOffset,
+                    app,
+                    skipThreatIntelChecks
+                )
+            }
+            UpstreamResolveResult.PlaintextFailure -> {
+                serveStale(dns, domain, orig, headerOffset, isV6, app, skipThreatIntelChecks)
+            }
+        }
+    }
+
+    private fun currentDnsRouteKey(): String = when {
+        useWireGuard -> "wireguard|doq=$useDoQ:${doqProvider.name}|doh=$useDoH:${dohProvider.name}"
+        useDoQ -> "doq:${doqProvider.name}|doh=$useDoH:${dohProvider.name}"
+        useDoT -> "dot:${dotProvider.name}|doh=$useDoH:${dohProvider.name}"
+        useDoH -> "doh:${dohProvider.name}"
+        else -> "udp:${upstreamDnsServers.joinToString(",")}"
+    }
+
+    private fun patchDnsTransactionId(response: ByteArray, query: ByteArray): ByteArray {
+        val copy = response.copyOf()
+        if (copy.size >= 2 && query.size >= 2) {
+            copy[0] = query[0]
+            copy[1] = query[1]
+        }
+        return copy
+    }
 
     /**
      * Extract A/AAAA answer IPs from a DNS response and cache them.

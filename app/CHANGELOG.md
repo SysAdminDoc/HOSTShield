@@ -1,3 +1,27 @@
+# HostShield v6.9.53
+
+**Release Date:** 2026-06-27
+**Version Code:** 135
+
+## DNS Query Coalescing
+
+### Added
+- Concurrent identical DNS cache misses now share one upstream resolver call per
+  domain, query type, and active route, reducing duplicate DoH/DoT/DoQ,
+  WireGuard DNS, and UDP lookups during bursts.
+- Shared upstream answers are patched with each caller's DNS transaction ID
+  before returning to the originating app.
+
+### Fixed
+- Cache prefetch and serve-stale refresh jobs now update DNS cache state without
+  sending duplicate DNS responses to the original app packet.
+- Local release-doc validation now rejects checked-in GitHub Actions workflows
+  and validates the workstation-based release process.
+- Gradle and Kotlin daemon heap settings now match the current release compile
+  footprint for local artifact builds.
+
+---
+
 # HostShield v6.9.47
 
 **Release Date:** 2026-06-19
