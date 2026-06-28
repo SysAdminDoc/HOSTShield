@@ -19,3 +19,12 @@ replay_pid*.log
 !README.md
 !docs/
 !docs/WORKMANAGER_AUDIT.md
+
+# AI config
+CODEX_CHANGELOG.md
+AGENTS.md
+.claude/
+.codex/
+.ai/
+PROJECT_CONTEXT.md
+CONTINUATION_PROMPT.md
