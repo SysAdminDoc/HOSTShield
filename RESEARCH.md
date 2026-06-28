@@ -13,6 +13,7 @@ Top opportunities in priority order:
 - Hide or hard-disable release-build DoQ/WireGuard DNS toggles until their engines are production-effective.
 - Preserve AdGuard `$dnstype=` rules as query-type-aware decisions instead of parsing then dropping them.
 - Expand tracker attribution from the small local owner map toward a generated Tracker Radar-style dataset.
+- Add an Android 16 large-screen/adaptive-layout gate before tablet, foldable, Chromebook, or API 37 distribution claims.
 - Drain the remaining lint baseline as an API 37/toolchain compatibility batch.
 
 ## Product Map
@@ -52,6 +53,7 @@ Does well: simple rooted hosts blocking and systemless/root ecosystem compatibil
 - Verified risk: `LocalDnsServer.kt` is advertised in README as "Portable Pi-hole" mode, but `git grep LocalDnsServer` finds no production start/stop call site or Settings surface. Android's local-network permission model also needs a user-facing permission/readiness path before LAN DNS is made first-class.
 - Verified risk: `DnsSettingsSection.kt` exposes DoQ and WireGuard DNS toggles, while `DnsVpnService.kt` forces `useDoQ` and `useWireGuard` to false outside `BuildConfig.DEBUG`. Release users can enable preferences that the production resolver ignores.
 - Verified risk: `AdblockRuleParser.kt` parses `$dnstype=`, but `HostsParser.parseForBlocking()` drops any rule with `dnsTypes != null`; `DnsVpnService` already has qtype context. This silently loses AdGuard DNS rules that competitors honor.
+- Verified risk: HostShield targets API 36 and ships 43 Compose screen files, but `rg "WindowSizeClass|NavigationRail|NavigationSuiteScaffold|ListDetailPaneScaffold|sw600"` finds no adaptive large-screen layout hooks. Android 16 ignores orientation, resizability, and aspect-ratio restrictions on displays at or above 600dp, so dense Settings/Logs/Stats/Sources flows need explicit tablet/foldable verification before API 37.
 - Likely risk: `lint-baseline.xml` still suppresses `ForegroundServicePermission`, `BatteryLife`, compileSdk 37, and dependency freshness entries. Some are justified, but the baseline mixes policy-sensitive issues with mechanical KTX/dependency items.
 
 ## Architecture Assessment
@@ -61,6 +63,7 @@ Does well: simple rooted hosts blocking and systemless/root ecosystem compatibil
 - `LocalDnsServer.kt` is isolated and unit-tested at policy level, but not integrated into app state, notification lifecycle, permissions, or UI.
 - `AdblockRuleParser.kt` has better syntax awareness than `BlocklistHolder` can currently consume. A typed rule model keyed by domain + qtype + app/client scope would prevent parse/drop drift.
 - Tests are strong for parsers, crypto, DNS wire format, and several ViewModels. Missing coverage: periodic source 304 rebuild behavior, block-source metadata persistence, release-build experimental toggle behavior, Local DNS Server lifecycle/permission flow, and query-type-specific rule decisions.
+- UI architecture is phone-first: the main navigation and dense detail surfaces are regular Compose screens without Material 3 adaptive panes or a large-screen test matrix. Start with an adaptive-ready gate before adding navigation-suite dependencies.
 
 ## Rejected Ideas
 
@@ -70,6 +73,7 @@ Does well: simple rooted hosts blocking and systemless/root ecosystem compatibil
 - Reintroducing offline GeoIP without a licensed update channel: prior code removed stale GeoIP assets; bounded opt-in ipapi.co remains safer. Source: current changelog and `GeoIpLookup`.
 - Shipping DoQ/WireGuard DNS as normal release toggles before a real audited engine exists: current production code ignores them, so surfacing them as active controls would harm trust. Source: `DnsVpnService.kt`, `DnsSettingsSection.kt`.
 - PCAPng/TLS decryption secrets as a near-term default: useful for experts but high privacy risk; keep diagnostics conservative unless a separate consent model lands. Source: PCAPdroid and Wireshark documentation.
+- Hosted multi-user household dashboard: appealing for parental review but contradicts the no-account/no-telemetry model unless implemented later as local-only LAN read-only mode. Source: NextDNS/Control D comparison and current blocked roadmap.
 
 ## Sources
 
@@ -97,6 +101,10 @@ Does well: simple rooted hosts blocking and systemless/root ecosystem compatibil
 ### Platform, Standards, Dependencies, Security
 - https://developer.android.com/privacy-and-security/local-network-permission
 - https://developer.android.com/about/versions/16/behavior-changes-all
+- https://developer.android.com/about/versions/16/behavior-changes-16
+- https://developer.android.com/guide/topics/large-screens
+- https://developer.android.com/docs/quality-guidelines/adaptive-app-quality
+- https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive
 - https://developer.android.com/develop/ui/compose/navigation/predictive-back-gesture
 - https://developer.android.com/guide/topics/resources/app-languages
 - https://developer.android.com/jetpack/androidx/releases/room
