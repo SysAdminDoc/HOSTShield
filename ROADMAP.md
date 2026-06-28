@@ -19,7 +19,7 @@ Release governance note: the project is licensed under GPL-3.0.
 ## Autonomous Refresh - 2026-06-06
 
 This refresh resumed the existing roadmap instead of replacing it. Local
-inspection covered the repo root, `CLAUDE.md`, recent git history, release docs,
+inspection covered the repo root, recent git history, release docs,
 Android manifest/service lifecycle paths, security storage, automation intents,
 top-flow UI tests, diagnostics, PCAP export, threat intel, CI, and prior
 research docs. External research was refreshed against RethinkDNS, AdGuard for
@@ -472,7 +472,7 @@ from defaults or retained as a compatibility alias after the 2024 DROP merge.
 
 | Date | Cycle | Research Area | Sources / Files Reviewed | Key Findings | Roadmap Changes |
 |---|---|---|---|---|---|
-| 2026-06-06 | Cycle 1 | Repository comprehension | `CLAUDE.md`, `ROADMAP.md`, `PROJECT_CONTEXT.md`, `README.md`, `docs/RESEARCH.md`, `git log -10`, `git status` | Roadmap baseline was older than current `main`; worktree has untracked `AGENTS.md` left untouched; current baseline remains v6.5.9/versionCode 67 at HEAD `9d361b4`. | Updated refresh date/baseline and added autonomous refresh section. |
+| 2026-06-06 | Cycle 1 | Repository comprehension | `ROADMAP.md`, `PROJECT_CONTEXT.md`, `README.md`, `docs/RESEARCH.md`, `git log -10`, `git status` | Roadmap baseline was older than current `main`; current baseline remains v6.5.9/versionCode 67 at HEAD `9d361b4`. | Updated refresh date/baseline and added autonomous refresh section. |
 | 2026-06-06 | Cycle 2 | Current feature inventory | `TopFlowComposeTest.kt`, `SecureStore.kt`, `PasswordKdf.kt`, `AutomationReceiver.kt`, `AndroidManifest.xml`, `.github/workflows/release.yml` | UI smoke tests now exist; Argon2id and secure-store migration are current; automation docs drift from code; release workflow does not run local gates. | Split UI-test item into completed smoke coverage and remaining connected coverage; added automation and CI backlog items. |
 | 2026-06-06 | Cycle 3 | Platform resilience | Android Developers FGS docs, Android VPN docs, `BootReceiver.kt`, service declarations | `dataSync` services have Android 15 timeout/boot restrictions; HostShield uses `dataSync` for long-running protection services. | Added P0 Android 15/16 service resilience item and detailed spec. |
 | 2026-06-06 | Cycle 4 | Competitive landscape | RethinkDNS, AdGuard Android, NetGuard, AdAway, PCAPdroid, Play policy | Competitors set expectations around split DNS/firewall, app/global firewall rules, screen/roaming conditions, root+VPN hosts blocking, PCAPng/TLS diagnostics, and package-visibility justification. | Added source IDs, PCAPng export item, Play AAB/package-visibility notes, and future research leads. |
