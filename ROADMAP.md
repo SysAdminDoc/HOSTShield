@@ -695,3 +695,53 @@ dependency/licensing review, and implementation-test corpus design.
 - [ ] P2 — Plan the remaining toolchain/dependency refresh as a compatibility batch
   Why: Remaining lint/dependency baseline entries cover target/compile SDK, KSP, core-ktx, Kotlin, serialization, Vico, and JSON; several likely need coordinated Android 17/API 37 readiness and visual/chart regression checks.
   Where: `app/app/build.gradle.kts`, `app/gradle/libs.versions.toml`, chart and serialization call sites.
+
+## Research-Driven Additions - 2026-06-28
+
+### P0
+
+- [ ] P0 - Repair periodic blocklist rebuild and metadata persistence
+  Why: Periodic refresh parses block sources only on HTTP 200, skips all 304 bodies, and does not persist block-source counts, ETags, Last-Modified, size, or last-success metadata, unlike manual/source-preview rebuild paths that force full downloads when a full snapshot is needed.
+  Evidence: `app/app/src/main/java/com/hostshield/service/HostsUpdateWorker.kt`; `app/app/src/main/java/com/hostshield/data/source/SourceDownloader.kt`; `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt`; `app/app/src/main/java/com/hostshield/ui/screens/home/HomeViewModel.kt`.
+  Touches: `HostsUpdateWorker.kt`, `ProfileScheduleWorker.kt`, `HostShieldRepository.kt` or shared rebuild helper, `Daos.kt`, source/rebuild tests.
+  Acceptance: Periodic and profile-schedule rebuilds always produce a complete in-memory blocklist after process start, correctly handle all-304 responses, persist block-source metadata on changed downloads, and have tests covering 200, 304, mixed allowlist/blocklist, and failure cases.
+  Complexity: M
+
+### P1
+
+- [ ] P1 - Wire or remove the Local DNS Server user-facing feature
+  Why: README advertises a "Portable Pi-hole" LAN DNS server, but `LocalDnsServer` has no production start/stop call site, Settings control, lifecycle owner, notification/status surface, or Android local-network permission flow.
+  Evidence: `README.md`; `app/app/src/main/java/com/hostshield/service/LocalDnsServer.kt`; `app/app/src/test/java/com/hostshield/service/LocalDnsServerPolicyTest.kt`; https://developer.android.com/privacy-and-security/local-network-permission.
+  Touches: `LocalDnsServer.kt`, Settings/Protection UI, `AppPreferences.kt`, `AndroidManifest.xml`, notification/status surfaces, connected UDP smoke test.
+  Acceptance: Either a user can enable/disable LAN DNS from Settings with clear local-network permission/status/error feedback and connected test coverage, or all README/app claims for Local DNS Server are removed until it is wired.
+  Complexity: L
+
+- [ ] P1 - Make release-build experimental DNS controls truthful
+  Why: Settings exposes DoQ and WireGuard DNS toggles, but `DnsVpnService` forces both transports off outside `BuildConfig.DEBUG`, so release users can enable preferences that do not affect production DNS routing.
+  Evidence: `app/app/src/main/java/com/hostshield/ui/screens/settings/DnsSettingsSection.kt`; `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt`; `app/app/src/main/java/com/hostshield/util/ExperimentalEngineDisclosure.kt`.
+  Touches: `DnsSettingsSection.kt`, `SettingsViewModel.kt`, `ExperimentalEngineDisclosure.kt`, README/app metadata, release-doc checks, ViewModel/UI tests.
+  Acceptance: Release builds either hide/disable DoQ and WireGuard DNS controls with explicit debug-only copy or route them through a real audited engine; release-doc checks fail if docs imply release-effective experimental transports while production code disables them.
+  Complexity: S
+
+- [ ] P1 - Preserve AdGuard `$dnstype=` rules as query-type-aware policy
+  Why: The parser recognizes `$dnstype=` but source rebuilds drop those rules before they reach `BlocklistHolder`, losing common DNS-filter semantics that AdGuard and modern adblock lists support.
+  Evidence: `app/app/src/main/java/com/hostshield/domain/parser/AdblockRuleParser.kt`; `app/app/src/main/java/com/hostshield/domain/parser/HostsParser.kt`; `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt`; https://adguard-dns.io/kb/general/dns-filtering-syntax/.
+  Touches: `AdblockRuleParser.kt`, `HostsParser.kt`, `BlocklistHolder.kt`, DNS decision call sites with qtype context, parser/blocklist tests.
+  Acceptance: `$dnstype=A`, `$dnstype=AAAA`, and negated forms are either enforced by qtype in VPN/proxy/root decisions or surfaced as counted unsupported-rule diagnostics; they are never silently discarded.
+  Complexity: L
+
+### P2
+
+- [ ] P2 - Generate tracker-owner attribution from an audited local dataset
+  Why: HostShield now shows company attribution, but the local tracker owner map is small and hand-maintained while TrackerControl and DuckDuckGo Tracker Radar demonstrate richer generated attribution without requiring telemetry.
+  Evidence: `app/app/src/main/java/com/hostshield/util/NetworkTrackerDb.kt`; `app/app/src/main/java/com/hostshield/ui/screens/stats/StatsViewModel.kt`; https://github.com/TrackerControl/tracker-control-android; https://github.com/duckduckgo/tracker-radar.
+  Touches: tracker dataset generation tooling, `NetworkTrackerDb.kt`, Stats attribution UI/tests, license/provenance docs.
+  Acceptance: A reproducible local build step or checked generated asset maps common tracker domains to owner/category with provenance, Stats uses it for top tracker companies, and tests verify deterministic lookup plus no network dependency.
+  Complexity: M
+
+- [ ] P2 - Split blocklist rebuild logic into one tested coordinator
+  Why: Source merge/build logic is duplicated across the worker, VPN service, Home apply flow, profile schedules, and source previews, which allowed `forceDownload` and metadata behavior to diverge.
+  Evidence: `HostsUpdateWorker.kt`; `DnsVpnService.kt`; `HomeViewModel.kt`; `ProfileScheduleWorker.kt`; `SourcesViewModel.kt`.
+  Touches: new domain/service rebuild coordinator, affected call sites, unit tests with fake downloader/repository.
+  Acceptance: All rebuild entry points call one coordinator for source downloads, allowlist subtraction, DoH bypass merging, wildcard origins, diagnostics, and metadata updates; existing behavior remains covered by tests.
+  Complexity: L

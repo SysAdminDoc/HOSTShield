@@ -1,158 +1,111 @@
 # Research - HostShield
 
-Last refreshed: 2026-06-19
-Baseline: v6.9.47, versionCode 129, Kotlin 2.3, AGP 9.2, compileSdk 36, targetSdk 36
+Last refreshed: 2026-06-28
+Baseline: v6.9.53, versionCode 135, Kotlin 2.3.21, AGP 9.2.1, compileSdk 36, targetSdk 36
 
 ## Executive Summary
 
-HostShield is a mature GPL-3.0 Android DNS firewall with VPN/root/proxy modes, pinned DoH/DoT, local blocklists with trie + hash set + regex engine, threat-intel feeds, per-app iptables firewall, CNAME/SVCB cloaking detection, 31+ Compose screens, encrypted backup, PCAP export, widgets, automation API, and comprehensive release provenance (SBOM, OSV, attestations). At 50K LOC across 226 Kotlin files with 382 test methods, the codebase is well-hardened for a single-maintainer project.
+HostShield is a mature GPL-3.0 Android DNS firewall and blocker with VPN/root/proxy modes, pinned DoH/DoT, blocklist trie + exact-set + regex decisions, CNAME/SVCB cloaking detection, serve-stale DNS caching, in-flight DNS query coalescing, local threat-intel analytics, encrypted backup, PCAP/diagnostic export flows, automation intents, and a polished dark-first Compose UI. Recent work closed many prior research gaps: dynamic color, predictive back manifest readiness, locale config generation, source metadata, per-app stats, ViewModel test seams, and DNS coalescing are present. The highest-value direction is now trust repair around claimed-but-unwired features, cold-start/update reliability, and policy correctness for modern adblock syntax and Android local-network behavior.
 
-The highest-value direction is not more feature breadth — it is **platform modernization, testing depth, and UX polish** that builds trust and distribution readiness. The project already leads its OSS peers in DNS correctness (serve-stale, EDE, NXNAME, CNAME cloaking); the gap is in Android platform adoption (predictive back, dynamic color, locale config, API 37 readiness) and distribution maturity (F-Droid reproducibility, instrumented CI tests).
-
-Top opportunities, priority ordered:
-1. **Predictive back gesture support** — Android 16 enforces this; HostShield has no `BackHandler` or predictive back handling across 31+ screens.
-2. **Dynamic color / Material You** — every major competitor supports it; HostShield is hardcoded AMOLED palette only.
-3. **Android per-app language preferences** — `generateLocaleConfig` not enabled; 243 string resources exist but no real locale translations.
-4. **ViewModel-per-screen extraction** — 7 screens still embed ViewModels in the Composable file (1,000+ LOC screens).
-5. **Bloom filter pre-check** for BlocklistHolder — RethinkDNS's succinct radix trie handles 13.5M domains; HostShield's hash set covers exact matches but has no probabilistic pre-filter for misses.
-6. **DNS query deduplication** — concurrent identical queries all hit upstream; RethinkDNS and Pi-hole v6 coalesce in-flight queries.
-7. **Structured DNS Errors display** — EDE codes are emitted but not surfaced in the query detail UI.
-8. **Split/conditional DNS routing** — domain-based resolver selection (e.g., internal domains to corporate DNS) is a top community request.
-9. **Compose test coverage for ViewModel state** — Turbine/Flow testing is absent; ViewModels are large and largely untested.
-10. **F-Droid/IzzyOnDroid reproducible build readiness** — metadata is stale; reproducibility approach undecided.
+Top opportunities in priority order:
+- Fix periodic blocklist rebuild semantics and source metadata persistence.
+- Wire or de-advertise the Local DNS Server feature, including Android local-network permission readiness.
+- Hide or hard-disable release-build DoQ/WireGuard DNS toggles until their engines are production-effective.
+- Preserve AdGuard `$dnstype=` rules as query-type-aware decisions instead of parsing then dropping them.
+- Expand tracker attribution from the small local owner map toward a generated Tracker Radar-style dataset.
+- Drain the remaining lint baseline as an API 37/toolchain compatibility batch.
 
 ## Product Map
 
-- Core workflows: enable protection (VPN/root/proxy) → manage sources → configure encrypted DNS → review logs/stats → add domain/app rules → pause or allow false positives → export backups/diagnostics/PCAP → sync via WebDAV → automate via broadcast intents.
-- User personas: privacy-focused Android users, rooted power users (Magisk/KernelSU/APatch), parents using content controls, local-first network admins, and maintainers shipping signed APKs.
-- Platforms: Android 8+ (minSdk 26), GitHub/Obtainium/F-Droid distribution, full + play flavors.
-- Key integrations: blocklist sources → SourceDownloader → BlocklistHolder trie; DNS packets → DnsVpnService/RootDnsService/DnsProxyService → DoH/DoT; threat feeds → ThreatIntelManager radix trie; Room DB (15 migrations) for logs/rules/sources; WorkManager for periodic refresh/backup/cleanup.
+- Core workflows: enable protection through VPN/root/proxy, manage block/allow sources, configure encrypted DNS, inspect DNS/firewall logs, recover false positives, export diagnostics/backups/PCAP, sync via WebDAV, automate with signed broadcast intents.
+- User personas: privacy-focused Android users, rooted power users, local-first network admins, parents using content filters, and maintainers publishing signed APK/AAB artifacts.
+- Platforms and distribution: Android 8+ minSdk 26, full flavor for GitHub/F-Droid/Obtainium, play flavor without `QUERY_ALL_PACKAGES`, local signed release builds only.
+- Key integrations and data flows: source URLs -> `SourceDownloader`/`HostsParser` -> `BlocklistHolder`; DNS packets -> `DnsVpnService`/`DnsProxyService`/`RootDnsLogger` -> DoH/DoT/plain UDP; threat feeds -> `ThreatIntelManager`; Room stores logs/rules/sources/profiles; DataStore and secure prefs hold configuration/secrets.
 
 ## Competitive Landscape
 
 ### RethinkDNS
-Does well: Go firestack for per-app connection-level firewall (not just DNS), split DNS, WireGuard routing, app-level traffic stats, DNS query deduplication, compressed radix trie for 13.5M domains. Learn from: query deduplication pattern, per-app bandwidth stats, split DNS routing. Avoid: Go/gomobile build complexity, full-traffic VPN battery cost.
+Does well: split DNS, per-app firewall, WireGuard routing, app traffic stats, and in-flight DNS query coalescing. Learn from: resolver-routing UX and connection-level policy visibility. Avoid: gomobile/firestack complexity for HostShield's DNS-first architecture.
 
 ### AdGuard for Android
-Does well: mature adblock syntax engine with `$app=`/`$client=` scope modifiers, HTTPS filtering, DNS rewrites with full modifier support, stealth mode, Material You dynamic color. Learn from: modifier-scoped rules, dynamic color theming, per-app DNS statistics. Avoid: closed-source filtering core, cloud-account dependency.
+Does well: broad AdGuard syntax support, `$app=`, `$client=`, `$dnstype=`, `$denyallow=`, DNS rewrites, and polished Android filtering controls. Learn from: scoped and query-type-aware rule semantics. Avoid: closed-source filtering-core dependency and HTTPS MITM as a default surface.
 
 ### PCAPdroid
-Does well: PCAPng export with app UID annotations, SNI/DNS/HTTP extraction, remote PCAP streaming, clear privacy boundaries, malware detection with per-blacklist status. Learn from: PCAPng metadata model, export privacy controls. Avoid: MITM as default surface.
+Does well: app-attributed packet capture, PCAPng diagnostics, remote dump modes, and clear malware-list status UX. Learn from: diagnostics that preserve evidence while making privacy disclosure explicit. Avoid: making MITM/TLS-decryption workflows part of the normal DNS blocker path.
 
 ### Pi-hole v6
-Does well: session-based queries, per-client/group policies, API-first architecture, DNS query deduplication (in-flight coalescing), FTLDNS + embedded SQLite for query log. Learn from: query deduplication to reduce upstream load, client group policies. Avoid: server-centric architecture assumptions.
+Does well: per-client/group policies, query database, API-first management, and DNS-layer operational maturity. Learn from: durable source/cache state and policy observability. Avoid: server-centric assumptions that do not fit an Android local-first app.
 
-### TrackerControl / DuckDuckGo App Tracking Protection
-Does well: tracker company attribution (shows "Google tracked you 847 times" not just blocked domains), DuckDuckGo Tracker Radar dataset. Learn from: company-level tracking narrative that users understand. Avoid: VPN-only enforcement ambiguity.
+### TrackerControl / DuckDuckGo Tracker Radar
+Does well: tracker company attribution that users understand at a glance. Learn from: generated tracker-owner data rather than a small hand-maintained map. Avoid: any remote telemetry or cloud scoring loop.
 
 ### NextDNS / Control D
-Does well: analytics dashboards (top blocked domains, per-device stats, block rate trends), NRD blocking, homograph/DGA detection, profile-based filtering. Learn from: analytics drill-down patterns — these are paywalled at $2-7/mo, so offering them locally is a strong differentiator. Avoid: cloud-required model.
+Does well: profile-based filtering, analytics, parental controls, NRD/security categories, and approachable dashboards. Learn from: local analytics and policy profile presentation. Avoid: hosted-account and remote-log requirements.
 
-### Blokada 6
-Does well: network-aware profile switching by Wi-Fi SSID, activity log with search, cloud relay option. Learn from: SSID-based profiles are a common user request. Avoid: freemium model confusion.
+### AdAway
+Does well: simple rooted hosts blocking and systemless/root ecosystem compatibility. Learn from: clarity of root-mode expectations. Avoid: limiting HostShield to hosts-only behavior when VPN/root/proxy DNS engines already provide richer policy.
 
 ## Security, Privacy, and Reliability
 
-### Verified Strengths
-- DoH/DoT is fail-closed at both resolver and VPN service layers. No plaintext fallback path.
-- Certificate pinning with primary/backup SPKI pins per provider, with review/expiry dates and diagnostics.
-- PIN hashing uses PBKDF2 (210K iterations) with forced legacy SHA-256 upgrade gate.
-- Encrypted backups use AES-256-GCM with nonce ledger preventing reuse.
-- All sync URLs are HTTPS-only with 10MB bounds and SHA-256 integrity.
-- Shell injection prevention in root mode (quoted paths, Kotlin-side filtering).
-- Release pipeline: SBOM generation, OSV scanning with allowlist, GitHub artifact attestations, page alignment verification, provenance checksums.
-- VPN route canonicalization prevents Android 11+ route validation failures.
-- Regex rules capped at 500 chars with per-rule execution deadlines and ReDoS prevention.
-
-### Gaps and Risks
-- **`systemExempted` FGS type**: lint still baselines `ForegroundServicePermission`. Android 15+ behavior for long-running `systemExempted` services needs connected device validation (already on blocked roadmap).
-- **No Certificate Transparency readiness**: Android 17 enforces CT for all connections; DoH/DoT providers need CT-logged certificates verified. Already on blocked roadmap.
-- **WebDAV password stored in DataStore**: backup v2 serializes `webdav_url` and `webdav_username` (not password), but the credential storage approach in DataStore should be audited for at-rest encryption.
-- **GeoIP lookup to ipapi.co**: rate-limited and bounded, but the external call leaks resolved IP addresses to a third-party service. Already documented as opt-in.
-- **network_security_config.xml lacks pin-sets**: the file exists (disables cleartext, whitelists captive portal) but has no `<pin-set>` entries for DoH/DoT providers. Adding declarative pin-sets alongside OkHttp pinning provides defense-in-depth and enables Android 17 ECH opt-in via `<domainEncryption>`.
-- **24 lint baseline entries remaining**: includes `ForegroundServicePermission`, likely `NewApi`, and dependency-related warnings. Each should be resolved or have documented justification.
+- Verified: DoH/DoT fail closed in resolver and VPN paths; DoT now fails closed when pins are missing; DoH/DoT pin sets exist in `app/app/src/main/res/xml/network_security_config.xml`; source URLs are HTTPS-only; imports and backups are bounded; release signing fails closed unless real signing or explicit local debug signing is configured.
+- Verified risk: `app/app/src/main/java/com/hostshield/service/HostsUpdateWorker.kt` calls `downloader.download(source)` without `forceDownload = true`, unlike `DnsVpnService.kt`, `HomeViewModel.kt`, and `SourcesViewModel.kt`. On `304 Not Modified`, it skips parsing content; it also does not persist block-source `entryCount`, `lastUpdated`, `etag`, `lastModifiedOnline`, or `sizeBytes` for changed block sources. This can leave periodic health/metadata stale and makes cold or empty in-memory rebuilds dependent on another path.
+- Verified risk: `LocalDnsServer.kt` is advertised in README as "Portable Pi-hole" mode, but `git grep LocalDnsServer` finds no production start/stop call site or Settings surface. Android's local-network permission model also needs a user-facing permission/readiness path before LAN DNS is made first-class.
+- Verified risk: `DnsSettingsSection.kt` exposes DoQ and WireGuard DNS toggles, while `DnsVpnService.kt` forces `useDoQ` and `useWireGuard` to false outside `BuildConfig.DEBUG`. Release users can enable preferences that the production resolver ignores.
+- Verified risk: `AdblockRuleParser.kt` parses `$dnstype=`, but `HostsParser.parseForBlocking()` drops any rule with `dnsTypes != null`; `DnsVpnService` already has qtype context. This silently loses AdGuard DNS rules that competitors honor.
+- Likely risk: `lint-baseline.xml` still suppresses `ForegroundServicePermission`, `BatteryLife`, compileSdk 37, and dependency freshness entries. Some are justified, but the baseline mixes policy-sensitive issues with mechanical KTX/dependency items.
 
 ## Architecture Assessment
 
-### Critical Refactor Candidates
-- **DnsVpnService.kt (2,564 LOC)**: God-class containing packet loop, DNS forwarding, logging, blocklist management, VPN recovery, notification management, watchdog, and network monitoring. Blocked on connected device verification but remains the highest maintainability risk. Extract: DnsQueryProcessor, DnsForwarder, DnsLogManager, VpnRecoveryMonitor, VpnNotificationController.
-- **StatsScreen.kt (1,314 LOC)**, **LogsScreen.kt (1,282 LOC)**, **SettingsScreen.kt (1,218 LOC)**, **SourcesScreen.kt (1,166 LOC)**: screens that embed ViewModel, state management, and UI composition in single files. Extract ViewModels to separate files for testability.
-- **HomeViewModel.kt (976 LOC)**: largest ViewModel, handles blocklist builds, DNS config, stats aggregation, and UI state. Candidate for splitting into smaller focused ViewModels.
-
-### Module Boundaries
-- Service layer has 56 files — well-factored for most concerns but DnsVpnService is the bottleneck.
-- UI layer has clean screen-per-file structure but ViewModels are co-located with Composables in 7+ screens.
-- No multi-module structure — single `:app` module. For a project of this size, this is acceptable but limits parallel compilation and test isolation.
-
-### Test Gaps
-- 48 unit test files with 382 test methods — good coverage of parsers, crypto, policy, and DNS wire format.
-- Only 5 androidTest files — minimal instrumented coverage.
-- No ViewModel Flow testing with Turbine or similar.
-- No Compose semantics/accessibility assertions.
-- No Robolectric tests (would cover Android-dependent code without a device).
+- `DnsVpnService.kt` remains the largest risk boundary: it owns packet loop, resolver routing, cache behavior, blocklist rebuild, logging, and VPN recovery. Prior extractions helped, but further changes should keep tests around resolver routing and fail-closed behavior.
+- `HostsUpdateWorker.kt`, `ProfileScheduleWorker.kt`, `DnsVpnService.kt`, `HomeViewModel.kt`, and `SourcesViewModel.kt` duplicate source merge/build logic. A shared blocklist rebuild coordinator would reduce divergence like the current `forceDownload` mismatch.
+- `LocalDnsServer.kt` is isolated and unit-tested at policy level, but not integrated into app state, notification lifecycle, permissions, or UI.
+- `AdblockRuleParser.kt` has better syntax awareness than `BlocklistHolder` can currently consume. A typed rule model keyed by domain + qtype + app/client scope would prevent parse/drop drift.
+- Tests are strong for parsers, crypto, DNS wire format, and several ViewModels. Missing coverage: periodic source 304 rebuild behavior, block-source metadata persistence, release-build experimental toggle behavior, Local DNS Server lifecycle/permission flow, and query-type-specific rule decisions.
 
 ## Rejected Ideas
 
-- **Full HTTPS/TLS MITM inspection**: contradicts local-first DNS-firewall posture, breaks pinned apps. Source: PCAPdroid, AdGuard approach analysis.
-- **Cloud account dashboard**: mandatory remote logs undercut privacy promise. Source: NextDNS/Control D model.
-- **Arbitrary plugin ecosystem**: risky on Android; broadcast intents are the right boundary. Source: competitive analysis.
-- **Default NRD mega-feeds**: very large and false-positive-prone per HaGeZi warnings. Keep as opt-in.
-- **Bundled general-purpose VPN**: should coexist with VPNs, not become one. Source: architecture decision record.
-- **Re-adding offline GeoIP**: removed for good reason (stale dependency); reintroduce only with licensed update path.
-- **Succinct radix trie (RethinkDNS-style)**: RethinkDNS compresses 13.5M domains into ~40MB; HostShield targets 200K-1M domains where hash set + standard trie is sufficient. Complexity not justified at current scale.
-- **gomobile TUN layer**: build complexity and maintenance burden outweigh throughput gains at DNS-only scale. Source: RethinkDNS firestack analysis.
-- **Material 3 Expressive adoption now**: requires compileSdk 37+ and visual verification. Source: Android developer docs.
+- Full HTTPS/TLS MITM inspection: contradicts HostShield's DNS-firewall identity and risks breaking pinned apps. Source: AdGuard/PCAPdroid comparison.
+- Hosted cloud dashboard or account sync: conflicts with local-first/no-telemetry principles. Source: NextDNS/Control D comparison.
+- Arbitrary plugin ecosystem: too much Android security and maintenance risk; signed automation intents are the right extension boundary. Source: project principles and Android exported-component model.
+- Reintroducing offline GeoIP without a licensed update channel: prior code removed stale GeoIP assets; bounded opt-in ipapi.co remains safer. Source: current changelog and `GeoIpLookup`.
+- Shipping DoQ/WireGuard DNS as normal release toggles before a real audited engine exists: current production code ignores them, so surfacing them as active controls would harm trust. Source: `DnsVpnService.kt`, `DnsSettingsSection.kt`.
+- PCAPng/TLS decryption secrets as a near-term default: useful for experts but high privacy risk; keep diagnostics conservative unless a separate consent model lands. Source: PCAPdroid and Wireshark documentation.
 
 ## Sources
 
-### Project and OSS competitors
+### Project
+- https://github.com/SysAdminDoc/HostShield
+
+### OSS Competitors And Adjacent Tools
 - https://github.com/celzero/rethink-app
 - https://github.com/AdAway/AdAway
 - https://github.com/M66B/NetGuard
 - https://github.com/TrackerControl/tracker-control-android
 - https://github.com/emanuele-f/PCAPdroid
-- https://github.com/nickolasburr/InviZible
 - https://github.com/blokadaorg/blokada
-- https://github.com/julian-klode/dns66
-- https://github.com/IngoZenz/personaldnsfilter
-- https://github.com/Ch4t4r/Nebulo
+- https://github.com/DNSCrypt/dnscrypt-proxy
+- https://github.com/duckduckgo/tracker-radar
 
-### Commercial and adjacent products
+### Commercial Products And Docs
 - https://adguard.com/kb/adguard-for-android/features/
+- https://adguard-dns.io/kb/general/dns-filtering-syntax/
 - https://nextdns.io/
 - https://controld.com/features
 - https://pi-hole.net/blog/2024/11/15/introducing-pi-hole-v6/
-- https://developers.cloudflare.com/cloudflare-one/traffic-policies/
+- https://emanuele-f.github.io/PCAPdroid/dump_modes
 
-### Standards and platform
-- https://datatracker.ietf.org/doc/rfc9461/ (DDR)
-- https://datatracker.ietf.org/doc/rfc9462/ (DNR)
-- https://datatracker.ietf.org/doc/rfc9230/ (ODoH)
-- https://datatracker.ietf.org/doc/rfc8767/ (Serve-Stale)
-- https://datatracker.ietf.org/doc/rfc9824/ (NXNAME)
+### Platform, Standards, Dependencies, Security
+- https://developer.android.com/privacy-and-security/local-network-permission
 - https://developer.android.com/about/versions/16/behavior-changes-all
 - https://developer.android.com/develop/ui/compose/navigation/predictive-back-gesture
-- https://developer.android.com/develop/ui/views/theming/dynamic-colors
 - https://developer.android.com/guide/topics/resources/app-languages
-- https://developer.android.com/privacy-and-security/local-network-permission
-
-### Dependency and security references
-- https://square.github.io/okhttp/changelogs/changelog/
 - https://developer.android.com/jetpack/androidx/releases/room
-- https://developer.android.com/jetpack/androidx/releases/lifecycle
-- https://github.com/AdguardTeam/HostlistsRegistry
-- https://github.com/hagezi/dns-blocklists
-- https://github.com/StevenBlack/hosts
-
-### Community signal
-- https://discuss.privacyguides.net/t/which-app-block-allow-in-firewall/30603
-- https://www.reddit.com/r/androidapps/comments/dns_blocker_comparison
-- https://forum.f-droid.org/t/rethink-dns-yes-or-no/29561
-- https://github.com/TrackerControl/tracker-control-android/issues
+- https://developer.android.com/jetpack/androidx/releases/work
+- https://square.github.io/okhttp/changelogs/changelog/
+- https://datatracker.ietf.org/doc/rfc8914/
 
 ## Open Questions
 
-- Should HostShield add `network_security_config.xml` for defense-in-depth pinning alongside OkHttp-level pins?
-- Should dynamic color be opt-in alongside the existing AMOLED palette, or replace it as default on Android 12+?
-- Is Play Store distribution a near-term goal, or should full APK/F-Droid/Obtainium remain the primary lane?
-- Should WebDAV credentials receive Android Keystore-backed encryption rather than DataStore storage?
+- Should the Local DNS Server remain a user-facing feature, or should README/app copy remove it until a complete Settings + permission + lifecycle path exists?
+- Should `$dnstype=` support become a first-class `BlocklistHolder` rule model now, or should such rules be reported as unsupported source diagnostics until app/client-scoped rules are designed too?
+- Should release builds hide experimental DoQ/WireGuard controls entirely, or show disabled controls with debug-only copy?
