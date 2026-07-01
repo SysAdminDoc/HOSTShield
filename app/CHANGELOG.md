@@ -1,3 +1,21 @@
+# HostShield v6.9.56
+
+**Release Date:** 2026-07-01
+**Version Code:** 138
+
+## Experimental DNS Release Truth
+
+### Fixed
+- DoQ and WireGuard DNS are now described as debug-only experimental engines in
+  release docs; release builds hide their Settings controls and production VPN
+  routing forces both transports off.
+- Release documentation checks now verify the Settings and VPN debug gates and
+  reject docs that imply DoQ or WireGuard DNS are release-effective.
+- Disclosure tests lock the production policy that pinned DoH/DoT remain the
+  release encrypted-DNS path.
+
+---
+
 # HostShield v6.9.55
 
 **Release Date:** 2026-07-01

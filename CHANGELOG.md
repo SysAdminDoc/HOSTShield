@@ -3,6 +3,15 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.56] - 2026-07-01
+
+### Fixed
+- Release builds now document DoQ and WireGuard DNS as debug-only experimental
+  engines that are hidden in release Settings and forced off in production
+  routing.
+- Release documentation checks now verify the Settings and VPN debug gates and
+  reject release-effective claims for experimental DNS transports.
+
 ## [v6.9.55] - 2026-07-01
 
 ### Changed

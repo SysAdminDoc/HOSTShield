@@ -1,0 +1,4 @@
+v6.9.56 - Experimental DNS release truth:
+- DoQ and WireGuard DNS are now documented as debug-only experimental engines in release docs
+- Release builds hide their Settings controls and force both transports off in production routing
+- Release documentation checks verify the code gates and reject release-effective experimental DNS claims

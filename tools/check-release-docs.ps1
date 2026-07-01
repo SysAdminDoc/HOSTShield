@@ -28,6 +28,8 @@ $workManagerAudit = Read-RepoFile "docs/WORKMANAGER_AUDIT.md"
 $dohResolver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DohResolver.kt"
 $dnsVpnService = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DnsVpnService.kt"
 $doh3Resolver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/Doh3Resolver.kt"
+$dnsSettingsSection = Read-RepoFile "app/app/src/main/java/com/hostshield/ui/screens/settings/DnsSettingsSection.kt"
+$experimentalDisclosure = Read-RepoFile "app/app/src/main/java/com/hostshield/util/ExperimentalEngineDisclosure.kt"
 $geoIpLookup = Read-RepoFile "app/app/src/main/java/com/hostshield/util/GeoIpLookup.kt"
 $versionNameMatch = [regex]::Match($appBuild, 'versionName\s*=\s*"([^"]+)"')
 $versionCodeMatch = [regex]::Match($appBuild, 'versionCode\s*=\s*(\d+)')
@@ -253,7 +255,7 @@ $requiredPatterns = @{
         "Kotlin $kotlinMajorMinor",
         "Android SDK $compileSdk",
         "Android Gradle Plugin $agpMajorMinor",
-        "Experimental DoQ and WireGuard",
+        "Debug-only DoQ and WireGuard DNS controls",
         "QUERY_ALL_PACKAGES",
         "Play flavor artifacts remove that permission",
         "license-publication conflict"
@@ -374,6 +376,22 @@ if ($doh3Resolver -notmatch 'EMBEDDED_CRONET_ENABLED\s*=\s*false') {
 if ($appBuild -match 'cronet' -or $versionCatalog -match 'cronet') {
     $failures.Add("Build files still reference Cronet despite the disabled embedded DoH3 posture.")
 }
+if ($dnsSettingsSection -notmatch 'if \(BuildConfig\.DEBUG\)' -or
+    $dnsSettingsSection -notmatch 'DNS-over-QUIC \(experimental\)' -or
+    $dnsSettingsSection -notmatch 'WireGuard DNS \(experimental\)') {
+    $failures.Add("DnsSettingsSection.kt must keep DoQ and WireGuard DNS controls behind the BuildConfig.DEBUG gate.")
+}
+$doqForcedOffGate = 'useDoQ = if (com.hostshield.BuildConfig.DEBUG) prefs.doqEnabled.first() else false'
+$wireGuardForcedOffGate = 'useWireGuard = if (com.hostshield.BuildConfig.DEBUG) prefs.wireGuardEnabled.first() else false'
+if ($dnsVpnService -notmatch [regex]::Escape($doqForcedOffGate)) {
+    $failures.Add("DnsVpnService.kt must force DoQ off in release builds.")
+}
+if ($dnsVpnService -notmatch [regex]::Escape($wireGuardForcedOffGate)) {
+    $failures.Add("DnsVpnService.kt must force WireGuard DNS off in release builds.")
+}
+if ($experimentalDisclosure -notmatch 'Release builds force DoQ, DoH3, and WireGuard DNS off') {
+    $failures.Add("ExperimentalEngineDisclosure.kt must state the release forced-off policy.")
+}
 
 $assetRoot = Join-Path $repoRoot "app/app/src/main/assets"
 $geoIpAssets = @()
@@ -433,6 +451,20 @@ foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_descri
     foreach ($pattern in $currentLocalDnsClaimPatterns) {
         if ($docs[$doc] -match [regex]::Escape($pattern)) {
             $failures.Add("$doc contains an unwired Local DNS Server release-doc claim: $pattern")
+        }
+    }
+}
+
+$releaseEffectiveExperimentalDnsClaims = @(
+    "Falls back to DoT; production defaults remain pinned DoH/DoT",
+    "Production defaults remain pinned DoH/DoT",
+    "stay out of production defaults"
+)
+
+foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
+    foreach ($pattern in $releaseEffectiveExperimentalDnsClaims) {
+        if ($docs[$doc] -match [regex]::Escape($pattern)) {
+            $failures.Add("$doc implies release-effective experimental DNS transports: $pattern")
         }
     }
 }

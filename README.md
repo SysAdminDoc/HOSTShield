@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.55-blue)
+![Version](https://img.shields.io/badge/version-6.9.56-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -95,8 +95,8 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 |---------|-------------|
 | **DNS-over-HTTPS (DoH)** | RFC 8484 POST+GET. Cloudflare, Google, Quad9, NextDNS, AdGuard, Mullvad, CleanBrowsing |
 | **DNS-over-TLS (DoT)** | RFC 7858, TLSv1.3, SNI + hostname verification. Cloudflare, Google, Quad9, AdGuard |
-| **DNS-over-QUIC (DoQ)** | Experimental simplified engine, not a full QUIC/TLS 1.3 stack. Falls back to DoT; production defaults remain pinned DoH/DoT |
-| **DNS-over-WireGuard** | Experimental DNS-only simplified engine, not a full WireGuard tunnel. Production defaults remain pinned DoH/DoT |
+| **DNS-over-QUIC (DoQ)** | Debug-only experimental simplified engine, not a full QUIC/TLS 1.3 stack. Release builds hide the control and force DoQ off; pinned DoH/DoT remain the production encrypted-DNS path |
+| **DNS-over-WireGuard** | Debug-only experimental DNS-only engine, not a full WireGuard tunnel. Release builds hide the control and force WireGuard DNS off; pinned DoH/DoT remain the production encrypted-DNS path |
 | **Certificate Pinning** | Fail-closed SHA-256 pin validation per provider from a versioned local manifest with primary/backup pins and review/expiry diagnostics |
 | **Smart Latency Failover** | EMA-based latency tracking per provider, auto-selects fastest, falls back through all on failure |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through VPN tunnel to prevent bypass |
@@ -324,8 +324,8 @@ app/src/main/java/com/hostshield/
 │   ├── DnsPacketBuilder.kt   # DNS wire format builder/parser
 │   ├── DohResolver.kt        # DoH with smart latency failover
 │   ├── DotResolver.kt        # DoT (RFC 7858, TLSv1.3, 4 providers)
-│   ├── DoqResolver.kt        # Experimental simplified DoQ path
-│   ├── WireGuardProxy.kt     # Experimental simplified DNS-over-WireGuard path
+│   ├── DoqResolver.kt        # Debug-only experimental simplified DoQ path
+│   ├── WireGuardProxy.kt     # Debug-only experimental DNS-over-WireGuard path
 │   ├── CnameCloakDetector.kt # CNAME + SVCB/HTTPS cloak detection
 │   ├── CnameCloakUpdater.kt  # Remote CNAME cloak DB fetcher (AdGuard + NextDNS)
 │   ├── DohBypassUpdater.kt   # Remote DoH bypass list fetcher
@@ -419,6 +419,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.56** | Release builds now make experimental DNS controls truthful: DoQ and WireGuard DNS are documented as debug-only, release docs are guarded against release-effective claims, and disclosure tests lock the forced-off production policy. |
 | **6.9.55** | Removed premature Local DNS Server feature claims from current release docs until a production Settings, lifecycle, permission, and status path is wired; release-doc checks now reject reintroduced current Local DNS Server claims. |
 | **6.9.54** | Periodic, scheduled-profile, and VPN startup blocklist rebuilds now share a forced full-snapshot source coordinator, so 304 cache validations cannot leave the in-memory blocklist empty and changed source counts, ETags, Last-Modified values, sizes, and health metadata persist consistently. |
 | **6.9.53** | Coalesced concurrent identical DNS cache misses per route/qtype so only one upstream resolver call runs, while each app still receives a response with its own DNS transaction ID. Cache prefetch and serve-stale refreshes now update cache state without sending duplicate client responses. |

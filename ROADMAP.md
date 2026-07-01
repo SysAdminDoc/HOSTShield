@@ -700,13 +700,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ### P1
 
-- [ ] P1 - Make release-build experimental DNS controls truthful
-  Why: Settings exposes DoQ and WireGuard DNS toggles, but `DnsVpnService` forces both transports off outside `BuildConfig.DEBUG`, so release users can enable preferences that do not affect production DNS routing.
-  Evidence: `app/app/src/main/java/com/hostshield/ui/screens/settings/DnsSettingsSection.kt`; `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt`; `app/app/src/main/java/com/hostshield/util/ExperimentalEngineDisclosure.kt`.
-  Touches: `DnsSettingsSection.kt`, `SettingsViewModel.kt`, `ExperimentalEngineDisclosure.kt`, README/app metadata, release-doc checks, ViewModel/UI tests.
-  Acceptance: Release builds either hide/disable DoQ and WireGuard DNS controls with explicit debug-only copy or route them through a real audited engine; release-doc checks fail if docs imply release-effective experimental transports while production code disables them.
-  Complexity: S
-
 - [ ] P1 - Preserve AdGuard `$dnstype=` rules as query-type-aware policy
   Why: The parser recognizes `$dnstype=` but source rebuilds drop those rules before they reach `BlocklistHolder`, losing common DNS-filter semantics that AdGuard and modern adblock lists support.
   Evidence: `app/app/src/main/java/com/hostshield/domain/parser/AdblockRuleParser.kt`; `app/app/src/main/java/com/hostshield/domain/parser/HostsParser.kt`; `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt`; https://adguard-dns.io/kb/general/dns-filtering-syntax/.
