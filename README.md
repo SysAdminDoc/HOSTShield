@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.54-blue)
+![Version](https://img.shields.io/badge/version-6.9.55-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -196,7 +196,6 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 | **15 Content Categories** | Gaming, Streaming, Social Media, News, Shopping, Dating, Gambling, Adult, VPN/Proxy, Malware, and more — toggleable per category |
 | **Parental Controls** | 3 age profiles (Child, Teen, Adult) with automatic category blocking per profile |
 | **PIN Lock** | Argon2id PIN lock protects parental control settings from bypass and forces legacy SHA-256 hashes through an upgrade prompt |
-| **Local DNS Server** | "Portable Pi-hole" mode on port 5353 — private-network clients can use the phone as a DNS filter |
 | **DNS Proxy Mode** | No-VPN, no-root DNS blocking via local proxy (tri-mode: VPN / Root / Proxy) |
 | **Safe Search Enforcement** | DNS-level rewriting for Google, Bing, DuckDuckGo, YouTube |
 
@@ -333,7 +332,6 @@ app/src/main/java/com/hostshield/
 │   ├── RootDnsService.kt     # Root-mode DNS proxy
 │   ├── RootDnsLogger.kt      # Root-mode DNS logging with UID attribution
 │   ├── IptablesManager.kt    # Per-app firewall rule management
-│   ├── LocalDnsServer.kt     # LAN DNS server on port 5353
 │   ├── DnsProxyService.kt    # No-VPN proxy mode DNS blocking
 │   ├── ContentFilterManager.kt # 15 content filter categories
 │   ├── ParentalControlManager.kt # Age-profile parental controls + PIN
@@ -421,6 +419,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.55** | Removed premature Local DNS Server feature claims from current release docs until a production Settings, lifecycle, permission, and status path is wired; release-doc checks now reject reintroduced current Local DNS Server claims. |
 | **6.9.54** | Periodic, scheduled-profile, and VPN startup blocklist rebuilds now share a forced full-snapshot source coordinator, so 304 cache validations cannot leave the in-memory blocklist empty and changed source counts, ETags, Last-Modified values, sizes, and health metadata persist consistently. |
 | **6.9.53** | Coalesced concurrent identical DNS cache misses per route/qtype so only one upstream resolver call runs, while each app still receives a response with its own DNS transaction ID. Cache prefetch and serve-stale refreshes now update cache state without sending duplicate client responses. |
 | **6.9.45** | Refined secondary Android UI surfaces with shared headers, segmented controls, responsive empty/loading states, and smoother app-exclusion loading. |

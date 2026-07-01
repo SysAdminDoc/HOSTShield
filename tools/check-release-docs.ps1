@@ -423,6 +423,20 @@ foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_descri
     }
 }
 
+$currentLocalDnsClaimPatterns = @(
+    "Portable Pi-hole",
+    "private-network clients can use the phone as a DNS filter",
+    "LocalDnsServer.kt     # LAN DNS server on port 5353"
+)
+
+foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
+    foreach ($pattern in $currentLocalDnsClaimPatterns) {
+        if ($docs[$doc] -match [regex]::Escape($pattern)) {
+            $failures.Add("$doc contains an unwired Local DNS Server release-doc claim: $pattern")
+        }
+    }
+}
+
 $rootDocForbiddenPhrases = @(
     "offline GeoIP",
     "MaxMind",

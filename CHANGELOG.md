@@ -3,6 +3,15 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.55] - 2026-07-01
+
+### Changed
+- Removed current Local DNS Server / "Portable Pi-hole" feature claims from the
+  public README until the feature has a production Settings, lifecycle,
+  permission, and status path.
+- Release documentation checks now fail if current release docs reintroduce the
+  unwired Local DNS Server claim.
+
 ## [v6.9.54] - 2026-06-30
 
 ### Fixed

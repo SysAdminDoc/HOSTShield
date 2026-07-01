@@ -1,3 +1,19 @@
+# HostShield v6.9.55
+
+**Release Date:** 2026-07-01
+**Version Code:** 137
+
+## Release Documentation Truth
+
+### Changed
+- Removed current Local DNS Server / "Portable Pi-hole" feature claims until the
+  LAN DNS server has production Settings, lifecycle, permission, and status
+  wiring.
+- Release documentation checks now reject reintroduced current Local DNS Server
+  claims so public docs stay aligned with production behavior.
+
+---
+
 # HostShield v6.9.54
 
 **Release Date:** 2026-06-30

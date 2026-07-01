@@ -700,13 +700,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ### P1
 
-- [ ] P1 - Wire or remove the Local DNS Server user-facing feature
-  Why: README advertises a "Portable Pi-hole" LAN DNS server, but `LocalDnsServer` has no production start/stop call site, Settings control, lifecycle owner, notification/status surface, or Android local-network permission flow.
-  Evidence: `README.md`; `app/app/src/main/java/com/hostshield/service/LocalDnsServer.kt`; `app/app/src/test/java/com/hostshield/service/LocalDnsServerPolicyTest.kt`; https://developer.android.com/privacy-and-security/local-network-permission.
-  Touches: `LocalDnsServer.kt`, Settings/Protection UI, `AppPreferences.kt`, `AndroidManifest.xml`, notification/status surfaces, connected UDP smoke test.
-  Acceptance: Either a user can enable/disable LAN DNS from Settings with clear local-network permission/status/error feedback and connected test coverage, or all README/app claims for Local DNS Server are removed until it is wired.
-  Complexity: L
-
 - [ ] P1 - Make release-build experimental DNS controls truthful
   Why: Settings exposes DoQ and WireGuard DNS toggles, but `DnsVpnService` forces both transports off outside `BuildConfig.DEBUG`, so release users can enable preferences that do not affect production DNS routing.
   Evidence: `app/app/src/main/java/com/hostshield/ui/screens/settings/DnsSettingsSection.kt`; `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt`; `app/app/src/main/java/com/hostshield/util/ExperimentalEngineDisclosure.kt`.

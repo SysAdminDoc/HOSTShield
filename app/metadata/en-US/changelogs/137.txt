@@ -1,0 +1,3 @@
+v6.9.55 - Release documentation truth:
+- Removed current Local DNS Server / Portable Pi-hole feature claims until production Settings, lifecycle, permission, and status wiring exists
+- Release documentation checks now reject reintroduced current Local DNS Server claims
