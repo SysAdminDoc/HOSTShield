@@ -3,6 +3,15 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.57] - 2026-07-01
+
+### Fixed
+- AdGuard `$dnstype=` block and allow rules now persist through source rebuilds
+  as qtype-aware policy instead of being silently discarded.
+- VPN, DNS proxy, root DNS, and local DNS decisions now pass numeric DNS query
+  types into blocklist evaluation, enforcing A, AAAA, and negated type rules
+  without globalizing scoped rules.
+
 ## [v6.9.56] - 2026-07-01
 
 ### Fixed

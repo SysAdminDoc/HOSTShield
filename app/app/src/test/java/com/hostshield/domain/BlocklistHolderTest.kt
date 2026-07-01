@@ -134,6 +134,71 @@ class BlocklistHolderTest {
     }
 
     @Test
+    fun `dns type block rules require matching query type`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            dnsTypeRules = listOf(
+                DnsTypeRule(
+                    domain = "typed.example",
+                    dnsTypes = setOf(28),
+                    source = "Typed source"
+                )
+            )
+        )
+
+        assertFalse(holder.isBlocked("typed.example"))
+        assertFalse(holder.isBlocked("typed.example", 1))
+        val decision = holder.decide("api.typed.example", 28)
+        assertTrue(decision.blocked)
+        assertEquals("dns_type_rule", decision.reason)
+        assertEquals("Typed source", decision.source)
+    }
+
+    @Test
+    fun `negated dns type block rules block every query except excluded types`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            dnsTypeRules = listOf(
+                DnsTypeRule(
+                    domain = "no-ipv6.example",
+                    dnsTypes = setOf(1),
+                    dnsTypesNegated = true
+                )
+            )
+        )
+
+        assertFalse(holder.isBlocked("no-ipv6.example", 1))
+        assertTrue(holder.isBlocked("no-ipv6.example", 28))
+        assertTrue(holder.isBlocked("www.no-ipv6.example", 28))
+    }
+
+    @Test
+    fun `dns type allow overrides untyped source block only for matching type`() {
+        holder.update(
+            newDomains = setOf("safe.example"),
+            wildcards = emptyList(),
+            dnsTypeRules = listOf(
+                DnsTypeRule(
+                    domain = "safe.example",
+                    dnsTypes = setOf(1),
+                    allow = true,
+                    source = "Typed allow"
+                )
+            )
+        )
+
+        val allowed = holder.decide("safe.example", 1)
+        val blocked = holder.decide("safe.example", 28)
+
+        assertFalse(allowed.blocked)
+        assertEquals("dns_type_allow", allowed.reason)
+        assertTrue(blocked.blocked)
+        assertEquals("source_list", blocked.reason)
+    }
+
+    @Test
     fun `decision keeps DoH bypass blocked despite allowlists`() {
         holder.update(
             newDomains = emptySet(),

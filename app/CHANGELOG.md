@@ -1,3 +1,21 @@
+# HostShield v6.9.57
+
+**Release Date:** 2026-07-01
+**Version Code:** 139
+
+## AdGuard DNS Type Policy
+
+### Fixed
+- AdGuard `$dnstype=` block and allow rules now flow from source parsing into
+  `BlocklistHolder` as qtype-aware policy.
+- VPN, DNS proxy, root DNS, and local DNS paths now pass DNS query type numbers
+  into blocklist decisions, so `$dnstype=A`, `$dnstype=AAAA`, and negated forms
+  are enforced without silently applying them to every query.
+- Parser and blocklist tests now lock invalid `$dnstype` rejection, mixed
+  positive/negated handling, source attribution, and no-qtype fallback behavior.
+
+---
+
 # HostShield v6.9.56
 
 **Release Date:** 2026-07-01

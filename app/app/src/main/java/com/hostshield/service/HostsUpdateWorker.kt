@@ -120,6 +120,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                     val sourceAllowDomains = sourceSnapshot.sourceExactAllows.toMutableSet()
                     val adblockWildcardBlocks = sourceSnapshot.sourceWildcardBlocks.toMutableSet()
                     val adblockWildcardAllows = sourceSnapshot.sourceWildcardAllows.toMutableSet()
+                    val dnsTypeRules = sourceSnapshot.dnsTypeRules.toMutableList()
                     val exactBlockOrigins = sourceSnapshot.exactBlockOrigins.toMutableMap()
                     val wildcardBlockOrigins = sourceSnapshot.wildcardBlockOrigins.toMutableMap()
 
@@ -237,7 +238,8 @@ class HostsUpdateWorker @AssistedInject constructor(
                         sourceWildcardAllows = adblockWildcardAllows,
                         exactBlockOrigins = exactBlockOrigins,
                         sourceWildcardBlockOrigins = wildcardBlockOrigins,
-                        sourceExactAllows = sourceAllowDomains
+                        sourceExactAllows = sourceAllowDomains,
+                        dnsTypeRules = dnsTypeRules
                     )
                     diagnosticEvents.record(
                         DiagnosticEventType.BLOCKLIST_SWAP,

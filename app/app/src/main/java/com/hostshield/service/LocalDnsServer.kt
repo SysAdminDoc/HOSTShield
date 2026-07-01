@@ -181,8 +181,10 @@ class LocalDnsServer @Inject constructor(
                 return
             }
 
+            val queryType = DnsPacketBuilder.parseQueryType(query)
+
             // Check blocklist
-            if (blocklist.isBlocked(domain)) {
+            if (blocklist.isBlocked(domain, queryType)) {
                 queriesBlockedAtomic.incrementAndGet()
                 PrivacyLog.d(TAG, "BLOCKED (local) $domain from ${clientAddr.hostAddress}")
                 val blockResp = DnsPacketBuilder.buildNxdomain(query)

@@ -2,6 +2,7 @@ package com.hostshield.domain.parser
 
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
+import com.hostshield.domain.DnsTypeRule
 
 // Multi-format parser for hosts, domains-only, and adblock syntax
 
@@ -26,16 +27,20 @@ object HostsParser {
         val blockDomains: Set<String>,
         val allowDomains: Set<String> = emptySet(),
         val wildcardBlockDomains: Set<String> = emptySet(),
-        val wildcardAllowDomains: Set<String> = emptySet()
+        val wildcardAllowDomains: Set<String> = emptySet(),
+        val dnsTypeRules: List<DnsTypeRule> = emptyList()
     ) {
-        val entryCount: Int get() = blockDomains.size + wildcardBlockDomains.size
+        val entryCount: Int get() = blockDomains.size + wildcardBlockDomains.size +
+            dnsTypeRules.count { !it.allow }
     }
 
     data class AllowlistParseResult(
         val allowDomains: Set<String>,
-        val wildcardAllowDomains: Set<String> = emptySet()
+        val wildcardAllowDomains: Set<String> = emptySet(),
+        val dnsTypeAllowRules: List<DnsTypeRule> = emptyList()
     ) {
-        val entryCount: Int get() = allowDomains.size + wildcardAllowDomains.size
+        val entryCount: Int get() = allowDomains.size + wildcardAllowDomains.size +
+            dnsTypeAllowRules.size
     }
 
     private val HOSTS_LINE_REGEX = Regex("""^\s*(\S+)\s+(\S+)""")
@@ -110,9 +115,21 @@ object HostsParser {
         val allowDomains = mutableSetOf<String>()
         val wildcardBlockDomains = mutableSetOf<String>()
         val wildcardAllowDomains = mutableSetOf<String>()
+        val dnsTypeRules = mutableListOf<DnsTypeRule>()
 
         parsed.blockRules.forEach { rule ->
-            if (rule.isRegex || rule.dnsTypes != null || rule.redirectIp != null || rule.domain.isBlank()) return@forEach
+            if (rule.isRegex || rule.redirectIp != null || rule.domain.isBlank()) return@forEach
+
+            if (rule.dnsTypes != null) {
+                dnsTypeRules.add(rule.toDnsTypeRule(allow = false))
+                rule.denyAllowDomains.orEmpty()
+                    .filter { isValidDomain(it) }
+                    .forEach {
+                        allowDomains.add(it)
+                        wildcardAllowDomains.add(it)
+                    }
+                return@forEach
+            }
 
             if (rule.matchesSubdomains || rule.isWildcard) {
                 wildcardBlockDomains.add(rule.domain)
@@ -129,7 +146,11 @@ object HostsParser {
         }
 
         parsed.allowRules.forEach { rule ->
-            if (rule.isRegex || rule.dnsTypes != null || rule.domain.isBlank()) return@forEach
+            if (rule.isRegex || rule.domain.isBlank()) return@forEach
+            if (rule.dnsTypes != null) {
+                dnsTypeRules.add(rule.toDnsTypeRule(allow = true))
+                return@forEach
+            }
             allowDomains.add(rule.domain)
             if (rule.matchesSubdomains || rule.isWildcard) {
                 wildcardAllowDomains.add(rule.domain)
@@ -140,7 +161,8 @@ object HostsParser {
             blockDomains = blockDomains,
             allowDomains = allowDomains,
             wildcardBlockDomains = wildcardBlockDomains,
-            wildcardAllowDomains = wildcardAllowDomains
+            wildcardAllowDomains = wildcardAllowDomains,
+            dnsTypeRules = dnsTypeRules
         )
     }
 
@@ -161,9 +183,19 @@ object HostsParser {
         val parsed = parseForBlocking(content)
         return AllowlistParseResult(
             allowDomains = parsed.allowDomains,
-            wildcardAllowDomains = parsed.wildcardAllowDomains
+            wildcardAllowDomains = parsed.wildcardAllowDomains,
+            dnsTypeAllowRules = parsed.dnsTypeRules.filter { it.allow }
         )
     }
+
+    private fun AdblockRuleParser.DnsRule.toDnsTypeRule(allow: Boolean): DnsTypeRule =
+        DnsTypeRule(
+            domain = domain,
+            dnsTypes = dnsTypes.orEmpty(),
+            dnsTypesNegated = dnsTypesNegated,
+            allow = allow,
+            matchesSubdomains = matchesSubdomains || isWildcard
+        ).normalized()
 
     /**
      * Parse adblock-syntax and flatten to simple block domain set (for backward compat).

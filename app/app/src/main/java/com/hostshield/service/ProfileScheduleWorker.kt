@@ -95,6 +95,7 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 val sourceAllowDomains = sourceSnapshot.sourceExactAllows.toMutableSet()
                 val sourceWildcardBlocks = sourceSnapshot.sourceWildcardBlocks.toMutableSet()
                 val sourceWildcardAllows = sourceSnapshot.sourceWildcardAllows.toMutableSet()
+                val dnsTypeRules = sourceSnapshot.dnsTypeRules.toMutableList()
                 val exactBlockOrigins = sourceSnapshot.exactBlockOrigins.toMutableMap()
                 val wildcardBlockOrigins = sourceSnapshot.wildcardBlockOrigins.toMutableMap()
                 val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
@@ -120,7 +121,8 @@ class ProfileScheduleWorker @AssistedInject constructor(
                     sourceWildcardAllows = sourceWildcardAllows,
                     exactBlockOrigins = exactBlockOrigins,
                     sourceWildcardBlockOrigins = wildcardBlockOrigins,
-                    sourceExactAllows = sourceAllowDomains
+                    sourceExactAllows = sourceAllowDomains,
+                    dnsTypeRules = dnsTypeRules
                 )
                 val blockingDomainCount = allDomains.size + sourceWildcardBlocks.size
 

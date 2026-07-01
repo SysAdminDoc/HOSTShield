@@ -58,6 +58,7 @@ class BlocklistSourceCoordinatorTest {
                 content = """
                     0.0.0.0 ads.example.com
                     0.0.0.0 tracker.example.com
+                    ||typed.example^${'$'}dnstype=AAAA
                 """.trimIndent(),
                 etag = "new",
                 lastModified = "Wed, 24 Jun 2026 12:00:00 GMT",
@@ -71,7 +72,10 @@ class BlocklistSourceCoordinatorTest {
         assertEquals(1, snapshot.downloadedSourceCount)
         assertTrue(snapshot.failedSources.isEmpty())
         val updated = updatedSources.single()
-        assertEquals(2, updated.entryCount)
+        assertEquals(3, updated.entryCount)
+        assertEquals(1, snapshot.dnsTypeRules.size)
+        assertEquals("typed.example", snapshot.dnsTypeRules.single().domain)
+        assertEquals("Example", snapshot.dnsTypeRules.single().source)
         assertEquals("new", updated.etag)
         assertEquals("Wed, 24 Jun 2026 12:00:00 GMT", updated.lastModifiedOnline)
         assertEquals(64, updated.sizeBytes)
@@ -80,7 +84,7 @@ class BlocklistSourceCoordinatorTest {
         assertEquals(0, updated.lastHttpStatus)
         assertEquals(0, updated.consecutiveFailures)
         assertEquals(1, updated.prevEntryCount)
-        assertEquals(1, updated.domainsAdded)
+        assertEquals(2, updated.domainsAdded)
         assertEquals(0, updated.domainsRemoved)
         assertTrue(updated.lastUpdated > 0)
         coVerify(exactly = 1) { downloader.download(source, forceDownload = true) }

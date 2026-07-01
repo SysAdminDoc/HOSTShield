@@ -73,6 +73,7 @@ class BlocklistHolder @Inject constructor() {
         val sourceWildcardBlockOrigins: Map<String, String>,
         val sourceExactAllowDomains: Set<String>,
         val sourceWildcardAllowDomains: Set<String>,
+        val dnsTypeRules: List<DnsTypeRule>,
     ) {
         companion object {
             val EMPTY = Snapshot(
@@ -88,6 +89,7 @@ class BlocklistHolder @Inject constructor() {
                 sourceWildcardBlockOrigins = emptyMap(),
                 sourceExactAllowDomains = emptySet(),
                 sourceWildcardAllowDomains = emptySet(),
+                dnsTypeRules = emptyList(),
             )
         }
     }
@@ -286,6 +288,7 @@ class BlocklistHolder @Inject constructor() {
         exactBlockOrigins: Map<String, String> = emptyMap(),
         sourceWildcardBlockOrigins: Map<String, String> = emptyMap(),
         sourceExactAllows: Set<String> = emptySet(),
+        dnsTypeRules: List<DnsTypeRule> = emptyList(),
     ) {
         val newRoot = TrieNode()
         val newExactSet: MutableSet<String> = HashSet(newDomains.size + dohBypassDomains.size)
@@ -312,6 +315,9 @@ class BlocklistHolder @Inject constructor() {
             .map { it.lowercase() }
             .filter { it.isNotBlank() }
             .toSet()
+        val normalizedDnsTypeRules = dnsTypeRules
+            .map { it.normalized() }
+            .filter { it.domain.isNotBlank() && it.dnsTypes.isNotEmpty() }
 
         for (domain in normalizedSourceWildcardBlocks) {
             insertDomain(newRoot, domain, wildcardBlock = true)
@@ -365,12 +371,14 @@ class BlocklistHolder @Inject constructor() {
             regexBlockRules = newRegexBlock.map(::TimedRegex),
             regexAllowRules = newRegexAllow.map(::TimedRegex),
             blockedIps = ipBlocks,
-            domainCount = newDomains.size + normalizedSourceWildcardBlocks.size + dohBypassDomains.size,
+            domainCount = newDomains.size + normalizedSourceWildcardBlocks.size +
+                normalizedDnsTypeRules.count { !it.allow } + dohBypassDomains.size,
             sourceWildcardBlockDomains = normalizedSourceWildcardBlocks,
             exactBlockOrigins = normalizedExactBlockOrigins,
             sourceWildcardBlockOrigins = normalizedSourceWildcardBlockOrigins,
             sourceExactAllowDomains = normalizedSourceExactAllows,
             sourceWildcardAllowDomains = normalizedSourceWildcardAllows,
+            dnsTypeRules = normalizedDnsTypeRules,
         )
 
         decisionCache.clear()
@@ -387,6 +395,7 @@ class BlocklistHolder @Inject constructor() {
         exactBlockOrigins: Map<String, String> = emptyMap(),
         sourceWildcardBlockOrigins: Map<String, String> = emptyMap(),
         sourceExactAllows: Set<String> = emptySet(),
+        dnsTypeRules: List<DnsTypeRule> = emptyList(),
     ) = withContext(Dispatchers.Default) {
         update(
             newDomains,
@@ -397,7 +406,8 @@ class BlocklistHolder @Inject constructor() {
             sourceWildcardAllows,
             exactBlockOrigins,
             sourceWildcardBlockOrigins,
-            sourceExactAllows
+            sourceExactAllows,
+            dnsTypeRules
         )
     }
 
@@ -417,6 +427,9 @@ class BlocklistHolder @Inject constructor() {
         current.sourceWildcardBlockDomains.forEach { domain ->
             keys.add("*.$domain")
         }
+        current.dnsTypeRules
+            .filter { !it.allow }
+            .forEach { keys.add(it.previewKey()) }
         return keys
     }
 
@@ -443,6 +456,7 @@ class BlocklistHolder @Inject constructor() {
             sourceWildcardBlockOrigins = current.sourceWildcardBlockOrigins,
             sourceExactAllowDomains = current.sourceExactAllowDomains,
             sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
+            dnsTypeRules = current.dnsTypeRules,
         )
         decisionCache.remove(h)
     }
@@ -471,6 +485,7 @@ class BlocklistHolder @Inject constructor() {
             sourceWildcardBlockOrigins = current.sourceWildcardBlockOrigins,
             sourceExactAllowDomains = current.sourceExactAllowDomains,
             sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
+            dnsTypeRules = current.dnsTypeRules,
         )
         decisionCache.remove(h)
     }
@@ -482,12 +497,14 @@ class BlocklistHolder @Inject constructor() {
      * (wildcard allow/block), then O(1) hash set for exact blocks. Regex rules
      * only evaluated when needed. Results cached in decision LRU.
      */
-    fun isBlocked(hostname: String): Boolean {
-        return decide(hostname).blocked
+    fun isBlocked(hostname: String, queryType: Int? = null): Boolean {
+        return decide(hostname, queryType).blocked
     }
 
-    fun decide(hostname: String): BlockDecision {
+    fun decide(hostname: String, queryType: Int? = null): BlockDecision {
         val lower = hostname.lowercase()
+        val effectiveQueryType = queryType?.takeIf { it > 0 }
+        val cacheKey = if (effectiveQueryType == null) lower else "$lower|$effectiveQueryType"
 
         // L1: Filter decision LRU cache — O(1) for hot domains. LinkedHashMap in
         // access-order auto-evicts the LRU entry on overflow (removeEldestEntry).
@@ -496,16 +513,16 @@ class BlocklistHolder @Inject constructor() {
         // mid-evaluation and atomically swap `snapshot`, but the local copy is
         // immutable from this thread's perspective.
         val snap = snapshot
-        decisionCache[lower]?.let { cached ->
+        decisionCache[cacheKey]?.let { cached ->
             if (cached.snapshot === snap) {
                 return cached.decision
             }
-            decisionCache.remove(lower)
+            decisionCache.remove(cacheKey)
         }
 
-        val result = decideInternal(lower, snap)
+        val result = decideInternal(lower, snap, effectiveQueryType)
         if (snapshot === snap) {
-            decisionCache[lower] = CachedDecision(snap, result)
+            decisionCache[cacheKey] = CachedDecision(snap, result)
         }
         return result
     }
@@ -513,7 +530,7 @@ class BlocklistHolder @Inject constructor() {
     /** Check if a resolved IP address is in the IP blocklist. */
     fun isIpBlocked(ip: String): Boolean = ip in snapshot.blockedIps
 
-    private fun decideInternal(lower: String, snap: Snapshot): BlockDecision {
+    private fun decideInternal(lower: String, snap: Snapshot, queryType: Int?): BlockDecision {
         if (lower in dohBypassDomains) {
             return blockedDecision(
                 reason = "doh_bypass",
@@ -537,6 +554,15 @@ class BlocklistHolder @Inject constructor() {
                 source = "Source allowlist",
                 matchedValue = lower,
                 precedence = "source allowlist overrides source and user block entries"
+            )
+        }
+        snap.dnsTypeRules.firstMatchingDnsTypeRule(lower, queryType, allow = true)?.let { rule ->
+            return BlockDecision(
+                blocked = false,
+                reason = "dns_type_allow",
+                source = rule.source.ifBlank { "Source DNS type allow rule" },
+                matchedValue = rule.previewKey(),
+                precedence = "DNS type allow rule overrides blocklist matches for this query type"
             )
         }
 
@@ -572,6 +598,14 @@ class BlocklistHolder @Inject constructor() {
                 },
                 matchedValue = wildcardAllowMatch,
                 precedence = "wildcard allow overrides blocklist matches"
+            )
+        }
+        snap.dnsTypeRules.firstMatchingDnsTypeRule(lower, queryType, allow = false)?.let { rule ->
+            return blockedDecision(
+                reason = "dns_type_rule",
+                source = rule.source.ifBlank { "Source DNS type block rule" },
+                matchedValue = rule.previewKey(),
+                precedence = "DNS type rule match"
             )
         }
 
@@ -625,7 +659,7 @@ class BlocklistHolder @Inject constructor() {
         }
 
         if (lower.startsWith("www.")) {
-            val wwwDecision = decideInternal(lower.removePrefix("www."), snap)
+            val wwwDecision = decideInternal(lower.removePrefix("www."), snap, queryType)
             return if (wwwDecision.blocked) {
                 wwwDecision.copy(
                     precedence = listOf("www alias fallback", wwwDecision.precedence)
@@ -658,6 +692,20 @@ class BlocklistHolder @Inject constructor() {
 
     private fun List<TimedRegex>.firstMatchingRegex(input: String): TimedRegex? =
         firstOrNull { it.containsMatchIn(input) }
+
+    private fun List<DnsTypeRule>.firstMatchingDnsTypeRule(
+        input: String,
+        queryType: Int?,
+        allow: Boolean
+    ): DnsTypeRule? {
+        val qtype = queryType ?: return null
+        return asSequence()
+            .filter { it.allow == allow && it.matches(input, qtype) }
+            .maxWithOrNull(
+                compareBy<DnsTypeRule> { it.domain.count { ch -> ch == '.' } }
+                    .thenBy { it.domain.length }
+            )
+    }
 
     private fun String.toBlockReason(default: String): String = when {
         startsWith("User block rule", ignoreCase = true) -> "user_rule"

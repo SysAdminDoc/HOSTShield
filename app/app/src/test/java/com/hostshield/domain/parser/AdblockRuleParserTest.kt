@@ -1,6 +1,7 @@
 package com.hostshield.domain.parser
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -89,6 +90,20 @@ class AdblockRuleParserTest {
         assertNotNull(rule)
         assertEquals(setOf(1), rule!!.dnsTypes)
         assertTrue(rule.dnsTypesNegated)
+    }
+
+    @Test
+    fun `mixed dnstype keeps positive types only`() {
+        val rule = AdblockRuleParser.parseLine("||example.com^\$dnstype=~A|AAAA")
+        assertNotNull(rule)
+        assertEquals(setOf(28), rule!!.dnsTypes)
+        assertFalse(rule.dnsTypesNegated)
+    }
+
+    @Test
+    fun `invalid dnstype is skipped instead of globalized`() {
+        val rule = AdblockRuleParser.parseLine("||example.com^\$dnstype=NOT_A_TYPE")
+        assertNull(rule)
     }
 
     @Test

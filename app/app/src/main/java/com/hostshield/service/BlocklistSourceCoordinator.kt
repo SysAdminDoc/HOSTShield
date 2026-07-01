@@ -7,6 +7,7 @@ import com.hostshield.data.source.DownloadResult
 import com.hostshield.data.source.SourceDownloadException
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.sourceHttpStatus
+import com.hostshield.domain.DnsTypeRule
 import com.hostshield.domain.parser.HostsParser
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,6 +18,7 @@ data class BlocklistSourceSnapshot(
     val sourceExactAllows: Set<String>,
     val sourceWildcardBlocks: Set<String>,
     val sourceWildcardAllows: Set<String>,
+    val dnsTypeRules: List<DnsTypeRule>,
     val exactBlockOrigins: Map<String, String>,
     val wildcardBlockOrigins: Map<String, String>,
     val failedSources: List<SourceFailureNotice>,
@@ -35,6 +37,7 @@ class BlocklistSourceCoordinator @Inject constructor(
         val sourceExactAllows = mutableSetOf<String>()
         val sourceWildcardBlocks = mutableSetOf<String>()
         val sourceWildcardAllows = mutableSetOf<String>()
+        val dnsTypeRules = mutableListOf<DnsTypeRule>()
         val exactBlockOrigins = mutableMapOf<String, String>()
         val wildcardBlockOrigins = mutableMapOf<String, String>()
         val failedSources = mutableListOf<SourceFailureNotice>()
@@ -54,6 +57,7 @@ class BlocklistSourceCoordinator @Inject constructor(
                     wildcardBlockOrigins.putIfAbsent(it, source.label)
                 }
                 sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                dnsTypeRules.addAll(parsed.dnsTypeRules.map { it.normalized(source.label) })
                 persistSuccessfulDownload(source, dl, parsed.entryCount)
             } else {
                 val err = result.exceptionOrNull()
@@ -73,6 +77,7 @@ class BlocklistSourceCoordinator @Inject constructor(
                 val parsed = HostsParser.parseForAllowing(dl.content)
                 sourceExactAllows.addAll(parsed.allowDomains)
                 sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                dnsTypeRules.addAll(parsed.dnsTypeAllowRules.map { it.normalized(source.label) })
                 persistSuccessfulDownload(source, dl, parsed.entryCount)
             } else {
                 val err = result.exceptionOrNull()
@@ -89,6 +94,7 @@ class BlocklistSourceCoordinator @Inject constructor(
             sourceExactAllows = sourceExactAllows,
             sourceWildcardBlocks = sourceWildcardBlocks,
             sourceWildcardAllows = sourceWildcardAllows,
+            dnsTypeRules = dnsTypeRules,
             exactBlockOrigins = exactBlockOrigins,
             wildcardBlockOrigins = wildcardBlockOrigins,
             failedSources = failedSources,

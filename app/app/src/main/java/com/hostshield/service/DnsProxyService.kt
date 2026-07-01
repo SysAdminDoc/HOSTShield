@@ -248,7 +248,7 @@ class DnsProxyService : Service() {
             return
         }
 
-        val blockDecision = blocklist.decide(domain)
+        val blockDecision = blocklist.decide(domain, queryType)
         val blocked = blockDecision.blocked
 
         if (blocked) {

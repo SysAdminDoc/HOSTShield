@@ -247,6 +247,7 @@ class SourcesViewModel @Inject constructor(
                 val sourceAllowDomains = mutableSetOf<String>()
                 val sourceWildcardBlocks = mutableSetOf<String>()
                 val sourceWildcardAllows = mutableSetOf<String>()
+                val dnsTypeRules = mutableListOf<com.hostshield.domain.DnsTypeRule>()
                 var failedSources = 0
 
                 for (source in blockSources) {
@@ -256,6 +257,7 @@ class SourcesViewModel @Inject constructor(
                         sourceAllowDomains.addAll(parsed.allowDomains)
                         sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
                         sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                        dnsTypeRules.addAll(parsed.dnsTypeRules.map { it.normalized(source.label) })
                     }.onFailure {
                         failedSources++
                     }
@@ -265,6 +267,7 @@ class SourcesViewModel @Inject constructor(
                         val parsed = HostsParser.parseForAllowing(dl.content)
                         sourceAllowDomains.addAll(parsed.allowDomains)
                         sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                        dnsTypeRules.addAll(parsed.dnsTypeAllowRules.map { it.normalized(source.label) })
                     }.onFailure {
                         failedSources++
                     }
@@ -286,11 +289,12 @@ class SourcesViewModel @Inject constructor(
                     wildcards = repository.getEnabledWildcards(),
                     regexRules = repository.getEnabledRegexRules(),
                     sourceWildcardBlocks = sourceWildcardBlocks,
-                    sourceWildcardAllows = sourceWildcardAllows
+                    sourceWildcardAllows = sourceWildcardAllows,
+                    dnsTypeRules = dnsTypeRules
                 )
 
                 val currentKeys = blocklistHolder.exportBlockKeysForPreview()
-                val previewKeys = buildPreviewKeys(candidateDomains, sourceWildcardBlocks)
+                val previewKeys = previewHolder.exportBlockKeysForPreview()
                 val added = (previewKeys - currentKeys).size
                 val removed = (currentKeys - previewKeys).size
                 val recentLogs = repository.getRecentLogs(500).first()
@@ -343,20 +347,6 @@ class SourcesViewModel @Inject constructor(
 
     private fun matchesDomainOrSubdomain(domain: String, base: String): Boolean =
         domain == base || domain.endsWith(".$base")
-
-    private fun buildPreviewKeys(
-        exactBlocks: Set<String>,
-        sourceWildcardBlocks: Set<String>
-    ): Set<String> {
-        val keys = HashSet<String>(exactBlocks.size + sourceWildcardBlocks.size)
-        exactBlocks.forEach { domain ->
-            normalizePreviewHostname(domain).takeIf { it.isNotBlank() }?.let(keys::add)
-        }
-        sourceWildcardBlocks.forEach { domain ->
-            normalizePreviewHostname(domain).takeIf { it.isNotBlank() }?.let { keys.add("*.$it") }
-        }
-        return keys
-    }
 
     private fun findChangedRecentQueries(
         logs: List<DnsLogEntry>,

@@ -258,23 +258,21 @@ object AdblockRuleParser {
                 when {
                     m == "important" -> isImportant = true
                     m == "badfilter" -> isBadfilter = true
-                    m.startsWith("dnstype=") -> {
-                        val typeStr = m.removePrefix("dnstype=")
-                        val parsedDnsTypes = mutableSetOf<Int>()
-                        var hasNegated = false
-                        var hasPositive = false
-                        for (t in typeStr.split('|')) {
+                    m.startsWith("dnstype=", ignoreCase = true) -> {
+                        val typeStr = m.substringAfter('=')
+                        val positiveTypes = mutableSetOf<Int>()
+                        val negatedTypes = mutableSetOf<Int>()
+                        for (rawType in typeStr.split('|')) {
+                            val t = rawType.trim()
+                            if (t.isEmpty()) return null
                             val negated = t.startsWith('~')
                             val typeName = (if (negated) t.removePrefix("~") else t).uppercase()
-                            val typeVal = DNS_TYPES[typeName]
-                            if (typeVal != null) {
-                                parsedDnsTypes.add(typeVal)
-                                if (negated) hasNegated = true else hasPositive = true
-                            }
+                            val typeVal = DNS_TYPES[typeName] ?: return null
+                            if (negated) negatedTypes.add(typeVal) else positiveTypes.add(typeVal)
                         }
-                        // AdGuard doesn't support mixing negated and non-negated — pick one mode
-                        dnsTypesNegated = hasNegated && !hasPositive
-                        dnsTypes = parsedDnsTypes.ifEmpty { null }
+                        dnsTypesNegated = positiveTypes.isEmpty() && negatedTypes.isNotEmpty()
+                        val selectedTypes = if (positiveTypes.isNotEmpty()) positiveTypes else negatedTypes
+                        dnsTypes = selectedTypes.takeIf { it.isNotEmpty() }
                     }
                     m.startsWith("denyallow=") -> {
                         val domains = m.removePrefix("denyallow=")

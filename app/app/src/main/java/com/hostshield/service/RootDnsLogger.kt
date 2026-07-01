@@ -505,7 +505,7 @@ class RootDnsLogger @Inject constructor(
             }
 
             val queryType = parseDnsQueryType(data)
-            val decision = blocklist.decide(hostname)
+            val decision = blocklist.decide(hostname, DnsPacketBuilder.parseQueryType(data))
             val isBlocked = decision.blocked
 
             if (isBlocked) {

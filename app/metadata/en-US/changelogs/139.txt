@@ -1,0 +1,4 @@
+v6.9.57 - AdGuard DNS type policy:
+- Preserves AdGuard $dnstype= block and allow rules through source rebuilds as query-type-aware policy
+- Enforces A, AAAA, and negated DNS type rules in VPN, DNS proxy, root DNS, and local DNS decisions
+- Rejects invalid $dnstype values instead of silently applying scoped rules globally

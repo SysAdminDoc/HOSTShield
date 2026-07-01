@@ -904,6 +904,7 @@ class DnsVpnService : VpnService() {
             val sourceAllowDomains = sourceSnapshot.sourceExactAllows.toMutableSet()
             val sourceWildcardBlocks = sourceSnapshot.sourceWildcardBlocks.toMutableSet()
             val sourceWildcardAllows = sourceSnapshot.sourceWildcardAllows.toMutableSet()
+            val dnsTypeRules = sourceSnapshot.dnsTypeRules.toMutableList()
             val exactBlockOrigins = sourceSnapshot.exactBlockOrigins.toMutableMap()
             val wildcardBlockOrigins = sourceSnapshot.wildcardBlockOrigins.toMutableMap()
             val failedSources = sourceSnapshot.failedSources
@@ -943,7 +944,8 @@ class DnsVpnService : VpnService() {
                 sourceWildcardAllows = sourceWildcardAllows,
                 exactBlockOrigins = exactBlockOrigins,
                 sourceWildcardBlockOrigins = wildcardBlockOrigins,
-                sourceExactAllows = sourceAllowDomains
+                sourceExactAllows = sourceAllowDomains,
+                dnsTypeRules = dnsTypeRules
             )
             val blockingDomainCount = allDomains.size + sourceWildcardBlocks.size
             recordEvent(
@@ -1061,7 +1063,8 @@ class DnsVpnService : VpnService() {
                   else extractDnsPayload(packet, length, headerOffset)
         dns ?: return
         val domain = parseDnsQueryDomain(dns) ?: return
-        val qtype = parseDnsQueryType(dns)
+        val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
+        val qtype = DnsPacketBuilder.queryTypeLabel(qtypeNum)
         var app = if (isV6) resolveAppV6(packet, headerOffset) else resolveApp(packet, headerOffset)
 
         if (app.first.isEmpty()) {
@@ -1186,7 +1189,7 @@ class DnsVpnService : VpnService() {
             return
         }
 
-        val blockDecision = domainDecision(domain)
+        val blockDecision = domainDecision(domain, qtypeNum)
         val blocked = blockDecision.blocked
 
         if (!blocked && threatIntelEnabled) {
@@ -1524,7 +1527,7 @@ class DnsVpnService : VpnService() {
      * Handles exact match, www. prefix, wildcard allow/block.
      * Replaces the old linear Set.contains() + wildcard scan.
      */
-    private fun domainDecision(domain: String): BlockDecision {
+    private fun domainDecision(domain: String, queryType: Int? = null): BlockDecision {
         if (isPaused) {
             return BlockDecision(
                 blocked = false,
@@ -1532,7 +1535,7 @@ class DnsVpnService : VpnService() {
                 precedence = "pause state bypasses blocklist lookup"
             )
         }
-        return blocklist.decide(domain)
+        return blocklist.decide(domain, queryType)
     }
 
     private fun explicitDecision(
@@ -1543,8 +1546,8 @@ class DnsVpnService : VpnService() {
         precedence: String = ""
     ): BlockDecision = BlockDecision(blocked, reason, source, matchedValue, precedence)
 
-    private fun isDomainBlocked(domain: String): Boolean {
-        return domainDecision(domain).blocked
+    private fun isDomainBlocked(domain: String, queryType: Int? = null): Boolean {
+        return domainDecision(domain, queryType).blocked
     }
 
     // ── Packet Parsing (delegated to PacketClassifier & DnsPacketParser) ───
@@ -1590,18 +1593,20 @@ class DnsVpnService : VpnService() {
 
         val isSyn = (tcpFlags and 0x02) != 0
         var hostname: String? = null
+        var qtypeNum: Int? = null
         if (payloadLen > 14) {
             val dnsLen = ((packet[payloadStart].toInt() and 0xFF) shl 8) or
                 (packet[payloadStart + 1].toInt() and 0xFF)
             if (dnsLen in 12..4096 && payloadStart + 2 + dnsLen <= length) {
                 val dns = packet.copyOfRange(payloadStart + 2, payloadStart + 2 + dnsLen)
                 hostname = parseDnsQueryDomain(dns)
+                qtypeNum = DnsPacketBuilder.parseQueryType(dns)
             }
         }
 
         if (hostname == null && !isSyn) return
 
-        val blocked = if (hostname != null) isDomainBlocked(hostname) else true
+        val blocked = if (hostname != null) isDomainBlocked(hostname, qtypeNum) else true
 
         if (blocked) {
             val rst = if (isV6) buildTcpRstV6(packet) else buildTcpRst(packet, headerOffset)

@@ -698,15 +698,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ## Research-Driven Additions - 2026-06-28
 
-### P1
-
-- [ ] P1 - Preserve AdGuard `$dnstype=` rules as query-type-aware policy
-  Why: The parser recognizes `$dnstype=` but source rebuilds drop those rules before they reach `BlocklistHolder`, losing common DNS-filter semantics that AdGuard and modern adblock lists support.
-  Evidence: `app/app/src/main/java/com/hostshield/domain/parser/AdblockRuleParser.kt`; `app/app/src/main/java/com/hostshield/domain/parser/HostsParser.kt`; `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt`; https://adguard-dns.io/kb/general/dns-filtering-syntax/.
-  Touches: `AdblockRuleParser.kt`, `HostsParser.kt`, `BlocklistHolder.kt`, DNS decision call sites with qtype context, parser/blocklist tests.
-  Acceptance: `$dnstype=A`, `$dnstype=AAAA`, and negated forms are either enforced by qtype in VPN/proxy/root decisions or surfaced as counted unsupported-rule diagnostics; they are never silently discarded.
-  Complexity: L
-
 ### P2
 
 - [ ] P2 - Generate tracker-owner attribution from an audited local dataset

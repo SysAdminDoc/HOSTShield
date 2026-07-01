@@ -912,6 +912,7 @@ class HomeViewModel @Inject constructor(
         val sourceAllowDomains = mutableSetOf<String>()
         val sourceWildcardBlocks = mutableSetOf<String>()
         val sourceWildcardAllows = mutableSetOf<String>()
+        val dnsTypeRules = mutableListOf<com.hostshield.domain.DnsTypeRule>()
         val exactBlockOrigins = mutableMapOf<String, String>()
         val wildcardBlockOrigins = mutableMapOf<String, String>()
         val totalSources = blockSources.size + allowlistSources.size
@@ -928,6 +929,7 @@ class HomeViewModel @Inject constructor(
                     wildcardBlockOrigins.putIfAbsent(it, source.label)
                 }
                 sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                dnsTypeRules.addAll(parsed.dnsTypeRules.map { it.normalized(source.label) })
                 markSourceDownloadSuccess(source.id)
             }.onFailure { err ->
                 markSourceDownloadFailure(source, err)
@@ -939,6 +941,7 @@ class HomeViewModel @Inject constructor(
                 val parsed = HostsParser.parseForAllowing(dl.content)
                 sourceAllowDomains.addAll(parsed.allowDomains)
                 sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
+                dnsTypeRules.addAll(parsed.dnsTypeAllowRules.map { it.normalized(source.label) })
                 markSourceDownloadSuccess(source.id)
             }.onFailure { err ->
                 markSourceDownloadFailure(source, err)
@@ -968,7 +971,8 @@ class HomeViewModel @Inject constructor(
             sourceWildcardAllows = sourceWildcardAllows,
             exactBlockOrigins = exactBlockOrigins,
             sourceWildcardBlockOrigins = wildcardBlockOrigins,
-            sourceExactAllows = sourceAllowDomains
+            sourceExactAllows = sourceAllowDomains,
+            dnsTypeRules = dnsTypeRules
         )
 
         return allDomains.size + sourceWildcardBlocks.size

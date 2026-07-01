@@ -88,6 +88,28 @@ class HostsParserTest {
         assertTrue(result.wildcardAllowDomains.contains("allowed.actor"))
         assertTrue(result.allowDomains.contains("allowed.actor"))
         assertFalse(result.blockDomains.contains("exact.example"))
+        assertTrue(result.dnsTypeRules.any {
+            it.domain == "exact.example" && it.dnsTypes == setOf(1) && !it.dnsTypesNegated && !it.allow
+        })
+    }
+
+    @Test
+    fun `parseForBlocking preserves dnstype allow and negated block rules`() {
+        val content = """
+            [Adblock Plus]
+            @@||safe.example^${'$'}dnstype=A
+            ||no-ipv6.example^${'$'}dnstype=~A
+        """.trimIndent()
+
+        val result = HostsParser.parseForBlocking(content)
+
+        assertTrue(result.dnsTypeRules.any {
+            it.domain == "safe.example" && it.dnsTypes == setOf(1) && it.allow
+        })
+        assertTrue(result.dnsTypeRules.any {
+            it.domain == "no-ipv6.example" && it.dnsTypes == setOf(1) && it.dnsTypesNegated && !it.allow
+        })
+        assertFalse(result.blockDomains.contains("no-ipv6.example"))
     }
 
     @Test
@@ -113,6 +135,22 @@ class HostsParserTest {
         assertTrue(adblock.wildcardAllowDomains.contains("cashback.example"))
         assertTrue(adblock.wildcardAllowDomains.contains("trusted.example"))
         assertFalse(adblock.allowDomains.contains("blocked.example"))
+    }
+
+    @Test
+    fun `parseForAllowing preserves dnstype allow rules only`() {
+        val adblock = HostsParser.parseForAllowing(
+            """
+                [Adblock Plus]
+                @@||safe.example^${'$'}dnstype=AAAA
+                ||blocked.example^${'$'}dnstype=AAAA
+            """.trimIndent()
+        )
+
+        assertTrue(adblock.dnsTypeAllowRules.any {
+            it.domain == "safe.example" && it.dnsTypes == setOf(28) && it.allow
+        })
+        assertFalse(adblock.dnsTypeAllowRules.any { it.domain == "blocked.example" })
     }
 
     @Test
