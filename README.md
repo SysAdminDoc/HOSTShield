@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.53-blue)
+![Version](https://img.shields.io/badge/version-6.9.54-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -421,6 +421,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.54** | Periodic, scheduled-profile, and VPN startup blocklist rebuilds now share a forced full-snapshot source coordinator, so 304 cache validations cannot leave the in-memory blocklist empty and changed source counts, ETags, Last-Modified values, sizes, and health metadata persist consistently. |
 | **6.9.53** | Coalesced concurrent identical DNS cache misses per route/qtype so only one upstream resolver call runs, while each app still receives a response with its own DNS transaction ID. Cache prefetch and serve-stale refreshes now update cache state without sending duplicate client responses. |
 | **6.9.45** | Refined secondary Android UI surfaces with shared headers, segmented controls, responsive empty/loading states, and smoother app-exclusion loading. |
 | **6.9.44** | Launcher icon resources now live in the unqualified adaptive-icon directory and include a monochrome layer for Android themed icons. |

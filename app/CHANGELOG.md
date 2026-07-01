@@ -1,3 +1,22 @@
+# HostShield v6.9.54
+
+**Release Date:** 2026-06-30
+**Version Code:** 136
+
+## Blocklist Rebuild Reliability
+
+### Fixed
+- Periodic refreshes, scheduled profile swaps, and VPN startup rebuilds now use
+  a shared full-snapshot source coordinator that always requests complete
+  source contents for in-memory blocklist rebuilds.
+- Changed block and allowlist sources now persist counts, ETags, Last-Modified
+  values, byte sizes, last-success timestamps, health state, and entry deltas
+  consistently across rebuild paths.
+- Rebuild diagnostics now record the number of downloaded sources for periodic
+  worker and VPN startup blocklist swaps.
+
+---
+
 # HostShield v6.9.53
 
 **Release Date:** 2026-06-27

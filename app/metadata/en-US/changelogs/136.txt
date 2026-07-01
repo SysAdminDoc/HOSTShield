@@ -1,0 +1,4 @@
+v6.9.54 - Blocklist rebuild reliability:
+- Periodic, scheduled-profile, and VPN startup rebuilds now share one full-snapshot source coordinator
+- 304 cache validation can no longer leave an incomplete in-memory blocklist after process start
+- Source counts, ETags, Last-Modified values, sizes, health state, and entry deltas persist consistently

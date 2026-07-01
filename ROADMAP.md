@@ -698,15 +698,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ## Research-Driven Additions - 2026-06-28
 
-### P0
-
-- [ ] P0 - Repair periodic blocklist rebuild and metadata persistence
-  Why: Periodic refresh parses block sources only on HTTP 200, skips all 304 bodies, and does not persist block-source counts, ETags, Last-Modified, size, or last-success metadata, unlike manual/source-preview rebuild paths that force full downloads when a full snapshot is needed.
-  Evidence: `app/app/src/main/java/com/hostshield/service/HostsUpdateWorker.kt`; `app/app/src/main/java/com/hostshield/data/source/SourceDownloader.kt`; `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt`; `app/app/src/main/java/com/hostshield/ui/screens/home/HomeViewModel.kt`.
-  Touches: `HostsUpdateWorker.kt`, `ProfileScheduleWorker.kt`, `HostShieldRepository.kt` or shared rebuild helper, `Daos.kt`, source/rebuild tests.
-  Acceptance: Periodic and profile-schedule rebuilds always produce a complete in-memory blocklist after process start, correctly handle all-304 responses, persist block-source metadata on changed downloads, and have tests covering 200, 304, mixed allowlist/blocklist, and failure cases.
-  Complexity: M
-
 ### P1
 
 - [ ] P1 - Wire or remove the Local DNS Server user-facing feature

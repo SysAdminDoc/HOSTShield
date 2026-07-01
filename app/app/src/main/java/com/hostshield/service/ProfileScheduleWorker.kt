@@ -7,13 +7,9 @@ import androidx.work.*
 import com.hostshield.data.database.ProfileDao
 import com.hostshield.data.model.BlockingProfile
 import com.hostshield.data.model.RuleType
-import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
-import com.hostshield.data.source.SourceDownloader
-import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
-import com.hostshield.domain.parser.HostsParser
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
@@ -34,7 +30,7 @@ class ProfileScheduleWorker @AssistedInject constructor(
     private val repository: HostShieldRepository,
     private val prefs: AppPreferences,
     private val iptablesManager: IptablesManager,
-    private val downloader: SourceDownloader,
+    private val sourceCoordinator: BlocklistSourceCoordinator,
     private val blocklistHolder: BlocklistHolder,
     private val dohBypassUpdater: DohBypassUpdater
 ) : CoroutineWorker(context, params) {
@@ -94,60 +90,13 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 // Rebuild in-memory blocklist — the running DNS proxy reads from
                 // BlocklistHolder, so this takes effect immediately for both
                 // root mode (RootDnsLogger) and VPN mode (DnsVpnService).
-                val blockSources = repository.getEnabledBlockSources()
-                val allowlistSources = repository.getEnabledAllowlistSources()
-                val allDomains = mutableSetOf<String>()
-                val sourceAllowDomains = mutableSetOf<String>()
-                val sourceWildcardBlocks = mutableSetOf<String>()
-                val sourceWildcardAllows = mutableSetOf<String>()
-                val exactBlockOrigins = mutableMapOf<String, String>()
-                val wildcardBlockOrigins = mutableMapOf<String, String>()
-                for (source in blockSources) {
-                    downloader.download(source).onSuccess { dl ->
-                        repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
-                        if (!dl.notModified) {
-                            val parsed = HostsParser.parseForBlocking(dl.content)
-                            allDomains.addAll(parsed.blockDomains)
-                            parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
-                            sourceAllowDomains.addAll(parsed.allowDomains)
-                            sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
-                            parsed.wildcardBlockDomains.forEach {
-                                wildcardBlockOrigins.putIfAbsent(it, source.label)
-                            }
-                            sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                        }
-                    }.onFailure { err ->
-                        val failures = source.consecutiveFailures + 1
-                        val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
-                        repository.updateSourceHealth(
-                            source.id,
-                            health,
-                            err.message ?: "Unknown error",
-                            failures,
-                            err.sourceHttpStatus(),
-                        )
-                    }
-                }
-                for (source in allowlistSources) {
-                    downloader.download(source).onSuccess { dl ->
-                        repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
-                        if (!dl.notModified) {
-                            val parsed = HostsParser.parseForAllowing(dl.content)
-                            sourceAllowDomains.addAll(parsed.allowDomains)
-                            sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                        }
-                    }.onFailure { err ->
-                        val failures = source.consecutiveFailures + 1
-                        val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
-                        repository.updateSourceHealth(
-                            source.id,
-                            health,
-                            err.message ?: "Unknown error",
-                            failures,
-                            err.sourceHttpStatus(),
-                        )
-                    }
-                }
+                val sourceSnapshot = sourceCoordinator.downloadEnabledSourcesForFullSnapshot()
+                val allDomains = sourceSnapshot.blockDomains.toMutableSet()
+                val sourceAllowDomains = sourceSnapshot.sourceExactAllows.toMutableSet()
+                val sourceWildcardBlocks = sourceSnapshot.sourceWildcardBlocks.toMutableSet()
+                val sourceWildcardAllows = sourceSnapshot.sourceWildcardAllows.toMutableSet()
+                val exactBlockOrigins = sourceSnapshot.exactBlockOrigins.toMutableMap()
+                val wildcardBlockOrigins = sourceSnapshot.wildcardBlockOrigins.toMutableMap()
                 val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
                 blockRules.filter { !it.isWildcard }.forEach {
                     val hostname = it.hostname.lowercase()
@@ -166,6 +115,7 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 blocklistHolder.updateAsync(
                     allDomains,
                     repository.getEnabledWildcards(),
+                    repository.getEnabledRegexRules(),
                     sourceWildcardBlocks = sourceWildcardBlocks,
                     sourceWildcardAllows = sourceWildcardAllows,
                     exactBlockOrigins = exactBlockOrigins,

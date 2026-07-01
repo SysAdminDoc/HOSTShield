@@ -5,12 +5,10 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.model.RuleType
-import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.BoundedResponseReader
 import com.hostshield.data.source.SourceDownloadException
-import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
@@ -33,7 +31,7 @@ class HostsUpdateWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val repository: HostShieldRepository,
     private val prefs: AppPreferences,
-    private val downloader: SourceDownloader,
+    private val sourceCoordinator: BlocklistSourceCoordinator,
     private val blocklistHolder: BlocklistHolder,
     private val dohBypassUpdater: DohBypassUpdater,
     private val cnameCloakUpdater: CnameCloakUpdater,
@@ -45,7 +43,6 @@ class HostsUpdateWorker @AssistedInject constructor(
     companion object {
         const val WORK_NAME = "hostshield_update"
         const val TAG = "hosts_update"
-        private const val DEAD_FAILURE_THRESHOLD = 5
         private const val MAX_RULE_SYNC_BYTES = 10L * 1024L * 1024L
 
         fun schedule(context: Context, intervalHours: Int, wifiOnly: Boolean) {
@@ -118,133 +115,30 @@ class HostsUpdateWorker @AssistedInject constructor(
                     // Download block sources and rebuild in-memory blocklist.
                     // Both root (RootDnsLogger) and VPN (DnsVpnService) read from
                     // BlocklistHolder, so updates take effect immediately.
-                    val blockSources = repository.getEnabledBlockSources()
-                    val allDomains = mutableSetOf<String>()
-                    // v5.0: Collect adblock-syntax allow rules from sources
-                    val adblockAllowDomains = mutableSetOf<String>()
-                    val adblockWildcardBlocks = mutableSetOf<String>()
-                    val adblockWildcardAllows = mutableSetOf<String>()
-                    val exactBlockOrigins = mutableMapOf<String, String>()
-                    val wildcardBlockOrigins = mutableMapOf<String, String>()
+                    val sourceSnapshot = sourceCoordinator.downloadEnabledSourcesForFullSnapshot()
+                    val allDomains = sourceSnapshot.blockDomains.toMutableSet()
+                    val sourceAllowDomains = sourceSnapshot.sourceExactAllows.toMutableSet()
+                    val adblockWildcardBlocks = sourceSnapshot.sourceWildcardBlocks.toMutableSet()
+                    val adblockWildcardAllows = sourceSnapshot.sourceWildcardAllows.toMutableSet()
+                    val exactBlockOrigins = sourceSnapshot.exactBlockOrigins.toMutableMap()
+                    val wildcardBlockOrigins = sourceSnapshot.wildcardBlockOrigins.toMutableMap()
 
                     // Track per-source failures so the user can see why a blocklist
                     // is stale (silent swallow used to make this look like the lists
                     // were fresh when they were actually 404'ing for weeks).
-                    val failedSources = mutableListOf<SourceFailureNotice>()
-                    var anySourceChanged = false
-                    for (source in blockSources) {
-                        downloader.download(source)
-                            .onSuccess { dl ->
-                                repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
-                                if (!dl.notModified) {
-                                    anySourceChanged = true
-                                    val parsed = HostsParser.parseForBlocking(dl.content)
-                                    allDomains.addAll(parsed.blockDomains)
-                                    parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
-                                    adblockAllowDomains.addAll(parsed.allowDomains)
-                                    adblockWildcardBlocks.addAll(parsed.wildcardBlockDomains)
-                                    parsed.wildcardBlockDomains.forEach {
-                                        wildcardBlockOrigins.putIfAbsent(it, source.label)
-                                    }
-                                    adblockWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                                }
-                            }
-                            .onFailure { err ->
-                                val failures = source.consecutiveFailures + 1
-                                val health = if (failures >= DEAD_FAILURE_THRESHOLD) SourceHealth.DEAD else SourceHealth.ERROR
-                                val httpStatus = err.sourceHttpStatus()
-                                repository.updateSourceHealth(
-                                    source.id,
-                                    health,
-                                    err.message ?: "Unknown error",
-                                    failures,
-                                    httpStatus
-                                )
-                                failedSources += SourceFailureNotice(
-                                    label = source.label,
-                                    url = source.url,
-                                    error = err.message ?: err.javaClass.simpleName,
-                                    httpStatus = httpStatus,
-                                    lastSuccessfulUpdate = source.lastUpdated,
-                                    consecutiveFailures = failures,
-                                )
-                                PrivacyLog.w(TAG, "Block source download failed: ${source.url} — ${err.message}")
-                                diagnosticEvents.record(
-                                    DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
-                                    "Block source download failed",
-                                    mapOf(
-                                        "source" to source.url,
-                                        "error" to (err.message ?: err.javaClass.simpleName),
-                                        "http_status" to httpStatus,
-                                        "failures" to failures
-                                    )
-                                )
-                            }
-                    }
-
-                    // Download allowlist sources and subtract their domains
-                    val allowlistSources = repository.getEnabledAllowlistSources()
-                    val sourceAllowDomains = mutableSetOf<String>()
-                    for (source in allowlistSources) {
-                        downloader.download(source)
-                            .onSuccess { dl ->
-                                repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
-                                if (!dl.notModified) {
-                                    val parsed = HostsParser.parseForAllowing(dl.content)
-                                    val neutralized = findNeutralizedAllowDomains(
-                                        parsed.allowDomains,
-                                        parsed.wildcardAllowDomains,
-                                        allDomains,
-                                        adblockWildcardBlocks
-                                    )
-                                    sourceAllowDomains.addAll(parsed.allowDomains)
-                                    adblockWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                                    repository.updateSource(
-                                        source.copy(
-                                            entryCount = parsed.entryCount,
-                                            lastUpdated = System.currentTimeMillis(),
-                                            health = SourceHealth.OK,
-                                            lastError = "",
-                                            lastHttpStatus = 0,
-                                            consecutiveFailures = 0,
-                                            prevEntryCount = source.entryCount,
-                                            domainsAdded = 0,
-                                            domainsRemoved = neutralized.size
-                                        )
-                                    )
-                                }
-                            }
-                            .onFailure { err ->
-                                val failures = source.consecutiveFailures + 1
-                                val health = if (failures >= DEAD_FAILURE_THRESHOLD) SourceHealth.DEAD else SourceHealth.ERROR
-                                val httpStatus = err.sourceHttpStatus()
-                                repository.updateSourceHealth(
-                                    source.id,
-                                    health,
-                                    err.message ?: "Unknown error",
-                                    failures,
-                                    httpStatus
-                                )
-                                failedSources += SourceFailureNotice(
-                                    label = source.label,
-                                    url = source.url,
-                                    error = err.message ?: err.javaClass.simpleName,
-                                    httpStatus = httpStatus,
-                                    lastSuccessfulUpdate = source.lastUpdated,
-                                    consecutiveFailures = failures,
-                                )
-                                PrivacyLog.w(TAG, "Allowlist source download failed: ${source.url} — ${err.message}")
-                                diagnosticEvents.record(
-                                    DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
-                                    "Allowlist source download failed",
-                                    mapOf(
-                                        "source" to source.url,
-                                        "error" to (err.message ?: err.javaClass.simpleName),
-                                        "http_status" to httpStatus,
-                                        "failures" to failures
-                                    )
-                                )
-                            }
+                    val failedSources = sourceSnapshot.failedSources.toMutableList()
+                    failedSources.forEach { notice ->
+                        PrivacyLog.w(TAG, "Source download failed: ${notice.url} - ${notice.error}")
+                        diagnosticEvents.record(
+                            DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
+                            "Source download failed",
+                            mapOf(
+                                "source" to notice.url,
+                                "error" to notice.error,
+                                "http_status" to notice.httpStatus,
+                                "failures" to notice.consecutiveFailures
+                            )
+                        )
                     }
 
                     // Fetch remote rule sync URLs and merge domains
@@ -252,7 +146,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                     for (url in syncUrls) {
                         // Only allow HTTPS sync URLs for security
                         if (!url.startsWith("https://")) {
-                            PrivacyLog.w(TAG, "Skipping non-HTTPS sync URL: $url — only https:// URLs are allowed")
+                            PrivacyLog.w(TAG, "Skipping non-HTTPS sync URL: $url - only https:// URLs are allowed")
                             continue
                         }
                         try {
@@ -297,7 +191,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                                 lastSuccessfulUpdate = 0L,
                                 consecutiveFailures = 1,
                             )
-                            PrivacyLog.w(TAG, "Sync URL fetch failed: $url — ${e.message}")
+                            PrivacyLog.w(TAG, "Sync URL fetch failed: $url - ${e.message}")
                             diagnosticEvents.record(
                                 DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
                                 "Rule sync URL fetch failed",
@@ -325,18 +219,12 @@ class HostsUpdateWorker @AssistedInject constructor(
                     allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
                     // Remove allowlist source domains + adblock-syntax @@|| allow rules
                     allDomains.removeAll(sourceAllowDomains)
-                    allDomains.removeAll(adblockAllowDomains)
                     dohBypassUpdater.mergeCachedInto(
                         allDomains,
                         adblockWildcardBlocks,
                         exactBlockOrigins,
                         wildcardBlockOrigins
                     )
-
-                    if (!anySourceChanged && failedSources.isEmpty() && syncUrls.isEmpty()) {
-                        Log.i(TAG, "All sources returned 304 Not Modified — skipping blocklist rebuild")
-                        return Result.success()
-                    }
 
                     val wildcards = repository.getEnabledWildcards()
                     val regexRules = repository.getEnabledRegexRules()
@@ -349,7 +237,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                         sourceWildcardAllows = adblockWildcardAllows,
                         exactBlockOrigins = exactBlockOrigins,
                         sourceWildcardBlockOrigins = wildcardBlockOrigins,
-                        sourceExactAllows = sourceAllowDomains + adblockAllowDomains
+                        sourceExactAllows = sourceAllowDomains
                     )
                     diagnosticEvents.record(
                         DiagnosticEventType.BLOCKLIST_SWAP,
@@ -358,7 +246,8 @@ class HostsUpdateWorker @AssistedInject constructor(
                             "domains" to blockingDomainCount,
                             "wildcards" to wildcards.size,
                             "regex_rules" to regexRules.size,
-                            "source" to "hosts_update_worker"
+                            "source" to "hosts_update_worker",
+                            "downloaded_sources" to sourceSnapshot.downloadedSourceCount
                         )
                     )
 
@@ -383,17 +272,4 @@ class HostsUpdateWorker @AssistedInject constructor(
         }
     }
 
-    private fun findNeutralizedAllowDomains(
-        allowDomains: Set<String>,
-        wildcardAllowDomains: Set<String>,
-        blockDomains: Set<String>,
-        wildcardBlockDomains: Set<String>
-    ): Set<String> {
-        val candidates = allowDomains + wildcardAllowDomains
-        return candidates.filterTo(mutableSetOf()) { candidate ->
-            candidate in blockDomains || wildcardBlockDomains.any { wildcard ->
-                candidate == wildcard || candidate.endsWith(".$wildcard")
-            }
-        }
-    }
 }

@@ -29,14 +29,10 @@ import com.hostshield.data.database.DnsLogDao
 import com.hostshield.data.model.BlockStats
 import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.RuleType
-import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
-import com.hostshield.data.source.SourceDownloader
-import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlockDecision
 import com.hostshield.domain.BlocklistHolder
-import com.hostshield.domain.parser.HostsParser
 import com.hostshield.util.Android16VpnRecoveryDetector
 import com.hostshield.util.DiagnosticEventStore
 import com.hostshield.util.DiagnosticEventType
@@ -227,7 +223,7 @@ class DnsVpnService : VpnService() {
     @Inject lateinit var blocklist: BlocklistHolder
     @Inject lateinit var prefs: AppPreferences
     @Inject lateinit var repository: HostShieldRepository
-    @Inject lateinit var downloader: SourceDownloader
+    @Inject lateinit var sourceCoordinator: BlocklistSourceCoordinator
     @Inject lateinit var dohResolver: DohResolver
     @Inject lateinit var firewallRuleDao: com.hostshield.data.database.FirewallRuleDao
     @Inject lateinit var vpnStabilityDao: com.hostshield.data.database.VpnStabilityDao
@@ -903,86 +899,25 @@ class DnsVpnService : VpnService() {
 
     private suspend fun rebuildBlocklist() {
         try {
-            val blockSources = repository.getEnabledBlockSources()
-            val allowlistSources = repository.getEnabledAllowlistSources()
-            val allDomains = mutableSetOf<String>()
-            val sourceAllowDomains = mutableSetOf<String>()
-            val sourceWildcardBlocks = mutableSetOf<String>()
-            val sourceWildcardAllows = mutableSetOf<String>()
-            val exactBlockOrigins = mutableMapOf<String, String>()
-            val wildcardBlockOrigins = mutableMapOf<String, String>()
-            val failedSources = mutableListOf<SourceFailureNotice>()
-            for (source in blockSources) {
-                // forceDownload=true: must get ALL domains, not just changes.
-                // Without this, 304 responses silently drop entire sources.
-                downloader.download(source, forceDownload = true).onSuccess { dl ->
-                    val parsed = HostsParser.parseForBlocking(dl.content)
-                    allDomains.addAll(parsed.blockDomains)
-                    parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
-                    sourceAllowDomains.addAll(parsed.allowDomains)
-                    sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
-                    parsed.wildcardBlockDomains.forEach {
-                        wildcardBlockOrigins.putIfAbsent(it, source.label)
-                    }
-                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                    repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
-                }.onFailure { err ->
-                    val failures = source.consecutiveFailures + 1
-                    val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
-                    val httpStatus = err.sourceHttpStatus()
-                    repository.updateSourceHealth(
-                        source.id,
-                        health,
-                        err.message ?: "Unknown error",
-                        failures,
-                        httpStatus
+            val sourceSnapshot = sourceCoordinator.downloadEnabledSourcesForFullSnapshot()
+            val allDomains = sourceSnapshot.blockDomains.toMutableSet()
+            val sourceAllowDomains = sourceSnapshot.sourceExactAllows.toMutableSet()
+            val sourceWildcardBlocks = sourceSnapshot.sourceWildcardBlocks.toMutableSet()
+            val sourceWildcardAllows = sourceSnapshot.sourceWildcardAllows.toMutableSet()
+            val exactBlockOrigins = sourceSnapshot.exactBlockOrigins.toMutableMap()
+            val wildcardBlockOrigins = sourceSnapshot.wildcardBlockOrigins.toMutableMap()
+            val failedSources = sourceSnapshot.failedSources
+            failedSources.forEach { notice ->
+                recordEvent(
+                    DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
+                    "Source download failed during VPN blocklist rebuild",
+                    mapOf(
+                        "source" to notice.url,
+                        "error" to notice.error,
+                        "http_status" to notice.httpStatus,
+                        "failures" to notice.consecutiveFailures
                     )
-                    failedSources += SourceFailureNotice(
-                        label = source.label,
-                        url = source.url,
-                        error = err.message ?: err.javaClass.simpleName,
-                        httpStatus = httpStatus,
-                        lastSuccessfulUpdate = source.lastUpdated,
-                        consecutiveFailures = failures,
-                    )
-                    recordEvent(
-                        DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
-                        "Source download failed during VPN blocklist rebuild",
-                        mapOf(
-                            "source" to source.url,
-                            "error" to (err.message ?: err.javaClass.simpleName),
-                            "http_status" to httpStatus,
-                            "failures" to failures
-                        )
-                    )
-                }
-            }
-            for (source in allowlistSources) {
-                downloader.download(source, forceDownload = true).onSuccess { dl ->
-                    val parsed = HostsParser.parseForAllowing(dl.content)
-                    sourceAllowDomains.addAll(parsed.allowDomains)
-                    sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                    repository.updateSourceHealth(source.id, SourceHealth.OK, "", 0, 0)
-                }.onFailure { err ->
-                    val failures = source.consecutiveFailures + 1
-                    val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
-                    val httpStatus = err.sourceHttpStatus()
-                    repository.updateSourceHealth(
-                        source.id,
-                        health,
-                        err.message ?: "Unknown error",
-                        failures,
-                        httpStatus
-                    )
-                    failedSources += SourceFailureNotice(
-                        label = source.label,
-                        url = source.url,
-                        error = err.message ?: err.javaClass.simpleName,
-                        httpStatus = httpStatus,
-                        lastSuccessfulUpdate = source.lastUpdated,
-                        consecutiveFailures = failures,
-                    )
-                }
+                )
             }
             sourceFailureNotifier.notifyFailures(failedSources)
             repository.getEnabledRulesByType(RuleType.BLOCK).filter { !it.isWildcard }
@@ -1014,7 +949,11 @@ class DnsVpnService : VpnService() {
             recordEvent(
                 DiagnosticEventType.BLOCKLIST_SWAP,
                 "Blocklist snapshot swapped",
-                mapOf("domains" to blockingDomainCount, "source" to "vpn_rebuild")
+                mapOf(
+                    "domains" to blockingDomainCount,
+                    "source" to "vpn_rebuild",
+                    "downloaded_sources" to sourceSnapshot.downloadedSourceCount
+                )
             )
         } catch (e: Exception) { Log.w(TAG, "Blocklist rebuild failed: ${e.message}") }
     }

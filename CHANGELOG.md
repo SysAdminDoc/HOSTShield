@@ -3,6 +3,16 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.54] - 2026-06-30
+
+### Fixed
+- Periodic, scheduled-profile, and VPN startup blocklist rebuilds now use one
+  forced full-snapshot source coordinator so conditional 304 cache validation
+  cannot produce an incomplete in-memory blocklist after process start.
+- Successful block and allowlist downloads now persist source counts, ETags,
+  Last-Modified values, byte sizes, last-success timestamps, health state, and
+  entry deltas consistently across rebuild paths.
+
 ## [v6.9.53] - 2026-06-27
 
 ### Added
