@@ -724,3 +724,53 @@ dependency/licensing review, and implementation-test corpus design.
   Touches: `ui/navigation/Navigation.kt`, top-level scaffold, Home/Logs/Stats/Sources/Settings dense screens, `LocaleLayoutScaffoldTest.kt`, screenshot/readme assets if tablet screenshots are added.
   Acceptance: Top flows render without clipping or unreachable primary actions at 841x701dp, 1024x640dp, 1280x800dp, and 1600x900dp; navigation uses an adaptive rail/pane where appropriate; tests cover portrait, landscape, split-screen width, and large font scale; no feature claims are added for tablets/foldables until the gate passes.
   Complexity: L
+
+## Research-Driven Additions
+
+### P1
+
+- [ ] P1 — Verify signed provenance for remote DoH bypass updates
+  Why: `DohBypassUpdater.kt` lets a raw GitHub JSON response add blocking policy to local state; a DNS security app should reject tampered, downgraded, or overbroad remote policy before it reaches DataStore.
+  Evidence: `app/app/src/main/java/com/hostshield/service/DohBypassUpdater.kt`; `doh-bypass-list.json`; `tools/release-provenance.ps1`; https://github.com/hagezi/dns-blocklists; https://github.com/mullvad/dns-blocklists
+  Touches: `DohBypassUpdater.kt`, `AppPreferences`, `HostsUpdateWorker.kt`, release provenance tooling, unit tests for remote-list parse/store paths.
+  Acceptance: Remote bypass JSON carries version, created-at, SHA-256, and an app-pinned signature; updater rejects invalid signature, rollback, oversized, and over-cap manifests; cached-known-good policy remains active on failure; release tooling verifies the published manifest before shipping.
+  Complexity: M
+
+- [ ] P1 — Add connected protection-resilience release matrix
+  Why: Local unit and Compose tests do not prove the protection service behavior users care about when Android restarts VPN services, applies lockdown, crosses work-profile/Private Space boundaries, or denies foreground-service/battery exemptions.
+  Evidence: `app/app/src/androidTest/java/com/hostshield/ui/TopFlowComposeTest.kt`; `app/app/src/main/java/com/hostshield/util/PrivateSpaceDetector.kt`; `app/app/src/main/java/com/hostshield/service/ProtectionServiceStarter.kt`; https://developer.android.com/develop/connectivity/vpn; https://developer.android.com/reference/android/net/VpnService; https://github.com/M66B/NetGuard/blob/master/FAQ.md
+  Touches: connected Android tests, protection-service test hooks, release-check scripts, README troubleshooting sections.
+  Acceptance: A local connected-test/manual-script bundle records VPN start/stop, always-on/lockdown advisory, boot/update resume where automatable, work-profile/Private Space warning render, battery-exemption denial messaging, and diagnostic-event export for each failure path.
+  Complexity: L
+
+### P2
+
+- [ ] P2 — Productize the LAN `LocalDnsServer` path behind explicit gates
+  Why: `LocalDnsServer.kt` exists as a LAN DNS server, while current product UX is centered on VPN/root/proxy DNS filtering; Android local-network permission changes make accidental or half-documented LAN DNS support risky.
+  Evidence: `app/app/src/main/java/com/hostshield/service/LocalDnsServer.kt`; `app/app/src/test/java/com/hostshield/service/LocalDnsServerPolicyTest.kt`; `tools/check-release-docs.ps1`; https://developer.android.com/privacy-and-security/local-network-permission; https://github.com/IngoZenz/personaldnsfilter
+  Touches: `LocalDnsServer.kt`, Settings UI/ViewModel, manifest permission declarations, foreground notification/status, release-doc checker, README compatibility wording.
+  Acceptance: LAN DNS is disabled by default, has explicit Settings controls, bind/interface limits, rate-limit/status UI, local-network permission readiness, notification lifecycle, connected smoke coverage, and release-doc checks that block LAN DNS claims unless the gate passes.
+  Complexity: L
+
+- [ ] P2 — Add DNS stamp capability diagnostics for unsupported protocols
+  Why: HostShield parses DNSCrypt and ODoH stamps but does not ship a production DNSCrypt/ODoH transport engine, so imports must distinguish parse support from usable resolver support.
+  Evidence: `app/app/src/main/java/com/hostshield/util/DnsStampParser.kt`; `app/app/src/main/java/com/hostshield/service/DnsCryptRoutePlanner.kt`; `app/app/src/test/java/com/hostshield/service/DnsCryptRoutePlannerTest.kt`; https://www.rfc-editor.org/info/rfc9230/; https://datatracker.ietf.org/doc/html/rfc9250
+  Touches: DNS stamp import/share UI, resolver validation, diagnostics copy, `DnsStampParserTest.kt`, resolver-selection tests.
+  Acceptance: Resolver imports classify stamps as supported, parsed-but-disabled, or unsupported; DNSCrypt/ODoH stamps show clear non-production diagnostics and never appear as active resolvers; tests cover all stamp protocol classes and malformed corpus inputs.
+  Complexity: M
+
+- [ ] P2 — Add bounded JSONL export for DNS and connection evidence
+  Why: HostShield has diagnostic ZIP and PCAP export, but support/debug workflows often need structured, redacted query and connection evidence without packet payloads.
+  Evidence: `app/app/src/main/java/com/hostshield/util/DiagnosticExporter.kt`; `app/app/src/main/java/com/hostshield/util/PcapExporter.kt`; `app/app/src/main/java/com/hostshield/ui/screens/logs/LogsScreen.kt`; https://github.com/emanuele-f/PCAPdroid/issues/869; https://docs.pi-hole.net/api/
+  Touches: diagnostics/export utilities, Logs and ConnectionLog screens, FileProvider/SAF destination flows, export tests.
+  Acceptance: Users can export bounded JSONL with schema version, redaction toggles, time/query/app filters, chunking for large logs, and save/share/discard state; tests verify redaction, bounds, malformed rows, and stable schema fields.
+  Complexity: M
+
+### P3
+
+- [ ] P3 — Add fast-scroll and saved filters for dense lists
+  Why: Logs, Sources, Apps, and Firewall screens can hold large local datasets; competitor issues and DNS dashboards show that fast navigation and reusable filters become table-stakes once logs are useful.
+  Evidence: `app/app/src/main/java/com/hostshield/ui/screens/logs/LogsScreen.kt`; `app/app/src/main/java/com/hostshield/ui/screens/sources/SourcesScreen.kt`; `app/app/src/main/java/com/hostshield/ui/screens/apps/AppsScreen.kt`; https://github.com/celzero/rethink-app/issues/1066; https://help.nextdns.io/t/83htqp1/more-information-in-the-analytics-page
+  Touches: shared list/filter components, Logs/Sources/Apps/Firewall screens, UI tests for empty/large/filter states.
+  Acceptance: Dense lists expose accessible fast-scroll or jump controls, saved filter chips, clear empty states, and no text clipping at large font scale; Compose tests cover large list, no-results, and filtered-result states.
+  Complexity: M
