@@ -1,5 +1,14 @@
 # HostShield Unreleased
 
+## ViewModel Extraction
+
+### Changed
+- Secondary Settings, Logs, Apps, Sources, and Stats screens now keep Hilt
+  ViewModels in dedicated files while preserving the existing Compose UI
+  behavior.
+
+---
+
 ## Evidence JSONL Export
 
 ### Added

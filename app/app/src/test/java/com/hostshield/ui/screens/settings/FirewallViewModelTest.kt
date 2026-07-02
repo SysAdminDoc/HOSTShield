@@ -1,12 +1,15 @@
 package com.hostshield.ui.screens.settings
 
 import app.cash.turbine.test
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.hostshield.data.database.FirewallRuleDao
 import com.hostshield.data.model.FirewallRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.service.IptablesManager
 import com.hostshield.service.NflogReader
 import io.mockk.*
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +32,7 @@ class FirewallViewModelTest {
     private val blockedCountFlow = MutableStateFlow(0)
     private val iptablesActiveFlow = MutableStateFlow(false)
     private val iptablesErrorFlow = MutableStateFlow("")
+    private val createdViewModels = mutableListOf<ViewModel>()
 
     @Before
     fun setup() {
@@ -48,10 +52,13 @@ class FirewallViewModelTest {
 
     @After
     fun teardown() {
+        createdViewModels.forEach { it.viewModelScope.cancel() }
+        createdViewModels.clear()
         Dispatchers.resetMain()
     }
 
     private fun createViewModel() = FirewallViewModel(prefs, firewallRuleDao, iptablesManager, nflogReader)
+        .also { createdViewModels += it }
 
     @Test
     fun `initial firewallRules flow starts empty`() = runTest {

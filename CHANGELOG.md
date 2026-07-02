@@ -19,6 +19,8 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   feed/type false-positive summaries without raw IOC details by default.
 
 ### Changed
+- Extracted secondary-screen ViewModels into dedicated files so screen
+  composables no longer own Hilt ViewModel classes.
 - DNS stamp parsing now exposes explicit capability diagnostics so DNSCrypt,
   DoQ, ODoH, and relay stamps cannot be mistaken for production-active
   resolver imports.

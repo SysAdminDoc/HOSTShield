@@ -664,13 +664,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ### P2
 
-- [ ] P2 — Extract co-located ViewModels to separate files
-  Why: 7+ screens (StatsScreen 1,314 LOC, LogsScreen 1,282 LOC, SettingsScreen 1,218 LOC, SourcesScreen 1,166 LOC, DnsToolsScreen 953 LOC, FirewallScreen 913 LOC, OnboardingScreen 845 LOC) embed `@HiltViewModel` classes in the same file as composables. This makes ViewModels harder to test independently and inflates file sizes.
-  Evidence: Grep for `@HiltViewModel` shows 18 ViewModels, most co-located with their screen composable; `StatsScreen.kt` has `StatsViewModel` starting at line 173 within the same 1,314-line file.
-  Touches: Extract each ViewModel to `<Screen>ViewModel.kt` alongside the screen file.
-  Acceptance: Each extracted ViewModel is in its own file; existing tests still pass; no behavioral change.
-  Complexity: S
-
 - [ ] P2 — Add Bloom filter pre-check to BlocklistHolder
   Why: The hash set fast path handles exact matches in O(1), but negative lookups (allowed domains) still traverse the trie. A Bloom filter (~1MB for 200K domains, <0.1% false positive) can fast-reject queries not in any blocklist, skipping both hash set and trie. This matters for the 60-70% of queries that are allowed.
   Evidence: `BlocklistHolder.kt` `isBlocked()` checks hash set then walks trie; `DnsCache.kt` comments note 60-70% cache hit rate; Pi-hole and AdGuard Home both use pre-filter structures for fast rejection.

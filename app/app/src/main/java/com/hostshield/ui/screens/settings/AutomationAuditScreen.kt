@@ -26,9 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
 import com.hostshield.BuildConfig
 import com.hostshield.data.database.AutomationAuditDao
 import com.hostshield.data.model.AutomationAuditEntry
@@ -38,19 +36,8 @@ import com.hostshield.ui.components.HostShieldSegmentOption
 import com.hostshield.ui.components.HostShieldSegmentedTabs
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
-import javax.inject.Inject
 import java.text.SimpleDateFormat
 import java.util.*
-
-@HiltViewModel
-class AutomationAuditViewModel @Inject constructor(
-    private val auditDao: AutomationAuditDao
-) : ViewModel() {
-    val entries: StateFlow<List<AutomationAuditEntry>> = auditDao.getRecent(200)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-}
 
 @Composable
 fun AutomationAuditScreen(

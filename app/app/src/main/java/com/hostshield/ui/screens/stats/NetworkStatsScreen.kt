@@ -20,9 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
 import com.hostshield.service.NetworkStatsTracker
 import com.hostshield.service.NetworkStatsTracker.AppNetStats
 import com.hostshield.service.formatBytes
@@ -31,24 +29,6 @@ import com.hostshield.ui.components.HostShieldBackHeader
 import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldMetricTile
 import com.hostshield.ui.theme.*
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-
-@HiltViewModel
-class NetworkStatsViewModel @Inject constructor(
-    val tracker: NetworkStatsTracker
-) : ViewModel() {
-    val appStats = tracker.appStats
-    val totalRx = tracker.totalRx
-    val totalTx = tracker.totalTx
-
-    init { refresh() }
-
-    fun refresh() {
-        viewModelScope.launch { tracker.refresh() }
-    }
-}
 
 @Composable
 fun NetworkStatsScreen(

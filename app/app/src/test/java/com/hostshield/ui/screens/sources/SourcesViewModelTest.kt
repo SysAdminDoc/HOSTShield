@@ -1,12 +1,15 @@
 package com.hostshield.ui.screens.sources
 
 import app.cash.turbine.test
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.domain.BlocklistHolder
 import io.mockk.*
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +26,7 @@ class SourcesViewModelTest {
     private lateinit var downloader: SourceDownloader
     private lateinit var blocklistHolder: BlocklistHolder
     private val sourcesFlow = MutableStateFlow<List<HostSource>>(emptyList())
+    private val createdViewModels = mutableListOf<ViewModel>()
 
     @Before
     fun setup() {
@@ -35,10 +39,13 @@ class SourcesViewModelTest {
 
     @After
     fun teardown() {
+        createdViewModels.forEach { it.viewModelScope.cancel() }
+        createdViewModels.clear()
         Dispatchers.resetMain()
     }
 
     private fun createViewModel() = SourcesViewModel(repository, downloader, blocklistHolder)
+        .also { createdViewModels += it }
 
     @Test
     fun `initial sources flow emits from repository`() = runTest {

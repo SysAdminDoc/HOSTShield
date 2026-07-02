@@ -1,10 +1,13 @@
 package com.hostshield.ui.screens.lists
 
 import app.cash.turbine.test
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.repository.HostShieldRepository
 import io.mockk.*
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +22,7 @@ class RulesViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: HostShieldRepository
     private val rulesFlow = MutableStateFlow<List<UserRule>>(emptyList())
+    private val createdViewModels = mutableListOf<ViewModel>()
 
     @Before
     fun setup() {
@@ -29,10 +33,13 @@ class RulesViewModelTest {
 
     @After
     fun teardown() {
+        createdViewModels.forEach { it.viewModelScope.cancel() }
+        createdViewModels.clear()
         Dispatchers.resetMain()
     }
 
     private fun createViewModel() = RulesViewModel(repository)
+        .also { createdViewModels += it }
 
     @Test
     fun `initial state emits empty list`() = runTest {

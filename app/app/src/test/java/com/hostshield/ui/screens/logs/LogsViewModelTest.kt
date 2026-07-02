@@ -2,6 +2,8 @@ package com.hostshield.ui.screens.logs
 
 import android.content.Context
 import app.cash.turbine.test
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.hostshield.data.database.AppDnsRuleDao
 import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.RuleType
@@ -13,6 +15,7 @@ import com.hostshield.service.AppDnsRuleEngine
 import com.hostshield.util.GeoIpLookup
 import com.hostshield.util.RootUtil
 import io.mockk.*
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +38,7 @@ class LogsViewModelTest {
     private lateinit var appDnsRuleDao: AppDnsRuleDao
     private lateinit var appDnsRuleEngine: AppDnsRuleEngine
     private val logsFlow = MutableStateFlow<List<DnsLogEntry>>(emptyList())
+    private val createdViewModels = mutableListOf<ViewModel>()
 
     @Before
     fun setup() {
@@ -56,6 +60,8 @@ class LogsViewModelTest {
 
     @After
     fun teardown() {
+        createdViewModels.forEach { it.viewModelScope.cancel() }
+        createdViewModels.clear()
         Dispatchers.resetMain()
     }
 
@@ -68,7 +74,7 @@ class LogsViewModelTest {
         geoIpLookup = geoIpLookup,
         appDnsRuleDao = appDnsRuleDao,
         appDnsRuleEngine = appDnsRuleEngine
-    )
+    ).also { createdViewModels += it }
 
     @Test
     fun `initial state has empty search query`() = runTest {

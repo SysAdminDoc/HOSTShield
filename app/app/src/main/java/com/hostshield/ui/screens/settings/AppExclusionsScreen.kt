@@ -19,9 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityToggle
@@ -31,36 +29,10 @@ import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 data class AppInfo(val packageName: String, val label: String, val isSystem: Boolean)
-
-@HiltViewModel
-class AppExclusionsViewModel @Inject constructor(
-    private val prefs: AppPreferences
-) : ViewModel() {
-    val excludedApps: StateFlow<Set<String>> = prefs.excludedApps
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery = _searchQuery.asStateFlow()
-    private val _showSystem = MutableStateFlow(false)
-    val showSystem = _showSystem.asStateFlow()
-
-    fun setSearchQuery(q: String) { _searchQuery.value = q }
-    fun toggleShowSystem() { _showSystem.update { !it } }
-    fun toggleApp(packageName: String) {
-        viewModelScope.launch {
-            val current = excludedApps.value.toMutableSet()
-            if (packageName in current) current.remove(packageName) else current.add(packageName)
-            prefs.setExcludedApps(current)
-        }
-    }
-}
 
 @Composable
 fun AppExclusionsScreen(viewModel: AppExclusionsViewModel = hiltViewModel(), onBack: () -> Unit) {
