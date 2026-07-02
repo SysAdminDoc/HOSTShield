@@ -1,5 +1,14 @@
 # HostShield Unreleased
 
+## Blocklist Bloom Pre-Check
+
+### Changed
+- `BlocklistHolder` snapshots now include a Bloom pre-check for exact, wildcard,
+  DNS-type, and allowlist candidates so cold negative lookups can skip trie
+  traversal without changing regex, DNS-type, or `www.` fallback behavior.
+
+---
+
 ## ViewModel Extraction
 
 ### Changed

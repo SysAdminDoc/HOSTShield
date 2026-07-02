@@ -321,6 +321,54 @@ class BlocklistHolderTest {
     }
 
     @Test
+    fun `bloom precheck preserves all effective rule match types`() {
+        holder.update(
+            newDomains = setOf("base.example.com"),
+            wildcards = listOf(
+                UserRule(hostname = "*.wild.example.com", type = RuleType.BLOCK, enabled = true),
+                UserRule(hostname = "*.safe.wild.example.com", type = RuleType.ALLOW, enabled = true)
+            ),
+            regexRules = listOf(
+                UserRule(hostname = "regex-only\\.example", type = RuleType.BLOCK, isRegex = true)
+            ),
+            sourceWildcardBlocks = setOf("source.example.com"),
+            sourceWildcardAllows = setOf("allowed.source.example.com"),
+            sourceExactAllows = setOf("source-allowed.example.com"),
+            dnsTypeRules = listOf(
+                DnsTypeRule(domain = "typed.example", dnsTypes = setOf(28))
+            )
+        )
+
+        assertTrue(holder.isBlocked("base.example.com"))
+        assertTrue(holder.isBlocked("www.base.example.com"))
+        assertTrue(holder.isBlocked("ads.wild.example.com"))
+        assertFalse(holder.isBlocked("api.safe.wild.example.com"))
+        assertTrue(holder.isBlocked("cdn.source.example.com"))
+        assertFalse(holder.isBlocked("cdn.allowed.source.example.com"))
+        assertFalse(holder.isBlocked("source-allowed.example.com"))
+        assertFalse(holder.isBlocked("typed.example", 1))
+        assertTrue(holder.isBlocked("www.typed.example", 28))
+        assertTrue(holder.isBlocked("ads.regex-only.example"))
+        assertFalse(holder.isBlocked("ordinary.allowed.example"))
+    }
+
+    @Test
+    fun `bloom precheck keeps large cold negative wildcard lookups bounded`() {
+        val wildcards = (1..50_000).map {
+            UserRule(hostname = "*.blocked$it.example.com", type = RuleType.BLOCK, enabled = true)
+        }
+        holder.update(emptySet(), wildcards)
+
+        val start = System.nanoTime()
+        repeat(10_000) {
+            assertFalse(holder.isBlocked("allowed$it.example.com"))
+        }
+        val elapsedMs = (System.nanoTime() - start) / 1_000_000
+
+        assertTrue("10k cold negative wildcard lookups took ${elapsedMs}ms", elapsedMs < 1000)
+    }
+
+    @Test
     fun `cached decisions are tied to the snapshot that produced them`() {
         holder.update(
             newDomains = emptySet(),

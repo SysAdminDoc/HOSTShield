@@ -19,6 +19,9 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   feed/type false-positive summaries without raw IOC details by default.
 
 ### Changed
+- Blocklist lookups now use a snapshot-local Bloom pre-check to fast-reject
+  cold negative domains before trie traversal while preserving regex, DNS-type,
+  allowlist, and `www.` fallback decisions.
 - Extracted secondary-screen ViewModels into dedicated files so screen
   composables no longer own Hilt ViewModel classes.
 - DNS stamp parsing now exposes explicit capability diagnostics so DNSCrypt,

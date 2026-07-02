@@ -35,6 +35,9 @@ data class BlockDecision(
 // - Hash set fast path: O(1) exact-match check before trie traversal.
 //   Covers ~90% of lookups since most queries are exact domain matches,
 //   not wildcard/regex patterns. ~2x faster for the common case.
+// - Bloom pre-check: fast-rejects cold negative lookups that cannot match any
+//   exact domain, wildcard suffix, DNS-type rule, or explicit allow rule before
+//   walking the trie. False positives are safe and only fall back to full checks.
 // - Filter decision LRU cache: Caches blocked/allowed results for hot
 //   domains to skip both hash set and trie on repeated queries. Separate
 //   from DnsCache (which caches DNS response bytes). Invalidated on
@@ -63,6 +66,7 @@ class BlocklistHolder @Inject constructor() {
     private class Snapshot(
         val root: TrieNode,
         val exactBlockSet: Set<String>,
+        val structuralBloom: DomainBloomFilter,
         val wildcardRules: List<UserRule>,
         val regexBlockRules: List<TimedRegex>,
         val regexAllowRules: List<TimedRegex>,
@@ -80,6 +84,7 @@ class BlocklistHolder @Inject constructor() {
             val EMPTY = Snapshot(
                 root = TrieNode(),
                 exactBlockSet = emptySet(),
+                structuralBloom = DomainBloomFilter.EMPTY,
                 wildcardRules = emptyList(),
                 regexBlockRules = emptyList(),
                 regexAllowRules = emptyList(),
@@ -93,6 +98,100 @@ class BlocklistHolder @Inject constructor() {
                 sourceWildcardAllowDomains = emptySet(),
                 dnsTypeRules = emptyList(),
             )
+        }
+    }
+
+    private class DomainBloomFilter private constructor(
+        private val bits: LongArray,
+        private val bitCount: Int,
+        private val hashCount: Int,
+    ) {
+        fun mightContainCandidateFor(hostname: String): Boolean {
+            if (bits.isEmpty() || hostname.isBlank()) return false
+            return hostnameCandidates(hostname).any(::mightContain)
+        }
+
+        private fun add(value: String) {
+            repeat(hashCount) { index ->
+                setBit(indexFor(value, index))
+            }
+        }
+
+        private fun mightContain(value: String): Boolean =
+            (0 until hashCount).all { index -> getBit(indexFor(value, index)) }
+
+        private fun indexFor(value: String, round: Int): Int {
+            val first = hash64(value, FNV_OFFSET)
+            val second = hash64(value, FNV_OFFSET xor BLOOM_HASH_SEED)
+            val combined = first + (round.toLong() * second)
+            return Math.floorMod(combined, bitCount.toLong()).toInt()
+        }
+
+        private fun setBit(index: Int) {
+            bits[index ushr 6] = bits[index ushr 6] or (1L shl (index and 63))
+        }
+
+        private fun getBit(index: Int): Boolean =
+            (bits[index ushr 6] and (1L shl (index and 63))) != 0L
+
+        companion object {
+            val EMPTY = DomainBloomFilter(LongArray(0), bitCount = 0, hashCount = 0)
+            private const val BLOOM_FALSE_POSITIVE_RATE = 0.001
+            private const val MIN_BLOOM_BITS = 1024
+            private const val MAX_BLOOM_HASHES = 12
+            private const val FNV_OFFSET = -3750763034362895579L
+            private const val FNV_PRIME = 1099511628211L
+            private const val BLOOM_HASH_SEED = -7046029254386353131L
+
+            fun build(domains: Iterable<String>): DomainBloomFilter {
+                val normalized = LinkedHashSet<String>()
+                domains.forEach { domain ->
+                    domain.trim().lowercase().removePrefix("*.").removeSuffix(".")
+                        .takeIf { it.isNotBlank() }
+                        ?.let(normalized::add)
+                }
+                if (normalized.isEmpty()) return EMPTY
+
+                val desiredBits = optimalBitCount(normalized.size, BLOOM_FALSE_POSITIVE_RATE)
+                val bitCount = desiredBits.coerceAtLeast(MIN_BLOOM_BITS)
+                val hashCount = optimalHashCount(bitCount, normalized.size)
+                val filter = DomainBloomFilter(
+                    bits = LongArray((bitCount + 63) / 64),
+                    bitCount = bitCount,
+                    hashCount = hashCount,
+                )
+                normalized.forEach(filter::add)
+                return filter
+            }
+
+            private fun optimalBitCount(entries: Int, falsePositiveRate: Double): Int {
+                val numerator = -entries * kotlin.math.ln(falsePositiveRate)
+                val denominator = kotlin.math.ln(2.0) * kotlin.math.ln(2.0)
+                return kotlin.math.ceil(numerator / denominator).toInt()
+            }
+
+            private fun optimalHashCount(bitCount: Int, entries: Int): Int {
+                val hashCount = (bitCount.toDouble() / entries * kotlin.math.ln(2.0)).toInt()
+                return hashCount.coerceIn(2, MAX_BLOOM_HASHES)
+            }
+
+            private fun hash64(value: String, seed: Long): Long {
+                var hash = seed
+                value.forEach { ch ->
+                    hash = hash xor ch.code.toLong()
+                    hash *= FNV_PRIME
+                }
+                return hash
+            }
+
+            private fun hostnameCandidates(hostname: String): Sequence<String> = sequence {
+                yield(hostname)
+                var dotIndex = hostname.indexOf('.')
+                while (dotIndex >= 0 && dotIndex < hostname.lastIndex) {
+                    yield(hostname.substring(dotIndex + 1))
+                    dotIndex = hostname.indexOf('.', dotIndex + 1)
+                }
+            }
         }
     }
 
@@ -374,6 +473,15 @@ class BlocklistHolder @Inject constructor() {
         val newSnapshot = Snapshot(
             root = newRoot,
             exactBlockSet = newExactSet,
+            structuralBloom = buildStructuralBloom(
+                exactBlockSet = newExactSet,
+                wildcardRules = wildcards,
+                sourceWildcardBlockDomains = normalizedSourceWildcardBlocks,
+                sourceWildcardAllowDomains = normalizedSourceWildcardAllows,
+                userExactAllowDomains = normalizedUserExactAllows,
+                sourceExactAllowDomains = normalizedSourceExactAllows,
+                dnsTypeRules = normalizedDnsTypeRules,
+            ),
             wildcardRules = wildcards,
             regexBlockRules = newRegexBlock.map(::TimedRegex),
             regexAllowRules = newRegexAllow.map(::TimedRegex),
@@ -453,9 +561,19 @@ class BlocklistHolder @Inject constructor() {
             return
         }
         val newSet = HashSet(current.exactBlockSet).apply { add(h) }
+        val newUserAllows = current.userExactAllowDomains - h
         snapshot = Snapshot(
             root = current.root,
             exactBlockSet = newSet,
+            structuralBloom = buildStructuralBloom(
+                exactBlockSet = newSet,
+                wildcardRules = current.wildcardRules,
+                sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
+                sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
+                userExactAllowDomains = newUserAllows,
+                sourceExactAllowDomains = current.sourceExactAllowDomains,
+                dnsTypeRules = current.dnsTypeRules,
+            ),
             wildcardRules = current.wildcardRules,
             regexBlockRules = current.regexBlockRules,
             regexAllowRules = current.regexAllowRules,
@@ -464,7 +582,7 @@ class BlocklistHolder @Inject constructor() {
             sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
             exactBlockOrigins = current.exactBlockOrigins + (h to "User block rule"),
             sourceWildcardBlockOrigins = current.sourceWildcardBlockOrigins,
-            userExactAllowDomains = current.userExactAllowDomains - h,
+            userExactAllowDomains = newUserAllows,
             sourceExactAllowDomains = current.sourceExactAllowDomains,
             sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
             dnsTypeRules = current.dnsTypeRules,
@@ -486,6 +604,15 @@ class BlocklistHolder @Inject constructor() {
         snapshot = Snapshot(
             root = current.root,
             exactBlockSet = newSet,
+            structuralBloom = buildStructuralBloom(
+                exactBlockSet = newSet,
+                wildcardRules = current.wildcardRules,
+                sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
+                sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
+                userExactAllowDomains = current.userExactAllowDomains,
+                sourceExactAllowDomains = current.sourceExactAllowDomains,
+                dnsTypeRules = current.dnsTypeRules,
+            ),
             wildcardRules = current.wildcardRules,
             regexBlockRules = current.regexBlockRules,
             regexAllowRules = current.regexAllowRules,
@@ -508,9 +635,19 @@ class BlocklistHolder @Inject constructor() {
         val current = snapshot
         val wasBlocked = h in current.exactBlockSet
         val newBlockSet = if (wasBlocked) HashSet(current.exactBlockSet).apply { remove(h) } else current.exactBlockSet
+        val newUserAllows = current.userExactAllowDomains + h
         snapshot = Snapshot(
             root = current.root,
             exactBlockSet = newBlockSet,
+            structuralBloom = buildStructuralBloom(
+                exactBlockSet = newBlockSet,
+                wildcardRules = current.wildcardRules,
+                sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
+                sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
+                userExactAllowDomains = newUserAllows,
+                sourceExactAllowDomains = current.sourceExactAllowDomains,
+                dnsTypeRules = current.dnsTypeRules,
+            ),
             wildcardRules = current.wildcardRules,
             regexBlockRules = current.regexBlockRules,
             regexAllowRules = current.regexAllowRules,
@@ -519,7 +656,7 @@ class BlocklistHolder @Inject constructor() {
             sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
             exactBlockOrigins = current.exactBlockOrigins - h,
             sourceWildcardBlockOrigins = current.sourceWildcardBlockOrigins,
-            userExactAllowDomains = current.userExactAllowDomains + h,
+            userExactAllowDomains = newUserAllows,
             sourceExactAllowDomains = current.sourceExactAllowDomains,
             sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
             dnsTypeRules = current.dnsTypeRules,
@@ -611,6 +748,9 @@ class BlocklistHolder @Inject constructor() {
                 precedence = "DNS type allow rule overrides blocklist matches for this query type"
             )
         }
+        if (!snap.structuralBloom.mightContainCandidateFor(lower)) {
+            return decideRegexWwwOrDefault(lower, snap, queryType)
+        }
 
         // Trie walk over a stable snapshot gathers wildcard allow/block signals.
         // Exact blocks are hash-set only so large lists are not duplicated as
@@ -686,6 +826,10 @@ class BlocklistHolder @Inject constructor() {
             )
         }
 
+        return decideRegexWwwOrDefault(lower, snap, queryType)
+    }
+
+    private fun decideRegexWwwOrDefault(lower: String, snap: Snapshot, queryType: Int?): BlockDecision {
         snap.regexBlockRules.firstMatchingRegex(lower)?.let { regex ->
             snap.regexAllowRules.firstMatchingRegex(lower)?.let { allowRegex ->
                 return BlockDecision(
@@ -751,6 +895,40 @@ class BlocklistHolder @Inject constructor() {
                 compareBy<DnsTypeRule> { it.domain.count { ch -> ch == '.' } }
                     .thenBy { it.domain.length }
             )
+    }
+
+    private fun buildStructuralBloom(
+        exactBlockSet: Set<String>,
+        wildcardRules: List<UserRule>,
+        sourceWildcardBlockDomains: Set<String>,
+        sourceWildcardAllowDomains: Set<String>,
+        userExactAllowDomains: Set<String>,
+        sourceExactAllowDomains: Set<String>,
+        dnsTypeRules: List<DnsTypeRule>,
+    ): DomainBloomFilter {
+        val candidates = LinkedHashSet<String>(
+            exactBlockSet.size +
+                wildcardRules.size +
+                sourceWildcardBlockDomains.size +
+                sourceWildcardAllowDomains.size +
+                userExactAllowDomains.size +
+                sourceExactAllowDomains.size +
+                dnsTypeRules.size
+        )
+        candidates.addAll(exactBlockSet)
+        candidates.addAll(sourceWildcardBlockDomains)
+        candidates.addAll(sourceWildcardAllowDomains)
+        candidates.addAll(userExactAllowDomains)
+        candidates.addAll(sourceExactAllowDomains)
+        wildcardRules.forEach { rule ->
+            val pattern = rule.hostname.lowercase()
+            val base = if (pattern.startsWith("*.")) pattern.substring(2) else pattern
+            if (base.isNotBlank()) candidates.add(base)
+        }
+        dnsTypeRules.forEach { rule ->
+            if (rule.domain.isNotBlank()) candidates.add(rule.domain)
+        }
+        return DomainBloomFilter.build(candidates)
     }
 
     private fun String.toBlockReason(default: String): String = when {

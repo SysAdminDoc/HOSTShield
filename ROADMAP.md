@@ -664,13 +664,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ### P2
 
-- [ ] P2 — Add Bloom filter pre-check to BlocklistHolder
-  Why: The hash set fast path handles exact matches in O(1), but negative lookups (allowed domains) still traverse the trie. A Bloom filter (~1MB for 200K domains, <0.1% false positive) can fast-reject queries not in any blocklist, skipping both hash set and trie. This matters for the 60-70% of queries that are allowed.
-  Evidence: `BlocklistHolder.kt` `isBlocked()` checks hash set then walks trie; `DnsCache.kt` comments note 60-70% cache hit rate; Pi-hole and AdGuard Home both use pre-filter structures for fast rejection.
-  Touches: `domain/BlocklistHolder.kt`.
-  Acceptance: Bloom filter populated during `update()`/`updateAsync()`; `isBlocked()` checks Bloom filter before trie for non-cached domains; unit test verifies no false negatives and measures lookup speedup.
-  Complexity: M
-
 ## Audit Findings — 2026-06-17
 
 - [ ] P2 — Lifecycle 2.11 requires API 37 compile-SDK readiness

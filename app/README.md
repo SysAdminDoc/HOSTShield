@@ -64,7 +64,7 @@ Current module baseline: v6.9.57, versionCode 139.
                              │                         │
                     ┌────────▼─────────┐      Cache    │ Miss
                     │  BlocklistHolder │      Hit ◄────┘
-                    │  (Trie Lookup)   │               │
+                    │ (Bloom + Trie)   │               │
                     └────────┬─────────┘      ┌────────▼────────┐
                              │                │  Upstream DNS   │
                     Blocked? │                │  (UDP/DoH)      │
@@ -127,7 +127,7 @@ adb shell am broadcast -a com.hostshield.ACTION_PAUSE --ei duration_minutes 0 -n
 app/src/main/java/com/hostshield/
 ├── data/           # Room DB, DAOs, entities, preferences, repository
 ├── di/             # Hilt dependency injection modules
-├── domain/         # BlocklistHolder (trie), HostsParser
+├── domain/         # BlocklistHolder (Bloom + trie), HostsParser
 ├── service/        # VPN, root logger, iptables, DoH, DNS cache,
 │                   # CNAME detector, packet builder, workers
 ├── ui/screens/     # Home, Logs, Stats, Settings, Firewall,

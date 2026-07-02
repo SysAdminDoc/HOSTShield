@@ -78,7 +78,7 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 
 | Feature | Description |
 |---------|-------------|
-| **Trie + Hash Set Lookup** | O(1) hash set fast path for exact matches (~90% of queries), O(m) reversed-label trie for wildcards. 200K+ domains. |
+| **Bloom + Trie + Hash Set Lookup** | Snapshot-local Bloom pre-check fast-rejects cold negative domains, O(1) hash set handles exact matches, and O(m) reversed-label trie handles wildcard policy. 200K+ domains. |
 | **Filter Decision Cache** | LRU cache (8K entries) for `isBlocked()` results — skips trie entirely for hot domains |
 | **CNAME Cloaking Detection** | Inspects full CNAME chains + SVCB/HTTPS records (TYPE 64/65). Checks against main blocklist + dedicated AdGuard/NextDNS CNAME cloak databases |
 | **DNS Response Cache** | 2000-entry LRU with serve-stale (RFC 8767), negative caching (RFC 2308), SERVFAIL caching (RFC 9520), Unbound-style prefetching, and in-flight query coalescing |
