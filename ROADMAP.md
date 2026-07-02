@@ -721,13 +721,6 @@ dependency/licensing review, and implementation-test corpus design.
   Acceptance: LAN DNS is disabled by default, has explicit Settings controls, bind/interface limits, rate-limit/status UI, local-network permission readiness, notification lifecycle, connected smoke coverage, and release-doc checks that block LAN DNS claims unless the gate passes.
   Complexity: L
 
-- [ ] P2 — Add DNS stamp capability diagnostics for unsupported protocols
-  Why: HostShield parses DNSCrypt and ODoH stamps but does not ship a production DNSCrypt/ODoH transport engine, so imports must distinguish parse support from usable resolver support.
-  Evidence: `app/app/src/main/java/com/hostshield/util/DnsStampParser.kt`; `app/app/src/main/java/com/hostshield/service/DnsCryptRoutePlanner.kt`; `app/app/src/test/java/com/hostshield/service/DnsCryptRoutePlannerTest.kt`; https://www.rfc-editor.org/info/rfc9230/; https://datatracker.ietf.org/doc/html/rfc9250
-  Touches: DNS stamp import/share UI, resolver validation, diagnostics copy, `DnsStampParserTest.kt`, resolver-selection tests.
-  Acceptance: Resolver imports classify stamps as supported, parsed-but-disabled, or unsupported; DNSCrypt/ODoH stamps show clear non-production diagnostics and never appear as active resolvers; tests cover all stamp protocol classes and malformed corpus inputs.
-  Complexity: M
-
 - [ ] P2 — Add bounded JSONL export for DNS and connection evidence
   Why: HostShield has diagnostic ZIP and PCAP export, but support/debug workflows often need structured, redacted query and connection evidence without packet payloads.
   Evidence: `app/app/src/main/java/com/hostshield/util/DiagnosticExporter.kt`; `app/app/src/main/java/com/hostshield/util/PcapExporter.kt`; `app/app/src/main/java/com/hostshield/ui/screens/logs/LogsScreen.kt`; https://github.com/emanuele-f/PCAPdroid/issues/869; https://docs.pi-hole.net/api/

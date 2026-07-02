@@ -109,6 +109,98 @@ class DnsStampParserTest {
         assertTrue(parsed.noFilter)
     }
 
+    @Test
+    fun `classifies every parsed protocol by activation capability`() {
+        val cases = listOf(
+            CapabilityCase(
+                stampFor(DnsStampParser.DnsStamp.Protocol.PLAIN_DNS),
+                DnsStampParser.CapabilityStatus.SUPPORTED,
+                canActivate = true
+            ),
+            CapabilityCase(
+                stampFor(DnsStampParser.DnsStamp.Protocol.DOH),
+                DnsStampParser.CapabilityStatus.SUPPORTED,
+                canActivate = true
+            ),
+            CapabilityCase(
+                stampFor(DnsStampParser.DnsStamp.Protocol.DOT),
+                DnsStampParser.CapabilityStatus.SUPPORTED,
+                canActivate = true
+            ),
+            CapabilityCase(
+                stampFor(DnsStampParser.DnsStamp.Protocol.DOQ),
+                DnsStampParser.CapabilityStatus.PARSED_BUT_DISABLED,
+                canActivate = false
+            ),
+            CapabilityCase(
+                stampFor(DnsStampParser.DnsStamp.Protocol.DNSCRYPT),
+                DnsStampParser.CapabilityStatus.PARSED_BUT_DISABLED,
+                canActivate = false
+            ),
+            CapabilityCase(
+                stampFor(DnsStampParser.DnsStamp.Protocol.ODOH_TARGET),
+                DnsStampParser.CapabilityStatus.PARSED_BUT_DISABLED,
+                canActivate = false
+            ),
+            CapabilityCase(
+                stampFor(DnsStampParser.DnsStamp.Protocol.DNSCRYPT_RELAY),
+                DnsStampParser.CapabilityStatus.UNSUPPORTED,
+                canActivate = false
+            ),
+            CapabilityCase(
+                stampFor(DnsStampParser.DnsStamp.Protocol.ODOH_RELAY),
+                DnsStampParser.CapabilityStatus.UNSUPPORTED,
+                canActivate = false
+            )
+        )
+
+        assertEquals(
+            DnsStampParser.DnsStamp.Protocol.entries
+                .filter { it != DnsStampParser.DnsStamp.Protocol.UNKNOWN }
+                .toSet(),
+            cases.map { it.stamp.protocol }.toSet()
+        )
+
+        cases.forEach { case ->
+            val encoded = parser.encode(case.stamp)
+            val parsed = parser.parse(encoded)
+            assertNotNull(parsed)
+            requireNotNull(parsed)
+
+            val capability = parser.classify(parsed)
+            val diagnostic = parser.diagnose(encoded)
+
+            assertEquals(case.stamp.protocol, parsed.protocol)
+            assertEquals(case.status, capability.status)
+            assertEquals(case.canActivate, capability.canActivateAsResolver)
+            assertEquals(case.status, diagnostic.status)
+            assertEquals(case.stamp.protocol, diagnostic.protocol)
+            assertEquals(case.canActivate, diagnostic.canActivateAsResolver)
+        }
+
+        assertTrue(
+            DnsStampParser.diagnosticSummaryLines()
+                .any { it.contains("DNSCRYPT: parsed-but-disabled") }
+        )
+        assertTrue(
+            DnsStampParser.diagnosticSummaryLines()
+                .any { it.contains("ODOH_TARGET: parsed-but-disabled") }
+        )
+    }
+
+    @Test
+    fun `malformed stamp diagnostics never activate resolvers`() {
+        listOf("", "sdns://", "sdns://not valid base64", "https://dns.example/dns-query").forEach { candidate ->
+            val diagnostic = parser.diagnose(candidate)
+
+            assertNull(diagnostic.stamp)
+            assertNull(diagnostic.protocol)
+            assertEquals(DnsStampParser.CapabilityStatus.UNSUPPORTED, diagnostic.status)
+            assertFalse(diagnostic.canActivateAsResolver)
+            assertTrue(diagnostic.diagnostic.contains("resolver settings were not changed"))
+        }
+    }
+
     private fun stampOf(type: Int, vararg chunks: ByteArray): String {
         val out = ByteArrayOutputStream()
         out.write(type)
@@ -135,4 +227,45 @@ class DnsStampParserTest {
             it.write(value.size)
             it.write(value)
         }.toByteArray()
+
+    private data class CapabilityCase(
+        val stamp: DnsStampParser.DnsStamp,
+        val status: DnsStampParser.CapabilityStatus,
+        val canActivate: Boolean
+    )
+
+    private fun stampFor(protocol: DnsStampParser.DnsStamp.Protocol): DnsStampParser.DnsStamp =
+        DnsStampParser.DnsStamp(
+            protocol = protocol,
+            address = when (protocol) {
+                DnsStampParser.DnsStamp.Protocol.ODOH_TARGET -> ""
+                else -> "192.0.2.53:443"
+            },
+            hostname = when (protocol) {
+                DnsStampParser.DnsStamp.Protocol.PLAIN_DNS,
+                DnsStampParser.DnsStamp.Protocol.DNSCRYPT,
+                DnsStampParser.DnsStamp.Protocol.DNSCRYPT_RELAY,
+                DnsStampParser.DnsStamp.Protocol.UNKNOWN -> ""
+                else -> "dns.example"
+            },
+            path = when (protocol) {
+                DnsStampParser.DnsStamp.Protocol.DOH,
+                DnsStampParser.DnsStamp.Protocol.ODOH_TARGET,
+                DnsStampParser.DnsStamp.Protocol.ODOH_RELAY -> "/dns-query"
+                else -> ""
+            },
+            dnssec = true,
+            noLog = true,
+            noFilter = false,
+            providerName = if (protocol == DnsStampParser.DnsStamp.Protocol.DNSCRYPT) {
+                "2.dnscrypt-cert.example"
+            } else {
+                ""
+            },
+            providerPublicKey = if (protocol == DnsStampParser.DnsStamp.Protocol.DNSCRYPT) {
+                ByteArray(32) { it.toByte() }
+            } else {
+                ByteArray(0)
+            }
+        )
 }

@@ -16,6 +16,9 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   feed/type false-positive summaries without raw IOC details by default.
 
 ### Changed
+- DNS stamp parsing now exposes explicit capability diagnostics so DNSCrypt,
+  DoQ, ODoH, and relay stamps cannot be mistaken for production-active
+  resolver imports.
 - Blocklist rebuilds from VPN startup, periodic updates, profile schedules, and
   Home apply now share one coordinator for source downloads, allow/user merge
   rules, DoH bypass entries, holder swaps, and source metadata.

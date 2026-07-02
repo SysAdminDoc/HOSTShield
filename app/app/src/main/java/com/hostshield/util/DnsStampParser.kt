@@ -15,6 +15,28 @@ import javax.inject.Singleton
 @Singleton
 class DnsStampParser @Inject constructor() {
 
+    enum class CapabilityStatus {
+        SUPPORTED,
+        PARSED_BUT_DISABLED,
+        UNSUPPORTED
+    }
+
+    data class DnsStampCapability(
+        val status: CapabilityStatus,
+        val canActivateAsResolver: Boolean,
+        val productionTransport: String,
+        val diagnostic: String
+    )
+
+    data class DnsStampImportDiagnostic(
+        val stamp: DnsStamp?,
+        val status: CapabilityStatus,
+        val protocol: DnsStamp.Protocol?,
+        val canActivateAsResolver: Boolean,
+        val productionTransport: String,
+        val diagnostic: String
+    )
+
     data class DnsStamp(
         val protocol: Protocol,
         val address: String,
@@ -69,6 +91,74 @@ class DnsStampParser @Inject constructor() {
         private const val DNSCRYPT_PROVIDER_PUBLIC_KEY_BYTES = 32
         private val BASE64_ENCODER = Base64.getUrlEncoder().withoutPadding()
         private val BASE64_DECODER = Base64.getUrlDecoder()
+
+        private val CAPABILITY_BY_PROTOCOL = mapOf(
+            DnsStamp.Protocol.PLAIN_DNS to DnsStampCapability(
+                status = CapabilityStatus.SUPPORTED,
+                canActivateAsResolver = true,
+                productionTransport = "Plain DNS custom upstream",
+                diagnostic = "Plain DNS stamps can be imported as custom upstream resolvers."
+            ),
+            DnsStamp.Protocol.DOH to DnsStampCapability(
+                status = CapabilityStatus.SUPPORTED,
+                canActivateAsResolver = true,
+                productionTransport = "Pinned DoH provider",
+                diagnostic = "DoH is production-supported when the stamp maps to a built-in pinned provider."
+            ),
+            DnsStamp.Protocol.DOT to DnsStampCapability(
+                status = CapabilityStatus.SUPPORTED,
+                canActivateAsResolver = true,
+                productionTransport = "Pinned DoT provider",
+                diagnostic = "DoT is production-supported when the stamp maps to a built-in pinned provider."
+            ),
+            DnsStamp.Protocol.DOQ to DnsStampCapability(
+                status = CapabilityStatus.PARSED_BUT_DISABLED,
+                canActivateAsResolver = false,
+                productionTransport = "Debug-only experimental DoQ",
+                diagnostic = "DoQ stamps parse, but release builds keep DoQ disabled and never activate them as resolvers."
+            ),
+            DnsStamp.Protocol.DNSCRYPT to DnsStampCapability(
+                status = CapabilityStatus.PARSED_BUT_DISABLED,
+                canActivateAsResolver = false,
+                productionTransport = "No production DNSCrypt transport",
+                diagnostic = "DNSCrypt stamps parse for validation and relay planning, but no production DNSCrypt resolver is wired."
+            ),
+            DnsStamp.Protocol.ODOH_TARGET to DnsStampCapability(
+                status = CapabilityStatus.PARSED_BUT_DISABLED,
+                canActivateAsResolver = false,
+                productionTransport = "No production ODoH transport",
+                diagnostic = "ODoH target stamps parse, but no production ODoH resolver is wired."
+            ),
+            DnsStamp.Protocol.DNSCRYPT_RELAY to DnsStampCapability(
+                status = CapabilityStatus.UNSUPPORTED,
+                canActivateAsResolver = false,
+                productionTransport = "Relay metadata only",
+                diagnostic = "Anonymized DNSCrypt relay stamps are relay metadata and cannot be selected as resolvers."
+            ),
+            DnsStamp.Protocol.ODOH_RELAY to DnsStampCapability(
+                status = CapabilityStatus.UNSUPPORTED,
+                canActivateAsResolver = false,
+                productionTransport = "Relay metadata only",
+                diagnostic = "ODoH relay stamps are relay metadata, and no production ODoH resolver is wired."
+            ),
+            DnsStamp.Protocol.UNKNOWN to DnsStampCapability(
+                status = CapabilityStatus.UNSUPPORTED,
+                canActivateAsResolver = false,
+                productionTransport = "Unsupported",
+                diagnostic = "Unknown DNS stamp protocols are ignored and cannot change active resolver settings."
+            )
+        )
+
+        fun diagnosticSummaryLines(): List<String> =
+            DnsStamp.Protocol.entries
+                .filter { it != DnsStamp.Protocol.UNKNOWN }
+                .map { protocol ->
+                    val capability = capabilityFor(protocol)
+                    "DNS stamp ${protocol.name}: ${capability.status.name.lowercase(Locale.US).replace('_', '-')} - ${capability.diagnostic}"
+                }
+
+        private fun capabilityFor(protocol: DnsStamp.Protocol): DnsStampCapability =
+            CAPABILITY_BY_PROTOCOL[protocol] ?: CAPABILITY_BY_PROTOCOL.getValue(DnsStamp.Protocol.UNKNOWN)
     }
 
     // ── Public API ───────────────────────────────────────────────
@@ -81,6 +171,33 @@ class DnsStampParser @Inject constructor() {
         parseSafe(stamp)
     } catch (_: Exception) {
         null
+    }
+
+    fun classify(stamp: DnsStamp): DnsStampCapability = capabilityFor(stamp.protocol)
+
+    fun diagnose(stamp: String): DnsStampImportDiagnostic {
+        val parsed = parse(stamp)
+        if (parsed == null) {
+            val unsupported = capabilityFor(DnsStamp.Protocol.UNKNOWN)
+            return DnsStampImportDiagnostic(
+                stamp = null,
+                status = unsupported.status,
+                protocol = null,
+                canActivateAsResolver = false,
+                productionTransport = unsupported.productionTransport,
+                diagnostic = "Malformed or unsupported DNS stamp; resolver settings were not changed."
+            )
+        }
+
+        val capability = classify(parsed)
+        return DnsStampImportDiagnostic(
+            stamp = parsed,
+            status = capability.status,
+            protocol = parsed.protocol,
+            canActivateAsResolver = capability.canActivateAsResolver,
+            productionTransport = capability.productionTransport,
+            diagnostic = capability.diagnostic
+        )
     }
 
     /**

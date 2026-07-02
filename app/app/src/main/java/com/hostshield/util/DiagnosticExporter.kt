@@ -168,6 +168,10 @@ class DiagnosticExporter @Inject constructor(
         }
         sb.appendLine()
 
+        sb.appendLine("-- DNS Stamp Capability ---------------------------")
+        DnsStampParser.diagnosticSummaryLines().forEach { sb.appendLine(it) }
+        sb.appendLine()
+
         // -- DoH Pin Manifest --
         sb.appendLine("-- DoH Pin Manifest -------------------------------")
         DohPinManifest.diagnosticSummaryLines().forEach { sb.appendLine(it) }

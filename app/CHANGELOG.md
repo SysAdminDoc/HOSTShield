@@ -1,5 +1,17 @@
 # HostShield Unreleased
 
+## DNS Stamp Capability Diagnostics
+
+### Changed
+- DNS stamp parsing now classifies every parsed protocol as supported,
+  parsed-but-disabled, or unsupported before any resolver import can treat it as
+  active.
+- Diagnostic exports list DNS stamp capability status, and DNSCrypt, DoQ, ODoH,
+  and relay stamps remain parse-only or unsupported instead of becoming active
+  resolvers.
+
+---
+
 ## Blocklist Rebuild Coordinator
 
 ### Changed

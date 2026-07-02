@@ -95,6 +95,7 @@ class ParserFuzzHarnessTest {
             }
             noThrow("dns stamp malformed corpus item $i") {
                 parser.parse(candidate)
+                parser.diagnose(candidate)
             }
         }
 
