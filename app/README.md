@@ -87,6 +87,7 @@ Current module baseline: v6.9.57, versionCode 139.
 # From the repository root before release:
 # powershell -ExecutionPolicy Bypass -File .\tools\check-release-docs.ps1
 # powershell -ExecutionPolicy Bypass -File .\tools\check-cronet-posture.ps1
+# powershell -ExecutionPolicy Bypass -File .\tools\run-protection-resilience-matrix.ps1
 # powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 ```
 

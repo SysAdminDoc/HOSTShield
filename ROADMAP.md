@@ -727,15 +727,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ## Research-Driven Additions
 
-### P1
-
-- [ ] P1 — Add connected protection-resilience release matrix
-  Why: Local unit and Compose tests do not prove the protection service behavior users care about when Android restarts VPN services, applies lockdown, crosses work-profile/Private Space boundaries, or denies foreground-service/battery exemptions.
-  Evidence: `app/app/src/androidTest/java/com/hostshield/ui/TopFlowComposeTest.kt`; `app/app/src/main/java/com/hostshield/util/PrivateSpaceDetector.kt`; `app/app/src/main/java/com/hostshield/service/ProtectionServiceStarter.kt`; https://developer.android.com/develop/connectivity/vpn; https://developer.android.com/reference/android/net/VpnService; https://github.com/M66B/NetGuard/blob/master/FAQ.md
-  Touches: connected Android tests, protection-service test hooks, release-check scripts, README troubleshooting sections.
-  Acceptance: A local connected-test/manual-script bundle records VPN start/stop, always-on/lockdown advisory, boot/update resume where automatable, work-profile/Private Space warning render, battery-exemption denial messaging, and diagnostic-event export for each failure path.
-  Complexity: L
-
 ### P2
 
 - [ ] P2 — Productize the LAN `LocalDnsServer` path behind explicit gates

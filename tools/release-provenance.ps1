@@ -5,7 +5,8 @@ param(
     [string]$SbomPath = "artifacts/release-provenance/hostshield-bom.cdx.json",
     [string]$OsvReportPath = "artifacts/release-provenance/osv-results.json",
     [string]$OsvAllowlistPath = "tools/osv-allowlist.json",
-    [string]$PageAlignmentReportPath = "artifacts/release-provenance/android-page-alignment.txt"
+    [string]$PageAlignmentReportPath = "artifacts/release-provenance/android-page-alignment.txt",
+    [string]$ProtectionMatrixPath = "artifacts/release-provenance/protection-resilience-matrix.json"
 )
 
 $ErrorActionPreference = "Stop"
@@ -160,13 +161,16 @@ $sbom = if (Test-RepoPath $SbomPath) { Resolve-RepoPath $SbomPath } else { $null
 $osvReport = if (Test-RepoPath $OsvReportPath) { Resolve-RepoPath $OsvReportPath } else { $null }
 $osvAllowlist = if (Test-RepoPath $OsvAllowlistPath) { Resolve-RepoPath $OsvAllowlistPath } else { $null }
 $pageAlignmentReport = if (Test-RepoPath $PageAlignmentReportPath) { Resolve-RepoPath $PageAlignmentReportPath } else { $null }
+$protectionMatrix = if (Test-RepoPath $ProtectionMatrixPath) { Resolve-RepoPath $ProtectionMatrixPath } else { $null }
 $sbomHash = if ($sbom) { (Get-FileHash -Algorithm SHA256 -LiteralPath $sbom).Hash.ToLowerInvariant() } else { "unavailable" }
 $osvReportHash = if ($osvReport) { (Get-FileHash -Algorithm SHA256 -LiteralPath $osvReport).Hash.ToLowerInvariant() } else { "unavailable" }
 $osvAllowlistHash = if ($osvAllowlist) { (Get-FileHash -Algorithm SHA256 -LiteralPath $osvAllowlist).Hash.ToLowerInvariant() } else { "unavailable" }
 $pageAlignmentReportHash = if ($pageAlignmentReport) { (Get-FileHash -Algorithm SHA256 -LiteralPath $pageAlignmentReport).Hash.ToLowerInvariant() } else { "unavailable" }
+$protectionMatrixHash = if ($protectionMatrix) { (Get-FileHash -Algorithm SHA256 -LiteralPath $protectionMatrix).Hash.ToLowerInvariant() } else { "unavailable" }
 $sbomName = if ($sbom) { Split-Path -Leaf $sbom } else { Split-Path -Leaf $SbomPath }
 $osvReportName = if ($osvReport) { Split-Path -Leaf $osvReport } else { Split-Path -Leaf $OsvReportPath }
 $pageAlignmentReportName = if ($pageAlignmentReport) { Split-Path -Leaf $pageAlignmentReport } else { Split-Path -Leaf $PageAlignmentReportPath }
+$protectionMatrixName = if ($protectionMatrix) { Split-Path -Leaf $protectionMatrix } else { Split-Path -Leaf $ProtectionMatrixPath }
 
 $apkSigner = Find-ApkSigner
 $javaHome = Find-JavaHome
@@ -204,6 +208,9 @@ if ($osvReport) {
 if ($pageAlignmentReport) {
     $checksumLines += "$pageAlignmentReportHash  $pageAlignmentReportName"
 }
+if ($protectionMatrix) {
+    $checksumLines += "$protectionMatrixHash  $protectionMatrixName"
+}
 $checksumLines | Set-Content -Encoding UTF8 -LiteralPath $checksumsPath
 
 $provenance = @(
@@ -225,6 +232,8 @@ $provenance = @(
     "| OSV allowlist SHA-256 | $osvAllowlistHash |",
     "| Android 16 KB page alignment report path | $(if ($pageAlignmentReport) { $pageAlignmentReport } else { 'missing' }) |",
     "| Android 16 KB page alignment report SHA-256 | $pageAlignmentReportHash |",
+    "| Protection resilience matrix path | $(if ($protectionMatrix) { $protectionMatrix } else { 'missing' }) |",
+    "| Protection resilience matrix SHA-256 | $protectionMatrixHash |",
     "| Signing cert SHA-256 | $signerFingerprint |",
     "| Gradle | $gradleVersion |",
     "| Android Gradle Plugin | $agpVersion |",
@@ -240,6 +249,7 @@ $provenance = @(
     '- CycloneDX SBOM and OSV JSON report hashes are recorded when local release checks generated them before the APK build.',
     '- OSV policy fails local release validation on unacknowledged HIGH or CRITICAL vulnerabilities; allowlist entries require a reason and expiry.',
     '- Android 16 KB page alignment is verified with `zipalign -P 16` for APKs and `PAGE_ALIGNMENT_16K` bundle config for AABs.',
+    '- Protection resilience evidence is recorded by `tools/run-protection-resilience-matrix.ps1` when a connected or manual device pass is run.',
     '- Signing certificate fingerprint comes from `apksigner verify --verbose --print-certs` when Android build tools are available.',
     '- Git status is recorded so release notes can distinguish clean tagged releases from local smoke-test artifacts.',
     '',
@@ -252,6 +262,7 @@ $provenance = @(
     '- `hostshield-bom.cdx.json`',
     '- `osv-results.json`',
     '- `android-page-alignment.txt`',
+    '- `protection-resilience-matrix.json`',
     '- `checksums.txt`',
     '',
     'The checksums file records the SHA-256 digest for each local release artifact.'

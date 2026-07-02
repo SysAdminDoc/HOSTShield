@@ -22,6 +22,7 @@ $versionCatalog = Read-RepoFile "app/gradle/libs.versions.toml"
 $releaseProvenance = Read-RepoFile "tools/release-provenance.ps1"
 $osvPolicyScript = Read-RepoFile "tools/check-osv-report.ps1"
 $androidPageAlignmentScript = Read-RepoFile "tools/check-android-page-alignment.ps1"
+$protectionMatrixScript = Read-RepoFile "tools/run-protection-resilience-matrix.ps1"
 $appManifest = Read-RepoFile "app/app/src/main/AndroidManifest.xml"
 $fgsTypeHelper = Read-RepoFile "app/app/src/main/java/com/hostshield/service/ProtectionForegroundServiceTypes.kt"
 $workManagerAudit = Read-RepoFile "docs/WORKMANAGER_AUDIT.md"
@@ -332,6 +333,7 @@ $requiredPatterns = @{
         "com.hostshield.ACTION_SET_PROFILE",
         "duration_minutes",
         "v1-v15",
+        "run-protection-resilience-matrix.ps1",
         "without GitHub Actions workflows"
     )
     "app/README.md" = @(
@@ -341,6 +343,7 @@ $requiredPatterns = @{
         "Android SDK $compileSdk",
         "com.hostshield.ACTION_ENABLE",
         "duration_minutes",
+        "run-protection-resilience-matrix.ps1",
         "v$versionName"
     )
     "app/CHANGELOG.md" = @(
@@ -407,6 +410,8 @@ $releaseGatePatterns = @{
             "hostshield-bom.cdx.json",
             "osv-results.json",
             "android-page-alignment.txt",
+            "ProtectionMatrixPath",
+            "protection-resilience-matrix.json",
             "16 KB",
             "OSV policy fails local release validation"
         )
@@ -430,6 +435,26 @@ $releaseGatePatterns = @{
             "bundletool",
             "PAGE_ALIGNMENT_16K",
             "bundletool dump config"
+        )
+    }
+    "tools/run-protection-resilience-matrix.ps1" = @{
+        Text = $protectionMatrixScript
+        Patterns = @(
+            "ProtectionResilienceMatrixTest",
+            "vpn-start-stop",
+            "always-on-lockdown-advisory",
+            "boot-update-resume",
+            "work-profile-private-space-warning",
+            "battery-exemption-denial",
+            "diagnostic-event-export",
+            "foreground_service_start_failed",
+            "foreground_service_timeout",
+            "always_on_vpn_app",
+            "always_on_vpn_lockdown",
+            "cmd user list",
+            "dumpsys deviceidle whitelist",
+            "AttemptVpnStartStop",
+            "protection-resilience-matrix.json"
         )
     }
 }

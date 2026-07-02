@@ -230,12 +230,13 @@ cd C:\Users\--\repos\HostShield
 # Release doc/provenance checks
 powershell -ExecutionPolicy Bypass -File .\tools\check-release-docs.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\check-cronet-posture.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\run-protection-resilience-matrix.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 ```
 
 **Signing**: Release artifacts require `KEYSTORE_FILE`, `STORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`. For local non-distribution release verification only, set `HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING=true` to use the Android debug keystore.
 
-**Release flow**: Builds, tests, release-doc checks, provenance generation, and GitHub Release uploads run locally on this workstation. The repository intentionally ships without GitHub Actions workflows.
+**Release flow**: Builds, tests, release-doc checks, protection-resilience matrix capture, provenance generation, and GitHub Release uploads run locally on this workstation. The repository intentionally ships without GitHub Actions workflows.
 
 ---
 

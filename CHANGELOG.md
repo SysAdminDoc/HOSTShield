@@ -5,6 +5,11 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+- Added a local protection-resilience matrix runner and connected smoke test for
+  VPN recovery, Private Space/work-profile, battery, and diagnostic-event
+  release evidence.
+
 ### Security
 - Remote DoH bypass list updates now require a matching canonical payload hash
   and release-key signature before the app stores any fetched policy entries.

@@ -1,5 +1,16 @@
 # HostShield Unreleased
 
+## Protection Resilience Release Matrix
+
+### Added
+- Added a local matrix runner that records connected-device protection evidence
+  for VPN start/stop, always-on lockdown, boot/update resume, profile warnings,
+  battery-exemption state, and diagnostic event export.
+- Added a connected smoke test for resilience warning surfaces and diagnostic
+  event wire names used by support exports.
+
+---
+
 ## Remote DoH Bypass Manifest Provenance
 
 ### Security
