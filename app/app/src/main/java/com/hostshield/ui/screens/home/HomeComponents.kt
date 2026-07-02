@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hostshield.R
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
@@ -48,18 +50,19 @@ import kotlin.math.sin
 
 @Composable
 fun BrandHeader() {
+    val appName = stringResource(R.string.app_name)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier.semantics(mergeDescendants = true) {
             heading()
-            contentDescription = "HostShield"
+            contentDescription = appName
         }
     ) {
         Icon(Icons.Filled.Shield, null, tint = Teal, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(8.dp))
         Text(
-            text = "HostShield",
+            text = appName,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
@@ -126,6 +129,12 @@ fun ShieldOrb(
 
     val orbSizeDp = 164.dp
     val totalSizeDp = orbSizeDp + 48.dp
+    val applyingDescription = stringResource(R.string.home_shield_applying)
+    val activeDescription = stringResource(R.string.home_shield_active_a11y)
+    val offDescription = stringResource(R.string.home_shield_off_a11y)
+    val applyingState = stringResource(R.string.home_status_applying)
+    val activeState = stringResource(R.string.status_active)
+    val inactiveState = stringResource(R.string.status_inactive)
 
     Box(
         contentAlignment = Alignment.Center,
@@ -136,14 +145,14 @@ fun ShieldOrb(
             .semantics(mergeDescendants = true) {
                 role = Role.Button
                 contentDescription = when {
-                    isApplying -> "HostShield is applying protection"
-                    isEnabled -> "HostShield protection is active. Tap to pause protection."
-                    else -> "HostShield protection is off. Tap to activate protection."
+                    isApplying -> applyingDescription
+                    isEnabled -> activeDescription
+                    else -> offDescription
                 }
                 stateDescription = when {
-                    isApplying -> "Applying"
-                    isEnabled -> "Active"
-                    else -> "Inactive"
+                    isApplying -> applyingState
+                    isEnabled -> activeState
+                    else -> inactiveState
                 }
                 if (isApplying) disabled()
             }
@@ -376,11 +385,17 @@ fun StatusLabel(isEnabled: Boolean, isApplying: Boolean) {
         animationSpec = tween(400), label = "statusColor"
     )
 
+    val applying = stringResource(R.string.home_status_applying)
+    val active = stringResource(R.string.home_status_protection_active)
+    val tapToActivate = stringResource(R.string.home_status_tap_activate)
+    val activeState = stringResource(R.string.status_active)
+    val inactiveState = stringResource(R.string.status_inactive)
+
     Text(
         text = when {
-            isApplying -> "Applying"
-            isEnabled -> "Protection active"
-            else -> "Tap to activate"
+            isApplying -> applying
+            isEnabled -> active
+            else -> tapToActivate
         },
         style = MaterialTheme.typography.titleMedium,
         color = color,
@@ -389,9 +404,9 @@ fun StatusLabel(isEnabled: Boolean, isApplying: Boolean) {
         modifier = Modifier.semantics {
             liveRegion = LiveRegionMode.Polite
             stateDescription = when {
-                isApplying -> "Applying"
-                isEnabled -> "Active"
-                else -> "Inactive"
+                isApplying -> applying
+                isEnabled -> activeState
+                else -> inactiveState
             }
         }
     )
@@ -409,11 +424,12 @@ fun StatTile(
     glowColor: Color,
     onClick: (() -> Unit)? = null
 ) {
+    val a11yLabel = stringResource(R.string.home_stat_tile_a11y, label, value)
     GlassCard(
         modifier = modifier.then(
             if (onClick != null) {
                 Modifier
-                    .semantics { contentDescription = "$label, $value" }
+                    .semantics { contentDescription = a11yLabel }
                     .clickable(role = Role.Button, onClick = onClick)
             } else {
                 Modifier
@@ -474,6 +490,10 @@ fun ModeChip(
         selected -> Teal
         else -> TextSecondary
     }
+    val modeA11y = stringResource(R.string.home_mode_a11y, label)
+    val selectedState = stringResource(R.string.label_selected)
+    val unavailableState = stringResource(R.string.label_unavailable)
+    val notSelectedState = stringResource(R.string.label_not_selected)
 
     Surface(
         onClick = onClick,
@@ -483,11 +503,11 @@ fun ModeChip(
         modifier = Modifier
             .border(1.dp, borderColor, RoundedCornerShape(10.dp))
             .semantics {
-                contentDescription = "$label mode"
+                contentDescription = modeA11y
                 stateDescription = when {
-                    !enabled -> "Unavailable"
-                    selected -> "Selected"
-                    else -> "Not selected"
+                    !enabled -> unavailableState
+                    selected -> selectedState
+                    else -> notSelectedState
                 }
                 if (!enabled) disabled()
             }
@@ -501,7 +521,7 @@ fun ModeChip(
             Text(label, color = contentColor, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             if (!enabled) {
                 Spacer(Modifier.width(6.dp))
-                Text("N/A", color = TextDim, fontSize = 10.sp)
+                Text(stringResource(R.string.home_not_available), color = TextDim, fontSize = 10.sp)
             }
         }
     }
@@ -518,6 +538,9 @@ fun ActionRow(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
+    val a11yLabel = stringResource(R.string.home_action_a11y, label, subtitle)
+    val availableState = stringResource(R.string.label_available)
+    val unavailableState = stringResource(R.string.label_unavailable)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -525,8 +548,8 @@ fun ActionRow(
             .clip(RoundedCornerShape(10.dp))
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics {
-                contentDescription = "$label. $subtitle"
-                stateDescription = if (enabled) "Available" else "Unavailable"
+                contentDescription = a11yLabel
+                stateDescription = if (enabled) availableState else unavailableState
                 if (!enabled) disabled()
             }
             .background(if (enabled) Surface2.copy(alpha = 0.18f) else Surface2.copy(alpha = 0.10f))
@@ -572,7 +595,7 @@ fun ActionRow(
 fun ErrorBanner(error: String, onDismiss: () -> Unit) {
     HostShieldStatusBanner(
         icon = Icons.Filled.Error,
-        title = "Action failed",
+        title = stringResource(R.string.home_action_failed),
         message = error,
         accent = Red,
         modifier = Modifier
@@ -604,6 +627,9 @@ fun ModuleCard(
         animationSpec = tween(300), label = "moduleBg"
     )
 
+    val a11yLabel = stringResource(R.string.home_module_a11y, title, status, detail)
+    val activeState = stringResource(R.string.status_active)
+    val offState = stringResource(R.string.status_off)
     Box(
         modifier = modifier
             .animateContentSize()
@@ -619,8 +645,8 @@ fun ModuleCard(
             .border(1.dp, borderColor, RoundedCornerShape(12.dp))
             .semantics {
                 role = Role.Button
-                contentDescription = "$title module. $status. $detail"
-                stateDescription = if (isActive) "Active" else "Off"
+                contentDescription = a11yLabel
+                stateDescription = if (isActive) activeState else offState
             }
             .clickable(role = Role.Button, onClick = onClick)
     ) {
@@ -710,9 +736,10 @@ fun FeatureAccessCard(
     gradientEnd: Color,
     onClick: () -> Unit
 ) {
+    val a11yLabel = stringResource(R.string.home_feature_a11y, title, subtitle)
     GlassCard(
         modifier = modifier
-            .semantics { contentDescription = "$title. $subtitle" }
+            .semantics { contentDescription = a11yLabel }
             .clickable(role = Role.Button, onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {

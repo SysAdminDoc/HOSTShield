@@ -53,6 +53,7 @@
     <string name="module_firewall">Firewall</string>
     <string name="mode_root">Root</string>
     <string name="status_active">Active</string>
+    <string name="status_inactive">Inactive</string>
     <string name="status_off">Off</string>
 
     <!-- Common actions -->
@@ -71,6 +72,9 @@
     <string name="label_version">Version</string>
     <string name="label_root">Root</string>
     <string name="label_available">Available</string>
+    <string name="label_unavailable">Unavailable</string>
+    <string name="label_selected">Selected</string>
+    <string name="label_not_selected">Not selected</string>
     <string name="label_start">Start</string>
     <string name="label_end">End</string>
     <string name="label_accent_color">Accent color</string>
@@ -78,6 +82,9 @@
     <string name="label_check_for_updates">Check for updates</string>
     <string name="label_view_on_github">View on GitHub</string>
     <string name="settings_github_unavailable">No browser is available to open GitHub.</string>
+    <string name="settings_oem_detected">%1$s detected</string>
+    <string name="settings_oem_whitelist_hint">Add HostShield to its whitelist for reliable protection. Visit dontkillmyapp.com for device-specific instructions.</string>
+    <string name="settings_set_accent_color">Set accent color to %1$s</string>
 
     <!-- Settings rows — titles -->
     <string name="settings_battery_warning">Battery optimization may stop HostShield in the background</string>
@@ -242,6 +249,19 @@
     <string name="home_resume_protection">Resume protection</string>
     <string name="home_auto_resumes_in">Auto-resumes in %1$dm %2$ds</string>
     <string name="home_resuming">Resuming…</string>
+    <string name="home_action_failed">Action failed</string>
+    <string name="home_not_available">N/A</string>
+    <string name="home_stat_tile_a11y">%1$s, %2$s</string>
+    <string name="home_mode_a11y">%1$s mode</string>
+    <string name="home_action_a11y">%1$s. %2$s</string>
+    <string name="home_module_a11y">%1$s module. %2$s. %3$s</string>
+    <string name="home_feature_a11y">%1$s. %2$s</string>
+    <string name="home_status_applying">Applying</string>
+    <string name="home_status_protection_active">Protection active</string>
+    <string name="home_status_tap_activate">Tap to activate</string>
+    <string name="home_shield_applying">HostShield is applying protection</string>
+    <string name="home_shield_active_a11y">HostShield protection is active. Tap to pause protection.</string>
+    <string name="home_shield_off_a11y">HostShield protection is off. Tap to activate protection.</string>
     <string name="home_protection_disabled">Protection disabled</string>
     <string name="home_protection_disabled_sub">Tap the shield to re-enable</string>
     <string name="home_pause_protection">Pause protection</string>
@@ -255,21 +275,51 @@
     <string name="home_pause_duration_60">1 hour</string>
     <string name="home_auto_resumes_after">Auto-resumes after %1$s</string>
     <string name="home_applied">Applied %1$s</string>
+    <string name="home_stat_domains_blocked">Domains Blocked</string>
+    <string name="home_stat_blocked_today">Blocked Today</string>
+    <string name="home_stat_queries_today">Queries Today</string>
+    <string name="home_stat_active_sources">Active Sources</string>
+    <string name="home_search_placeholder">Search domains, rules, or apps</string>
+    <string name="home_search_clear">Clear search</string>
+    <string name="home_recent_search">Recent search %1$s</string>
+    <string name="home_search_dns_logs">Search \"%1$s\" in DNS Logs</string>
+    <string name="home_search_app_activity">Search \"%1$s\" in App Activity</string>
+    <string name="home_privacy_score_a11y">Privacy score: %1$d/100</string>
+    <plurals name="home_privacy_checks_passed">
+        <item quantity="one">%1$d/%2$d check passed</item>
+        <item quantity="other">%1$d/%2$d checks passed</item>
+    </plurals>
+    <plurals name="home_privacy_tips">
+        <item quantity="one">%1$d tip</item>
+        <item quantity="other">%1$d tips</item>
+    </plurals>
+    <plurals name="home_source_category_a11y">
+        <item quantity="one">%1$s source category, %2$d of %3$d source enabled</item>
+        <item quantity="other">%1$s source category, %2$d of %3$d sources enabled</item>
+    </plurals>
+    <string name="home_dns_queries_by_app">%1$s made %2$d DNS queries</string>
+    <string name="home_unknown">Unknown</string>
 
     <!-- QR config sharing -->
     <string name="qr_screen_title">QR Config Sharing</string>
     <string name="qr_screen_description">Share your HostShield configuration via QR code. The recipient can scan it to import your DNS settings, custom rules, and sources.</string>
     <string name="qr_export_configuration">Export Configuration</string>
+    <string name="qr_export_subtitle">Share rules, sources, and DNS preferences as one code</string>
     <string name="qr_generating">Generating…</string>
     <string name="qr_generate_code">Generate QR Code</string>
     <string name="qr_code_content_description">QR Code</string>
+    <string name="qr_empty_export_title">No export code generated</string>
+    <string name="qr_empty_export_message">Generate a QR code only when you are ready to share this device\'s HostShield configuration.</string>
     <string name="qr_encoded_string">Encoded String</string>
     <string name="qr_import_configuration">Import Configuration</string>
+    <string name="qr_import_subtitle">Preview changes before anything is applied</string>
     <string name="qr_import_hint">Paste a HostShield config string (HS:…) to preview before importing.</string>
     <string name="qr_placeholder">HS:…</string>
     <string name="qr_decode_preview">Decode &amp; Preview</string>
     <string name="qr_importing">Importing…</string>
     <string name="qr_apply_import">Apply Import</string>
+    <string name="qr_action_failed">QR action failed</string>
+    <string name="qr_action_ready">QR action ready</string>
 
     <!-- Status messages -->
     <string name="status_action_failed">Settings action failed</string>
@@ -303,11 +353,39 @@
     <string name="dns_endpoint_hint">Endpoint (host:port)</string>
     <string name="dns_tunnel_ip_hint">DNS IP inside tunnel (e.g. 1.1.1.1)</string>
     <string name="dns_wireguard_keys_hint">Configure keys in WireGuard settings</string>
+    <string name="dns_section_title">DNS</string>
+    <string name="dns_over_https">DNS-over-HTTPS</string>
+    <string name="dns_over_https_sub">Encrypt DNS queries</string>
+    <string name="dns_over_tls">DNS-over-TLS</string>
+    <string name="dns_over_tls_sub">TLS-encrypted DNS (RFC 7858)</string>
+    <string name="dns_over_quic_experimental">DNS-over-QUIC (experimental)</string>
+    <string name="dns_wireguard_experimental">WireGuard DNS (experimental)</string>
+    <string name="dns_save_wireguard_endpoint">Save WireGuard endpoint</string>
+    <string name="dns_save_wireguard_ip">Save WireGuard DNS IP</string>
+    <string name="dns_trap">DNS Trap</string>
+    <string name="dns_trap_sub">Catch hardcoded DNS + block DoH/DoT bypass</string>
+    <string name="dns_save_custom_upstream">Save custom upstream DNS</string>
+    <string name="dns_benchmark">DNS benchmark</string>
+    <string name="dns_benchmark_sub">Test latency to public DNS resolvers</string>
+    <string name="dns_leak_test">DNS leak test</string>
+    <string name="dns_leak_test_sub">Verify queries go through HostShield</string>
     <string name="dns_custom_upstream">Custom Upstream DNS</string>
     <string name="dns_custom_upstream_hint">Comma-separated IPs (leave empty for system default)</string>
     <string name="dns_custom_upstream_example">e.g. 1.1.1.1, 9.9.9.9</string>
     <string name="dns_block_response">Block Response</string>
+    <string name="dns_block_response_sub">How blocked domains are answered</string>
+    <string name="dns_extended_errors">Extended DNS Errors</string>
+    <string name="dns_extended_errors_sub">Attach RFC 8914 EDE info code to blocked responses</string>
     <string name="dns_cache_title">DNS Cache</string>
+    <plurals name="dns_cache_entries">
+        <item quantity="one">%1$d entry</item>
+        <item quantity="other">%1$d entries</item>
+    </plurals>
+    <string name="dns_cache_hit_rate">%1$d%% hit rate</string>
+    <plurals name="dns_cache_stale">
+        <item quantity="one">%1$d stale</item>
+        <item quantity="other">%1$d stale</item>
+    </plurals>
     <string name="dns_cache_clear">Clear DNS cache</string>
 
     <!-- Home stats -->

@@ -306,9 +306,9 @@ fun SettingsScreen(
                             Icon(Icons.Filled.PhoneAndroid, null, tint = Peach, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(8.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("${state.oemBatteryKiller} detected", color = Peach, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                Text(stringResource(R.string.settings_oem_detected, state.oemBatteryKiller.orEmpty()), color = Peach, fontSize = 12.sp, fontWeight = FontWeight.Medium)
                                 Text(
-                                    "Add HostShield to its whitelist for reliable protection. Visit dontkillmyapp.com for device-specific instructions.",
+                                    stringResource(R.string.settings_oem_whitelist_hint),
                                     color = TextDim, fontSize = 10.sp, lineHeight = 13.sp
                                 )
                             }
@@ -619,6 +619,9 @@ fun SettingsScreen(
                 )
                 colors.forEach { (key, color) ->
                     val isSelected = state.accentColor == key
+                    val accentDescription = stringResource(R.string.settings_set_accent_color, key)
+                    val selectedState = stringResource(R.string.label_selected)
+                    val notSelectedState = stringResource(R.string.label_not_selected)
                     Surface(
                         onClick = { viewModel.setAccentColor(key) },
                         shape = RoundedCornerShape(8.dp),
@@ -627,8 +630,8 @@ fun SettingsScreen(
                             .size(40.dp)
                             .semantics {
                                 role = Role.Button
-                                contentDescription = "Set accent color to $key"
-                                stateDescription = if (isSelected) "Selected" else "Not selected"
+                                contentDescription = accentDescription
+                                stateDescription = if (isSelected) selectedState else notSelectedState
                             }
                     ) {
                         Box(

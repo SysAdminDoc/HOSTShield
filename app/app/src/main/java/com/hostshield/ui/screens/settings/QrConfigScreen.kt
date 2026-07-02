@@ -74,7 +74,7 @@ fun QrConfigScreen(
                 HostShieldPanelHeader(
                     icon = Icons.Filled.QrCode2,
                     title = stringResource(R.string.qr_export_configuration),
-                    subtitle = "Share rules, sources, and DNS preferences as one code",
+                    subtitle = stringResource(R.string.qr_export_subtitle),
                     accent = Teal,
                 )
                 Spacer(Modifier.height(12.dp))
@@ -127,8 +127,8 @@ fun QrConfigScreen(
                         Spacer(Modifier.height(12.dp))
                         HostShieldCompactState(
                             icon = Icons.Filled.PrivacyTip,
-                            title = "No export code generated",
-                            message = "Generate a QR code only when you are ready to share this device's HostShield configuration.",
+                            title = stringResource(R.string.qr_empty_export_title),
+                            message = stringResource(R.string.qr_empty_export_message),
                             accent = Teal,
                         )
                     }
@@ -168,7 +168,7 @@ fun QrConfigScreen(
                 HostShieldPanelHeader(
                     icon = Icons.Filled.QrCodeScanner,
                     title = stringResource(R.string.qr_import_configuration),
-                    subtitle = "Preview changes before anything is applied",
+                    subtitle = stringResource(R.string.qr_import_subtitle),
                     accent = Blue,
                 )
                 Spacer(Modifier.height(8.dp))
@@ -242,7 +242,7 @@ fun QrConfigScreen(
                 msg.contains("failed", ignoreCase = true)
             HostShieldStatusBanner(
                 icon = if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
-                title = if (isError) "QR action failed" else "QR action ready",
+                title = if (isError) stringResource(R.string.qr_action_failed) else stringResource(R.string.qr_action_ready),
                 message = msg,
                 accent = if (isError) Red else Teal,
                 onDismiss = { viewModel.clearImportResult() },

@@ -653,13 +653,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ### P3 - Operational Maturity
 
-- [ ] P3 -- Move from pseudolocale scaffolding to real i18n and LocaleConfig readiness
-  Why: Debug pseudolocales and some string resources exist, but the app has no real locale configuration and still contains hardcoded user-facing English in Compose surfaces.
-  Evidence: `app/app/build.gradle.kts`; `app/app/src/main/res/values/strings.xml`; `app/app/src/androidTest/java/com/hostshield/ui/LocaleLayoutScaffoldTest.kt`; https://developer.android.com/guide/topics/resources/app-languages
-  Touches: `app/app/build.gradle.kts`, `app/app/src/main/res/values/strings.xml`, optional `resources.properties`, `ui/screens/*`, locale/pseudolocale connected tests.
-  Acceptance: Top Home/Settings/DNS/QR/backup flows use string resources for user-facing copy, pseudolocale/RTL tests cover those flows, and `generateLocaleConfig` is either enabled with the first real locale or explicitly documented as deferred until translations ship.
-  Complexity: M
-
 ## Research-Driven Additions — 2026-06-19
 
 ### P2

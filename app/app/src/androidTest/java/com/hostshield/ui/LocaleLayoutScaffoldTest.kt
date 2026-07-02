@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Text
@@ -21,6 +22,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
@@ -33,6 +35,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.hostshield.R
 import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldPanelHeader
 import com.hostshield.ui.components.HostShieldSegmentOption
@@ -41,6 +44,7 @@ import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.navigation.HostShieldAdaptiveNavigationScaffold
 import com.hostshield.ui.navigation.Screen
 import com.hostshield.ui.navigation.bottomNavScreens
+import com.hostshield.ui.screens.home.HomeSearchSection
 import com.hostshield.ui.theme.Blue
 import com.hostshield.ui.theme.HostShieldTheme
 import com.hostshield.ui.theme.Mauve
@@ -168,6 +172,60 @@ class LocaleLayoutScaffoldTest {
                 .assertIsDisplayed()
             compose.onNodeWithText(label).assertIsDisplayed()
         }
+    }
+
+    @Test
+    fun resourceBackedTopFlowsRenderUnderRtlAndLargeFont() {
+        scenario = ActivityScenario.launch(ComponentActivity::class.java).also { scenario ->
+            scenario.onActivity { activity ->
+                activity.setContent {
+                    CompositionLocalProvider(
+                        LocalLayoutDirection provides LayoutDirection.Rtl,
+                        LocalDensity provides Density(density = 1f, fontScale = 1.35f),
+                    ) {
+                        HostShieldTheme {
+                            Column(
+                                modifier = Modifier
+                                    .width(360.dp)
+                                    .background(Surface0)
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                HomeSearchSection(
+                                    searchQuery = "ads",
+                                    onSearchQueryChange = {},
+                                    searchExpanded = true,
+                                    onSearchExpandedChange = {},
+                                    searchHistory = listOf("tracker"),
+                                    onSaveSearch = {},
+                                    onNavigateToLogs = {},
+                                    onNavigateToApps = {},
+                                )
+                                HostShieldPanelHeader(
+                                    icon = Icons.Filled.Dns,
+                                    title = stringResource(R.string.dns_section_title),
+                                    subtitle = stringResource(R.string.dns_over_https_sub),
+                                    accent = Blue,
+                                )
+                                HostShieldPanelHeader(
+                                    icon = Icons.Filled.QrCode2,
+                                    title = stringResource(R.string.qr_export_configuration),
+                                    subtitle = stringResource(R.string.qr_export_subtitle),
+                                    accent = Teal,
+                                )
+                                Text(stringResource(R.string.settings_create_backup))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Search \"ads\" in DNS Logs").assertIsDisplayed()
+        compose.onNodeWithText("DNS").assertIsDisplayed()
+        compose.onNodeWithText("Share rules, sources, and DNS preferences as one code").assertIsDisplayed()
+        compose.onNodeWithText("Create backup").assertIsDisplayed()
     }
 
     private fun launchAdaptiveNavigation(

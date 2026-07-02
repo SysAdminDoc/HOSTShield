@@ -1,5 +1,16 @@
 # HostShield Unreleased
 
+## LocaleConfig Readiness
+
+### Added
+- Home search/stats, DNS settings, QR config sharing, and Settings status copy
+  now route remaining top-flow user-facing strings through `strings.xml`.
+- Release documentation checks now require `generateLocaleConfig`,
+  `resources.properties`, and the README translation-deferral note before
+  LocaleConfig readiness can be claimed.
+
+---
+
 ## Android 16 Adaptive Navigation
 
 ### Added

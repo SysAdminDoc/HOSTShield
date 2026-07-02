@@ -6,6 +6,10 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 ## [Unreleased]
 
 ### Added
+- Added LocaleConfig readiness guardrails: top Home/Settings/DNS/QR copy now
+  routes through string resources, the default locale is declared through
+  `resources.properties`, and release docs state that non-English locales are
+  deferred until complete translations are available.
 - Added a Material 3 adaptive navigation shell that switches top-level
   navigation from bottom bar to rail on non-compact large-screen surfaces, with
   connected Compose coverage for Android 16 foldable, tablet, Chromebook, and

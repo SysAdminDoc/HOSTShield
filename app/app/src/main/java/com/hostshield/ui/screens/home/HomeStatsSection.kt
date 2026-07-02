@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,7 +51,7 @@ fun HomeStatsSection(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Filled.Shield,
                 value = formatNumber(totalDomainsBlocked),
-                label = "Domains Blocked",
+                label = stringResource(R.string.home_stat_domains_blocked),
                 accent = Teal,
                 glowColor = TealGlow
             )
@@ -58,7 +59,7 @@ fun HomeStatsSection(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Filled.Block,
                 value = formatNumber(blockedToday),
-                label = "Blocked Today",
+                label = stringResource(R.string.home_stat_blocked_today),
                 accent = Red,
                 glowColor = Red,
                 onClick = onNavigateToLogs
@@ -72,7 +73,7 @@ fun HomeStatsSection(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Filled.Dns,
                 value = formatNumber(totalQueriesToday),
-                label = "Queries Today",
+                label = stringResource(R.string.home_stat_queries_today),
                 accent = Blue,
                 glowColor = Blue,
                 onClick = onNavigateToLogs
@@ -81,7 +82,7 @@ fun HomeStatsSection(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Filled.CloudDownload,
                 value = enabledSources.toString(),
-                label = "Active Sources",
+                label = stringResource(R.string.home_stat_active_sources),
                 accent = Mauve,
                 glowColor = Mauve
             )
@@ -104,7 +105,9 @@ fun HomeStatsSection(
                 ) {
                     CircularProgressIndicator(
                         progress = { privacyScore / 100f },
-                        modifier = Modifier.size(44.dp).accessibilityLiveRegion("Privacy score $privacyScore out of 100"),
+                        modifier = Modifier.size(44.dp).accessibilityLiveRegion(
+                            stringResource(R.string.home_privacy_score_a11y, privacyScore)
+                        ),
                         color = scoreColor,
                         trackColor = Surface3,
                         strokeWidth = 4.dp
@@ -124,7 +127,16 @@ fun HomeStatsSection(
                     )
                     val passCount = privacyItems.count { it.passed }
                     val totalCount = privacyItems.size
-                    Text("$passCount/$totalCount checks passed", color = TextDim, fontSize = 11.sp)
+                    Text(
+                        pluralStringResource(
+                            R.plurals.home_privacy_checks_passed,
+                            totalCount,
+                            passCount,
+                            totalCount
+                        ),
+                        color = TextDim,
+                        fontSize = 11.sp
+                    )
                 }
                 val failedItems = privacyItems.filter { !it.passed }
                 if (failedItems.isNotEmpty()) {
@@ -133,7 +145,7 @@ fun HomeStatsSection(
                         color = Yellow.copy(alpha = 0.1f)
                     ) {
                         Text(
-                            "${failedItems.size} tips",
+                            pluralStringResource(R.plurals.home_privacy_tips, failedItems.size, failedItems.size),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             color = Yellow, fontSize = 10.sp, fontWeight = FontWeight.SemiBold
                         )
@@ -177,7 +189,13 @@ fun HomeStatsSection(
                             shape = RoundedCornerShape(8.dp),
                             color = if (allEnabled) color.copy(alpha = 0.12f) else Surface2,
                             modifier = Modifier.accessibilitySelection(
-                                "${cat.lowercase().replaceFirstChar { it.uppercase() }} source category, $enabled of $total enabled",
+                                pluralStringResource(
+                                    R.plurals.home_source_category_a11y,
+                                    total,
+                                    cat.lowercase().replaceFirstChar { it.uppercase() },
+                                    enabled,
+                                    total
+                                ),
                                 allEnabled
                             )
                         ) {
@@ -217,14 +235,20 @@ fun HomeStatsSection(
                 topApps.forEachIndexed { idx, (pkg, label, count) ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
-                            .accessibilityAction("${label.ifBlank { "Unknown" }} made $count DNS queries")
+                            .accessibilityAction(
+                                stringResource(
+                                    R.string.home_dns_queries_by_app,
+                                    label.ifBlank { stringResource(R.string.home_unknown) },
+                                    count
+                                )
+                            )
                             .clickable { if (pkg.isNotBlank()) onNavigateToAppLogs(pkg) },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val medalColor = when (idx) { 0 -> Teal; 1 -> Blue; else -> TextDim }
                         Text("${idx + 1}", color = medalColor, fontSize = 12.sp, fontWeight = FontWeight.Bold,
                             modifier = Modifier.width(18.dp))
-                        Text(label.ifBlank { "Unknown" }, color = TextPrimary, fontSize = 12.sp,
+                        Text(label.ifBlank { stringResource(R.string.home_unknown) }, color = TextPrimary, fontSize = 12.sp,
                             maxLines = 1, modifier = Modifier.weight(1f),
                             overflow = TextOverflow.Ellipsis)
                         Icon(Icons.Filled.ChevronRight, null, tint = TextDim.copy(alpha = 0.4f), modifier = Modifier.size(14.dp))

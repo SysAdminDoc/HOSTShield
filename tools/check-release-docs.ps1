@@ -34,6 +34,8 @@ $protectionSettingsSection = Read-RepoFile "app/app/src/main/java/com/hostshield
 $mainActivity = Read-RepoFile "app/app/src/main/java/com/hostshield/MainActivity.kt"
 $adaptiveNavigationScaffold = Read-RepoFile "app/app/src/main/java/com/hostshield/ui/navigation/AdaptiveNavigationScaffold.kt"
 $localeLayoutScaffoldTest = Read-RepoFile "app/app/src/androidTest/java/com/hostshield/ui/LocaleLayoutScaffoldTest.kt"
+$resourcesProperties = Read-RepoFile "app/app/src/main/res/resources.properties"
+$stringsXml = Read-RepoFile "app/app/src/main/res/values/strings.xml"
 $localDnsServerService = Read-RepoFile "app/app/src/main/java/com/hostshield/service/LocalDnsServerService.kt"
 $experimentalDisclosure = Read-RepoFile "app/app/src/main/java/com/hostshield/util/ExperimentalEngineDisclosure.kt"
 $geoIpLookup = Read-RepoFile "app/app/src/main/java/com/hostshield/util/GeoIpLookup.kt"
@@ -505,8 +507,8 @@ if ($appBuild -match 'cronet' -or $versionCatalog -match 'cronet') {
     $failures.Add("Build files still reference Cronet despite the disabled embedded DoH3 posture.")
 }
 if ($dnsSettingsSection -notmatch 'if \(BuildConfig\.DEBUG\)' -or
-    $dnsSettingsSection -notmatch 'DNS-over-QUIC \(experimental\)' -or
-    $dnsSettingsSection -notmatch 'WireGuard DNS \(experimental\)') {
+    $dnsSettingsSection -notmatch 'R\.string\.dns_over_quic_experimental' -or
+    $dnsSettingsSection -notmatch 'R\.string\.dns_wireguard_experimental') {
     $failures.Add("DnsSettingsSection.kt must keep DoQ and WireGuard DNS controls behind the BuildConfig.DEBUG gate.")
 }
 $doqForcedOffGate = 'useDoQ = if (com.hostshield.BuildConfig.DEBUG) prefs.doqEnabled.first() else false'
@@ -633,6 +635,30 @@ foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_descri
     foreach ($pattern in $adaptiveLargeScreenClaimPatterns) {
         if (($docs[$doc] -match [regex]::Escape($pattern)) -and -not $adaptiveLargeScreenGateImplemented) {
             $failures.Add("$doc claims adaptive large-screen navigation, but the scaffold/dependency/test gate is incomplete: $pattern")
+        }
+    }
+}
+
+$localeConfigReadyImplemented = (
+    $appBuild -match 'generateLocaleConfig\s*=\s*true' -and
+    $resourcesProperties -match '(?m)^unqualifiedResLocale=en-US\s*$' -and
+    $stringsXml -match 'name="home_search_placeholder"' -and
+    $stringsXml -match 'name="qr_export_subtitle"' -and
+    $stringsXml -match 'name="dns_over_https"' -and
+    $docs["README.md"] -match 'non-English per-app languages stay deferred until full translations are available' -and
+    $docs["app/README.md"] -match 'non-English app languages stay deferred until complete translations ship'
+)
+
+$localeConfigClaimPatterns = @(
+    "LocaleConfig Ready",
+    "generateLocaleConfig",
+    "per-app languages"
+)
+
+foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
+    foreach ($pattern in $localeConfigClaimPatterns) {
+        if (($docs[$doc] -match [regex]::Escape($pattern)) -and -not $localeConfigReadyImplemented) {
+            $failures.Add("$doc claims LocaleConfig readiness, but resources.properties/string-resource/doc gate is incomplete: $pattern")
         }
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,8 +51,8 @@ fun DnsSettingsSection(
     onNavigateToDnsBenchmark: () -> Unit,
     onNavigateToDnsLeakTest: () -> Unit
 ) {
-    SettingsSection("DNS", Icons.Filled.Dns, Blue) {
-        SettingsToggle("DNS-over-HTTPS", "Encrypt DNS queries", Icons.Filled.Lock, dohEnabled) {
+    SettingsSection(stringResource(R.string.dns_section_title), Icons.Filled.Dns, Blue) {
+        SettingsToggle(stringResource(R.string.dns_over_https), stringResource(R.string.dns_over_https_sub), Icons.Filled.Lock, dohEnabled) {
             onDohEnabledChange(it)
         }
         if (dohEnabled) {
@@ -59,7 +60,7 @@ fun DnsSettingsSection(
             DohProviderSelector(dohProvider) { onDohProviderChange(it) }
         }
         Spacer(Modifier.height(8.dp))
-        SettingsToggle("DNS-over-TLS", "TLS-encrypted DNS (RFC 7858)", Icons.Filled.Shield, dotEnabled) {
+        SettingsToggle(stringResource(R.string.dns_over_tls), stringResource(R.string.dns_over_tls_sub), Icons.Filled.Shield, dotEnabled) {
             onDotEnabledChange(it)
         }
         if (dotEnabled) {
@@ -68,7 +69,7 @@ fun DnsSettingsSection(
         }
         if (BuildConfig.DEBUG) {
             Spacer(Modifier.height(8.dp))
-            SettingsToggle("DNS-over-QUIC (experimental)", ExperimentalEngineDisclosure.DOQ_UI, Icons.Filled.Bolt, doqEnabled) {
+            SettingsToggle(stringResource(R.string.dns_over_quic_experimental), ExperimentalEngineDisclosure.DOQ_UI, Icons.Filled.Bolt, doqEnabled) {
                 onDoqEnabledChange(it)
             }
             if (doqEnabled) {
@@ -78,7 +79,7 @@ fun DnsSettingsSection(
                 DoqProviderSelector(doqProvider) { onDoqProviderChange(it) }
             }
             Spacer(Modifier.height(8.dp))
-            SettingsToggle("WireGuard DNS (experimental)", ExperimentalEngineDisclosure.WIREGUARD_UI, Icons.Filled.VpnKey, wireGuardEnabled) {
+            SettingsToggle(stringResource(R.string.dns_wireguard_experimental), ExperimentalEngineDisclosure.WIREGUARD_UI, Icons.Filled.VpnKey, wireGuardEnabled) {
                 onWireGuardEnabledChange(it)
             }
             if (wireGuardEnabled) {
@@ -102,7 +103,7 @@ fun DnsSettingsSection(
                 trailingIcon = {
                     if (wgEndpoint != wireGuardEndpoint) {
                         IconButton(onClick = { onWireGuardEndpointChange(wgEndpoint) }) {
-                            Icon(Icons.Filled.Check, "Save WireGuard endpoint", tint = Green, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Filled.Check, stringResource(R.string.dns_save_wireguard_endpoint), tint = Green, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -125,7 +126,7 @@ fun DnsSettingsSection(
                 trailingIcon = {
                     if (wgDnsIp != wireGuardDnsIp) {
                         IconButton(onClick = { onWireGuardDnsIpChange(wgDnsIp) }) {
-                            Icon(Icons.Filled.Check, "Save WireGuard DNS IP", tint = Green, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Filled.Check, stringResource(R.string.dns_save_wireguard_ip), tint = Green, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -136,8 +137,8 @@ fun DnsSettingsSection(
         } // end BuildConfig.DEBUG gate for DoQ/WireGuard
         Spacer(Modifier.height(8.dp))
         SettingsToggle(
-            "DNS Trap",
-            "Catch hardcoded DNS + block DoH/DoT bypass",
+            stringResource(R.string.dns_trap),
+            stringResource(R.string.dns_trap_sub),
             Icons.Filled.FilterAlt,
             dnsTrapEnabled
         ) { onDnsTrapEnabledChange(it) }
@@ -163,28 +164,28 @@ fun DnsSettingsSection(
             trailingIcon = {
                 if (customDns != customUpstreamDns) {
                     IconButton(onClick = { onCustomUpstreamDnsChange(customDns) }) {
-                        Icon(Icons.Filled.Check, "Save custom upstream DNS", tint = Green, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Check, stringResource(R.string.dns_save_custom_upstream), tint = Green, modifier = Modifier.size(18.dp))
                     }
                 }
             }
         )
         Spacer(Modifier.height(8.dp))
-        SettingsRow("DNS benchmark", "Test latency to public DNS resolvers", Icons.Filled.Speed, onClick = onNavigateToDnsBenchmark)
+        SettingsRow(stringResource(R.string.dns_benchmark), stringResource(R.string.dns_benchmark_sub), Icons.Filled.Speed, onClick = onNavigateToDnsBenchmark)
         Spacer(Modifier.height(8.dp))
-        SettingsRow("DNS leak test", "Verify queries go through HostShield", Icons.Filled.VerifiedUser, onClick = onNavigateToDnsLeakTest)
+        SettingsRow(stringResource(R.string.dns_leak_test), stringResource(R.string.dns_leak_test_sub), Icons.Filled.VerifiedUser, onClick = onNavigateToDnsLeakTest)
         Spacer(Modifier.height(8.dp))
         // Block response type selector
         Text(stringResource(R.string.dns_block_response), color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Text(
-            "How blocked domains are answered",
+            stringResource(R.string.dns_block_response_sub),
             color = TextDim, fontSize = 11.sp
         )
         Spacer(Modifier.height(6.dp))
         BlockResponseSelector(blockResponseType) { onBlockResponseTypeChange(it) }
         Spacer(Modifier.height(8.dp))
         SettingsToggle(
-            "Extended DNS Errors",
-            "Attach RFC 8914 EDE info code to blocked responses",
+            stringResource(R.string.dns_extended_errors),
+            stringResource(R.string.dns_extended_errors_sub),
             Icons.Filled.Info,
             edeEnabled
         ) { onEdeEnabledChange(it) }
@@ -199,9 +200,11 @@ fun DnsSettingsSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("${cacheStats.size + cacheStats.negativeSize + cacheStats.failureSize} entries", color = TextDim, fontSize = 11.sp)
-                Text("${(cacheStats.hitRate * 100).toInt()}% hit rate", color = Green, fontSize = 11.sp)
-                Text("${cacheStats.staleHits} stale", color = TextDim, fontSize = 11.sp)
+                val cacheEntryCount = cacheStats.size + cacheStats.negativeSize + cacheStats.failureSize
+                val staleCount = cacheStats.staleHits.toInt()
+                Text(pluralStringResource(R.plurals.dns_cache_entries, cacheEntryCount, cacheEntryCount), color = TextDim, fontSize = 11.sp)
+                Text(stringResource(R.string.dns_cache_hit_rate, (cacheStats.hitRate * 100).toInt()), color = Green, fontSize = 11.sp)
+                Text(pluralStringResource(R.plurals.dns_cache_stale, staleCount, staleCount), color = TextDim, fontSize = 11.sp)
             }
             Spacer(Modifier.height(6.dp))
         }
