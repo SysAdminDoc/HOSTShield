@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.first
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,15 +33,25 @@ class LocalDnsServer @Inject constructor(
     private val dotResolver: DotResolver,
     private val prefs: AppPreferences
 ) {
+    data class Status(
+        val isRunning: Boolean,
+        val port: Int,
+        val allowExternalClients: Boolean,
+        val queriesHandled: Int,
+        val queriesBlocked: Int,
+        val message: String
+    )
+
     companion object {
         private const val TAG = "LocalDnsServer"
-        const val DEFAULT_PORT = 5353
+        const val DEFAULT_PORT = LOCAL_DNS_DEFAULT_PORT
         private const val UPSTREAM_DNS = "1.1.1.1"
         private const val UPSTREAM_PORT = 53
         private const val BUFFER_SIZE = 1500
         private const val SOCKET_TIMEOUT_MS = 5000
 
         @Volatile var isRunning = false; private set
+        @Volatile private var lastStatusMessage = "LAN DNS server stopped"
         val queriesHandledAtomic = AtomicInteger(0)
         val queriesBlockedAtomic = AtomicInteger(0)
         val queriesHandled: Int get() = queriesHandledAtomic.get()
@@ -60,6 +71,15 @@ class LocalDnsServer @Inject constructor(
     @Volatile var useDoT = false
     @Volatile var dotProvider = DotResolver.Provider.CLOUDFLARE
 
+    fun status(): Status = Status(
+        isRunning = isRunning,
+        port = port,
+        allowExternalClients = allowExternalClients,
+        queriesHandled = queriesHandled,
+        queriesBlocked = queriesBlocked,
+        message = lastStatusMessage
+    )
+
     /**
      * Start the local DNS server on the given port.
      * Returns the actual port used, or -1 on failure.
@@ -73,13 +93,20 @@ class LocalDnsServer @Inject constructor(
             Log.w(TAG, "Already running on port $port")
             return port
         }
+        if (!isSupportedLocalDnsPort(listenPort)) {
+            lastStatusMessage = "LAN DNS port must be between $LOCAL_DNS_MIN_UNPRIVILEGED_PORT and $LOCAL_DNS_MAX_PORT"
+            Log.w(TAG, lastStatusMessage)
+            return -1
+        }
 
         return try {
             upstreamDns = upstream
             this.allowExternalClients = allowExternalClients
             rateLimiter.clear()
-            val socket = DatagramSocket(listenPort)
-            socket.reuseAddress = true
+            val socket = DatagramSocket(null).apply {
+                reuseAddress = true
+                bind(InetSocketAddress(listenPort))
+            }
             serverSocket = socket
             port = socket.localPort
             isRunning = true
@@ -88,10 +115,16 @@ class LocalDnsServer @Inject constructor(
 
             serverJob = scope.launch { runServer(socket) }
 
-            PrivacyLog.i(TAG, "Local DNS server started on port $port, upstream=$upstreamDns")
+            lastStatusMessage = "LAN DNS server running on UDP port $port"
+            PrivacyLog.i(
+                TAG,
+                "Local DNS server started on port $port, upstream=$upstreamDns, " +
+                    "allowExternalClients=$allowExternalClients"
+            )
             port
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start local DNS server: ${e.message}")
+            lastStatusMessage = "LAN DNS server failed to start: ${e.message ?: "unknown error"}"
+            Log.e(TAG, lastStatusMessage)
             isRunning = false
             -1
         }
@@ -105,6 +138,7 @@ class LocalDnsServer @Inject constructor(
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO) // recreate for next start()
         try { serverSocket?.close() } catch (_: Exception) { }
         serverSocket = null
+        lastStatusMessage = "LAN DNS server stopped"
         Log.i(TAG, "Local DNS server stopped. Handled $queriesHandled queries, blocked $queriesBlocked")
     }
 

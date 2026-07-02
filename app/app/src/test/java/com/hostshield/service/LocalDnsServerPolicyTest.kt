@@ -1,6 +1,9 @@
 package com.hostshield.service
 
 import java.net.InetAddress
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -38,6 +41,37 @@ class LocalDnsServerPolicyTest {
         assertFalse(isAllowedLocalDnsClient(publicIpv6))
         assertTrue(isAllowedLocalDnsClient(publicIpv4, allowExternalClients = true))
         assertTrue(isAllowedLocalDnsClient(publicIpv6, allowExternalClients = true))
+    }
+
+    @Test
+    fun `lan dns only accepts unprivileged listener ports`() {
+        assertFalse(isSupportedLocalDnsPort(53))
+        assertFalse(isSupportedLocalDnsPort(0))
+        assertTrue(isSupportedLocalDnsPort(LOCAL_DNS_DEFAULT_PORT))
+        assertTrue(isSupportedLocalDnsPort(65535))
+        assertEquals(5353, parseSupportedLocalDnsPort(" 5353 "))
+        assertEquals(null, parseSupportedLocalDnsPort("53"))
+        assertEquals(null, parseSupportedLocalDnsPort("not-a-port"))
+    }
+
+    @Test
+    fun `local network permission readiness follows api 37 enforcement and dns exemption`() {
+        assertFalse(localDnsRequiresLocalNetworkPermission(platformSdk = 36, targetSdk = 36, listenPort = 5353))
+        assertFalse(localDnsRequiresLocalNetworkPermission(platformSdk = 37, targetSdk = 36, listenPort = 5353))
+        assertFalse(localDnsRequiresLocalNetworkPermission(platformSdk = 37, targetSdk = 37, listenPort = 53))
+        assertTrue(localDnsRequiresLocalNetworkPermission(platformSdk = 37, targetSdk = 37, listenPort = 5353))
+    }
+
+    @Test
+    fun `manifest declares lan dns foreground service and api 37 permission readiness`() {
+        val manifest = Files.readString(mainManifestPath())
+
+        assertTrue(manifest.contains("android.permission.ACCESS_LOCAL_NETWORK"))
+        assertTrue(manifest.contains("android.permission.FOREGROUND_SERVICE_SPECIAL_USE"))
+        assertTrue(manifest.contains(".service.LocalDnsServerService"))
+        assertTrue(manifest.contains("android:exported=\"false\""))
+        assertTrue(manifest.contains("android:foregroundServiceType=\"specialUse\""))
+        assertTrue(manifest.contains("android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"))
     }
 
     @Test
@@ -147,5 +181,14 @@ class LocalDnsServerPolicyTest {
 
     private fun u16(packet: ByteArray, offset: Int): Int {
         return ((packet[offset].toInt() and 0xFF) shl 8) or (packet[offset + 1].toInt() and 0xFF)
+    }
+
+    private fun mainManifestPath(): Path {
+        val candidates = listOf(
+            Paths.get("src/main/AndroidManifest.xml"),
+            Paths.get("app/src/main/AndroidManifest.xml")
+        )
+        return candidates.firstOrNull(Files::exists)
+            ?: error("AndroidManifest.xml not found under ${Paths.get("").toAbsolutePath()}")
     }
 }

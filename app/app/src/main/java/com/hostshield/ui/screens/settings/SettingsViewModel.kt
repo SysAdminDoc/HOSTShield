@@ -10,8 +10,11 @@ import com.hostshield.data.model.RuleType
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.service.HostsUpdateWorker
+import com.hostshield.service.LocalDnsServer
+import com.hostshield.service.LocalDnsServerService
 import com.hostshield.service.SourceHealthWorker
 import com.hostshield.service.ThreatIntelWorker
+import com.hostshield.service.parseSupportedLocalDnsPort
 import com.hostshield.util.BackupRestoreUtil
 import com.hostshield.util.BatteryOptimizationUtil
 import com.hostshield.util.DiagnosticEventStore
@@ -25,6 +28,7 @@ import com.hostshield.util.RootUtil
 import com.hostshield.util.UpdateChecker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
@@ -217,6 +221,13 @@ data class SettingsUiState(
     val wireGuardEndpoint: String = "",
     val wireGuardDnsIp: String = "",
     val onlineGeoIpEnabled: Boolean = false,
+    val lanDnsEnabled: Boolean = false,
+    val lanDnsRunning: Boolean = false,
+    val lanDnsPort: Int = LocalDnsServer.DEFAULT_PORT,
+    val lanDnsAllowExternalClients: Boolean = false,
+    val lanDnsQueriesHandled: Int = 0,
+    val lanDnsQueriesBlocked: Int = 0,
+    val lanDnsStatusMessage: String = "LAN DNS server stopped",
 )
 
 @HiltViewModel
@@ -233,7 +244,8 @@ class SettingsViewModel @Inject constructor(
     private val updateChecker: UpdateChecker,
     private val diagnosticExporter: com.hostshield.util.DiagnosticExporter,
     private val diagnosticEvents: DiagnosticEventStore,
-    private val firewallRuleDao: com.hostshield.data.database.FirewallRuleDao
+    private val firewallRuleDao: com.hostshield.data.database.FirewallRuleDao,
+    private val localDnsServer: LocalDnsServer
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -245,6 +257,7 @@ class SettingsViewModel @Inject constructor(
         checkBattery()
         // Auto-check for updates when settings screen opens (silent, no error display)
         autoCheckForUpdate()
+        observeLocalDnsStatus()
     }
 
     private fun observePrefs() {
@@ -337,6 +350,25 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             prefs.onlineGeoIpEnabled.collect { enabled ->
                 _uiState.update { it.copy(onlineGeoIpEnabled = enabled) }
+            }
+        }
+
+        viewModelScope.launch {
+            combine(
+                prefs.lanDnsEnabled,
+                prefs.lanDnsPort,
+                prefs.lanDnsAllowExternalClients
+            ) { enabled, port, allowExternal ->
+                LanDnsPrefs(enabled, port, allowExternal)
+            }.collect { p ->
+                _uiState.update {
+                    it.copy(
+                        lanDnsEnabled = p.enabled,
+                        lanDnsPort = p.port,
+                        lanDnsAllowExternalClients = p.allowExternalClients
+                    )
+                }
+                refreshLocalDnsStatus()
             }
         }
 
@@ -454,6 +486,7 @@ class SettingsViewModel @Inject constructor(
     private data class SchedulePrefs(val enabled: Boolean, val start: String, val end: String, val mode: String)
     private data class DotDoqPrefs(val dotEnabled: Boolean, val dotProvider: String, val doqEnabled: Boolean, val doqProvider: String)
     private data class WireGuardPrefs(val enabled: Boolean, val endpoint: String, val dnsIp: String)
+    private data class LanDnsPrefs(val enabled: Boolean, val port: Int, val allowExternalClients: Boolean)
 
     private fun loadSystemInfo() {
         viewModelScope.launch {
@@ -479,6 +512,88 @@ class SettingsViewModel @Inject constructor(
         return batteryUtil.requestExemption(activityContext)
     }
     fun refreshBattery() { checkBattery() }
+
+    private fun observeLocalDnsStatus() {
+        viewModelScope.launch {
+            while (true) {
+                refreshLocalDnsStatus()
+                delay(1_000L)
+            }
+        }
+    }
+
+    private fun refreshLocalDnsStatus(messageOverride: String? = null) {
+        val status = localDnsServer.status()
+        _uiState.update {
+            it.copy(
+                lanDnsRunning = status.isRunning,
+                lanDnsQueriesHandled = status.queriesHandled,
+                lanDnsQueriesBlocked = status.queriesBlocked,
+                lanDnsStatusMessage = messageOverride ?: status.message
+            )
+        }
+    }
+
+    fun setLanDnsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            if (enabled) {
+                val state = _uiState.value
+                prefs.setLanDnsEnabled(true)
+                val started = LocalDnsServerService.start(
+                    getApplication(),
+                    state.lanDnsPort,
+                    state.lanDnsAllowExternalClients,
+                    "SettingsViewModel"
+                )
+                if (started) {
+                    refreshLocalDnsStatus("Starting LAN DNS server...")
+                } else {
+                    prefs.setLanDnsEnabled(false)
+                    refreshLocalDnsStatus("LAN DNS service start was denied by Android")
+                }
+            } else {
+                prefs.setLanDnsEnabled(false)
+                LocalDnsServerService.stop(getApplication())
+                refreshLocalDnsStatus("LAN DNS server stopping...")
+            }
+        }
+    }
+
+    fun setLanDnsPort(value: String) {
+        val parsedPort = parseSupportedLocalDnsPort(value)
+        if (parsedPort == null) {
+            refreshLocalDnsStatus("Port must be between 1024 and 65535")
+            return
+        }
+        viewModelScope.launch {
+            prefs.setLanDnsPort(parsedPort)
+            if (_uiState.value.lanDnsEnabled) {
+                restartLanDns(parsedPort, _uiState.value.lanDnsAllowExternalClients)
+            }
+        }
+    }
+
+    fun setLanDnsAllowExternalClients(enabled: Boolean) {
+        viewModelScope.launch {
+            prefs.setLanDnsAllowExternalClients(enabled)
+            if (_uiState.value.lanDnsEnabled) {
+                restartLanDns(_uiState.value.lanDnsPort, enabled)
+            }
+        }
+    }
+
+    private suspend fun restartLanDns(port: Int, allowExternalClients: Boolean) {
+        LocalDnsServerService.stop(getApplication(), persistDisabled = false)
+        val started = LocalDnsServerService.start(
+            getApplication(),
+            port,
+            allowExternalClients,
+            "SettingsViewModel.restartLanDns"
+        )
+        refreshLocalDnsStatus(
+            if (started) "Restarting LAN DNS server..." else "LAN DNS service restart was denied by Android"
+        )
+    }
 
     fun setDnsTrapEnabled(v: Boolean) { viewModelScope.launch { prefs.setDnsTrapEnabled(v) } }
 

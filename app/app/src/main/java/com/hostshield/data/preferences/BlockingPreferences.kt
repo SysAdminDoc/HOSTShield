@@ -29,6 +29,9 @@ class BlockingPreferences @Inject constructor(
         val FIRST_LAUNCH = booleanPreferencesKey("first_launch")
         val PAUSE_END_TIME = longPreferencesKey("pause_end_time")
         val EDE_ENABLED = booleanPreferencesKey("ede_enabled")
+        val LAN_DNS_ENABLED = booleanPreferencesKey("lan_dns_enabled")
+        val LAN_DNS_PORT = intPreferencesKey("lan_dns_port")
+        val LAN_DNS_ALLOW_EXTERNAL_CLIENTS = booleanPreferencesKey("lan_dns_allow_external_clients")
     }
 
     val blockMethod: Flow<BlockMethod> = ds.data.map {
@@ -72,4 +75,15 @@ class BlockingPreferences @Inject constructor(
 
     val edeEnabled: Flow<Boolean> = ds.data.map { it[Keys.EDE_ENABLED] ?: false }
     suspend fun setEdeEnabled(enabled: Boolean) = ds.edit { it[Keys.EDE_ENABLED] = enabled }
+
+    val lanDnsEnabled: Flow<Boolean> = ds.data.map { it[Keys.LAN_DNS_ENABLED] ?: false }
+    suspend fun setLanDnsEnabled(enabled: Boolean) = ds.edit { it[Keys.LAN_DNS_ENABLED] = enabled }
+
+    val lanDnsPort: Flow<Int> = ds.data.map { it[Keys.LAN_DNS_PORT] ?: 5353 }
+    suspend fun setLanDnsPort(port: Int) = ds.edit { it[Keys.LAN_DNS_PORT] = port }
+
+    val lanDnsAllowExternalClients: Flow<Boolean> =
+        ds.data.map { it[Keys.LAN_DNS_ALLOW_EXTERNAL_CLIENTS] ?: false }
+    suspend fun setLanDnsAllowExternalClients(enabled: Boolean) =
+        ds.edit { it[Keys.LAN_DNS_ALLOW_EXTERNAL_CLIENTS] = enabled }
 }

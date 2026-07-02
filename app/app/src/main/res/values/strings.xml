@@ -37,6 +37,8 @@
     <string name="section_vpn">VPN</string>
     <string name="section_protection">Protection</string>
     <string name="section_network_firewall">Network Firewall</string>
+    <string name="section_lan_dns">LAN DNS Server</string>
+    <string name="section_packet_evidence">Packet Evidence</string>
 
     <!-- Home screen headings -->
     <string name="home_protection_modules">Protection Modules</string>
@@ -167,6 +169,14 @@
     <string name="protection_dns_tools_sub">DNS cache, lookup, diagnostics</string>
     <string name="protection_network_usage">Network usage</string>
     <string name="protection_network_usage_sub">Per-app data usage since boot</string>
+    <string name="lan_dns_enable">Enable LAN DNS server</string>
+    <string name="lan_dns_enable_sub">Opt-in UDP DNS serving for private-network clients</string>
+    <string name="lan_dns_status_running">Serving UDP %1$d - queries=%2$d, blocked=%3$d</string>
+    <string name="lan_dns_port">UDP port (1024&#8211;65535)</string>
+    <string name="lan_dns_apply_port">Apply LAN DNS port</string>
+    <string name="lan_dns_allow_external">Allow public-source clients</string>
+    <string name="lan_dns_allow_external_sub">Off rejects public IP clients; loopback, private LAN, link-local, and ULA stay allowed</string>
+    <string name="lan_dns_permission_note">Android 17+ local-network permission is declared for non-:53 LAN access readiness. Keep this off unless other devices are explicitly configured to use this phone as DNS.</string>
 
     <!-- PCAP export -->
     <string name="pcap_generating">Generating PCAP…</string>

@@ -30,6 +30,8 @@ $dohResolver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DohRe
 $dnsVpnService = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DnsVpnService.kt"
 $doh3Resolver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/Doh3Resolver.kt"
 $dnsSettingsSection = Read-RepoFile "app/app/src/main/java/com/hostshield/ui/screens/settings/DnsSettingsSection.kt"
+$protectionSettingsSection = Read-RepoFile "app/app/src/main/java/com/hostshield/ui/screens/settings/ProtectionSettingsSection.kt"
+$localDnsServerService = Read-RepoFile "app/app/src/main/java/com/hostshield/service/LocalDnsServerService.kt"
 $experimentalDisclosure = Read-RepoFile "app/app/src/main/java/com/hostshield/util/ExperimentalEngineDisclosure.kt"
 $geoIpLookup = Read-RepoFile "app/app/src/main/java/com/hostshield/util/GeoIpLookup.kt"
 $versionNameMatch = [regex]::Match($appBuild, 'versionName\s*=\s*"([^"]+)"')
@@ -570,10 +572,34 @@ $currentLocalDnsClaimPatterns = @(
     "LocalDnsServer.kt     # LAN DNS server on port 5353"
 )
 
+$lanDnsGateImplemented = (
+    $appManifest -match 'android\.permission\.ACCESS_LOCAL_NETWORK' -and
+    $appManifest -match '\.service\.LocalDnsServerService' -and
+    $localDnsServerService -match 'ACTION_START' -and
+    $localDnsServerService -match 'startForeground' -and
+    $protectionSettingsSection -match 'lan_dns_enable' -and
+    $protectionSettingsSection -match 'lan_dns_allow_external'
+)
+
 foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
     foreach ($pattern in $currentLocalDnsClaimPatterns) {
-        if ($docs[$doc] -match [regex]::Escape($pattern)) {
+        if (($docs[$doc] -match [regex]::Escape($pattern)) -and -not $lanDnsGateImplemented) {
             $failures.Add("$doc contains an unwired Local DNS Server release-doc claim: $pattern")
+        }
+    }
+}
+
+$lanDnsReleaseClaimPatterns = @(
+    "LAN DNS Server",
+    "LAN DNS server",
+    "UDP DNS serving",
+    "local-network permission"
+)
+
+foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
+    foreach ($pattern in $lanDnsReleaseClaimPatterns) {
+        if (($docs[$doc] -match [regex]::Escape($pattern)) -and -not $lanDnsGateImplemented) {
+            $failures.Add("$doc claims LAN DNS support, but the manifest/service/Settings gate is incomplete: $pattern")
         }
     }
 }

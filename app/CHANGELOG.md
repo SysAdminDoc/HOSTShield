@@ -1,5 +1,18 @@
 # HostShield Unreleased
 
+## LAN DNS Server Gate
+
+### Added
+- Settings now exposes LAN DNS serving only behind an explicit default-off gate
+  with foreground-service lifecycle, status counters, configurable unprivileged
+  UDP port, private-client default, and API 37 local-network permission
+  readiness.
+- Boot restore restarts the LAN DNS service when the user has opted in, and
+  release-doc checks now reject current LAN DNS claims if the manifest, service,
+  or Settings gate is removed.
+
+---
+
 ## Tracker Attribution Dataset
 
 ### Added

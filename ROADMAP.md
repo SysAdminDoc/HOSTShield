@@ -685,13 +685,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ### P2
 
-- [ ] P2 — Productize the LAN `LocalDnsServer` path behind explicit gates
-  Why: `LocalDnsServer.kt` exists as a LAN DNS server, while current product UX is centered on VPN/root/proxy DNS filtering; Android local-network permission changes make accidental or half-documented LAN DNS support risky.
-  Evidence: `app/app/src/main/java/com/hostshield/service/LocalDnsServer.kt`; `app/app/src/test/java/com/hostshield/service/LocalDnsServerPolicyTest.kt`; `tools/check-release-docs.ps1`; https://developer.android.com/privacy-and-security/local-network-permission; https://github.com/IngoZenz/personaldnsfilter
-  Touches: `LocalDnsServer.kt`, Settings UI/ViewModel, manifest permission declarations, foreground notification/status, release-doc checker, README compatibility wording.
-  Acceptance: LAN DNS is disabled by default, has explicit Settings controls, bind/interface limits, rate-limit/status UI, local-network permission readiness, notification lifecycle, connected smoke coverage, and release-doc checks that block LAN DNS claims unless the gate passes.
-  Complexity: L
-
 ### P3
 
 - [ ] P3 — Add fast-scroll and saved filters for dense lists

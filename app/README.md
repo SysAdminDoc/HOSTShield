@@ -31,6 +31,7 @@ Current module baseline: v6.9.57, versionCode 139.
 | **DoH3** | Disabled until a maintained non-vulnerable embedded Cronet artifact is available; pinned OkHttp DoH remains the production path |
 | **DoH Bypass Prevention** | Blocks 65+ known DoH provider domains + wildcard patterns to prevent apps bypassing DNS filtering; remote updates are signature-verified |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through the VPN tunnel |
+| **LAN DNS Server** | Default-off Settings gate for advanced local-network DNS serving on UDP 5353 with foreground notification and private-client filtering |
 | **TCP DNS Handling** | Full TCP DNS support for responses >512 bytes |
 | **IPv6 Support** | Full IPv6 DNS processing + UID attribution via `/proc/net/tcp6` |
 | **Block Response Types** | NXDOMAIN (with SOA), Null IP (0.0.0.0/::), or REFUSED — configurable |
@@ -97,6 +98,9 @@ Current module baseline: v6.9.57, versionCode 139.
 ### Blocklist Sources
 Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Add custom URL sources via Settings → Sources in hosts, domains-only, or DNS adblock syntax.
 
+### LAN DNS Server
+Settings exposes LAN DNS only as an explicit opt-in. It runs as a foreground service on an unprivileged UDP port, defaults to private LAN clients only, and keeps Android 17+ local-network permission readiness declared for non-:53 LAN access.
+
 ### Automation API
 Broadcast intents for Tasker/MacroDroid, shell, and same-signature companion apps. Canonical actions use `com.hostshield.ACTION_*`; older lowercase `com.hostshield.action.*` aliases are accepted for compatibility.
 
@@ -129,7 +133,7 @@ app/src/main/java/com/hostshield/
 ├── di/             # Hilt dependency injection modules
 ├── domain/         # BlocklistHolder (Bloom + trie), HostsParser
 ├── service/        # VPN, root logger, iptables, DoH, DNS cache,
-│                   # CNAME detector, packet builder, workers
+│                   # LAN DNS, CNAME detector, packet builder, workers
 ├── ui/screens/     # Home, Logs, Stats, Settings, Firewall,
 │                   # Onboarding, DNS Tools, Rules
 └── util/           # Root utils, backup, import/export, diagnostics, evidence JSONL

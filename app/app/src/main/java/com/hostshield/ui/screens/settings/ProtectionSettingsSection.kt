@@ -31,6 +31,17 @@ fun ProtectionSettingsSection(
     onNavigateToConnectionLog: () -> Unit,
     onNavigateToDnsTools: () -> Unit,
     onNavigateToNetworkStats: () -> Unit,
+    // LAN DNS
+    lanDnsEnabled: Boolean,
+    lanDnsRunning: Boolean,
+    lanDnsPort: Int,
+    lanDnsAllowExternalClients: Boolean,
+    lanDnsQueriesHandled: Int,
+    lanDnsQueriesBlocked: Int,
+    lanDnsStatusMessage: String,
+    onLanDnsEnabledChange: (Boolean) -> Unit,
+    onLanDnsPortChange: (String) -> Unit,
+    onLanDnsAllowExternalClientsChange: (Boolean) -> Unit,
     // PCAP
     pcapExport: PcapExportState,
     onExportPcap: (String) -> Unit,
@@ -48,6 +59,7 @@ fun ProtectionSettingsSection(
     var evidenceQuery by remember { mutableStateOf("") }
     var evidenceAppFilter by remember { mutableStateOf("") }
     var evidenceRedacted by remember { mutableStateOf(true) }
+    var lanDnsPortText by remember(lanDnsPort) { mutableStateOf(lanDnsPort.toString()) }
 
     // VPN Settings
     SettingsSection(stringResource(R.string.section_vpn), Icons.Filled.VpnLock, Teal) {
@@ -99,7 +111,86 @@ fun ProtectionSettingsSection(
             onClick = onNavigateToNetworkStats
         )
         Spacer(Modifier.height(4.dp))
+    }
 
+    SettingsSection(stringResource(R.string.section_lan_dns), Icons.Filled.Dns, Green) {
+        SettingsToggle(
+            stringResource(R.string.lan_dns_enable),
+            stringResource(R.string.lan_dns_enable_sub),
+            Icons.Filled.Router,
+            lanDnsEnabled,
+            onLanDnsEnabledChange
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            if (lanDnsRunning) {
+                stringResource(
+                    R.string.lan_dns_status_running,
+                    lanDnsPort,
+                    lanDnsQueriesHandled,
+                    lanDnsQueriesBlocked
+                )
+            } else {
+                lanDnsStatusMessage
+            },
+            color = if (lanDnsRunning) Green else TextDim,
+            fontSize = 11.sp,
+            lineHeight = 15.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = lanDnsPortText,
+                onValueChange = { value ->
+                    lanDnsPortText = value.filter(Char::isDigit).take(5)
+                },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                label = { Text(stringResource(R.string.lan_dns_port), fontSize = 11.sp) },
+                leadingIcon = { Icon(Icons.Filled.SettingsEthernet, null, modifier = Modifier.size(16.dp), tint = TextDim) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Green,
+                    unfocusedBorderColor = Surface3,
+                    cursorColor = Green,
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    focusedLabelColor = TextSecondary,
+                    unfocusedLabelColor = TextDim
+                )
+            )
+            IconButton(
+                onClick = { onLanDnsPortChange(lanDnsPortText) },
+                modifier = Modifier.size(44.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Check,
+                    stringResource(R.string.lan_dns_apply_port),
+                    tint = Green
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        SettingsToggle(
+            stringResource(R.string.lan_dns_allow_external),
+            stringResource(R.string.lan_dns_allow_external_sub),
+            Icons.Filled.Public,
+            lanDnsAllowExternalClients,
+            onLanDnsAllowExternalClientsChange
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            stringResource(R.string.lan_dns_permission_note),
+            color = Peach,
+            fontSize = 11.sp,
+            lineHeight = 15.sp
+        )
+    }
+
+    SettingsSection(stringResource(R.string.section_packet_evidence), Icons.Filled.SaveAlt, Red) {
         // PCAP export
         when (pcapExport) {
             PcapExportState.Idle -> {

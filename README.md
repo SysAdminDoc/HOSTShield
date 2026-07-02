@@ -100,6 +100,7 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 | **Certificate Pinning** | Fail-closed SHA-256 pin validation per provider from a versioned local manifest with primary/backup pins and review/expiry diagnostics |
 | **Smart Latency Failover** | EMA-based latency tracking per provider, auto-selects fastest, falls back through all on failure |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through VPN tunnel to prevent bypass |
+| **LAN DNS Server** | Default-off Settings gate runs UDP DNS serving on an unprivileged port (5353 by default) as a foreground service; private LAN clients are allowed by default and public-source clients require an explicit toggle |
 | **TCP DNS** | Full TCP DNS support for responses >512 bytes, IPv4 + IPv6 |
 | **IPv6 Support** | Full dual-stack DNS processing + UID attribution via `/proc/net/tcp6` |
 
@@ -253,6 +254,10 @@ Ships with curated defaults. AdAway Default and StevenBlack Unified are enabled 
 
 Default: system DNS. Configure custom upstream DNS servers (comma-separated) in Settings. DoH providers: Cloudflare, Google, Quad9, NextDNS, AdGuard, Mullvad, CleanBrowsing.
 
+### LAN DNS Server
+
+Settings includes an explicit default-off LAN DNS server gate for advanced local-network setups. When enabled, HostShield starts a foreground service that serves UDP DNS on port 5353 by default, rejects public-source clients unless explicitly allowed, and keeps API 37 `ACCESS_LOCAL_NETWORK` permission readiness declared for Android 17+ non-:53 LAN access.
+
 ### Block Response Type
 
 Choose how blocked domains are handled:
@@ -335,6 +340,8 @@ app/src/main/java/com/hostshield/
 │   ├── RootDnsLogger.kt      # Root-mode DNS logging with UID attribution
 │   ├── IptablesManager.kt    # Per-app firewall rule management
 │   ├── DnsProxyService.kt    # No-VPN proxy mode DNS blocking
+│   ├── LocalDnsServer.kt     # Opt-in LAN DNS server core
+│   ├── LocalDnsServerService.kt # Foreground lifecycle for LAN DNS
 │   ├── ContentFilterManager.kt # 15 content filter categories
 │   ├── ParentalControlManager.kt # Age-profile parental controls + PIN
 │   ├── AppDnsRuleEngine.kt   # Per-app domain DNS rules

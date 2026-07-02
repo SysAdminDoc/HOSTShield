@@ -6,6 +6,9 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 ## [Unreleased]
 
 ### Added
+- Productized the LAN DNS server behind an explicit default-off Settings gate,
+  foreground-service notification, private-client default, API 37 local-network
+  permission readiness, boot restore, and release-doc guardrails.
 - Added a checked local tracker attribution dataset with per-row provenance so
   Stats can resolve common tracker domains to owner/category offline and
   deterministically.

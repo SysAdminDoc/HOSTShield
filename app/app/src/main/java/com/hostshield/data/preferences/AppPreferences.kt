@@ -68,6 +68,16 @@ class AppPreferences @Inject constructor(
     val edeEnabled: Flow<Boolean> get() = blocking.edeEnabled
     suspend fun setEdeEnabled(enabled: Boolean) = blocking.setEdeEnabled(enabled)
 
+    val lanDnsEnabled: Flow<Boolean> get() = blocking.lanDnsEnabled
+    suspend fun setLanDnsEnabled(enabled: Boolean) = blocking.setLanDnsEnabled(enabled)
+
+    val lanDnsPort: Flow<Int> get() = blocking.lanDnsPort
+    suspend fun setLanDnsPort(port: Int) = blocking.setLanDnsPort(port)
+
+    val lanDnsAllowExternalClients: Flow<Boolean> get() = blocking.lanDnsAllowExternalClients
+    suspend fun setLanDnsAllowExternalClients(enabled: Boolean) =
+        blocking.setLanDnsAllowExternalClients(enabled)
+
     // ── Updates ───────────────────────────────────────────────
     val autoUpdate: Flow<Boolean> get() = sync.autoUpdate
     suspend fun setAutoUpdate(enabled: Boolean) = sync.setAutoUpdate(enabled)

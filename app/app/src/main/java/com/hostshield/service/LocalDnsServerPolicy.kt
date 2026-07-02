@@ -2,7 +2,23 @@ package com.hostshield.service
 
 import java.net.InetAddress
 
+internal const val LOCAL_DNS_DEFAULT_PORT = 5353
+internal const val LOCAL_DNS_MIN_UNPRIVILEGED_PORT = 1024
+internal const val LOCAL_DNS_MAX_PORT = 65535
 internal const val LOCAL_DNS_MAX_UDP_RESPONSE_BYTES = 1472
+
+internal fun isSupportedLocalDnsPort(port: Int): Boolean =
+    port in LOCAL_DNS_MIN_UNPRIVILEGED_PORT..LOCAL_DNS_MAX_PORT
+
+internal fun parseSupportedLocalDnsPort(value: String): Int? =
+    value.trim().toIntOrNull()?.takeIf(::isSupportedLocalDnsPort)
+
+internal fun localDnsRequiresLocalNetworkPermission(
+    platformSdk: Int,
+    targetSdk: Int,
+    listenPort: Int
+): Boolean =
+    platformSdk >= 37 && targetSdk >= 37 && listenPort != 53
 
 internal fun isAllowedLocalDnsClient(address: InetAddress, allowExternalClients: Boolean = false): Boolean {
     if (allowExternalClients) return true

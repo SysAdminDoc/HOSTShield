@@ -43,6 +43,7 @@ class BootReceiver : BroadcastReceiver() {
                 val autoApplyFw = prefs.autoApplyFirewall.first()
                 val connLogEnabled = prefs.connectionLogEnabled.first()
                 val wifiOnly = prefs.wifiOnly.first()
+                val lanDnsEnabled = prefs.lanDnsEnabled.first()
 
                 // Reschedule all workers
                 if (autoUpdate) {
@@ -52,6 +53,14 @@ class BootReceiver : BroadcastReceiver() {
                 SourceHealthWorker.schedule(context, wifiOnly)
                 LogCleanupWorker.schedule(context)
                 ProfileScheduleWorker.schedule(context)
+
+                if (lanDnsEnabled) {
+                    val port = prefs.lanDnsPort.first()
+                    val allowExternalClients = prefs.lanDnsAllowExternalClients.first()
+                    if (LocalDnsServerService.start(context, port, allowExternalClients, "BootReceiver")) {
+                        Log.i("BootReceiver", "LAN DNS service restarted")
+                    }
+                }
 
                 if (!isEnabled) {
                     Log.i("BootReceiver", "HostShield not enabled, skipping restore")
