@@ -28,19 +28,23 @@ object HostsParser {
         val allowDomains: Set<String> = emptySet(),
         val wildcardBlockDomains: Set<String> = emptySet(),
         val wildcardAllowDomains: Set<String> = emptySet(),
-        val dnsTypeRules: List<DnsTypeRule> = emptyList()
+        val dnsTypeRules: List<DnsTypeRule> = emptyList(),
+        val parseDiagnostics: List<AdblockRuleParser.ParseDiagnostic> = emptyList()
     ) {
         val entryCount: Int get() = blockDomains.size + wildcardBlockDomains.size +
             dnsTypeRules.count { !it.allow }
+        val parseWarning: String get() = parseDiagnostics.toParseWarning()
     }
 
     data class AllowlistParseResult(
         val allowDomains: Set<String>,
         val wildcardAllowDomains: Set<String> = emptySet(),
-        val dnsTypeAllowRules: List<DnsTypeRule> = emptyList()
+        val dnsTypeAllowRules: List<DnsTypeRule> = emptyList(),
+        val parseDiagnostics: List<AdblockRuleParser.ParseDiagnostic> = emptyList()
     ) {
         val entryCount: Int get() = allowDomains.size + wildcardAllowDomains.size +
             dnsTypeAllowRules.size
+        val parseWarning: String get() = parseDiagnostics.toParseWarning()
     }
 
     private val HOSTS_LINE_REGEX = Regex("""^\s*(\S+)\s+(\S+)""")
@@ -162,7 +166,8 @@ object HostsParser {
             allowDomains = allowDomains,
             wildcardBlockDomains = wildcardBlockDomains,
             wildcardAllowDomains = wildcardAllowDomains,
-            dnsTypeRules = dnsTypeRules
+            dnsTypeRules = dnsTypeRules,
+            parseDiagnostics = parsed.diagnostics
         )
     }
 
@@ -184,7 +189,8 @@ object HostsParser {
         return AllowlistParseResult(
             allowDomains = parsed.allowDomains,
             wildcardAllowDomains = parsed.wildcardAllowDomains,
-            dnsTypeAllowRules = parsed.dnsTypeRules.filter { it.allow }
+            dnsTypeAllowRules = parsed.dnsTypeRules.filter { it.allow },
+            parseDiagnostics = parsed.parseDiagnostics
         )
     }
 
@@ -367,4 +373,13 @@ object HostsParser {
 
     private fun isValidDomain(s: String): Boolean =
         s.length in 3..253 && s.contains('.') && DOMAIN_REGEX.matches(s)
+
+    private fun List<AdblockRuleParser.ParseDiagnostic>.toParseWarning(): String {
+        val scoped = count { it.reason == "unsupported_scoped_modifier" }
+        return if (scoped > 0) {
+            "Skipped $scoped scoped AdGuard rule(s) with app/client/ctag modifiers; HostShield rejected them instead of applying them globally."
+        } else {
+            ""
+        }
+    }
 }

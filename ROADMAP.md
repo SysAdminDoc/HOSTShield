@@ -679,13 +679,6 @@ dependency/licensing review, and implementation-test corpus design.
   Acceptance: Bloom filter populated during `update()`/`updateAsync()`; `isBlocked()` checks Bloom filter before trie for non-cached domains; unit test verifies no false negatives and measures lookup speedup.
   Complexity: M
 
-- [ ] P2 — Harden AdGuard `$app=` and `$client=` modifier handling
-  Why: `AdblockRuleParser.kt` ignores `$app=` and `$client=` scope-limiting modifiers but still applies the base domain rule globally. This means an imported AdGuard rule like `||tracker.com^$app=com.example` blocks tracker.com for ALL apps, not just com.example. Silent global fallback is wrong for a security utility.
-  Evidence: `AdblockRuleParser.kt` strips modifiers; RESEARCH.md "Verified" section confirms this; AdGuard DNS filtering syntax docs define `$app=` as Android package scope.
-  Touches: `domain/parser/AdblockRuleParser.kt`, `domain/BlocklistHolder.kt`, `service/DnsVpnService.kt` (needs app UID context in block check), `AdblockRuleParserTest.kt`.
-  Acceptance: Rules with `$app=` are either applied only to the specified package (preferred) or rejected with a diagnostic log entry explaining the unsupported modifier. Rules are never silently applied globally when a scope modifier is present.
-  Complexity: L
-
 ## Audit Findings — 2026-06-17
 
 - [ ] P2 — Lifecycle 2.11 requires API 37 compile-SDK readiness

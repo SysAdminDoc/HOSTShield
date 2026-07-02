@@ -83,7 +83,8 @@ object AdblockRuleParser {
         val parsedRules: Int,
         val skippedLines: Int,
         val dnsRewriteSkipped: Int = 0,
-        val scopedModifierSkipped: Int = 0
+        val scopedModifierSkipped: Int = 0,
+        val diagnostics: List<ParseDiagnostic> = emptyList()
     ) {
         /**
          * All block domains for the exact hash set + trie insertion.
@@ -112,6 +113,13 @@ object AdblockRuleParser {
             blockRules.filter { it.redirectIp != null }
     }
 
+    data class ParseDiagnostic(
+        val lineNumber: Int,
+        val reason: String,
+        val modifier: String,
+        val message: String
+    )
+
     // DNS type name → value mapping
     private val DNS_TYPES = mapOf(
         "A" to 1, "NS" to 2, "CNAME" to 5, "SOA" to 6, "PTR" to 12,
@@ -137,16 +145,18 @@ object AdblockRuleParser {
         var skippedLines = 0
         var dnsRewriteSkipped = 0
         var scopedModifierSkipped = 0
+        val diagnostics = mutableListOf<ParseDiagnostic>()
 
-        content.lineSequence().forEach { rawLine ->
+        content.lineSequence().forEachIndexed { lineIndex, rawLine ->
             totalLines++
             val line = rawLine.trim()
+            val lineNumber = lineIndex + 1
 
             // Skip empty lines, comments, metadata headers
             if (line.isEmpty() || line.startsWith('!') || line.startsWith('#') ||
                 line.startsWith('[')) {
                 skippedLines++
-                return@forEach
+                return@forEachIndexed
             }
 
             val rule = parseLine(line)
@@ -158,15 +168,24 @@ object AdblockRuleParser {
                     else -> blockRules.add(rule)
                 }
             } else {
-                if (SCOPED_MODIFIER_PATTERN.containsMatchIn(line)) {
+                val scopedModifier = findScopedModifier(line)
+                if (scopedModifier != null) {
                     scopedModifierSkipped++
+                    diagnostics.add(
+                        ParseDiagnostic(
+                            lineNumber = lineNumber,
+                            reason = "unsupported_scoped_modifier",
+                            modifier = scopedModifier,
+                            message = "Skipped scoped AdGuard DNS rule instead of applying it globally; HostShield does not yet enforce per-app or per-client source modifiers."
+                        )
+                    )
                     skippedLines++
-                    return@forEach
+                    return@forEachIndexed
                 }
                 if (line.contains("dnsrewrite=", ignoreCase = true)) {
                     dnsRewriteSkipped++
                     skippedLines++
-                    return@forEach
+                    return@forEachIndexed
                 }
                 // Try as hosts-style or domains-only
                 val hostRule = parseAsHostsOrDomain(line)
@@ -191,7 +210,8 @@ object AdblockRuleParser {
             parsedRules = parsedRules,
             skippedLines = skippedLines,
             dnsRewriteSkipped = dnsRewriteSkipped,
-            scopedModifierSkipped = scopedModifierSkipped
+            scopedModifierSkipped = scopedModifierSkipped,
+            diagnostics = diagnostics
         )
     }
 
@@ -384,7 +404,7 @@ object AdblockRuleParser {
         return rules.filter { Pair(it.domain, it.isException) !in badKeys }
     }
 
-    private val SCOPED_MODIFIER_PATTERN = Regex("""\$(app|client|ctag)=""", RegexOption.IGNORE_CASE)
+    private val SCOPED_MODIFIER_PATTERN = Regex("""(?:\$|,)(app|client|ctag)=""", RegexOption.IGNORE_CASE)
     private val DOMAIN_PATTERN = Regex("""^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$""")
     private val LOCALHOST = setOf("localhost", "localhost.localdomain", "local", "broadcasthost",
         "ip6-localhost", "ip6-loopback")
@@ -394,6 +414,9 @@ object AdblockRuleParser {
 
     private fun isValidDomain(s: String): Boolean =
         s.length in 3..253 && s.contains('.') && s !in LOCALHOST && DOMAIN_PATTERN.matches(s)
+
+    private fun findScopedModifier(line: String): String? =
+        SCOPED_MODIFIER_PATTERN.find(line)?.groupValues?.getOrNull(1)?.lowercase()
 
     /**
      * Parse a $dnsrewrite= value.

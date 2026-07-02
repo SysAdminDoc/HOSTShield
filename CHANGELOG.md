@@ -9,6 +9,9 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - Added a local protection-resilience matrix runner and connected smoke test for
   VPN recovery, Private Space/work-profile, battery, and diagnostic-event
   release evidence.
+- Scoped AdGuard `$app=`, `$client=`, and `$ctag=` source rules now emit parse
+  diagnostics when skipped so unsupported scoped rules are never silently
+  globalized.
 
 ### Security
 - Remote DoH bypass list updates now require a matching canonical payload hash

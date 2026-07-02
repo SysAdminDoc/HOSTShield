@@ -11,6 +11,17 @@
 
 ---
 
+## AdGuard Scoped Modifier Diagnostics
+
+### Fixed
+- AdGuard `$app=`, `$client=`, and `$ctag=` source rules remain rejected rather
+  than applied globally, and successful source metadata now records a parse
+  warning explaining skipped scoped rules.
+- Scoped rules combined with other modifiers, such as
+  `$important,app=com.example`, are counted in scoped-skip diagnostics.
+
+---
+
 ## Remote DoH Bypass Manifest Provenance
 
 ### Security

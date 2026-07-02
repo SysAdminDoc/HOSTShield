@@ -58,7 +58,7 @@ class BlocklistSourceCoordinator @Inject constructor(
                 }
                 sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                 dnsTypeRules.addAll(parsed.dnsTypeRules.map { it.normalized(source.label) })
-                persistSuccessfulDownload(source, dl, parsed.entryCount)
+                persistSuccessfulDownload(source, dl, parsed.entryCount, parsed.parseWarning)
             } else {
                 val err = result.exceptionOrNull()
                     ?: SourceDownloadException(
@@ -78,7 +78,7 @@ class BlocklistSourceCoordinator @Inject constructor(
                 sourceExactAllows.addAll(parsed.allowDomains)
                 sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                 dnsTypeRules.addAll(parsed.dnsTypeAllowRules.map { it.normalized(source.label) })
-                persistSuccessfulDownload(source, dl, parsed.entryCount)
+                persistSuccessfulDownload(source, dl, parsed.entryCount, parsed.parseWarning)
             } else {
                 val err = result.exceptionOrNull()
                     ?: SourceDownloadException(
@@ -106,6 +106,7 @@ class BlocklistSourceCoordinator @Inject constructor(
         source: HostSource,
         dl: DownloadResult,
         entryCount: Int,
+        parseWarning: String,
     ) {
         val previousCount = source.entryCount
         repository.updateSource(
@@ -116,7 +117,7 @@ class BlocklistSourceCoordinator @Inject constructor(
                 etag = dl.etag,
                 sizeBytes = dl.sizeBytes,
                 health = SourceHealth.OK,
-                lastError = "",
+                lastError = parseWarning,
                 lastHttpStatus = 0,
                 consecutiveFailures = 0,
                 prevEntryCount = previousCount,

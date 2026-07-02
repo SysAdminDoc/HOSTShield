@@ -61,10 +61,15 @@ class AdblockRuleParserTest {
             ||other.com^${'$'}client=lan
             ||normal.com^
             ||tagged.com^${'$'}ctag=device_phone
+            ||important-scoped.com^${'$'}important,app=com.example
         """.trimIndent()
         val result = AdblockRuleParser.parse(content)
         assertEquals(2, result.blockRules.size)
-        assertEquals(3, result.scopedModifierSkipped)
+        assertEquals(4, result.scopedModifierSkipped)
+        assertEquals(4, result.diagnostics.size)
+        assertEquals("unsupported_scoped_modifier", result.diagnostics.first().reason)
+        assertEquals("app", result.diagnostics.first().modifier)
+        assertTrue(result.diagnostics.first().message.contains("instead of applying it globally"))
         assertTrue(result.blockRules.any { it.domain == "tracker.com" })
         assertTrue(result.blockRules.any { it.domain == "normal.com" })
     }

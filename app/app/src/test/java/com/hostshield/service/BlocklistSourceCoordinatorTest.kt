@@ -166,6 +166,43 @@ class BlocklistSourceCoordinatorTest {
     }
 
     @Test
+    fun `scoped AdGuard source rules stay skipped and persist parse warning`() = runTest {
+        val source = HostSource(
+            id = 11,
+            url = "https://example.com/adguard.txt",
+            label = "Scoped",
+            entryCount = 0,
+        )
+        val updatedSources = mutableListOf<HostSource>()
+        coEvery { repository.getEnabledBlockSources() } returns listOf(source)
+        coEvery { repository.updateSource(capture(updatedSources)) } just Runs
+        coEvery {
+            downloader.download(source, forceDownload = true)
+        } returns Result.success(
+            DownloadResult(
+                content = """
+                    ||global.example^
+                    ||scoped.example^${'$'}app=com.example
+                    ||client.example^${'$'}important,client=lan
+                """.trimIndent(),
+                etag = "scoped-etag",
+                sizeBytes = 96,
+            )
+        )
+
+        val snapshot = coordinator.downloadEnabledSourcesForFullSnapshot()
+
+        assertEquals(setOf("global.example"), snapshot.sourceWildcardBlocks)
+        assertFalse(snapshot.sourceWildcardBlocks.contains("scoped.example"))
+        assertFalse(snapshot.sourceWildcardBlocks.contains("client.example"))
+        val updated = updatedSources.single()
+        assertEquals(SourceHealth.OK, updated.health)
+        assertEquals(1, updated.entryCount)
+        assertTrue(updated.lastError.contains("Skipped 2 scoped AdGuard rule(s)"))
+        assertTrue(updated.lastError.contains("instead of applying them globally"))
+    }
+
+    @Test
     fun `download failures update health and return source notices`() = runTest {
         val source = HostSource(
             id = 9,
