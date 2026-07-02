@@ -699,13 +699,6 @@ dependency/licensing review, and implementation-test corpus design.
   Acceptance: A reproducible local build step or checked generated asset maps common tracker domains to owner/category with provenance, Stats uses it for top tracker companies, and tests verify deterministic lookup plus no network dependency.
   Complexity: M
 
-- [ ] P2 - Split blocklist rebuild logic into one tested coordinator
-  Why: Source merge/build logic is duplicated across the worker, VPN service, Home apply flow, profile schedules, and source previews, which allowed `forceDownload` and metadata behavior to diverge.
-  Evidence: `HostsUpdateWorker.kt`; `DnsVpnService.kt`; `HomeViewModel.kt`; `ProfileScheduleWorker.kt`; `SourcesViewModel.kt`.
-  Touches: new domain/service rebuild coordinator, affected call sites, unit tests with fake downloader/repository.
-  Acceptance: All rebuild entry points call one coordinator for source downloads, allowlist subtraction, DoH bypass merging, wildcard origins, diagnostics, and metadata updates; existing behavior remains covered by tests.
-  Complexity: L
-
 ## Research-Driven Additions
 
 ### P2

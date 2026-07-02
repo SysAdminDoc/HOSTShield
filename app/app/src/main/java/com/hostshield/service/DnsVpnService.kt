@@ -28,7 +28,6 @@ import com.hostshield.data.database.BlockStatsDao
 import com.hostshield.data.database.DnsLogDao
 import com.hostshield.data.model.BlockStats
 import com.hostshield.data.model.DnsLogEntry
-import com.hostshield.data.model.RuleType
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlockDecision
@@ -909,15 +908,8 @@ class DnsVpnService : VpnService() {
 
     private suspend fun rebuildBlocklist() {
         try {
-            val sourceSnapshot = sourceCoordinator.downloadEnabledSourcesForFullSnapshot()
-            val allDomains = sourceSnapshot.blockDomains.toMutableSet()
-            val sourceAllowDomains = sourceSnapshot.sourceExactAllows.toMutableSet()
-            val sourceWildcardBlocks = sourceSnapshot.sourceWildcardBlocks.toMutableSet()
-            val sourceWildcardAllows = sourceSnapshot.sourceWildcardAllows.toMutableSet()
-            val dnsTypeRules = sourceSnapshot.dnsTypeRules.toMutableList()
-            val exactBlockOrigins = sourceSnapshot.exactBlockOrigins.toMutableMap()
-            val wildcardBlockOrigins = sourceSnapshot.wildcardBlockOrigins.toMutableMap()
-            val failedSources = sourceSnapshot.failedSources
+            val rebuild = sourceCoordinator.rebuildBlocklistHolder()
+            val failedSources = rebuild.snapshot.failedSources
             failedSources.forEach { notice ->
                 recordEvent(
                     DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
@@ -931,42 +923,13 @@ class DnsVpnService : VpnService() {
                 )
             }
             sourceFailureNotifier.notifyFailures(failedSources)
-            repository.getEnabledRulesByType(RuleType.BLOCK).filter { !it.isWildcard }
-                .forEach {
-                    val hostname = it.hostname.lowercase()
-                    allDomains.add(hostname)
-                    exactBlockOrigins[hostname] = "User block rule"
-                }
-            val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-            val userExactAllows = allowRules.filter { !it.isWildcard && !it.isRegex }.map { it.hostname.lowercase() }.toSet()
-            allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-            allDomains.removeAll(sourceAllowDomains)
-            dohBypassUpdater.mergeCachedInto(
-                allDomains,
-                sourceWildcardBlocks,
-                exactBlockOrigins,
-                wildcardBlockOrigins
-            )
-            blocklist.updateAsync(
-                allDomains,
-                repository.getEnabledWildcards(),
-                repository.getEnabledRegexRules(),
-                sourceWildcardBlocks = sourceWildcardBlocks,
-                sourceWildcardAllows = sourceWildcardAllows,
-                exactBlockOrigins = exactBlockOrigins,
-                sourceWildcardBlockOrigins = wildcardBlockOrigins,
-                sourceExactAllows = sourceAllowDomains,
-                userExactAllows = userExactAllows,
-                dnsTypeRules = dnsTypeRules
-            )
-            val blockingDomainCount = allDomains.size + sourceWildcardBlocks.size
             recordEvent(
                 DiagnosticEventType.BLOCKLIST_SWAP,
                 "Blocklist snapshot swapped",
                 mapOf(
-                    "domains" to blockingDomainCount,
+                    "domains" to rebuild.domainCount,
                     "source" to "vpn_rebuild",
-                    "downloaded_sources" to sourceSnapshot.downloadedSourceCount
+                    "downloaded_sources" to rebuild.snapshot.downloadedSourceCount
                 )
             )
         } catch (e: Exception) { Log.w(TAG, "Blocklist rebuild failed: ${e.message}") }

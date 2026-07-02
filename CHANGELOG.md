@@ -15,6 +15,11 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - DNS logs now expose a counted threat-review queue, and diagnostic ZIPs include
   feed/type false-positive summaries without raw IOC details by default.
 
+### Changed
+- Blocklist rebuilds from VPN startup, periodic updates, profile schedules, and
+  Home apply now share one coordinator for source downloads, allow/user merge
+  rules, DoH bypass entries, holder swaps, and source metadata.
+
 ### Security
 - Remote DoH bypass list updates now require a matching canonical payload hash
   and release-key signature before the app stores any fetched policy entries.

@@ -6,10 +6,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.hostshield.data.database.ProfileDao
 import com.hostshield.data.model.BlockingProfile
-import com.hostshield.data.model.RuleType
 import com.hostshield.data.preferences.AppPreferences
-import com.hostshield.data.repository.HostShieldRepository
-import com.hostshield.domain.BlocklistHolder
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
@@ -27,12 +24,9 @@ class ProfileScheduleWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val profileDao: ProfileDao,
-    private val repository: HostShieldRepository,
     private val prefs: AppPreferences,
     private val iptablesManager: IptablesManager,
     private val sourceCoordinator: BlocklistSourceCoordinator,
-    private val blocklistHolder: BlocklistHolder,
-    private val dohBypassUpdater: DohBypassUpdater
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -90,46 +84,10 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 // Rebuild in-memory blocklist — the running DNS proxy reads from
                 // BlocklistHolder, so this takes effect immediately for both
                 // root mode (RootDnsLogger) and VPN mode (DnsVpnService).
-                val sourceSnapshot = sourceCoordinator.downloadEnabledSourcesForFullSnapshot()
-                val allDomains = sourceSnapshot.blockDomains.toMutableSet()
-                val sourceAllowDomains = sourceSnapshot.sourceExactAllows.toMutableSet()
-                val sourceWildcardBlocks = sourceSnapshot.sourceWildcardBlocks.toMutableSet()
-                val sourceWildcardAllows = sourceSnapshot.sourceWildcardAllows.toMutableSet()
-                val dnsTypeRules = sourceSnapshot.dnsTypeRules.toMutableList()
-                val exactBlockOrigins = sourceSnapshot.exactBlockOrigins.toMutableMap()
-                val wildcardBlockOrigins = sourceSnapshot.wildcardBlockOrigins.toMutableMap()
-                val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-                blockRules.filter { !it.isWildcard }.forEach {
-                    val hostname = it.hostname.lowercase()
-                    allDomains.add(hostname)
-                    exactBlockOrigins[hostname] = "User block rule"
-                }
-                val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-                val userExactAllows = allowRules.filter { !it.isWildcard && !it.isRegex }.map { it.hostname.lowercase() }.toSet()
-                allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-                allDomains.removeAll(sourceAllowDomains)
-                dohBypassUpdater.mergeCachedInto(
-                    allDomains,
-                    sourceWildcardBlocks,
-                    exactBlockOrigins,
-                    wildcardBlockOrigins
-                )
-                blocklistHolder.updateAsync(
-                    allDomains,
-                    repository.getEnabledWildcards(),
-                    repository.getEnabledRegexRules(),
-                    sourceWildcardBlocks = sourceWildcardBlocks,
-                    sourceWildcardAllows = sourceWildcardAllows,
-                    exactBlockOrigins = exactBlockOrigins,
-                    sourceWildcardBlockOrigins = wildcardBlockOrigins,
-                    sourceExactAllows = sourceAllowDomains,
-                    userExactAllows = userExactAllows,
-                    dnsTypeRules = dnsTypeRules
-                )
-                val blockingDomainCount = allDomains.size + sourceWildcardBlocks.size
+                val rebuild = sourceCoordinator.rebuildBlocklistHolder()
 
                 prefs.setLastApplyTime(System.currentTimeMillis())
-                prefs.setLastApplyCount(blockingDomainCount)
+                prefs.setLastApplyCount(rebuild.domainCount)
 
                 // Apply iptables firewall if enabled and auto-apply is on
                 val fwEnabled = prefs.networkFirewallEnabled.first()

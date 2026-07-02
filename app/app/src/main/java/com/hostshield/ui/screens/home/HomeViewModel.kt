@@ -9,16 +9,11 @@ import com.hostshield.data.database.DnsLogDao
 import com.hostshield.data.database.ConnectionLogDao
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.model.DnsLogEntry
-import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.RuleType
-import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
-import com.hostshield.data.source.SourceDownloader
-import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
-import com.hostshield.domain.parser.HostsParser
 import com.hostshield.service.DnsVpnService
 import com.hostshield.service.HostShieldWidgetProvider
 import com.hostshield.service.HostsUpdateWorker
@@ -27,7 +22,7 @@ import com.hostshield.service.NflogReader
 import com.hostshield.service.DnsProxyService
 import com.hostshield.service.ProtectionServiceStarter
 import com.hostshield.service.RootDnsService
-import com.hostshield.service.DohBypassUpdater
+import com.hostshield.service.BlocklistSourceCoordinator
 import com.hostshield.service.PauseResumeWorker
 import com.hostshield.service.VpnRecoveryAdvisory
 import com.hostshield.util.PrivacyScorer
@@ -113,8 +108,8 @@ class HomeViewModel @Inject constructor(
     private val repository: HostShieldRepository,
     private val rootUtil: RootUtil,
     private val prefs: AppPreferences,
-    private val downloader: SourceDownloader,
     private val blocklistHolder: BlocklistHolder,
+    private val sourceCoordinator: BlocklistSourceCoordinator,
     private val privateDnsDetector: PrivateDnsDetector,
     private val batteryUtil: BatteryOptimizationUtil,
     private val iptablesManager: IptablesManager,
@@ -122,7 +117,6 @@ class HomeViewModel @Inject constructor(
     private val dnsLogDao: DnsLogDao,
     private val connectionLogDao: ConnectionLogDao,
     private val privacyScorer: PrivacyScorer,
-    private val dohBypassUpdater: DohBypassUpdater
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -862,26 +856,6 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(snackbarMessage = msg) }
     }
 
-    private suspend fun markSourceDownloadSuccess(id: Long) {
-        try {
-            repository.updateSourceHealth(id, SourceHealth.OK, "", 0, 0)
-        } catch (_: Exception) { }
-    }
-
-    private suspend fun markSourceDownloadFailure(source: HostSource, err: Throwable) {
-        try {
-            val failures = source.consecutiveFailures + 1
-            val health = if (failures >= 5) SourceHealth.DEAD else SourceHealth.ERROR
-            repository.updateSourceHealth(
-                id = source.id,
-                health = health,
-                error = err.message ?: "Unknown error",
-                failures = failures,
-                httpStatus = err.sourceHttpStatus(),
-            )
-        } catch (_: Exception) { }
-    }
-
     /** Build the in-memory blocklist from sources + user rules. */
     private suspend fun buildBlocklistHolder() {
         try {
@@ -906,77 +880,14 @@ class HomeViewModel @Inject constructor(
     private suspend fun downloadAndBuildBlocklist(
         onProgress: (String) -> Unit
     ): Int {
-        val blockSources = repository.getEnabledBlockSources()
-        val allowlistSources = repository.getEnabledAllowlistSources()
-        val allDomains = mutableSetOf<String>()
-        val sourceAllowDomains = mutableSetOf<String>()
-        val sourceWildcardBlocks = mutableSetOf<String>()
-        val sourceWildcardAllows = mutableSetOf<String>()
-        val dnsTypeRules = mutableListOf<com.hostshield.domain.DnsTypeRule>()
-        val exactBlockOrigins = mutableMapOf<String, String>()
-        val wildcardBlockOrigins = mutableMapOf<String, String>()
-        val totalSources = blockSources.size + allowlistSources.size
-
-        for ((index, source) in blockSources.withIndex()) {
-            onProgress("Downloading ${source.label} (${index + 1}/$totalSources)...")
-            downloader.download(source, forceDownload = true).onSuccess { dl ->
-                val parsed = HostsParser.parseForBlocking(dl.content)
-                allDomains.addAll(parsed.blockDomains)
-                parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
-                sourceAllowDomains.addAll(parsed.allowDomains)
-                sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
-                parsed.wildcardBlockDomains.forEach {
-                    wildcardBlockOrigins.putIfAbsent(it, source.label)
-                }
-                sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                dnsTypeRules.addAll(parsed.dnsTypeRules.map { it.normalized(source.label) })
-                markSourceDownloadSuccess(source.id)
-            }.onFailure { err ->
-                markSourceDownloadFailure(source, err)
+        onProgress("Downloading enabled sources...")
+        val rebuild = sourceCoordinator.rebuildBlocklistHolder()
+        if (rebuild.snapshot.failedSources.isNotEmpty()) {
+            _uiState.update {
+                it.copy(errorMessage = "Blocklist refreshed with ${rebuild.snapshot.failedSources.size} source failure(s).")
             }
         }
-        for ((index, source) in allowlistSources.withIndex()) {
-            onProgress("Applying allowlist ${source.label} (${blockSources.size + index + 1}/$totalSources)...")
-            downloader.download(source, forceDownload = true).onSuccess { dl ->
-                val parsed = HostsParser.parseForAllowing(dl.content)
-                sourceAllowDomains.addAll(parsed.allowDomains)
-                sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                dnsTypeRules.addAll(parsed.dnsTypeAllowRules.map { it.normalized(source.label) })
-                markSourceDownloadSuccess(source.id)
-            }.onFailure { err ->
-                markSourceDownloadFailure(source, err)
-            }
-        }
-
-        val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-        blockRules.filter { !it.isWildcard }.forEach {
-            val hostname = it.hostname.lowercase()
-            allDomains.add(hostname)
-            exactBlockOrigins[hostname] = "User block rule"
-        }
-        val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-        val userExactAllows = allowRules.filter { !it.isWildcard && !it.isRegex }.map { it.hostname.lowercase() }.toSet()
-        allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-        allDomains.removeAll(sourceAllowDomains)
-        dohBypassUpdater.mergeCachedInto(
-            allDomains,
-            sourceWildcardBlocks,
-            exactBlockOrigins,
-            wildcardBlockOrigins
-        )
-        val wildcards = repository.getEnabledWildcards()
-        blocklistHolder.updateAsync(
-            allDomains,
-            wildcards,
-            sourceWildcardBlocks = sourceWildcardBlocks,
-            sourceWildcardAllows = sourceWildcardAllows,
-            exactBlockOrigins = exactBlockOrigins,
-            sourceWildcardBlockOrigins = wildcardBlockOrigins,
-            sourceExactAllows = sourceAllowDomains,
-            userExactAllows = userExactAllows,
-            dnsTypeRules = dnsTypeRules
-        )
-
-        return allDomains.size + sourceWildcardBlocks.size
+        onProgress("Blocklist ready")
+        return rebuild.domainCount
     }
 }

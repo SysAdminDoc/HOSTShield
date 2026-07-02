@@ -1,5 +1,16 @@
 # HostShield Unreleased
 
+## Blocklist Rebuild Coordinator
+
+### Changed
+- VPN startup, periodic worker, scheduled-profile, and Home apply rebuild paths
+  now share one tested coordinator for source downloads, allowlist subtraction,
+  user rules, DoH bypass merging, holder swaps, and source metadata updates.
+- Rule-sync URL domains are passed into the shared coordinator so user/source
+  allow rules still override synced domains before the in-memory holder swaps.
+
+---
+
 ## Threat Intel False-Positive Review
 
 ### Added

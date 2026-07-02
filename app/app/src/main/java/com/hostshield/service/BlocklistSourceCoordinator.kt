@@ -1,12 +1,14 @@
 package com.hostshield.service
 
 import com.hostshield.data.model.HostSource
+import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.SourceHealth
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.DownloadResult
 import com.hostshield.data.source.SourceDownloadException
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.sourceHttpStatus
+import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.DnsTypeRule
 import com.hostshield.domain.parser.HostsParser
 import javax.inject.Inject
@@ -25,10 +27,19 @@ data class BlocklistSourceSnapshot(
     val downloadedSourceCount: Int,
 )
 
+data class BlocklistRebuildResult(
+    val domainCount: Int,
+    val wildcardRuleCount: Int,
+    val regexRuleCount: Int,
+    val snapshot: BlocklistSourceSnapshot,
+)
+
 @Singleton
 class BlocklistSourceCoordinator @Inject constructor(
     private val repository: HostShieldRepository,
     private val downloader: SourceDownloader,
+    private val blocklistHolder: BlocklistHolder,
+    private val dohBypassUpdater: DohBypassUpdater,
 ) {
     suspend fun downloadEnabledSourcesForFullSnapshot(): BlocklistSourceSnapshot {
         val blockSources = repository.getEnabledBlockSources()
@@ -99,6 +110,72 @@ class BlocklistSourceCoordinator @Inject constructor(
             wildcardBlockOrigins = wildcardBlockOrigins,
             failedSources = failedSources,
             downloadedSourceCount = downloadedSourceCount,
+        )
+    }
+
+    suspend fun rebuildBlocklistHolder(
+        extraExactBlockOrigins: Map<String, String> = emptyMap(),
+    ): BlocklistRebuildResult {
+        val snapshot = downloadEnabledSourcesForFullSnapshot()
+        val allDomains = snapshot.blockDomains.toMutableSet()
+        val sourceAllowDomains = snapshot.sourceExactAllows.toMutableSet()
+        val sourceWildcardBlocks = snapshot.sourceWildcardBlocks.toMutableSet()
+        val sourceWildcardAllows = snapshot.sourceWildcardAllows.toMutableSet()
+        val dnsTypeRules = snapshot.dnsTypeRules.toMutableList()
+        val exactBlockOrigins = snapshot.exactBlockOrigins.toMutableMap()
+        val wildcardBlockOrigins = snapshot.wildcardBlockOrigins.toMutableMap()
+
+        extraExactBlockOrigins.forEach { (domain, origin) ->
+            val normalizedDomain = domain.lowercase()
+            if (normalizedDomain.isNotBlank()) {
+                allDomains.add(normalizedDomain)
+                exactBlockOrigins[normalizedDomain] = origin
+            }
+        }
+
+        repository.getEnabledRulesByType(RuleType.BLOCK).filter { !it.isWildcard }
+            .forEach { rule ->
+                val hostname = rule.hostname.lowercase()
+                allDomains.add(hostname)
+                exactBlockOrigins[hostname] = "User block rule"
+            }
+
+        val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
+        val userExactAllows = allowRules
+            .filter { !it.isWildcard && !it.isRegex }
+            .map { it.hostname.lowercase() }
+            .toSet()
+        allowRules.filter { !it.isWildcard }
+            .forEach { allDomains.remove(it.hostname.lowercase()) }
+        allDomains.removeAll(sourceAllowDomains)
+
+        dohBypassUpdater.mergeCachedInto(
+            allDomains,
+            sourceWildcardBlocks,
+            exactBlockOrigins,
+            wildcardBlockOrigins,
+        )
+
+        val wildcards = repository.getEnabledWildcards()
+        val regexRules = repository.getEnabledRegexRules()
+        blocklistHolder.updateAsync(
+            allDomains,
+            wildcards,
+            regexRules,
+            sourceWildcardBlocks = sourceWildcardBlocks,
+            sourceWildcardAllows = sourceWildcardAllows,
+            exactBlockOrigins = exactBlockOrigins,
+            sourceWildcardBlockOrigins = wildcardBlockOrigins,
+            sourceExactAllows = sourceAllowDomains,
+            userExactAllows = userExactAllows,
+            dnsTypeRules = dnsTypeRules,
+        )
+
+        return BlocklistRebuildResult(
+            domainCount = allDomains.size + sourceWildcardBlocks.size,
+            wildcardRuleCount = wildcards.size,
+            regexRuleCount = regexRules.size,
+            snapshot = snapshot,
         )
     }
 

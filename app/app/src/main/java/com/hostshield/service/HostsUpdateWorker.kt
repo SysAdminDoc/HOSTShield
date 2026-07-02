@@ -4,13 +4,10 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.hostshield.data.model.BlockMethod
-import com.hostshield.data.model.RuleType
 import com.hostshield.data.preferences.AppPreferences
-import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.BoundedResponseReader
 import com.hostshield.data.source.SourceDownloadException
 import com.hostshield.data.source.sourceHttpStatus
-import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.parser.HostsParser
 import com.hostshield.util.DiagnosticEventStore
 import com.hostshield.util.DiagnosticEventType
@@ -29,10 +26,8 @@ import java.util.concurrent.TimeUnit
 class HostsUpdateWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val repository: HostShieldRepository,
     private val prefs: AppPreferences,
     private val sourceCoordinator: BlocklistSourceCoordinator,
-    private val blocklistHolder: BlocklistHolder,
     private val dohBypassUpdater: DohBypassUpdater,
     private val cnameCloakUpdater: CnameCloakUpdater,
     private val httpClient: OkHttpClient,
@@ -112,37 +107,10 @@ class HostsUpdateWorker @AssistedInject constructor(
 
             when (method) {
                 BlockMethod.ROOT_HOSTS, BlockMethod.VPN, BlockMethod.DNS_PROXY -> {
-                    // Download block sources and rebuild in-memory blocklist.
-                    // Both root (RootDnsLogger) and VPN (DnsVpnService) read from
-                    // BlocklistHolder, so updates take effect immediately.
-                    val sourceSnapshot = sourceCoordinator.downloadEnabledSourcesForFullSnapshot()
-                    val allDomains = sourceSnapshot.blockDomains.toMutableSet()
-                    val sourceAllowDomains = sourceSnapshot.sourceExactAllows.toMutableSet()
-                    val adblockWildcardBlocks = sourceSnapshot.sourceWildcardBlocks.toMutableSet()
-                    val adblockWildcardAllows = sourceSnapshot.sourceWildcardAllows.toMutableSet()
-                    val dnsTypeRules = sourceSnapshot.dnsTypeRules.toMutableList()
-                    val exactBlockOrigins = sourceSnapshot.exactBlockOrigins.toMutableMap()
-                    val wildcardBlockOrigins = sourceSnapshot.wildcardBlockOrigins.toMutableMap()
-
-                    // Track per-source failures so the user can see why a blocklist
-                    // is stale (silent swallow used to make this look like the lists
-                    // were fresh when they were actually 404'ing for weeks).
-                    val failedSources = sourceSnapshot.failedSources.toMutableList()
-                    failedSources.forEach { notice ->
-                        PrivacyLog.w(TAG, "Source download failed: ${notice.url} - ${notice.error}")
-                        diagnosticEvents.record(
-                            DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
-                            "Source download failed",
-                            mapOf(
-                                "source" to notice.url,
-                                "error" to notice.error,
-                                "http_status" to notice.httpStatus,
-                                "failures" to notice.consecutiveFailures
-                            )
-                        )
-                    }
-
-                    // Fetch remote rule sync URLs and merge domains
+                    // Fetch remote rule sync URLs; the coordinator applies these
+                    // extras before allow rules and performs the final holder swap.
+                    val syncedBlockOrigins = mutableMapOf<String, String>()
+                    val syncFailures = mutableListOf<SourceFailureNotice>()
                     val syncUrls = prefs.getRuleSyncUrlList()
                     for (url in syncUrls) {
                         // Only allow HTTPS sync URLs for security
@@ -172,8 +140,8 @@ class HostsUpdateWorker @AssistedInject constructor(
                                     prefs.setSyncUrlHash(url, hash)
 
                                     HostsParser.parse(content).forEach {
-                                        allDomains.add(it.hostname)
-                                        exactBlockOrigins[it.hostname] = "Rule sync URL ${url.substringAfter("://")}"
+                                        syncedBlockOrigins[it.hostname.lowercase()] =
+                                            "Rule sync URL ${url.substringAfter("://")}"
                                     }
                                 } else {
                                     throw SourceDownloadException(
@@ -184,7 +152,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                             }
                         } catch (e: Exception) {
                             val httpStatus = e.sourceHttpStatus()
-                            failedSources += SourceFailureNotice(
+                            syncFailures += SourceFailureNotice(
                                 label = url.substringAfter("://").take(48).ifBlank { "Rule sync URL" },
                                 url = url,
                                 error = e.message ?: e.javaClass.simpleName,
@@ -204,59 +172,50 @@ class HostsUpdateWorker @AssistedInject constructor(
                             )
                         }
                     }
+
+                    // Download block sources and rebuild in-memory blocklist.
+                    // Both root (RootDnsLogger) and VPN (DnsVpnService) read from
+                    // BlocklistHolder, so updates take effect immediately.
+                    val rebuild = sourceCoordinator.rebuildBlocklistHolder(syncedBlockOrigins)
+
+                    // Track per-source failures so the user can see why a blocklist
+                    // is stale (silent swallow used to make this look like the lists
+                    // were fresh when they were actually 404'ing for weeks).
+                    val failedSources = rebuild.snapshot.failedSources.toMutableList()
+                    failedSources.forEach { notice ->
+                        PrivacyLog.w(TAG, "Source download failed: ${notice.url} - ${notice.error}")
+                        diagnosticEvents.record(
+                            DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
+                            "Source download failed",
+                            mapOf(
+                                "source" to notice.url,
+                                "error" to notice.error,
+                                "http_status" to notice.httpStatus,
+                                "failures" to notice.consecutiveFailures
+                            )
+                        )
+                    }
+                    failedSources += syncFailures
                     if (failedSources.isNotEmpty()) {
                         PrivacyLog.w(TAG, "Blocklist refresh completed with ${failedSources.size} failed source(s): " +
                             failedSources.joinToString(", ") { it.url })
                         sourceFailureNotifier.notifyFailures(failedSources)
                     }
 
-                    val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-                    blockRules.filter { !it.isWildcard }.forEach {
-                        val hostname = it.hostname.lowercase()
-                        allDomains.add(hostname)
-                        exactBlockOrigins[hostname] = "User block rule"
-                    }
-                    val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-                    val userExactAllows = allowRules.filter { !it.isWildcard && !it.isRegex }.map { it.hostname.lowercase() }.toSet()
-                    allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
-                    // Remove allowlist source domains + adblock-syntax @@|| allow rules
-                    allDomains.removeAll(sourceAllowDomains)
-                    dohBypassUpdater.mergeCachedInto(
-                        allDomains,
-                        adblockWildcardBlocks,
-                        exactBlockOrigins,
-                        wildcardBlockOrigins
-                    )
-
-                    val wildcards = repository.getEnabledWildcards()
-                    val regexRules = repository.getEnabledRegexRules()
-                    val blockingDomainCount = allDomains.size + adblockWildcardBlocks.size
-                    blocklistHolder.updateAsync(
-                        allDomains,
-                        wildcards,
-                        regexRules,
-                        sourceWildcardBlocks = adblockWildcardBlocks,
-                        sourceWildcardAllows = adblockWildcardAllows,
-                        exactBlockOrigins = exactBlockOrigins,
-                        sourceWildcardBlockOrigins = wildcardBlockOrigins,
-                        sourceExactAllows = sourceAllowDomains,
-                        userExactAllows = userExactAllows,
-                        dnsTypeRules = dnsTypeRules
-                    )
                     diagnosticEvents.record(
                         DiagnosticEventType.BLOCKLIST_SWAP,
                         "Blocklist snapshot swapped",
                         mapOf(
-                            "domains" to blockingDomainCount,
-                            "wildcards" to wildcards.size,
-                            "regex_rules" to regexRules.size,
+                            "domains" to rebuild.domainCount,
+                            "wildcards" to rebuild.wildcardRuleCount,
+                            "regex_rules" to rebuild.regexRuleCount,
                             "source" to "hosts_update_worker",
-                            "downloaded_sources" to sourceSnapshot.downloadedSourceCount
+                            "downloaded_sources" to rebuild.snapshot.downloadedSourceCount
                         )
                     )
 
                     prefs.setLastApplyTime(System.currentTimeMillis())
-                    prefs.setLastApplyCount(blockingDomainCount)
+                    prefs.setLastApplyCount(rebuild.domainCount)
                 }
                 BlockMethod.DISABLED -> { }
             }
