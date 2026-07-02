@@ -105,6 +105,7 @@ class ProfileScheduleWorker @AssistedInject constructor(
                     exactBlockOrigins[hostname] = "User block rule"
                 }
                 val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
+                val userExactAllows = allowRules.filter { !it.isWildcard && !it.isRegex }.map { it.hostname.lowercase() }.toSet()
                 allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
                 allDomains.removeAll(sourceAllowDomains)
                 dohBypassUpdater.mergeCachedInto(
@@ -122,6 +123,7 @@ class ProfileScheduleWorker @AssistedInject constructor(
                     exactBlockOrigins = exactBlockOrigins,
                     sourceWildcardBlockOrigins = wildcardBlockOrigins,
                     sourceExactAllows = sourceAllowDomains,
+                    userExactAllows = userExactAllows,
                     dnsTypeRules = dnsTypeRules
                 )
                 val blockingDomainCount = allDomains.size + sourceWildcardBlocks.size

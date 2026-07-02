@@ -124,4 +124,48 @@ class LogsViewModelTest {
 
         coVerify { repository.clearAllLogs() }
     }
+
+    @Test
+    fun `threat review count tracks distinct threat intel blocked domains`() = runTest {
+        val vm = createViewModel()
+
+        vm.threatReviewCount.test {
+            assertEquals(0, awaitItem())
+            logsFlow.value = listOf(
+                DnsLogEntry(
+                    hostname = "bad.example",
+                    blocked = true,
+                    decisionReason = "threat_intel_domain",
+                    decisionSource = "URLhaus",
+                    matchedValue = "bad.example"
+                ),
+                DnsLogEntry(
+                    hostname = "bad.example",
+                    blocked = true,
+                    decisionReason = "threat_intel_domain",
+                    decisionSource = "URLhaus",
+                    matchedValue = "bad.example"
+                ),
+                DnsLogEntry(
+                    hostname = "ip-hit.example",
+                    blocked = true,
+                    decisionReason = "threat_intel_ip",
+                    decisionSource = "Spamhaus DROP",
+                    matchedValue = "203.0.113.44"
+                ),
+                DnsLogEntry(
+                    hostname = "ordinary-block.example",
+                    blocked = true,
+                    decisionReason = "source_list"
+                ),
+                DnsLogEntry(
+                    hostname = "allowed-threat-context.example",
+                    blocked = false,
+                    decisionReason = "threat_intel_domain"
+                )
+            )
+
+            assertEquals(2, awaitItem())
+        }
+    }
 }

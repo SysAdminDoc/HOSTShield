@@ -72,6 +72,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val deduped by viewModel.deduped.collectAsStateWithLifecycle()
     val totalDomains by viewModel.totalDomains.collectAsStateWithLifecycle()
     val blockedCount by viewModel.blockedCount.collectAsStateWithLifecycle()
+    val threatReviewCount by viewModel.threatReviewCount.collectAsStateWithLifecycle()
     val backAction = onBack
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
@@ -225,7 +226,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             HostShieldFilterChip(
-                label = "Threat review",
+                label = if (threatReviewCount > 0) "Threat review ($threatReviewCount)" else "Threat review",
                 selected = threatIntelOnly,
                 onClick = { viewModel.setThreatIntelOnly(!threatIntelOnly) },
                 accent = Red,

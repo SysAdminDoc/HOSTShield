@@ -1,5 +1,21 @@
 # HostShield Unreleased
 
+## Threat Intel False-Positive Review
+
+### Added
+- DNS Logs now show a counted threat-review queue for recent threat-intel blocks,
+  and diagnostic ZIP manifests include review summary counts without raw IOC
+  details by default.
+
+### Fixed
+- User allow rules and paused protection now suppress threat-intel domain and
+  resolved-IP re-blocking, so a false-positive allow action takes effect without
+  disabling malware feeds.
+- Exact user allow rules are preserved in `BlocklistHolder` snapshots across
+  VPN, worker, profile, and Home rebuild paths.
+
+---
+
 ## Protection Resilience Release Matrix
 
 ### Added

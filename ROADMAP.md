@@ -106,7 +106,6 @@ Google Play package-visibility policy.
 
 | ID | Feature | Description | User Value | Business Value | Evidence | Effort | Impact | Priority | Confidence |
 |---|---|---|---|---|---|---|---|---|---|
-| HS-2026-06-P2-015 | Threat-intel false-positive review workflow | From a threat-blocked log row, show feed, matched value, age, and user actions to allowlist domain, IP/CIDR, or app with clear scope. Include a local review queue for recent threat-intel blocks and export only summaries in diagnostics unless the user includes raw IOC details. | Users can recover quickly from a bad feed hit without disabling all malware protection. | Reduces churn from false positives while keeping local-first privacy boundaries. | `DnsVpnService.kt`, `LogsScreen.kt`, `RulesScreen.kt`, `DiagnosticExporter.kt`; E104, E105 | M | Medium | P2 | Medium |
 
 ## Engineering Quality & Bug Backlog — 2026-06-13
 

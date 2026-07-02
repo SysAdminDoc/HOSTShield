@@ -217,6 +217,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                         exactBlockOrigins[hostname] = "User block rule"
                     }
                     val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
+                    val userExactAllows = allowRules.filter { !it.isWildcard && !it.isRegex }.map { it.hostname.lowercase() }.toSet()
                     allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
                     // Remove allowlist source domains + adblock-syntax @@|| allow rules
                     allDomains.removeAll(sourceAllowDomains)
@@ -239,6 +240,7 @@ class HostsUpdateWorker @AssistedInject constructor(
                         exactBlockOrigins = exactBlockOrigins,
                         sourceWildcardBlockOrigins = wildcardBlockOrigins,
                         sourceExactAllows = sourceAllowDomains,
+                        userExactAllows = userExactAllows,
                         dnsTypeRules = dnsTypeRules
                     )
                     diagnosticEvents.record(

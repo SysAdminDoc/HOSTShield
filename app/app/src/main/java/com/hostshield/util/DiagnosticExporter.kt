@@ -8,6 +8,7 @@ import androidx.core.content.FileProvider
 import com.hostshield.BuildConfig
 import com.hostshield.data.database.DnsLogDao
 import com.hostshield.data.database.ConnectionLogDao
+import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.service.DnsCache
@@ -28,6 +29,55 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private val THREAT_INTEL_DIAGNOSTIC_REASONS = setOf("threat_intel_domain", "threat_intel_ip")
+
+internal data class ThreatIntelDiagnosticReviewRow(
+    val feedName: String,
+    val matchType: String,
+    val blockCount: Int,
+    val appCount: Int,
+    val lastMatched: Long
+)
+
+internal data class ThreatIntelDiagnosticReviewSummary(
+    val blockCount: Int,
+    val domainCount: Int,
+    val rows: List<ThreatIntelDiagnosticReviewRow>
+)
+
+internal fun summarizeThreatIntelReviewLogs(
+    logs: List<DnsLogEntry>,
+    limit: Int = 8
+): ThreatIntelDiagnosticReviewSummary {
+    val reviewLogs = logs.filter { it.blocked && it.decisionReason in THREAT_INTEL_DIAGNOSTIC_REASONS }
+    val rows = reviewLogs
+        .groupBy { log ->
+            val feed = log.decisionSource.ifBlank { "Unknown feed" }
+            val matchType = if (log.decisionReason == "threat_intel_ip") "resolved_ip" else "domain"
+            feed to matchType
+        }
+        .map { (key, entries) ->
+            ThreatIntelDiagnosticReviewRow(
+                feedName = key.first,
+                matchType = key.second,
+                blockCount = entries.size,
+                appCount = entries.asSequence()
+                    .map { it.appPackage }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .count(),
+                lastMatched = entries.maxOfOrNull { it.timestamp } ?: 0L
+            )
+        }
+        .sortedWith(compareByDescending<ThreatIntelDiagnosticReviewRow> { it.blockCount }.thenByDescending { it.lastMatched })
+        .take(limit)
+    return ThreatIntelDiagnosticReviewSummary(
+        blockCount = reviewLogs.size,
+        domainCount = reviewLogs.asSequence().map { it.hostname.lowercase() }.distinct().count(),
+        rows = rows
+    )
+}
 
 /**
  * Diagnostic Report Generator
@@ -143,6 +193,17 @@ class DiagnosticExporter @Inject constructor(
                 )
                 if (feed.lastError.isNotBlank()) {
                     sb.appendLine("  Last error: ${feed.lastError}")
+                }
+            }
+            val reviewSummary = summarizeThreatIntelReviewLogs(dnsLogDao.getRecentLogs(500).first())
+            sb.appendLine("Review queue: ${reviewSummary.domainCount} domains, ${reviewSummary.blockCount} recent blocks")
+            if (reviewSummary.rows.isEmpty()) {
+                sb.appendLine("Review details: none")
+            } else {
+                reviewSummary.rows.forEach { row ->
+                    sb.appendLine(
+                        "Review ${row.feedName}/${row.matchType}: blocks=${row.blockCount}, apps=${row.appCount}, latest=${diagnosticAge(row.lastMatched)}"
+                    )
                 }
             }
         } catch (e: Exception) {
@@ -269,6 +330,7 @@ class DiagnosticExporter @Inject constructor(
         val remoteDohDomainCount = countCsvValues(prefs.getRemoteDohDomains())
         val remoteDohWildcardCount = countCsvValues(prefs.getRemoteDohWildcards())
         val threatFeeds = threatIntelManager.getFeedHealthSnapshot()
+        val threatReviewSummary = summarizeThreatIntelReviewLogs(dnsLogDao.getRecentLogs(500).first())
         val dir = File(context.cacheDir, "diagnostics")
         dir.mkdirs()
 
@@ -292,6 +354,9 @@ class DiagnosticExporter @Inject constructor(
                     .put("threat_intel_ip_cidr_count", threatIntelManager.ipCidrCount)
                     .put("threat_intel_feed_count", threatFeeds.size)
                     .put("threat_intel_degraded_feed_count", threatFeeds.count { it.consecutiveFailures > 0 })
+                    .put("threat_intel_review_block_count", threatReviewSummary.blockCount)
+                    .put("threat_intel_review_domain_count", threatReviewSummary.domainCount)
+                    .put("threat_intel_review_summary_count", threatReviewSummary.rows.size)
                     .toString(2)
             )
         }

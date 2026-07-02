@@ -134,6 +134,36 @@ class BlocklistHolderTest {
     }
 
     @Test
+    fun `decision reports user exact allow precedence over source blocks`() {
+        holder.update(
+            newDomains = setOf("ads.example.com"),
+            wildcards = emptyList(),
+            userExactAllows = setOf("ads.example.com")
+        )
+
+        val decision = holder.decide("ads.example.com")
+
+        assertFalse(decision.blocked)
+        assertEquals("allowlist", decision.reason)
+        assertEquals("User allow rule", decision.source)
+        assertTrue(decision.precedence.contains("threat intel"))
+    }
+
+    @Test
+    fun `allowDomain records immediate explicit allow decision`() {
+        holder.update(setOf("ads.example.com"), emptyList())
+        val before = holder.domainCount
+
+        holder.allowDomain("ads.example.com")
+        val decision = holder.decide("ads.example.com")
+
+        assertFalse(decision.blocked)
+        assertEquals("allowlist", decision.reason)
+        assertEquals("User allow rule", decision.source)
+        assertEquals(before - 1, holder.domainCount)
+    }
+
+    @Test
     fun `dns type block rules require matching query type`() {
         holder.update(
             newDomains = emptySet(),

@@ -71,6 +71,7 @@ class BlocklistHolder @Inject constructor() {
         val sourceWildcardBlockDomains: Set<String>,
         val exactBlockOrigins: Map<String, String>,
         val sourceWildcardBlockOrigins: Map<String, String>,
+        val userExactAllowDomains: Set<String>,
         val sourceExactAllowDomains: Set<String>,
         val sourceWildcardAllowDomains: Set<String>,
         val dnsTypeRules: List<DnsTypeRule>,
@@ -87,6 +88,7 @@ class BlocklistHolder @Inject constructor() {
                 sourceWildcardBlockDomains = emptySet(),
                 exactBlockOrigins = emptyMap(),
                 sourceWildcardBlockOrigins = emptyMap(),
+                userExactAllowDomains = emptySet(),
                 sourceExactAllowDomains = emptySet(),
                 sourceWildcardAllowDomains = emptySet(),
                 dnsTypeRules = emptyList(),
@@ -288,6 +290,7 @@ class BlocklistHolder @Inject constructor() {
         exactBlockOrigins: Map<String, String> = emptyMap(),
         sourceWildcardBlockOrigins: Map<String, String> = emptyMap(),
         sourceExactAllows: Set<String> = emptySet(),
+        userExactAllows: Set<String> = emptySet(),
         dnsTypeRules: List<DnsTypeRule> = emptyList(),
     ) {
         val newRoot = TrieNode()
@@ -299,6 +302,10 @@ class BlocklistHolder @Inject constructor() {
             .mapKeys { it.key.lowercase() }
             .filterKeys { it.isNotBlank() }
         val normalizedSourceExactAllows = sourceExactAllows
+            .map { it.lowercase() }
+            .filter { it.isNotBlank() }
+            .toSet()
+        val normalizedUserExactAllows = userExactAllows
             .map { it.lowercase() }
             .filter { it.isNotBlank() }
             .toSet()
@@ -376,6 +383,7 @@ class BlocklistHolder @Inject constructor() {
             sourceWildcardBlockDomains = normalizedSourceWildcardBlocks,
             exactBlockOrigins = normalizedExactBlockOrigins,
             sourceWildcardBlockOrigins = normalizedSourceWildcardBlockOrigins,
+            userExactAllowDomains = normalizedUserExactAllows,
             sourceExactAllowDomains = normalizedSourceExactAllows,
             sourceWildcardAllowDomains = normalizedSourceWildcardAllows,
             dnsTypeRules = normalizedDnsTypeRules,
@@ -395,6 +403,7 @@ class BlocklistHolder @Inject constructor() {
         exactBlockOrigins: Map<String, String> = emptyMap(),
         sourceWildcardBlockOrigins: Map<String, String> = emptyMap(),
         sourceExactAllows: Set<String> = emptySet(),
+        userExactAllows: Set<String> = emptySet(),
         dnsTypeRules: List<DnsTypeRule> = emptyList(),
     ) = withContext(Dispatchers.Default) {
         update(
@@ -407,6 +416,7 @@ class BlocklistHolder @Inject constructor() {
             exactBlockOrigins,
             sourceWildcardBlockOrigins,
             sourceExactAllows,
+            userExactAllows,
             dnsTypeRules
         )
     }
@@ -454,6 +464,7 @@ class BlocklistHolder @Inject constructor() {
             sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
             exactBlockOrigins = current.exactBlockOrigins + (h to "User block rule"),
             sourceWildcardBlockOrigins = current.sourceWildcardBlockOrigins,
+            userExactAllowDomains = current.userExactAllowDomains - h,
             sourceExactAllowDomains = current.sourceExactAllowDomains,
             sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
             dnsTypeRules = current.dnsTypeRules,
@@ -483,6 +494,32 @@ class BlocklistHolder @Inject constructor() {
             sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
             exactBlockOrigins = current.exactBlockOrigins - h,
             sourceWildcardBlockOrigins = current.sourceWildcardBlockOrigins,
+            userExactAllowDomains = current.userExactAllowDomains,
+            sourceExactAllowDomains = current.sourceExactAllowDomains,
+            sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
+            dnsTypeRules = current.dnsTypeRules,
+        )
+        decisionCache.remove(h)
+    }
+
+    @Synchronized
+    fun allowDomain(hostname: String) {
+        val h = hostname.lowercase()
+        val current = snapshot
+        val wasBlocked = h in current.exactBlockSet
+        val newBlockSet = if (wasBlocked) HashSet(current.exactBlockSet).apply { remove(h) } else current.exactBlockSet
+        snapshot = Snapshot(
+            root = current.root,
+            exactBlockSet = newBlockSet,
+            wildcardRules = current.wildcardRules,
+            regexBlockRules = current.regexBlockRules,
+            regexAllowRules = current.regexAllowRules,
+            blockedIps = current.blockedIps,
+            domainCount = if (wasBlocked) (current.domainCount - 1).coerceAtLeast(0) else current.domainCount,
+            sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
+            exactBlockOrigins = current.exactBlockOrigins - h,
+            sourceWildcardBlockOrigins = current.sourceWildcardBlockOrigins,
+            userExactAllowDomains = current.userExactAllowDomains + h,
             sourceExactAllowDomains = current.sourceExactAllowDomains,
             sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
             dnsTypeRules = current.dnsTypeRules,
@@ -545,6 +582,15 @@ class BlocklistHolder @Inject constructor() {
                 source = "Built-in DoH bypass guard",
                 matchedValue = match,
                 precedence = "DoH bypass guard is always blocked"
+            )
+        }
+        if (lower in snap.userExactAllowDomains) {
+            return BlockDecision(
+                blocked = false,
+                reason = "allowlist",
+                source = "User allow rule",
+                matchedValue = lower,
+                precedence = "user allow rule overrides blocklist and threat intel"
             )
         }
         if (lower in snap.sourceExactAllowDomains) {

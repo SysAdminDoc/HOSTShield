@@ -52,6 +52,8 @@ private data class LogFilters(
     val threatIntelOnly: Boolean
 )
 
+private val THREAT_INTEL_DECISION_REASONS = setOf("threat_intel_domain", "threat_intel_ip")
+
 @HiltViewModel
 class LogsViewModel @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
@@ -137,6 +139,17 @@ class LogsViewModel @Inject constructor(
         .map { list -> list.count { it.blocked } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    val threatReviewCount: StateFlow<Int> = logs
+        .map { logList ->
+            logList.asSequence()
+                .filter { it.isThreatIntelBlock() }
+                .map { it.hostname.lowercase() }
+                .distinct()
+                .count()
+        }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
     fun clearError() { _error.value = null }
@@ -212,7 +225,7 @@ class LogsViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 repository.addRule(UserRule(hostname = host, type = RuleType.ALLOW))
-                blocklist.removeDomain(host)
+                blocklist.allowDomain(host)
                 val method = prefs.blockMethod.first()
                 if (method == BlockMethod.ROOT_HOSTS) {
                     rootUtil.removeHostEntry(host)
@@ -328,7 +341,7 @@ class LogsViewModel @Inject constructor(
             try {
                 hosts.forEach { host ->
                     repository.addRule(UserRule(hostname = host, type = RuleType.ALLOW))
-                    blocklist.removeDomain(host)
+                    blocklist.allowDomain(host)
                 }
                 val method = prefs.blockMethod.first()
                 if (method == BlockMethod.ROOT_HOSTS) {
@@ -349,4 +362,7 @@ class LogsViewModel @Inject constructor(
 }
 
 fun DedupedLogEntry.isThreatIntelBlock(): Boolean =
-    blocked && (decisionReason == "threat_intel_domain" || decisionReason == "threat_intel_ip")
+    blocked && decisionReason in THREAT_INTEL_DECISION_REASONS
+
+private fun DnsLogEntry.isThreatIntelBlock(): Boolean =
+    blocked && decisionReason in THREAT_INTEL_DECISION_REASONS

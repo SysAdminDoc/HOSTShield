@@ -57,6 +57,17 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import javax.inject.Inject
 import java.util.concurrent.atomic.AtomicLong
 
+internal val THREAT_INTEL_BYPASS_REASONS = setOf(
+    "allowlist",
+    "allowlist_wildcard",
+    "dns_type_allow",
+    "regex_allow",
+    "protection_paused"
+)
+
+internal fun BlockDecision.skipsThreatIntelChecks(): Boolean =
+    !blocked && reason in THREAT_INTEL_BYPASS_REASONS
+
 // VPN DNS blocking service
 //
 // Architecture: DNS-only interception (DNS66-style TEST-NET routing)
@@ -160,7 +171,6 @@ class DnsVpnService : VpnService() {
 
         // Real upstream DNS (for forwarding allowed queries)
         private val UPSTREAM_DNS = arrayOf("8.8.8.8", "1.1.1.1")
-
         // DNS Trap: well-known public DNS IPs that apps hardcode.
         // Routing these through VPN ensures queries to them get filtered.
         private val DNS_TRAP_IPS = arrayOf(
@@ -927,8 +937,9 @@ class DnsVpnService : VpnService() {
                     allDomains.add(hostname)
                     exactBlockOrigins[hostname] = "User block rule"
                 }
-            repository.getEnabledRulesByType(RuleType.ALLOW).filter { !it.isWildcard }
-                .forEach { allDomains.remove(it.hostname.lowercase()) }
+            val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
+            val userExactAllows = allowRules.filter { !it.isWildcard && !it.isRegex }.map { it.hostname.lowercase() }.toSet()
+            allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
             allDomains.removeAll(sourceAllowDomains)
             dohBypassUpdater.mergeCachedInto(
                 allDomains,
@@ -945,6 +956,7 @@ class DnsVpnService : VpnService() {
                 exactBlockOrigins = exactBlockOrigins,
                 sourceWildcardBlockOrigins = wildcardBlockOrigins,
                 sourceExactAllows = sourceAllowDomains,
+                userExactAllows = userExactAllows,
                 dnsTypeRules = dnsTypeRules
             )
             val blockingDomainCount = allDomains.size + sourceWildcardBlocks.size
@@ -1191,8 +1203,9 @@ class DnsVpnService : VpnService() {
 
         val blockDecision = domainDecision(domain, qtypeNum)
         val blocked = blockDecision.blocked
+        val skipThreatIntelChecks = blockDecision.skipsThreatIntelChecks()
 
-        if (!blocked && threatIntelEnabled) {
+        if (!blocked && threatIntelEnabled && !skipThreatIntelChecks) {
             val threat = threatIntelManager.isDomainMalicious(domain)
             if (threat != null) {
                 PrivacyLog.i(TAG, "THREAT-INTEL blocked domain: $domain (${threat.feedName})")
@@ -1225,7 +1238,8 @@ class DnsVpnService : VpnService() {
                         domain,
                         app,
                         latencyMs = 0,
-                        upstreamServer = "DNS cache"
+                        upstreamServer = "DNS cache",
+                        skipThreatIntelChecks = skipThreatIntelChecks
                     )
                     if (pfResult.blocked) {
                         if (pfResult.blockResponse != null) wrapAndSend(packet, headerOffset, isV6, pfResult.blockResponse)
@@ -1236,7 +1250,7 @@ class DnsVpnService : VpnService() {
                     if (cacheResult.needsPrefetch) {
                         serviceScope.launch {
                             try {
-                                refreshDnsCacheOnly(dns, domain, app)
+                                refreshDnsCacheOnly(dns, domain, app, skipThreatIntelChecks)
                             } catch (e: Exception) { PrivacyLog.d(TAG, "Prefetch failed for $domain: ${e.message}") }
                         }
                     }
@@ -1249,7 +1263,8 @@ class DnsVpnService : VpnService() {
                         domain,
                         app,
                         latencyMs = 0,
-                        upstreamServer = "DNS stale cache"
+                        upstreamServer = "DNS stale cache",
+                        skipThreatIntelChecks = skipThreatIntelChecks
                     )
                     if (pfResult.blocked) {
                         if (pfResult.blockResponse != null) wrapAndSend(packet, headerOffset, isV6, pfResult.blockResponse)
@@ -1259,7 +1274,7 @@ class DnsVpnService : VpnService() {
                     allowedCount.incrementAndGet()
                     serviceScope.launch {
                         try {
-                            refreshDnsCacheOnly(dns, domain, app)
+                            refreshDnsCacheOnly(dns, domain, app, skipThreatIntelChecks)
                         } catch (e: Exception) { PrivacyLog.d(TAG, "Stale refresh failed for $domain: ${e.message}") }
                     }
                     return
@@ -1268,7 +1283,7 @@ class DnsVpnService : VpnService() {
 
             PrivacyLog.d(TAG, "ALLOWED $domain ($qtype)")
             val pCopy = packet.copyOf(length)
-            serviceScope.launch { forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset) }
+            serviceScope.launch { forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset, skipThreatIntelChecks) }
             allowedCount.incrementAndGet()
         }
     }
@@ -2096,7 +2111,8 @@ class DnsVpnService : VpnService() {
     private suspend fun refreshDnsCacheOnly(
         dns: ByteArray,
         domain: String,
-        app: Pair<String, String> = Pair("", "")
+        app: Pair<String, String> = Pair("", ""),
+        skipThreatIntelChecks: Boolean = false
     ) {
         val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
         val resolved = dnsQueryDeduplicator.getOrRun(
@@ -2107,7 +2123,15 @@ class DnsVpnService : VpnService() {
 
         if (resolved is UpstreamResolveResult.Success) {
             val response = patchDnsTransactionId(resolved.response, dns)
-            postForwardChecks(response, dns, domain, app, resolved.latencyMs, resolved.upstreamServer)
+            postForwardChecks(
+                response,
+                dns,
+                domain,
+                app,
+                resolved.latencyMs,
+                resolved.upstreamServer,
+                skipThreatIntelChecks
+            )
         }
     }
 

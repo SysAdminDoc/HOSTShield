@@ -955,6 +955,7 @@ class HomeViewModel @Inject constructor(
             exactBlockOrigins[hostname] = "User block rule"
         }
         val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
+        val userExactAllows = allowRules.filter { !it.isWildcard && !it.isRegex }.map { it.hostname.lowercase() }.toSet()
         allowRules.filter { !it.isWildcard }.forEach { allDomains.remove(it.hostname.lowercase()) }
         allDomains.removeAll(sourceAllowDomains)
         dohBypassUpdater.mergeCachedInto(
@@ -972,6 +973,7 @@ class HomeViewModel @Inject constructor(
             exactBlockOrigins = exactBlockOrigins,
             sourceWildcardBlockOrigins = wildcardBlockOrigins,
             sourceExactAllows = sourceAllowDomains,
+            userExactAllows = userExactAllows,
             dnsTypeRules = dnsTypeRules
         )
 

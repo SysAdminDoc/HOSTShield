@@ -12,12 +12,17 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - Scoped AdGuard `$app=`, `$client=`, and `$ctag=` source rules now emit parse
   diagnostics when skipped so unsupported scoped rules are never silently
   globalized.
+- DNS logs now expose a counted threat-review queue, and diagnostic ZIPs include
+  feed/type false-positive summaries without raw IOC details by default.
 
 ### Security
 - Remote DoH bypass list updates now require a matching canonical payload hash
   and release-key signature before the app stores any fetched policy entries.
 - The release documentation gate now verifies the signed DoH bypass manifest so
   tampered, unsigned, or stale-format remote policy cannot ship unnoticed.
+- User allow rules and paused protection now bypass threat-intel re-blocking for
+  domain and resolved-IP checks, so false-positive recovery does not require
+  disabling malware feeds.
 
 ## [v6.9.57] - 2026-07-01
 

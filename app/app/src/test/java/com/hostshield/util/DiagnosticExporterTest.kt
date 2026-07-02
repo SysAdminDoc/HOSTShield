@@ -1,5 +1,6 @@
 package com.hostshield.util
 
+import com.hostshield.data.model.DnsLogEntry
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Rule
@@ -128,5 +129,61 @@ class DiagnosticExporterTest {
             )
             assertEquals(3, json.getInt("event_count"))
         }
+    }
+
+    @Test
+    fun `threat intel diagnostic summary groups without raw indicators`() {
+        val summary = summarizeThreatIntelReviewLogs(
+            listOf(
+                DnsLogEntry(
+                    hostname = "bad.example",
+                    blocked = true,
+                    appPackage = "com.example.browser",
+                    timestamp = 1000L,
+                    decisionReason = "threat_intel_domain",
+                    decisionSource = "URLhaus",
+                    matchedValue = "bad.example"
+                ),
+                DnsLogEntry(
+                    hostname = "ip-hit.example",
+                    blocked = true,
+                    appPackage = "com.example.browser",
+                    timestamp = 2000L,
+                    decisionReason = "threat_intel_ip",
+                    decisionSource = "Spamhaus DROP",
+                    matchedValue = "203.0.113.44"
+                ),
+                DnsLogEntry(
+                    hostname = "ip-hit.example",
+                    blocked = true,
+                    appPackage = "com.example.mail",
+                    timestamp = 3000L,
+                    decisionReason = "threat_intel_ip",
+                    decisionSource = "Spamhaus DROP",
+                    matchedValue = "203.0.113.44"
+                ),
+                DnsLogEntry(
+                    hostname = "ordinary.example",
+                    blocked = true,
+                    timestamp = 4000L,
+                    decisionReason = "source_list",
+                    decisionSource = "Source"
+                )
+            )
+        )
+
+        assertEquals(3, summary.blockCount)
+        assertEquals(2, summary.domainCount)
+        assertEquals(
+            ThreatIntelDiagnosticReviewRow(
+                feedName = "Spamhaus DROP",
+                matchType = "resolved_ip",
+                blockCount = 2,
+                appCount = 2,
+                lastMatched = 3000L
+            ),
+            summary.rows.first()
+        )
+        assertFalse(summary.rows.any { it.feedName.contains("203.0.113.44") })
     }
 }
