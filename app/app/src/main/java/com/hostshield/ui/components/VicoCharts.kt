@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,23 +32,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.data.columnModel
+import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import com.patrykandpatrick.vico.compose.cartesian.layer.ColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.compose.common.shape.rounded
-import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
-import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
-import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
-import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
-import com.patrykandpatrick.vico.core.common.component.LineComponent
-import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.component.LineComponent
 import com.hostshield.ui.theme.Blue
 import com.hostshield.ui.theme.Flamingo
 import com.hostshield.ui.theme.Green
@@ -76,7 +73,7 @@ fun HourlyBlockedChart(
 
     LaunchedEffect(data) {
         modelProducer.runTransaction {
-            lineSeries {
+            lineModel {
                 series(
                     x = data.map { it.first.toDouble() },
                     y = data.map { it.second.toDouble() },
@@ -92,14 +89,14 @@ fun HourlyBlockedChart(
             6 -> "6a"
             12 -> "12p"
             18 -> "6p"
-            else -> ""
+            else -> "${h}h"
         }
     }
 
     val lineColor = Teal
     val lineProvider = LineCartesianLayer.LineProvider.series(
         LineCartesianLayer.Line(
-            fill = LineCartesianLayer.LineFill.single(fill(lineColor)),
+            fill = LineCartesianLayer.LineFill.single(Fill(lineColor)),
         )
     )
 
@@ -133,7 +130,7 @@ fun DailyTrendChart(
 
     LaunchedEffect(blocked, allowed) {
         modelProducer.runTransaction {
-            columnSeries {
+            columnModel {
                 series(blocked.map { it.second })
                 series(allowed.map { it.second })
             }
@@ -141,19 +138,19 @@ fun DailyTrendChart(
     }
 
     val dayFormatter = CartesianValueFormatter { _, value, _ ->
-        dayLabels.getOrElse(value.toInt()) { "" }
+        dayLabels.getOrElse(value.toInt()) { value.toInt().toString() }
     }
 
     val columnProvider = ColumnCartesianLayer.ColumnProvider.series(
         LineComponent(
-            fill = fill(Teal),
-            thicknessDp = 16f,
-            shape = CorneredShape.rounded(topLeftPercent = 20, topRightPercent = 20),
+            fill = Fill(Teal),
+            thickness = 16.dp,
+            shape = RoundedCornerShape(topStartPercent = 20, topEndPercent = 20),
         ),
         LineComponent(
-            fill = fill(Mauve),
-            thicknessDp = 16f,
-            shape = CorneredShape.rounded(topLeftPercent = 20, topRightPercent = 20),
+            fill = Fill(Mauve),
+            thickness = 16.dp,
+            shape = RoundedCornerShape(topStartPercent = 20, topEndPercent = 20),
         ),
     )
 
@@ -276,7 +273,7 @@ fun LatencyHistogram(
         }
 
         modelProducer.runTransaction {
-            columnSeries {
+            columnModel {
                 series(greenSeries)
                 series(yellowSeries)
                 series(redSeries)
@@ -285,24 +282,24 @@ fun LatencyHistogram(
     }
 
     val bucketFormatter = CartesianValueFormatter { _, value, _ ->
-        bucketLabels.getOrElse(value.toInt()) { "" }
+        bucketLabels.getOrElse(value.toInt()) { value.toInt().toString() }
     }
 
     val columnProvider = ColumnCartesianLayer.ColumnProvider.series(
         LineComponent(
-            fill = fill(Green),
-            thicknessDp = 20f,
-            shape = CorneredShape.rounded(topLeftPercent = 20, topRightPercent = 20),
+            fill = Fill(Green),
+            thickness = 20.dp,
+            shape = RoundedCornerShape(topStartPercent = 20, topEndPercent = 20),
         ),
         LineComponent(
-            fill = fill(Yellow),
-            thicknessDp = 20f,
-            shape = CorneredShape.rounded(topLeftPercent = 20, topRightPercent = 20),
+            fill = Fill(Yellow),
+            thickness = 20.dp,
+            shape = RoundedCornerShape(topStartPercent = 20, topEndPercent = 20),
         ),
         LineComponent(
-            fill = fill(Red),
-            thicknessDp = 20f,
-            shape = CorneredShape.rounded(topLeftPercent = 20, topRightPercent = 20),
+            fill = Fill(Red),
+            thickness = 20.dp,
+            shape = RoundedCornerShape(topStartPercent = 20, topEndPercent = 20),
         ),
     )
 

@@ -666,10 +666,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ## Audit Findings — 2026-06-17
 
-- [ ] P2 — Plan the remaining toolchain/dependency refresh as a compatibility batch
-  Why: Remaining lint/dependency baseline entries cover target/compile SDK, KSP, core-ktx, Kotlin, serialization, Vico, and JSON; several likely need coordinated Android 17/API 37 readiness and visual/chart regression checks.
-  Where: `app/app/build.gradle.kts`, `app/gradle/libs.versions.toml`, chart and serialization call sites.
-
 ## Research-Driven Additions - 2026-06-28
 
 ### P2

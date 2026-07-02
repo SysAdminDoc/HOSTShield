@@ -1,5 +1,17 @@
 # HostShield Unreleased
 
+## Toolchain Dependency Refresh
+
+### Changed
+- Updated the compatible toolchain batch to Gradle 9.6.1, KSP 2.3.9,
+  AndroidX Core 1.19, Hilt 2.60, AndroidX Hilt 1.4, Compose BOM 2026.06.01,
+  serialization 1.11, Vico 3.2.3, JSON 20260522, and current JVM test
+  libraries.
+- Migrated shared Vico chart adapters to the 3.x Compose package/API surface
+  and removed fixed dependency findings from the lint baseline.
+
+---
+
 ## API 37 Compile Readiness
 
 ### Changed

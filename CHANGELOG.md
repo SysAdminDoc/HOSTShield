@@ -19,6 +19,11 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   feed/type false-positive summaries without raw IOC details by default.
 
 ### Changed
+- Refreshed the compatible build/test dependency batch: Gradle 9.6.1,
+  AndroidX Core 1.19, KSP 2.3.9, Hilt 2.60, AndroidX Hilt 1.4,
+  Compose BOM 2026.06.01, serialization 1.11, Vico 3.2.3, JSON 20260522,
+  and current test libraries; Vico chart adapters now use the 3.x Compose API
+  and the lint baseline no longer hides fixed dependency warnings.
 - Prepared the build for API 37 by moving compileSdk to 37 and adopting
   AndroidX Lifecycle 2.11 while keeping targetSdk 36 behavior unchanged.
 - Blocklist lookups now use a snapshot-local Bloom pre-check to fast-reject
