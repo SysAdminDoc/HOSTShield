@@ -19,6 +19,8 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   feed/type false-positive summaries without raw IOC details by default.
 
 ### Changed
+- Prepared the build for API 37 by moving compileSdk to 37 and adopting
+  AndroidX Lifecycle 2.11 while keeping targetSdk 36 behavior unchanged.
 - Blocklist lookups now use a snapshot-local Bloom pre-check to fast-reject
   cold negative domains before trie traversal while preserving regex, DNS-type,
   allowlist, and `www.` fallback decisions.

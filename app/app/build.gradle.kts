@@ -29,7 +29,7 @@ fun releaseSigningFailureMessage(): String =
 
 android {
     namespace = "com.hostshield"
-        compileSdk = 36
+        compileSdk = 37
 
     defaultConfig {
         applicationId = "com.hostshield"

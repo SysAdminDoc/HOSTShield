@@ -666,10 +666,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ## Audit Findings — 2026-06-17
 
-- [ ] P2 — Lifecycle 2.11 requires API 37 compile-SDK readiness
-  Why: AndroidX Lifecycle 2.11.0 fails AAR metadata on the current compileSdk 36 line; adopting it safely should be bundled with the API 37 readiness audit instead of bypassing the guard.
-  Where: `app/gradle/libs.versions.toml`, `app/app/build.gradle.kts`
-
 - [ ] P2 — Plan the remaining toolchain/dependency refresh as a compatibility batch
   Why: Remaining lint/dependency baseline entries cover target/compile SDK, KSP, core-ktx, Kotlin, serialization, Vico, and JSON; several likely need coordinated Android 17/API 37 readiness and visual/chart regression checks.
   Where: `app/app/build.gradle.kts`, `app/gradle/libs.versions.toml`, chart and serialization call sites.

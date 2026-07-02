@@ -1,5 +1,13 @@
 # HostShield Unreleased
 
+## API 37 Compile Readiness
+
+### Changed
+- The app now builds with compileSdk 37 and AndroidX Lifecycle 2.11 while
+  retaining targetSdk 36 runtime behavior for the current release line.
+
+---
+
 ## Blocklist Bloom Pre-Check
 
 ### Changed

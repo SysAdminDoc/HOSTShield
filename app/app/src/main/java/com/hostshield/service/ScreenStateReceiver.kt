@@ -1,6 +1,7 @@
 package com.hostshield.service
 
-import android.app.ActivityManager
+import android.annotation.SuppressLint
+import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -8,6 +9,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.content.ContextCompat
@@ -48,8 +50,13 @@ object ContextState {
     }
 
     /** Update foreground app. Call periodically from VPN service. */
+    @SuppressLint("MissingPermission")
     fun updateForegroundApp(context: Context) {
         try {
+            if (!hasUsageStatsAccess(context)) {
+                foregroundPackage = ""
+                return
+            }
             val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
             if (usm != null) {
                 val now = System.currentTimeMillis()
@@ -61,6 +68,26 @@ object ContextState {
         } catch (e: Exception) {
             Log.d("ContextState", "Usage stats unavailable: ${e.message}")
         }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun hasUsageStatsAccess(context: Context): Boolean {
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
+            ?: return false
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                context.applicationInfo.uid,
+                context.packageName,
+            )
+        } else {
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                context.applicationInfo.uid,
+                context.packageName,
+            )
+        }
+        return mode == AppOpsManager.MODE_ALLOWED
     }
 
     fun updateMeteredState(context: Context) {

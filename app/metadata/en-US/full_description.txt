@@ -42,6 +42,6 @@ Privacy and portability:
 Release and platform notes:
 
 - Android 8+ supported.
-- Built with Kotlin 2.3, Android SDK 36, targetSdk 36, Android Gradle Plugin 9.2, Material 3 Compose, Room, WorkManager, and Hilt.
+- Built with Kotlin 2.3, Android SDK 37, targetSdk 36, Android Gradle Plugin 9.2, Material 3 Compose, Room, WorkManager, and Hilt.
 - Full APK releases include QUERY_ALL_PACKAGES for complete local app firewall visibility. Play flavor artifacts remove that permission and use limited package visibility.
 - The project is licensed under GPL-3.0 after resolving the prior license-publication conflict.

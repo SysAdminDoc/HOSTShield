@@ -215,7 +215,7 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 ## Build
 
 ```powershell
-# Prerequisites: JDK 17+, Android SDK 36
+# Prerequisites: JDK 17+, Android SDK 37
 cd C:\Users\--\repos\HostShield
 
 # Full flavor — GitHub/F-Droid release (root features, QUERY_ALL_PACKAGES)
@@ -301,7 +301,7 @@ Public actions are protected by HostShield's signature-level automation permissi
 | Networking | OkHttp 5 (source downloads, pinned DoH resolver) |
 | Root | libsu (topjohnwu) |
 | GeoIP | Bounded ipapi.co lookup with in-memory cache and exponential backoff |
-| Build | Gradle KTS, version catalog, AGP 9.2, KSP, Android SDK 36 compile / targetSdk 36, minSdk 26 |
+| Build | Gradle KTS, version catalog, AGP 9.2, KSP, Android SDK 37 compile / targetSdk 36, minSdk 26 |
 
 ---
 
