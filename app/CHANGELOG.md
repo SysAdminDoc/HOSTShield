@@ -1,5 +1,15 @@
 # HostShield Unreleased
 
+## Tracker Attribution Dataset
+
+### Added
+- Network tracker attribution now loads from a checked local TSV asset with
+  per-row provenance before falling back to legacy curated entries.
+- JVM coverage verifies deterministic suffix lookup, source provenance,
+  malformed-row skipping, and duplicate-free asset rows without network access.
+
+---
+
 ## Toolchain Dependency Refresh
 
 ### Changed

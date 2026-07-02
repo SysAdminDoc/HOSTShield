@@ -1,6 +1,10 @@
 package com.hostshield.util
 
+import android.content.Context
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.InputStream
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -8,8 +12,8 @@ import javax.inject.Singleton
 /**
  * v6.0: Network-based tracker detection database.
  *
- * Maps DNS domains to tracker owner + category using curated lists derived from
- * Disconnect (disconnect.me/trackerprotection) and DuckDuckGo Tracker Radar.
+ * Maps DNS domains to tracker owner + category using a checked local
+ * attribution dataset plus legacy curated fallback entries.
  *
  * Unlike APK scanning (TrackerSignatureDb) which detects SDK presence, this
  * proves actual data exfiltration by matching live DNS queries against known
@@ -19,11 +23,22 @@ import javax.inject.Singleton
  * the entry for "doubleclick.net" (parent domain traversal).
  */
 @Singleton
-class NetworkTrackerDb @Inject constructor() {
+class NetworkTrackerDb private constructor(
+    private val datasetOpener: () -> InputStream
+) {
+    @Inject
+    constructor(@ApplicationContext context: Context) : this({
+        context.assets.open(TRACKER_ATTRIBUTION_ASSET)
+    })
+
+    internal constructor(datasetText: String) : this({
+        datasetText.byteInputStream(Charsets.UTF_8)
+    })
 
     data class TrackerDomain(
         val owner: String,
-        val category: String
+        val category: String,
+        val source: String = LEGACY_SOURCE
     )
 
     private val domains = ConcurrentHashMap<String, TrackerDomain>()
@@ -32,6 +47,8 @@ class NetworkTrackerDb @Inject constructor() {
 
     init {
         loadBuiltinDatabase()
+        loadAttributionDataset()
+        Log.i(TAG, "Loaded ${domains.size} tracker domains")
     }
 
     /**
@@ -40,7 +57,7 @@ class NetworkTrackerDb @Inject constructor() {
      * Thread-safe (ConcurrentHashMap).
      */
     fun lookup(domain: String): TrackerDomain? {
-        val lower = domain.lowercase()
+        val lower = normalizeDomain(domain) ?: return null
         // Exact match
         domains[lower]?.let { return it }
         // Parent domain traversal
@@ -52,8 +69,64 @@ class NetworkTrackerDb @Inject constructor() {
         return null
     }
 
-    private fun add(domain: String, owner: String, category: String) {
-        domains[domain] = TrackerDomain(owner, category)
+    private fun add(
+        domain: String,
+        owner: String,
+        category: String,
+        source: String = LEGACY_SOURCE
+    ) {
+        val normalizedDomain = normalizeDomain(domain) ?: return
+        val normalizedOwner = owner.trim()
+        val normalizedCategory = category.trim()
+        val normalizedSource = source.trim()
+        if (normalizedOwner.isEmpty() || normalizedCategory.isEmpty() || normalizedSource.isEmpty()) return
+        domains[normalizedDomain] = TrackerDomain(
+            owner = normalizedOwner,
+            category = normalizedCategory,
+            source = normalizedSource
+        )
+    }
+
+    private fun loadAttributionDataset() {
+        try {
+            datasetOpener().bufferedReader(Charsets.UTF_8).useLines { lines ->
+                lines.forEachIndexed { index, rawLine ->
+                    loadAttributionLine(rawLine, index + 1)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Tracker attribution asset unavailable: ${e.message}")
+        }
+    }
+
+    private fun loadAttributionLine(rawLine: String, lineNumber: Int) {
+        val line = rawLine.trim()
+        if (line.isEmpty() || line.startsWith("#")) return
+
+        val columns = rawLine.split('\t')
+        if (columns.size < 4) {
+            Log.w(TAG, "Skipping malformed tracker attribution row $lineNumber")
+            return
+        }
+
+        add(
+            domain = columns[0],
+            owner = columns[1],
+            category = columns[2],
+            source = columns[3]
+        )
+    }
+
+    private fun normalizeDomain(domain: String): String? {
+        val normalized = domain.trim()
+            .lowercase(Locale.ROOT)
+            .removePrefix("http://")
+            .removePrefix("https://")
+            .trimStart('.')
+            .trimEnd('.')
+        if (normalized.isEmpty() || !normalized.contains('.')) return null
+        if (normalized.any { it.isWhitespace() || it == '/' }) return null
+        return normalized
     }
 
     private fun loadBuiltinDatabase() {
@@ -328,6 +401,11 @@ class NetworkTrackerDb @Inject constructor() {
         add("agkn.com", "Neustar", "Identification")
         add("acxiom.com", "Acxiom", "Identification")
 
-        Log.i("NetworkTrackerDb", "Loaded ${domains.size} tracker domains")
+    }
+
+    private companion object {
+        private const val TAG = "NetworkTrackerDb"
+        private const val TRACKER_ATTRIBUTION_ASSET = "tracker_attribution.tsv"
+        private const val LEGACY_SOURCE = "hostshield-legacy-curated"
     }
 }

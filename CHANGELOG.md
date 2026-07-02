@@ -6,6 +6,9 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 ## [Unreleased]
 
 ### Added
+- Added a checked local tracker attribution dataset with per-row provenance so
+  Stats can resolve common tracker domains to owner/category offline and
+  deterministically.
 - Added a local protection-resilience matrix runner and connected smoke test for
   VPN recovery, Private Space/work-profile, battery, and diagnostic-event
   release evidence.

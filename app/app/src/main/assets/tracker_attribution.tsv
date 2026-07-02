@@ -1,0 +1,163 @@
+# HostShield tracker attribution dataset v1
+# Columns: domain<TAB>owner<TAB>category<TAB>source
+# Checked local dataset curated for HostShield from public vendor domains and project review.
+# DuckDuckGo Tracker Radar and TrackerControl informed product behavior only; their datasets are not vendored here.
+doubleclick.net	Google	Advertising	hostshield-audit:google-ads
+2mdn.net	Google	Advertising	hostshield-audit:google-ads
+googleadservices.com	Google	Advertising	hostshield-audit:google-ads
+googlesyndication.com	Google	Advertising	hostshield-audit:google-ads
+googletagmanager.com	Google	Analytics	hostshield-audit:google-marketing-platform
+googletagservices.com	Google	Advertising	hostshield-audit:google-marketing-platform
+google-analytics.com	Google	Analytics	hostshield-audit:google-analytics
+analytics.google.com	Google	Analytics	hostshield-audit:google-analytics
+firebaseinstallations.googleapis.com	Google	Analytics	hostshield-audit:firebase
+firebaselogging-pa.googleapis.com	Google	Analytics	hostshield-audit:firebase
+firebaseremoteconfig.googleapis.com	Google	Analytics	hostshield-audit:firebase
+firebase-settings.crashlytics.com	Google	Crash Reporting	hostshield-audit:firebase-crashlytics
+crashlyticsreports-pa.googleapis.com	Google	Crash Reporting	hostshield-audit:firebase-crashlytics
+app-measurement.com	Google	Analytics	hostshield-audit:firebase-analytics
+admob.com	Google	Advertising	hostshield-audit:admob
+facebook.net	Meta	Advertising	hostshield-audit:meta-business
+connect.facebook.net	Meta	Advertising	hostshield-audit:meta-business
+graph.facebook.com	Meta	Advertising	hostshield-audit:meta-graph-api
+an.facebook.com	Meta	Advertising	hostshield-audit:meta-audience-network
+pixel.facebook.com	Meta	Advertising	hostshield-audit:meta-pixel
+fbcdn.net	Meta	Social	hostshield-audit:meta-cdn
+instagram.com	Meta	Social	hostshield-audit:instagram
+cdninstagram.com	Meta	Social	hostshield-audit:instagram
+amazon-adsystem.com	Amazon	Advertising	hostshield-audit:amazon-ads
+aax.amazon-adsystem.com	Amazon	Advertising	hostshield-audit:amazon-ads
+mads.amazon-adsystem.com	Amazon	Advertising	hostshield-audit:amazon-ads
+ads.linkedin.com	Microsoft	Advertising	hostshield-audit:linkedin-ads
+bat.bing.com	Microsoft	Advertising	hostshield-audit:microsoft-advertising
+clarity.ms	Microsoft	Analytics	hostshield-audit:microsoft-clarity
+licdn.com	Microsoft	Social	hostshield-audit:linkedin
+unityads.unity3d.com	Unity	Advertising	hostshield-audit:unity-ads
+config.unityads.unity3d.com	Unity	Advertising	hostshield-audit:unity-ads
+auction.unityads.unity3d.com	Unity	Advertising	hostshield-audit:unity-ads
+applovin.com	AppLovin	Advertising	hostshield-audit:applovin
+applvn.com	AppLovin	Advertising	hostshield-audit:applovin
+ms.applovin.com	AppLovin	Advertising	hostshield-audit:applovin
+vungle.com	Liftoff	Advertising	hostshield-audit:liftoff-vungle
+liftoff.io	Liftoff	Advertising	hostshield-audit:liftoff
+ironsrc.com	ironSource	Advertising	hostshield-audit:ironsource
+supersonicads.com	ironSource	Advertising	hostshield-audit:ironsource
+is.com	ironSource	Advertising	hostshield-audit:ironsource
+chartboost.com	Chartboost	Advertising	hostshield-audit:chartboost
+adcolony.com	Digital Turbine	Advertising	hostshield-audit:adcolony
+digitalturbine.com	Digital Turbine	Advertising	hostshield-audit:digital-turbine
+inmobi.com	InMobi	Advertising	hostshield-audit:inmobi
+inmobi.cn	InMobi	Advertising	hostshield-audit:inmobi
+smaato.net	Smaato	Advertising	hostshield-audit:smaato
+pubmatic.com	PubMatic	Advertising	hostshield-audit:pubmatic
+openx.net	OpenX	Advertising	hostshield-audit:openx
+rubiconproject.com	Magnite	Advertising	hostshield-audit:magnite
+magnite.com	Magnite	Advertising	hostshield-audit:magnite
+casalemedia.com	Index Exchange	Advertising	hostshield-audit:index-exchange
+indexww.com	Index Exchange	Advertising	hostshield-audit:index-exchange
+bidswitch.net	IPONWEB	Advertising	hostshield-audit:bidswitch
+adsrvr.org	The Trade Desk	Identification	hostshield-audit:the-trade-desk
+thetradedesk.com	The Trade Desk	Advertising	hostshield-audit:the-trade-desk
+criteo.com	Criteo	Advertising	hostshield-audit:criteo
+criteo.net	Criteo	Advertising	hostshield-audit:criteo
+taboola.com	Taboola	Advertising	hostshield-audit:taboola
+taboolasyndication.com	Taboola	Advertising	hostshield-audit:taboola
+outbrain.com	Outbrain	Advertising	hostshield-audit:outbrain
+quantcast.com	Quantcast	Advertising	hostshield-audit:quantcast
+quantserve.com	Quantcast	Advertising	hostshield-audit:quantcast
+bluekai.com	Oracle	Advertising	hostshield-audit:oracle-bluekai
+bkrtx.com	Oracle	Advertising	hostshield-audit:oracle-bluekai
+addthis.com	Oracle	Advertising	hostshield-audit:oracle-addthis
+moatads.com	Oracle	Advertising	hostshield-audit:oracle-moat
+krxd.net	Salesforce	Advertising	hostshield-audit:salesforce-krux
+krux.net	Salesforce	Advertising	hostshield-audit:salesforce-krux
+exacttarget.com	Salesforce	Analytics	hostshield-audit:salesforce-marketing-cloud
+demdex.net	Adobe	Identification	hostshield-audit:adobe-experience-cloud
+omtrdc.net	Adobe	Identification	hostshield-audit:adobe-analytics
+2o7.net	Adobe	Identification	hostshield-audit:adobe-analytics
+everesttech.net	Adobe	Identification	hostshield-audit:adobe-advertising
+adjust.com	Adjust	Analytics	hostshield-audit:adjust
+app.adjust.com	Adjust	Analytics	hostshield-audit:adjust
+appsflyer.com	AppsFlyer	Analytics	hostshield-audit:appsflyer
+launches.appsflyer.com	AppsFlyer	Analytics	hostshield-audit:appsflyer
+t.appsflyer.com	AppsFlyer	Analytics	hostshield-audit:appsflyer
+branch.io	Branch	Analytics	hostshield-audit:branch
+app.link	Branch	Analytics	hostshield-audit:branch
+bnc.lt	Branch	Analytics	hostshield-audit:branch
+api2.branch.io	Branch	Analytics	hostshield-audit:branch
+mixpanel.com	Mixpanel	Analytics	hostshield-audit:mixpanel
+api.mixpanel.com	Mixpanel	Analytics	hostshield-audit:mixpanel
+amplitude.com	Amplitude	Analytics	hostshield-audit:amplitude
+api.amplitude.com	Amplitude	Analytics	hostshield-audit:amplitude
+api2.amplitude.com	Amplitude	Analytics	hostshield-audit:amplitude
+segment.io	Segment	Analytics	hostshield-audit:segment
+segment.com	Segment	Analytics	hostshield-audit:segment
+api.segment.io	Segment	Analytics	hostshield-audit:segment
+cdn.segment.com	Segment	Analytics	hostshield-audit:segment
+kochava.com	Kochava	Analytics	hostshield-audit:kochava
+singular.net	Singular	Analytics	hostshield-audit:singular
+braze.com	Braze	Analytics	hostshield-audit:braze
+appboy.com	Braze	Analytics	hostshield-audit:braze
+brazesdk.com	Braze	Analytics	hostshield-audit:braze
+clevertap.com	CleverTap	Analytics	hostshield-audit:clevertap
+clevertap-prod.com	CleverTap	Analytics	hostshield-audit:clevertap
+onesignal.com	OneSignal	Analytics	hostshield-audit:onesignal
+urbanairship.com	Airship	Analytics	hostshield-audit:airship
+localytics.com	Localytics	Analytics	hostshield-audit:localytics
+heap.io	Heap	Analytics	hostshield-audit:heap
+heapanalytics.com	Heap	Analytics	hostshield-audit:heap
+newrelic.com	New Relic	Analytics	hostshield-audit:new-relic
+nr-data.net	New Relic	Analytics	hostshield-audit:new-relic
+datadoghq.com	Datadog	Analytics	hostshield-audit:datadog
+browser-intake-datadoghq.com	Datadog	Analytics	hostshield-audit:datadog
+bugsnag.com	Bugsnag	Crash Reporting	hostshield-audit:bugsnag
+notify.bugsnag.com	Bugsnag	Crash Reporting	hostshield-audit:bugsnag
+sentry.io	Sentry	Crash Reporting	hostshield-audit:sentry
+ingest.sentry.io	Sentry	Crash Reporting	hostshield-audit:sentry
+hotjar.com	Hotjar	Analytics	hostshield-audit:hotjar
+hotjar.io	Hotjar	Analytics	hostshield-audit:hotjar
+fullstory.com	FullStory	Analytics	hostshield-audit:fullstory
+mouseflow.com	Mouseflow	Analytics	hostshield-audit:mouseflow
+luckyorange.com	Lucky Orange	Analytics	hostshield-audit:luckyorange
+crazyegg.com	Crazy Egg	Analytics	hostshield-audit:crazyegg
+optimizely.com	Optimizely	Analytics	hostshield-audit:optimizely
+cdn.optimizely.com	Optimizely	Analytics	hostshield-audit:optimizely
+fingerprintjs.com	FingerprintJS	Fingerprinting	hostshield-audit:fingerprintjs
+fpjs.io	FingerprintJS	Fingerprinting	hostshield-audit:fingerprintjs
+threatmetrix.com	LexisNexis	Fingerprinting	hostshield-audit:threatmetrix
+online-metrix.net	LexisNexis	Fingerprinting	hostshield-audit:threatmetrix
+perimeterx.net	Human	Fingerprinting	hostshield-audit:human-perimeterx
+px-cdn.net	Human	Fingerprinting	hostshield-audit:human-perimeterx
+px-cloud.net	Human	Fingerprinting	hostshield-audit:human-perimeterx
+deviceatlas.com	DeviceAtlas	Fingerprinting	hostshield-audit:deviceatlas
+iovation.com	TransUnion	Fingerprinting	hostshield-audit:iovation
+safegraph.com	SafeGraph	Location	hostshield-audit:safegraph
+foursquare.com	Foursquare	Location	hostshield-audit:foursquare
+factual.com	Foursquare	Location	hostshield-audit:factual
+cuebiq.com	Cuebiq	Location	hostshield-audit:cuebiq
+placed.com	Foursquare	Location	hostshield-audit:placed
+huq.io	Huq	Location	hostshield-audit:huq
+tapad.com	Tapad	Identification	hostshield-audit:tapad
+liveramp.com	LiveRamp	Identification	hostshield-audit:liveramp
+id5-sync.com	ID5	Identification	hostshield-audit:id5
+33across.com	33Across	Advertising	hostshield-audit:33across
+sharethrough.com	Sharethrough	Advertising	hostshield-audit:sharethrough
+triplelift.com	TripleLift	Advertising	hostshield-audit:triplelift
+smartadserver.com	Equativ	Advertising	hostshield-audit:equativ
+ads-twitter.com	X	Advertising	hostshield-audit:x-ads
+ads-api.twitter.com	X	Advertising	hostshield-audit:x-ads
+t.co	X	Social	hostshield-audit:x
+twimg.com	X	Social	hostshield-audit:x
+sc-static.net	Snap	Advertising	hostshield-audit:snap-ads
+tr.snapchat.com	Snap	Advertising	hostshield-audit:snap-ads
+snapchat.com	Snap	Social	hostshield-audit:snap
+byteoversea.com	ByteDance	Advertising	hostshield-audit:bytedance
+tiktokv.com	ByteDance	Advertising	hostshield-audit:tiktok
+tiktok.com	ByteDance	Social	hostshield-audit:tiktok
+tiktokcdn.com	ByteDance	Social	hostshield-audit:tiktok
+musical.ly	ByteDance	Social	hostshield-audit:tiktok
+trk.pinterest.com	Pinterest	Advertising	hostshield-audit:pinterest
+pinterest.com	Pinterest	Social	hostshield-audit:pinterest
+pinimg.com	Pinterest	Social	hostshield-audit:pinterest
+redditstatic.com	Reddit	Social	hostshield-audit:reddit
+redditmedia.com	Reddit	Social	hostshield-audit:reddit

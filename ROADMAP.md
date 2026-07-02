@@ -670,13 +670,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ### P2
 
-- [ ] P2 - Generate tracker-owner attribution from an audited local dataset
-  Why: HostShield now shows company attribution, but the local tracker owner map is small and hand-maintained while TrackerControl and DuckDuckGo Tracker Radar demonstrate richer generated attribution without requiring telemetry.
-  Evidence: `app/app/src/main/java/com/hostshield/util/NetworkTrackerDb.kt`; `app/app/src/main/java/com/hostshield/ui/screens/stats/StatsViewModel.kt`; https://github.com/TrackerControl/tracker-control-android; https://github.com/duckduckgo/tracker-radar.
-  Touches: tracker dataset generation tooling, `NetworkTrackerDb.kt`, Stats attribution UI/tests, license/provenance docs.
-  Acceptance: A reproducible local build step or checked generated asset maps common tracker domains to owner/category with provenance, Stats uses it for top tracker companies, and tests verify deterministic lookup plus no network dependency.
-  Complexity: M
-
 ## Research-Driven Additions
 
 ### P2
