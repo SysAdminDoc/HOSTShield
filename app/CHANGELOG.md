@@ -1,5 +1,17 @@
 # HostShield Unreleased
 
+## Android 16 Adaptive Navigation
+
+### Added
+- The main app shell now uses Material 3 adaptive navigation, keeping compact
+  phones on a bottom bar while promoting top-level destinations to a navigation
+  rail on non-compact large-screen surfaces.
+- Connected Compose coverage renders the shell at the Android adaptive-quality
+  foldable, tablet, Chromebook, compact-height, and large-font breakpoints so
+  future release docs cannot claim large-screen readiness without a passing gate.
+
+---
+
 ## LAN DNS Server Gate
 
 ### Added

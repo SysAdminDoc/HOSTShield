@@ -674,13 +674,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ### P2
 
-- [ ] P2 — Add an Android 16 large-screen adaptive layout gate
-  Why: HostShield targets API 36 and has many dense Compose screens, but no `WindowSizeClass`, Material 3 adaptive scaffold, navigation-rail, split-pane, or sw600 test path; Android 16 ignores orientation/resizability/aspect-ratio restrictions on 600dp+ displays.
-  Evidence: `app/app/src/main/AndroidManifest.xml`; `app/app/src/main/java/com/hostshield/ui/screens/**`; `app/app/src/androidTest/java/com/hostshield/ui/LocaleLayoutScaffoldTest.kt`; https://developer.android.com/about/versions/16/behavior-changes-16; https://developer.android.com/docs/quality-guidelines/adaptive-app-quality.
-  Touches: `ui/navigation/Navigation.kt`, top-level scaffold, Home/Logs/Stats/Sources/Settings dense screens, `LocaleLayoutScaffoldTest.kt`, screenshot/readme assets if tablet screenshots are added.
-  Acceptance: Top flows render without clipping or unreachable primary actions at 841x701dp, 1024x640dp, 1280x800dp, and 1600x900dp; navigation uses an adaptive rail/pane where appropriate; tests cover portrait, landscape, split-screen width, and large font scale; no feature claims are added for tablets/foldables until the gate passes.
-  Complexity: L
-
 ## Research-Driven Additions
 
 ### P2

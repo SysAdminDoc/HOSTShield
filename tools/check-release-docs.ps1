@@ -31,6 +31,9 @@ $dnsVpnService = Read-RepoFile "app/app/src/main/java/com/hostshield/service/Dns
 $doh3Resolver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/Doh3Resolver.kt"
 $dnsSettingsSection = Read-RepoFile "app/app/src/main/java/com/hostshield/ui/screens/settings/DnsSettingsSection.kt"
 $protectionSettingsSection = Read-RepoFile "app/app/src/main/java/com/hostshield/ui/screens/settings/ProtectionSettingsSection.kt"
+$mainActivity = Read-RepoFile "app/app/src/main/java/com/hostshield/MainActivity.kt"
+$adaptiveNavigationScaffold = Read-RepoFile "app/app/src/main/java/com/hostshield/ui/navigation/AdaptiveNavigationScaffold.kt"
+$localeLayoutScaffoldTest = Read-RepoFile "app/app/src/androidTest/java/com/hostshield/ui/LocaleLayoutScaffoldTest.kt"
 $localDnsServerService = Read-RepoFile "app/app/src/main/java/com/hostshield/service/LocalDnsServerService.kt"
 $experimentalDisclosure = Read-RepoFile "app/app/src/main/java/com/hostshield/util/ExperimentalEngineDisclosure.kt"
 $geoIpLookup = Read-RepoFile "app/app/src/main/java/com/hostshield/util/GeoIpLookup.kt"
@@ -600,6 +603,36 @@ foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_descri
     foreach ($pattern in $lanDnsReleaseClaimPatterns) {
         if (($docs[$doc] -match [regex]::Escape($pattern)) -and -not $lanDnsGateImplemented) {
             $failures.Add("$doc claims LAN DNS support, but the manifest/service/Settings gate is incomplete: $pattern")
+        }
+    }
+}
+
+$adaptiveLargeScreenGateImplemented = (
+    $versionCatalog -match 'material3-adaptive-navigation-suite' -and
+    $appBuild -match 'androidx\.compose\.material3\.adaptive\.navigation\.suite' -and
+    $mainActivity -match 'HostShieldAdaptiveNavigationScaffold' -and
+    $adaptiveNavigationScaffold -match 'NavigationSuiteScaffold' -and
+    $adaptiveNavigationScaffold -match 'NavigationSuiteType\.NavigationRail' -and
+    $adaptiveNavigationScaffold -match '600\.dp' -and
+    $adaptiveNavigationScaffold -match '480\.dp' -and
+    $localeLayoutScaffoldTest -match '841\.dp to 701\.dp' -and
+    $localeLayoutScaffoldTest -match '1024\.dp to 640\.dp' -and
+    $localeLayoutScaffoldTest -match '1280\.dp to 800\.dp' -and
+    $localeLayoutScaffoldTest -match '1600\.dp to 900\.dp' -and
+    $localeLayoutScaffoldTest -match 'fontScale = 1\.3f'
+)
+
+$adaptiveLargeScreenClaimPatterns = @(
+    "Adaptive Large Screens",
+    "adaptive navigation",
+    "navigation rail",
+    "Android 16 large-screen"
+)
+
+foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
+    foreach ($pattern in $adaptiveLargeScreenClaimPatterns) {
+        if (($docs[$doc] -match [regex]::Escape($pattern)) -and -not $adaptiveLargeScreenGateImplemented) {
+            $failures.Add("$doc claims adaptive large-screen navigation, but the scaffold/dependency/test gate is incomplete: $pattern")
         }
     }
 }

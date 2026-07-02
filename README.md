@@ -187,6 +187,7 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 | **Quick Settings Tile** | VPN toggle from Quick Settings panel |
 | **App Shortcuts** | Long-press launcher: Toggle, Refresh Lists, Open Logs |
 | **Deep Links** | `hostshield://logs`, `hostshield://stats`, etc. |
+| **Adaptive Large Screens** | Material 3 adaptive navigation keeps compact phones on a bottom bar and uses a navigation rail for Android 16 large-screen/tablet breakpoints |
 | **Onboarding Wizard** | Private DNS conflict detection, VPN permission, battery optimization |
 | **TalkBack Semantics** | Primary screens expose headings, stateful toggles/filters, disabled action states, destructive labels, and progress announcements |
 | **Dynamic Type Safety** | Dense onboarding, settings, source, log, firewall, and warning surfaces avoid fixed-height clipping under larger system font scales |

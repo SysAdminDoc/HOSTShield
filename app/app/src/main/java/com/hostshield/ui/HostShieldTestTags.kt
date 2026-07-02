@@ -13,6 +13,7 @@ object HostShieldTestTags {
 
     object Nav {
         fun route(route: String): String = "nav:${slug(route)}"
+        fun layout(layout: String): String = "nav:layout:${slug(layout)}"
     }
 
     object Sources {

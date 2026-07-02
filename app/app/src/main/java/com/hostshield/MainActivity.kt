@@ -23,9 +23,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,7 +40,7 @@ import com.hostshield.service.HostsUpdateWorker
 import com.hostshield.service.LogCleanupWorker
 import com.hostshield.service.ProfileScheduleWorker
 import com.hostshield.service.SourceHealthWorker
-import com.hostshield.ui.HostShieldTestTags
+import com.hostshield.ui.navigation.HostShieldAdaptiveNavigationScaffold
 import com.hostshield.ui.navigation.Screen
 import com.hostshield.ui.navigation.SubScreen
 import com.hostshield.ui.navigation.bottomNavScreens
@@ -304,79 +301,27 @@ private fun HostShieldMainApp(activity: MainActivity) {
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Black,
-        contentWindowInsets = WindowInsets.systemBars,
-        bottomBar = {
-            if (showBottomBar) {
-                Box {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Surface3.copy(alpha = 0.6f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
-                    )
-                    NavigationBar(
-                        containerColor = Surface0,
-                        contentColor = TextPrimary,
-                        tonalElevation = 0.dp
-                    ) {
-                        bottomNavScreens.forEach { screen ->
-                            val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                                modifier = Modifier.testTag(HostShieldTestTags.Nav.route(screen.route)),
-                                icon = {
-                                    Icon(
-                                        imageVector = if (selected) screen.selectedIcon else screen.unselectedIcon,
-                                        contentDescription = screen.title,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        screen.title,
-                                        fontSize = 10.sp,
-                                        letterSpacing = 0.sp,
-                                        maxLines = 1
-                                    )
-                                },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = Teal,
-                                    selectedTextColor = Teal,
-                                    unselectedIconColor = TextDim,
-                                    unselectedTextColor = TextDim,
-                                    indicatorColor = Color.Transparent
-                                )
-                            )
-                        }
-                    }
-                }
+    HostShieldAdaptiveNavigationScaffold(
+        screens = bottomNavScreens,
+        selectedRoute = currentDestination?.route,
+        showTopLevelNavigation = showBottomBar,
+        onNavigate = { screen ->
+            navController.navigate(screen.route) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
             }
-        }
-    ) { innerPadding ->
+        },
+        isSelected = { screen ->
+            currentDestination?.hierarchy?.any { it.route == screen.route } == true
+        },
+        modifier = Modifier.fillMaxSize(),
+    ) {
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(Black),
             enterTransition = { fadeIn(tween(150)) },
             exitTransition = { fadeOut(tween(150)) }

@@ -51,6 +51,7 @@ Current module baseline: v6.9.57, versionCode 139.
 | **Durable Temporary Allows** | DNS log temporary allow windows are restored by WorkManager after process death or Doze |
 | **Composition-Scoped Theme** | Accent and high-contrast palettes resolve per themed surface without global mutable color state |
 | **Edge-to-Edge Insets** | Main and sub-screens apply explicit system-bar padding on Android 15+ |
+| **Adaptive Large Screens** | Material 3 adaptive navigation switches compact phones to a bottom bar and larger Android 16 surfaces to a navigation rail |
 | **Automation API** | Signature-protected broadcast intents for Tasker/MacroDroid |
 | **Parental PIN Upgrade** | Legacy SHA-256 parental PIN hashes are detected at startup and forced through the current KDF upgrade path |
 | **High-Contrast AMOLED** | Settings toggle for pure-black surfaces, brighter text, stronger semantic colors, chart contrast, and high-contrast widgets |
