@@ -729,13 +729,6 @@ dependency/licensing review, and implementation-test corpus design.
 
 ### P1
 
-- [ ] P1 — Verify signed provenance for remote DoH bypass updates
-  Why: `DohBypassUpdater.kt` lets a raw GitHub JSON response add blocking policy to local state; a DNS security app should reject tampered, downgraded, or overbroad remote policy before it reaches DataStore.
-  Evidence: `app/app/src/main/java/com/hostshield/service/DohBypassUpdater.kt`; `doh-bypass-list.json`; `tools/release-provenance.ps1`; https://github.com/hagezi/dns-blocklists; https://github.com/mullvad/dns-blocklists
-  Touches: `DohBypassUpdater.kt`, `AppPreferences`, `HostsUpdateWorker.kt`, release provenance tooling, unit tests for remote-list parse/store paths.
-  Acceptance: Remote bypass JSON carries version, created-at, SHA-256, and an app-pinned signature; updater rejects invalid signature, rollback, oversized, and over-cap manifests; cached-known-good policy remains active on failure; release tooling verifies the published manifest before shipping.
-  Complexity: M
-
 - [ ] P1 — Add connected protection-resilience release matrix
   Why: Local unit and Compose tests do not prove the protection service behavior users care about when Android restarts VPN services, applies lockdown, crosses work-profile/Private Space boundaries, or denies foreground-service/battery exemptions.
   Evidence: `app/app/src/androidTest/java/com/hostshield/ui/TopFlowComposeTest.kt`; `app/app/src/main/java/com/hostshield/util/PrivateSpaceDetector.kt`; `app/app/src/main/java/com/hostshield/service/ProtectionServiceStarter.kt`; https://developer.android.com/develop/connectivity/vpn; https://developer.android.com/reference/android/net/VpnService; https://github.com/M66B/NetGuard/blob/master/FAQ.md

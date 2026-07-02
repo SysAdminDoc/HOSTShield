@@ -1,3 +1,16 @@
+# HostShield Unreleased
+
+## Remote DoH Bypass Manifest Provenance
+
+### Security
+- Remote DoH bypass updates now require schema validation, canonical payload
+  hash verification, rollback rejection, and a release-key signature before the
+  fetched list can be stored in local preferences.
+- The local release-doc gate validates the same signed manifest so provenance
+  drift fails before release.
+
+---
+
 # HostShield v6.9.57
 
 **Release Date:** 2026-07-01

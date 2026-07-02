@@ -92,6 +92,32 @@ function Test-DohBypassDomain {
     return $candidate -match '^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])$'
 }
 
+function Get-Sha256Hex {
+    param([Parameter(Mandatory = $true)][string]$Text)
+
+    $hash = [Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($Text))
+    return [BitConverter]::ToString($hash).Replace("-", "").ToLowerInvariant()
+}
+
+function Get-DohBypassCanonicalPayload {
+    param(
+        [Parameter(Mandatory = $true)][int]$Version,
+        [Parameter(Mandatory = $true)][string]$Updated,
+        [Parameter(Mandatory = $true)][string]$CreatedAt,
+        [Parameter(Mandatory = $true)][string[]]$Domains,
+        [Parameter(Mandatory = $true)][string[]]$Wildcards
+    )
+
+    [string[]]$domainArray = @($Domains)
+    [string[]]$wildcardArray = @($Wildcards)
+    [Array]::Sort($domainArray, [StringComparer]::Ordinal)
+    [Array]::Sort($wildcardArray, [StringComparer]::Ordinal)
+
+    $sortedDomains = $domainArray -join ","
+    $sortedWildcards = $wildcardArray -join ","
+    return "schema=1`nversion=$Version`nupdated=$Updated`ncreated_at=$CreatedAt`ndomains=$sortedDomains`nwildcards=$sortedWildcards"
+}
+
 $dohBypassManifest = "doh-bypass-list.json"
 if (-not (Test-RepoFile $dohBypassManifest)) {
     $failures.Add("Missing remote DoH bypass manifest: $dohBypassManifest")
@@ -109,6 +135,11 @@ if (-not (Test-RepoFile $dohBypassManifest)) {
     }
 
     if ($null -ne $manifest) {
+        [int]$manifestSchema = 0
+        if (-not [int]::TryParse([string]$manifest.schema, [ref]$manifestSchema) -or $manifestSchema -ne 1) {
+            $failures.Add("$dohBypassManifest must contain integer schema 1.")
+        }
+
         [int]$manifestVersion = 0
         if (-not [int]::TryParse([string]$manifest.version, [ref]$manifestVersion) -or $manifestVersion -lt 1) {
             $failures.Add("$dohBypassManifest must contain integer version >= 1.")
@@ -125,6 +156,11 @@ if (-not (Test-RepoFile $dohBypassManifest)) {
             $failures.Add("$dohBypassManifest must contain updated as yyyy-MM-dd.")
         }
 
+        $createdAt = ([string]$manifest.created_at).Trim()
+        if ($createdAt -notmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$') {
+            $failures.Add("$dohBypassManifest must contain created_at as UTC yyyy-MM-ddTHH:mm:ssZ.")
+        }
+
         $domains = if ($null -ne $manifest.domains) { @($manifest.domains) } else { @() }
         $wildcards = if ($null -ne $manifest.wildcards) { @($manifest.wildcards) } else { @() }
         $entryCount = $domains.Count + $wildcards.Count
@@ -136,22 +172,84 @@ if (-not (Test-RepoFile $dohBypassManifest)) {
         }
 
         $seenDomains = New-Object System.Collections.Generic.HashSet[string]
+        $normalizedDomains = New-Object System.Collections.Generic.List[string]
         foreach ($entry in $domains) {
             $value = ([string]$entry).Trim().ToLowerInvariant()
             if (-not (Test-DohBypassDomain $value)) {
                 $failures.Add("$dohBypassManifest contains invalid domain entry: $entry")
             } elseif (-not $seenDomains.Add($value)) {
                 $failures.Add("$dohBypassManifest contains duplicate domain entry: $value")
+            } else {
+                $normalizedDomains.Add($value)
             }
         }
 
         $seenWildcards = New-Object System.Collections.Generic.HashSet[string]
+        $normalizedWildcards = New-Object System.Collections.Generic.List[string]
         foreach ($entry in $wildcards) {
             $value = ([string]$entry).Trim().ToLowerInvariant()
             if (-not (Test-DohBypassDomain $value)) {
                 $failures.Add("$dohBypassManifest contains invalid wildcard entry: $entry")
             } elseif (-not $seenWildcards.Add($value)) {
                 $failures.Add("$dohBypassManifest contains duplicate wildcard entry: $value")
+            } else {
+                $normalizedWildcards.Add($value)
+            }
+        }
+
+        $canonicalPayload = Get-DohBypassCanonicalPayload `
+            -Version $manifestVersion `
+            -Updated ([string]$manifest.updated).Trim() `
+            -CreatedAt $createdAt `
+            -Domains $normalizedDomains.ToArray() `
+            -Wildcards $normalizedWildcards.ToArray()
+        $payloadHash = Get-Sha256Hex $canonicalPayload
+        if (([string]$manifest.payload_sha256).Trim().ToLowerInvariant() -ne $payloadHash) {
+            $failures.Add("$dohBypassManifest payload_sha256 does not match canonical payload.")
+        }
+
+        $signature = $manifest.signature
+        if ($null -eq $signature) {
+            $failures.Add("$dohBypassManifest must contain a signature object.")
+        } else {
+            if ([string]$signature.algorithm -ne "SHA256withRSA") {
+                $failures.Add("$dohBypassManifest signature algorithm must be SHA256withRSA.")
+            }
+            if ([string]$signature.key_id -ne "hostshield-release-rsa-v1") {
+                $failures.Add("$dohBypassManifest signature key_id must be hostshield-release-rsa-v1.")
+            }
+
+            $dohVerifierPath = "app/app/src/main/java/com/hostshield/service/DohBypassManifestVerifier.kt"
+            if (-not (Test-RepoFile $dohVerifierPath)) {
+                $failures.Add("Missing DoH bypass manifest verifier: $dohVerifierPath")
+            } else {
+                $dohVerifier = Read-RepoFile $dohVerifierPath
+                $certMatch = [regex]::Match(
+                    $dohVerifier,
+                    'PINNED_CERTIFICATE_BASE64\s*=\s*"([^"]+)"'
+                )
+                if (-not $certMatch.Success) {
+                    $failures.Add("$dohVerifierPath must contain PINNED_CERTIFICATE_BASE64.")
+                } else {
+                    try {
+                        $certBytes = [Convert]::FromBase64String($certMatch.Groups[1].Value)
+                        $cert = [Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes)
+                        $rsa = [Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($cert)
+                        $signatureBytes = [Convert]::FromBase64String([string]$signature.value)
+                        $payloadBytes = [Text.Encoding]::UTF8.GetBytes($canonicalPayload)
+                        $isValid = $rsa.VerifyData(
+                            $payloadBytes,
+                            $signatureBytes,
+                            [Security.Cryptography.HashAlgorithmName]::SHA256,
+                            [Security.Cryptography.RSASignaturePadding]::Pkcs1
+                        )
+                        if (-not $isValid) {
+                            $failures.Add("$dohBypassManifest signature verification failed.")
+                        }
+                    } catch {
+                        $failures.Add("$dohBypassManifest signature could not be verified: $($_.Exception.Message)")
+                    }
+                }
             }
         }
     }

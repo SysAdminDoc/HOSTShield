@@ -87,7 +87,7 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 | **Configurable TTL** | 60s minimum floor, 24h maximum ceiling. SOA-derived TTL for NXDOMAIN negative caching |
 | **Block Response Types** | NXDOMAIN (with SOA), Null IP (0.0.0.0/::), or REFUSED — configurable per preference |
 | **Regex & Wildcard Rules** | Block/allow domains by regex pattern (capped at 500 chars, ReDoS-safe) or wildcard (`*.example.com`) |
-| **DoH Bypass Prevention** | Blocks 65+ known DoH provider domains + wildcard patterns. Remote-updatable via GitHub-hosted JSON |
+| **DoH Bypass Prevention** | Blocks 65+ known DoH provider domains + wildcard patterns. Remote updates are signature-verified before local policy changes |
 
 ### Encrypted DNS
 
@@ -402,7 +402,7 @@ In VPN mode: no — Android only allows one VPN at a time. In root mode: yes —
 Protection services use Android's `systemExempted` foreground-service type for VPN/root/proxy filtering, and each service records timeout events before shutting down cleanly. If Android denies a boot or background restart, HostShield records `foreground_service_start_failed` in the local diagnostic export and the Home screen asks the user to reopen the app and enable protection again.
 
 **Does it send data to any server?**
-No. All DNS filtering happens locally on-device. The only network requests are: downloading blocklist sources (user-configured URLs), encrypted DNS queries to the user-selected provider, optional rate-limited GeoIP lookup through ipapi.co, and optional remote DoH bypass / CNAME cloak list updates from GitHub.
+No. All DNS filtering happens locally on-device. The only network requests are: downloading blocklist sources (user-configured URLs), encrypted DNS queries to the user-selected provider, optional rate-limited GeoIP lookup through ipapi.co, and optional remote DoH bypass / CNAME cloak list updates from GitHub. Remote DoH bypass updates are accepted only when their payload hash and release-key signature verify.
 
 **What about the Android 16 VPN update bug?**
 Android 16 has a confirmed system-level bug where VPN apps become unusable after a background app update while always-on VPN is active. The device's network stack enters a corrupted state where all connections time out even though the VPN tunnel appears connected. This affects all VPN-based apps (Mullvad, Proton, Ivanti, TunnelBear, and others have confirmed it). Google has not issued a fix. HostShield detects this condition automatically (since v6.5.2) and shows a recovery banner on the Home screen. **Workaround**: reboot the device, or uninstall and reinstall the app. On rooted devices, HostShield offers a one-tap device restart from the recovery banner. To prevent the issue, disable always-on VPN before updating HostShield, then re-enable it after the update completes.

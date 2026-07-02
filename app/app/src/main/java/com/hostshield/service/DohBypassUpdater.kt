@@ -15,22 +15,14 @@ import javax.inject.Singleton
  *
  * DoH providers launch new endpoints regularly. Rather than waiting for app
  * updates, we can fetch a supplementary domain list from a hosted JSON file.
- * The list is additive — it supplements (never replaces) the hardcoded
+ * The list is additive: it supplements (never replaces) the hardcoded
  * dohBypassDomains in BlocklistHolder.
  *
  * Update flow:
  * 1. Fetch JSON from configured URL (default: HostShield GitHub repo)
- * 2. Parse domain list + version
- * 3. Store in DataStore preferences
+ * 2. Verify schema, payload hash, rollback version, and app-pinned signature
+ * 3. Store verified domains in DataStore preferences
  * 4. Next blocklist reload merges remote domains into trie
- *
- * JSON format (hosted on GitHub Pages or raw.githubusercontent.com):
- * {
- *   "version": 2,
- *   "updated": "2026-02-15",
- *   "domains": ["new-doh-provider.example.com", ...],
- *   "wildcards": ["new-provider.io", ...]
- * }
  */
 @Singleton
 class DohBypassUpdater @Inject constructor(
@@ -41,7 +33,6 @@ class DohBypassUpdater @Inject constructor(
         private const val TAG = "DohBypassUpdater"
         private const val DEFAULT_URL =
             "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/doh-bypass-list.json"
-        private const val MAX_DOMAINS = 500 // safety cap
         private const val MAX_JSON_SIZE = 50_000L // 50KB max
     }
 
@@ -80,16 +71,28 @@ class DohBypassUpdater @Inject constructor(
                 return@withContext null
             }
 
-            val list = parseJson(body)
-            if (list != null) {
-                prefs.setRemoteDohBypassList(
-                    list.domains.joinToString(","),
-                    list.wildcards.joinToString(","),
-                    list.version
-                )
-                Log.i(TAG, "Updated remote DoH bypass list: v${list.version}, " +
-                    "${list.domains.size} domains, ${list.wildcards.size} wildcards")
-            }
+            val cachedVersion = prefs.getRemoteDohVersion()
+            val verified = DohBypassManifestVerifier.verify(body, cachedVersion)
+                .getOrElse { error ->
+                    Log.w(TAG, "Rejected remote DoH bypass list: ${error.message}")
+                    return@withContext null
+                }
+            val list = RemoteList(
+                version = verified.version,
+                updated = verified.updated,
+                domains = verified.domains,
+                wildcards = verified.wildcards
+            )
+            prefs.setRemoteDohBypassList(
+                list.domains.joinToString(","),
+                list.wildcards.joinToString(","),
+                list.version
+            )
+            Log.i(
+                TAG,
+                "Updated remote DoH bypass list: v${list.version}, " +
+                    "${list.domains.size} domains, ${list.wildcards.size} wildcards"
+            )
             list
         } catch (e: Exception) {
             Log.w(TAG, "Fetch failed: ${e.message}")
@@ -134,45 +137,6 @@ class DohBypassUpdater @Inject constructor(
         cached.domains.forEach { exactOrigins?.put(it, origin) }
         cached.wildcards.forEach { wildcardOrigins?.put(it, origin) }
         return cached
-    }
-
-    /**
-     * Minimal JSON parser — avoids adding org.json or Gson dependency.
-     * Parses the simple flat structure described in the class doc.
-     */
-    private fun parseJson(json: String): RemoteList? {
-        return try {
-            val obj = org.json.JSONObject(json)
-            val version = obj.optInt("version", 0)
-            val updated = obj.optString("updated", "")
-
-            val domainsArray = obj.optJSONArray("domains")
-            val domains = mutableSetOf<String>()
-            if (domainsArray != null) {
-                for (i in 0 until minOf(domainsArray.length(), MAX_DOMAINS)) {
-                    val d = domainsArray.optString(i, "").trim().lowercase()
-                    if (d.isNotBlank() && d.contains('.') && !d.contains(' ')) {
-                        domains.add(d)
-                    }
-                }
-            }
-
-            val wildcardsArray = obj.optJSONArray("wildcards")
-            val wildcards = mutableSetOf<String>()
-            if (wildcardsArray != null) {
-                for (i in 0 until minOf(wildcardsArray.length(), MAX_DOMAINS)) {
-                    val w = wildcardsArray.optString(i, "").trim().lowercase()
-                    if (w.isNotBlank() && w.contains('.') && !w.contains(' ')) {
-                        wildcards.add(w)
-                    }
-                }
-            }
-
-            RemoteList(version, updated, domains, wildcards)
-        } catch (e: Exception) {
-            Log.w(TAG, "JSON parse error: ${e.message}")
-            null
-        }
     }
 
     private fun normalizeCachedSet(value: String): Set<String> {

@@ -29,7 +29,7 @@ Current module baseline: v6.9.57, versionCode 139.
 | **Per-App Firewall** | Block Wi-Fi, mobile data, or VPN per-app with iptables (root) |
 | **DoH (DNS-over-HTTPS)** | Cloudflare, Google, Quad9, NextDNS, AdGuard, Mullvad, CleanBrowsing — with fail-closed SHA-256 certificate pinning |
 | **DoH3** | Disabled until a maintained non-vulnerable embedded Cronet artifact is available; pinned OkHttp DoH remains the production path |
-| **DoH Bypass Prevention** | Blocks 65+ known DoH provider domains + wildcard patterns to prevent apps bypassing DNS filtering |
+| **DoH Bypass Prevention** | Blocks 65+ known DoH provider domains + wildcard patterns to prevent apps bypassing DNS filtering; remote updates are signature-verified |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through the VPN tunnel |
 | **TCP DNS Handling** | Full TCP DNS support for responses >512 bytes |
 | **IPv6 Support** | Full IPv6 DNS processing + UID attribution via `/proc/net/tcp6` |
@@ -45,7 +45,7 @@ Current module baseline: v6.9.57, versionCode 139.
 | **GeoIP Lookup** | ipapi.co over HTTPS for city-level detail with local in-memory caching and rate-limit backoff |
 | **Diagnostic Export** | One-tap shareable report with device info, config, logs, network state |
 | **AdAway Import** | Import hosts files, sources, and rules from AdAway backups |
-| **Remote DoH Updates** | Supplementary DoH bypass domains fetched from GitHub without app updates |
+| **Remote DoH Updates** | Supplementary DoH bypass domains fetched from GitHub without app updates after release-key signature verification |
 | **Durable Temporary Allows** | DNS log temporary allow windows are restored by WorkManager after process death or Doze |
 | **Composition-Scoped Theme** | Accent and high-contrast palettes resolve per themed surface without global mutable color state |
 | **Edge-to-Edge Insets** | Main and sub-screens apply explicit system-bar padding on Android 15+ |
