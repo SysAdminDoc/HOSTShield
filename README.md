@@ -112,6 +112,7 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 | **Context-Aware Rules** | Screen on/off detection + metered network detection + foreground app tracking |
 | **Connection Logging** | Per-connection log with interface labels (rmnet0=Mobile, wlan0=WiFi) |
 | **Firewall Export/Import** | JSON export/import of firewall rules (UIDs resolved by package name) |
+| **Evidence JSONL Export** | Bounded DNS and firewall evidence export with schema metadata, filters, redaction controls, and share/save destinations |
 
 ### Privacy & Tracking Analysis
 
@@ -364,6 +365,7 @@ app/src/main/java/com/hostshield/
     ├── DnsBenchmark.kt         # DNS resolver latency benchmark
     ├── DnsStampParser.kt       # sdns:// DNS stamp parser
     ├── DiagnosticExporter.kt   # One-tap diagnostic report
+    ├── EvidenceJsonlExporter.kt # Bounded redacted DNS/firewall evidence export
     ├── PcapExporter.kt         # PCAP packet capture export
     └── RootUtil.kt             # Root detection + binary management
 ```

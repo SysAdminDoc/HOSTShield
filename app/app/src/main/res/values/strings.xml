@@ -177,6 +177,22 @@
     <string name="pcap_export_firewall">Firewall PCAP</string>
     <string name="pcap_ready_summary">%1$s export ready: %2$s</string>
 
+    <!-- Evidence JSONL export -->
+    <string name="evidence_jsonl_title">Evidence JSONL</string>
+    <string name="evidence_jsonl_privacy_redacted">Default redaction hashes domains, apps, and IPs; timestamps and decisions stay exact</string>
+    <string name="evidence_jsonl_privacy_raw">Raw export includes domains, app identifiers, IPs, and destinations</string>
+    <string name="evidence_jsonl_redact">Redact sensitive fields</string>
+    <string name="evidence_jsonl_window_days">%1$dd</string>
+    <string name="evidence_jsonl_query_label">Domain, IP, or reason</string>
+    <string name="evidence_jsonl_app_label">App package or label</string>
+    <string name="evidence_jsonl_export_all">All JSONL</string>
+    <string name="evidence_jsonl_export_dns">DNS JSONL</string>
+    <string name="evidence_jsonl_export_firewall">Firewall JSONL</string>
+    <string name="evidence_jsonl_generating">Generating evidence JSONL…</string>
+    <string name="evidence_jsonl_ready_summary">%1$s JSONL ready: rows=%2$d, chunks=%3$d</string>
+    <string name="evidence_jsonl_truncated">Result capped at the export limit</string>
+    <string name="evidence_jsonl_empty">No matching evidence to export</string>
+
     <!-- Backup dialogs -->
     <string name="backup_dialog_title">Create Backup</string>
     <string name="backup_dialog_message">Choose whether to encrypt the backup with a passphrase.</string>

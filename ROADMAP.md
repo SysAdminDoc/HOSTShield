@@ -721,13 +721,6 @@ dependency/licensing review, and implementation-test corpus design.
   Acceptance: LAN DNS is disabled by default, has explicit Settings controls, bind/interface limits, rate-limit/status UI, local-network permission readiness, notification lifecycle, connected smoke coverage, and release-doc checks that block LAN DNS claims unless the gate passes.
   Complexity: L
 
-- [ ] P2 — Add bounded JSONL export for DNS and connection evidence
-  Why: HostShield has diagnostic ZIP and PCAP export, but support/debug workflows often need structured, redacted query and connection evidence without packet payloads.
-  Evidence: `app/app/src/main/java/com/hostshield/util/DiagnosticExporter.kt`; `app/app/src/main/java/com/hostshield/util/PcapExporter.kt`; `app/app/src/main/java/com/hostshield/ui/screens/logs/LogsScreen.kt`; https://github.com/emanuele-f/PCAPdroid/issues/869; https://docs.pi-hole.net/api/
-  Touches: diagnostics/export utilities, Logs and ConnectionLog screens, FileProvider/SAF destination flows, export tests.
-  Acceptance: Users can export bounded JSONL with schema version, redaction toggles, time/query/app filters, chunking for large logs, and save/share/discard state; tests verify redaction, bounds, malformed rows, and stable schema fields.
-  Complexity: M
-
 ### P3
 
 - [ ] P3 — Add fast-scroll and saved filters for dense lists

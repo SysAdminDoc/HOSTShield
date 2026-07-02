@@ -44,6 +44,7 @@ Current module baseline: v6.9.57, versionCode 139.
 | **Threat Review Actions** | Threat-blocked log details can add global or app-scoped allow rules without disabling all malware protection |
 | **GeoIP Lookup** | ipapi.co over HTTPS for city-level detail with local in-memory caching and rate-limit backoff |
 | **Diagnostic Export** | One-tap shareable report with device info, config, logs, network state |
+| **Evidence JSONL Export** | Bounded DNS and firewall evidence with filters, schema metadata, redaction controls, and share/save destinations |
 | **AdAway Import** | Import hosts files, sources, and rules from AdAway backups |
 | **Remote DoH Updates** | Supplementary DoH bypass domains fetched from GitHub without app updates after release-key signature verification |
 | **Durable Temporary Allows** | DNS log temporary allow windows are restored by WorkManager after process death or Doze |
@@ -131,7 +132,7 @@ app/src/main/java/com/hostshield/
 │                   # CNAME detector, packet builder, workers
 ├── ui/screens/     # Home, Logs, Stats, Settings, Firewall,
 │                   # Onboarding, DNS Tools, Rules
-└── util/           # Root utils, backup, import/export, diagnostics
+└── util/           # Root utils, backup, import/export, diagnostics, evidence JSONL
 ```
 
 ## Contributing

@@ -182,6 +182,10 @@ fun SettingsScreen(
             ActivityResultContracts.CreateDocument("application/vnd.tcpdump.pcap")
         ) { uri -> uri?.let { viewModel.savePcapToUri(it) } }
 
+        val evidenceJsonlSaveLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/x-ndjson")
+        ) { uri -> uri?.let { viewModel.saveEvidenceJsonlToUri(it) } }
+
         val diagnosticSaveLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("application/zip")
         ) { uri -> uri?.let { viewModel.saveDiagnosticReportToUri(it) } }
@@ -236,7 +240,18 @@ fun SettingsScreen(
                     ?: "hostshield_export.pcap"
                 pcapSaveLauncher.launch(name)
             },
-            onDismissPcap = { viewModel.dismissPcapExport() }
+            onDismissPcap = { viewModel.dismissPcapExport() },
+            evidenceJsonlExport = state.evidenceJsonlExport,
+            onExportEvidenceJsonl = { mode, days, query, appFilter, redacted ->
+                viewModel.exportEvidenceJsonl(mode, days, query, appFilter, redacted)
+            },
+            onShareEvidenceJsonl = { viewModel.shareEvidenceJsonl() },
+            onSaveEvidenceJsonl = {
+                val name = (state.evidenceJsonlExport as? EvidenceJsonlExportState.Ready)?.fileName
+                    ?: "hostshield_evidence.jsonl"
+                evidenceJsonlSaveLauncher.launch(name)
+            },
+            onDismissEvidenceJsonl = { viewModel.dismissEvidenceJsonlExport() }
         )
 
         // Battery Optimization — only show when exemption has NOT been granted

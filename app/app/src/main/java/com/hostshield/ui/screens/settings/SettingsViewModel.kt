@@ -16,6 +16,9 @@ import com.hostshield.util.BackupRestoreUtil
 import com.hostshield.util.BatteryOptimizationUtil
 import com.hostshield.util.DiagnosticEventStore
 import com.hostshield.util.DiagnosticEventType
+import com.hostshield.util.EvidenceJsonlDataset
+import com.hostshield.util.EvidenceJsonlExportOptions
+import com.hostshield.util.EvidenceJsonlExporter
 import com.hostshield.util.ImportExportUtil
 import com.hostshield.util.PcapExporter
 import com.hostshield.util.RootUtil
@@ -39,6 +42,7 @@ enum class ExportArtifactKind {
     STATS_CSV,
     DIAGNOSTIC_ZIP,
     PCAP,
+    EVIDENCE_JSONL,
     BACKUP
 }
 
@@ -117,6 +121,23 @@ sealed interface PcapExportState {
     data class Failed(val error: String) : PcapExportState
 }
 
+sealed interface EvidenceJsonlExportState {
+    data object Idle : EvidenceJsonlExportState
+    data object Exporting : EvidenceJsonlExportState
+    data class Ready(
+        val artifact: ExportArtifact,
+        val mode: String,
+        val rowCount: Int,
+        val chunkCount: Int,
+        val truncated: Boolean
+    ) : EvidenceJsonlExportState {
+        val fileName: String get() = artifact.fileName
+        val sizeBytes: Long get() = artifact.sizeBytes
+    }
+    data object Empty : EvidenceJsonlExportState
+    data class Failed(val error: String) : EvidenceJsonlExportState
+}
+
 sealed interface DiagnosticExportState {
     data object Idle : DiagnosticExportState
     data object Generating : DiagnosticExportState
@@ -165,6 +186,7 @@ data class SettingsUiState(
     val backupDialog: BackupDialogState = BackupDialogState.None,
     val diagnosticExport: DiagnosticExportState = DiagnosticExportState.Idle,
     val pcapExport: PcapExportState = PcapExportState.Idle,
+    val evidenceJsonlExport: EvidenceJsonlExportState = EvidenceJsonlExportState.Idle,
     val batteryOptimized: Boolean = false,
     val batteryMessage: String = "",
     val oemBatteryKiller: String? = null,
@@ -207,6 +229,7 @@ class SettingsViewModel @Inject constructor(
     private val backupRestore: BackupRestoreUtil,
     private val batteryUtil: BatteryOptimizationUtil,
     private val pcapExporter: PcapExporter,
+    private val evidenceJsonlExporter: EvidenceJsonlExporter,
     private val updateChecker: UpdateChecker,
     private val diagnosticExporter: com.hostshield.util.DiagnosticExporter,
     private val diagnosticEvents: DiagnosticEventStore,
@@ -822,6 +845,130 @@ class SettingsViewModel @Inject constructor(
     }
 
     // ── App Update Checker ──────────────────────────────────
+
+    fun exportEvidenceJsonl(
+        mode: String = "all",
+        days: Int = 7,
+        query: String = "",
+        appFilter: String = "",
+        redacted: Boolean = true
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(evidenceJsonlExport = EvidenceJsonlExportState.Exporting) }
+            try {
+                val modeKey = mode.lowercase()
+                val dataset = when (modeKey) {
+                    "dns" -> EvidenceJsonlDataset.DNS
+                    "firewall", "connections" -> EvidenceJsonlDataset.CONNECTIONS
+                    else -> EvidenceJsonlDataset.ALL
+                }
+                val boundedDays = days.coerceIn(1, 30)
+                val sinceMs = System.currentTimeMillis() - boundedDays * 24L * 60L * 60L * 1000L
+                val result = evidenceJsonlExporter.export(
+                    context = getApplication(),
+                    options = EvidenceJsonlExportOptions(
+                        dataset = dataset,
+                        sinceMs = sinceMs,
+                        query = query.trim(),
+                        appFilter = appFilter.trim(),
+                        redactDomains = redacted,
+                        redactApps = redacted,
+                        redactIps = redacted
+                    )
+                )
+                if (result != null) {
+                    val privacyNotice = if (redacted) {
+                        "Domains, app identifiers, and IPs are hashed; timestamps and decisions remain exact."
+                    } else {
+                        "Contains raw DNS hostnames, app identifiers, IPs, and connection destinations."
+                    }
+                    val artifact = buildFileExportArtifact(
+                        kind = ExportArtifactKind.EVIDENCE_JSONL,
+                        file = result.file,
+                        mimeType = "application/x-ndjson",
+                        privacyNotice = privacyNotice,
+                        shareSubject = "HostShield Evidence JSONL ($modeKey)",
+                        chooserTitle = "Share Evidence JSONL"
+                    )
+                    _uiState.update {
+                        it.copy(
+                            evidenceJsonlExport = EvidenceJsonlExportState.Ready(
+                                artifact = artifact,
+                                mode = modeKey,
+                                rowCount = result.rowCount,
+                                chunkCount = result.chunkCount,
+                                truncated = result.truncated
+                            )
+                        )
+                    }
+                } else {
+                    _uiState.update { it.copy(evidenceJsonlExport = EvidenceJsonlExportState.Empty) }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SettingsViewModel", "Evidence JSONL export failed", e)
+                _uiState.update {
+                    it.copy(
+                        evidenceJsonlExport = EvidenceJsonlExportState.Failed(
+                            "Evidence JSONL export failed. Try a shorter window or fewer filters."
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun shareEvidenceJsonl() {
+        val export = _uiState.value.evidenceJsonlExport
+        if (export !is EvidenceJsonlExportState.Ready) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                shareExportArtifact(export.artifact)
+            } catch (e: Exception) {
+                android.util.Log.e("SettingsViewModel", "Evidence JSONL share failed", e)
+                _uiState.update {
+                    it.copy(
+                        evidenceJsonlExport = EvidenceJsonlExportState.Failed(
+                            "Evidence JSONL share failed. Choose another share target."
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun saveEvidenceJsonlToUri(uri: Uri) {
+        val export = _uiState.value.evidenceJsonlExport
+        if (export !is EvidenceJsonlExportState.Ready) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                writeExportArtifactToUri(export.artifact, uri)
+                deleteExportArtifact(export.artifact)
+                _uiState.update {
+                    it.copy(
+                        evidenceJsonlExport = EvidenceJsonlExportState.Idle,
+                        backupMessage = "Evidence JSONL saved to chosen location"
+                    )
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SettingsViewModel", "Evidence JSONL save failed", e)
+                _uiState.update {
+                    it.copy(
+                        evidenceJsonlExport = EvidenceJsonlExportState.Failed(
+                            "Evidence JSONL save failed. Choose another location."
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun dismissEvidenceJsonlExport() {
+        val export = _uiState.value.evidenceJsonlExport
+        if (export is EvidenceJsonlExportState.Ready) {
+            deleteExportArtifact(export.artifact)
+        }
+        _uiState.update { it.copy(evidenceJsonlExport = EvidenceJsonlExportState.Idle) }
+    }
 
     fun checkForUpdate() {
         if (_uiState.value.isCheckingUpdate) return

@@ -1,5 +1,14 @@
 # HostShield Unreleased
 
+## Evidence JSONL Export
+
+### Added
+- Settings now exports bounded DNS and firewall evidence as JSONL with schema
+  metadata, row/chunk indexes, time/query/app filters, and optional hashing of
+  domains, app identifiers, and IP addresses before share or Save As.
+
+---
+
 ## DNS Stamp Capability Diagnostics
 
 ### Changed

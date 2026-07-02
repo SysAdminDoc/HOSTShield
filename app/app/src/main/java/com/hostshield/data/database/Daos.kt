@@ -120,6 +120,9 @@ interface DnsLogDao {
     @Query("SELECT * FROM dns_logs ORDER BY timestamp DESC LIMIT :limit")
     fun getRecentLogs(limit: Int = 500): Flow<List<DnsLogEntry>>
 
+    @Query("SELECT * FROM dns_logs WHERE timestamp BETWEEN :since AND :until ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getLogsForEvidenceExport(since: Long, until: Long, limit: Int): List<DnsLogEntry>
+
     @Query("SELECT * FROM dns_logs WHERE blocked = 1 ORDER BY timestamp DESC LIMIT :limit")
     fun getBlockedLogs(limit: Int = 500): Flow<List<DnsLogEntry>>
 
@@ -548,6 +551,9 @@ interface FirewallRuleDao {
 interface ConnectionLogDao {
     @Query("SELECT * FROM connection_log ORDER BY timestamp DESC LIMIT :limit")
     fun getRecentLogs(limit: Int = 500): Flow<List<ConnectionLogEntry>>
+
+    @Query("SELECT * FROM connection_log WHERE timestamp BETWEEN :since AND :until ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getLogsForEvidenceExport(since: Long, until: Long, limit: Int): List<ConnectionLogEntry>
 
     @Query("SELECT * FROM connection_log WHERE action = 'REJECT' ORDER BY timestamp DESC LIMIT :limit")
     fun getBlockedLogs(limit: Int = 500): Flow<List<ConnectionLogEntry>>
