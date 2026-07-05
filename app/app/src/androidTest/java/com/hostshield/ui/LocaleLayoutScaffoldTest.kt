@@ -3,11 +3,15 @@ package com.hostshield.ui
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,9 +30,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -36,8 +42,11 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.hostshield.R
+import com.hostshield.data.preferences.SavedDenseListFilter
+import com.hostshield.ui.components.HostShieldDenseListJumpBar
 import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldPanelHeader
+import com.hostshield.ui.components.HostShieldSavedFilterBar
 import com.hostshield.ui.components.HostShieldSegmentOption
 import com.hostshield.ui.components.HostShieldSegmentedTabs
 import com.hostshield.ui.components.HostShieldStatusBanner
@@ -226,6 +235,79 @@ class LocaleLayoutScaffoldTest {
         compose.onNodeWithText("DNS").assertIsDisplayed()
         compose.onNodeWithText("Share rules, sources, and DNS preferences as one code").assertIsDisplayed()
         compose.onNodeWithText("Create backup").assertIsDisplayed()
+    }
+
+    @Test
+    fun denseListControlsRenderSavedFiltersNoResultsAndJumpTargetsAtLargeFont() {
+        scenario = ActivityScenario.launch(ComponentActivity::class.java).also { scenario ->
+            scenario.onActivity { activity ->
+                activity.setContent {
+                    CompositionLocalProvider(
+                        LocalDensity provides Density(density = 1f, fontScale = 1.35f)
+                    ) {
+                        HostShieldTheme {
+                            val listState = rememberLazyListState()
+                            Column(
+                                modifier = Modifier
+                                    .width(360.dp)
+                                    .background(Surface0)
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                HostShieldSavedFilterBar(
+                                    screen = "logs",
+                                    savedFilters = listOf(
+                                        SavedDenseListFilter(
+                                            screen = "logs",
+                                            label = "Blocked A queries",
+                                            payload = "{}",
+                                            updatedAt = 1L
+                                        )
+                                    ),
+                                    canSaveCurrent = true,
+                                    onSaveCurrent = {},
+                                    onApplyFilter = {},
+                                    onClearSavedFilters = {},
+                                )
+                                HostShieldEmptyState(
+                                    icon = Icons.Filled.Dns,
+                                    title = "No matching rows",
+                                    message = "Clear the saved filter to show dense list results again.",
+                                    accent = Blue,
+                                    primaryActionLabel = "Clear filters",
+                                    onPrimaryAction = {},
+                                )
+                                HostShieldDenseListJumpBar(
+                                    screen = "test_dense",
+                                    label = "test rows",
+                                    totalItems = 80,
+                                    listState = listState,
+                                    minItems = 20,
+                                )
+                                LazyColumn(
+                                    state = listState,
+                                    modifier = Modifier.height(170.dp),
+                                ) {
+                                    items((0 until 80).toList()) { index ->
+                                        Text("Dense row $index", color = Teal)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Save filter").assertIsDisplayed()
+        compose.onNodeWithText("Blocked A queries").assertIsDisplayed()
+        compose.onNodeWithText("No matching rows").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Jump to end of test rows").performClick()
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText("Dense row 79").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText("Dense row 79").assertIsDisplayed()
     }
 
     private fun launchAdaptiveNavigation(

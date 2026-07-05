@@ -10,6 +10,7 @@ import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.data.preferences.SavedDenseListFilter
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.database.AppDnsRuleDao
 import com.hostshield.domain.BlocklistHolder
@@ -23,6 +24,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import javax.inject.Inject
 
 // DNS log screen
@@ -53,6 +55,34 @@ private data class LogFilters(
 )
 
 private val THREAT_INTEL_DECISION_REASONS = setOf("threat_intel_domain", "threat_intel_ip")
+private const val LOGS_SAVED_FILTER_SCREEN = "logs"
+
+private fun LogFilters.isActive(): Boolean =
+    query.isNotBlank() || blocked != null || queryType != null || threatIntelOnly
+
+private fun LogFilters.describe(): String = buildList {
+    if (query.isNotBlank()) add("\"${query.trim().take(18)}\"")
+    blocked?.let { add(if (it) "Blocked" else "Allowed") }
+    queryType?.let { add(it.uppercase()) }
+    if (threatIntelOnly) add("Threat review")
+}.joinToString(" + ").ifBlank { "DNS filter" }
+
+private fun LogFilters.toPayload(): String = JSONObject()
+    .put("query", query)
+    .put("blocked", blocked)
+    .put("queryType", queryType)
+    .put("threatIntelOnly", threatIntelOnly)
+    .toString()
+
+private fun logFiltersFromPayload(payload: String): LogFilters? = runCatching {
+    val json = JSONObject(payload)
+    LogFilters(
+        query = json.optString("query"),
+        blocked = if (json.has("blocked") && !json.isNull("blocked")) json.getBoolean("blocked") else null,
+        queryType = json.optString("queryType").takeIf { it.isNotBlank() },
+        threatIntelOnly = json.optBoolean("threatIntelOnly", false)
+    )
+}.getOrNull()
 
 @HiltViewModel
 class LogsViewModel @Inject constructor(
@@ -72,6 +102,9 @@ class LogsViewModel @Inject constructor(
     val searchQuery = _searchQuery.asStateFlow()
     private val _searchHistory = MutableStateFlow<List<String>>(emptyList())
     val searchHistory = _searchHistory.asStateFlow()
+    val savedFilters: StateFlow<List<SavedDenseListFilter>> = prefs.ui
+        .savedDenseListFilters(LOGS_SAVED_FILTER_SCREEN)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     private val _showBlocked = MutableStateFlow<Boolean?>(null)
     val showBlocked = _showBlocked.asStateFlow()
 
@@ -198,6 +231,44 @@ class LogsViewModel @Inject constructor(
     fun setFilter(blocked: Boolean?) { _showBlocked.value = blocked }
     fun setQueryTypeFilter(type: String?) { _queryTypeFilter.value = type }
     fun setThreatIntelOnly(enabled: Boolean) { _threatIntelOnly.value = enabled }
+    fun clearFilters() {
+        _searchQuery.value = ""
+        _showBlocked.value = null
+        _queryTypeFilter.value = null
+        _threatIntelOnly.value = false
+    }
+
+    fun saveCurrentFilter() {
+        val current = LogFilters(
+            query = _searchQuery.value,
+            blocked = _showBlocked.value,
+            queryType = _queryTypeFilter.value,
+            threatIntelOnly = _threatIntelOnly.value
+        )
+        if (!current.isActive()) return
+        viewModelScope.launch {
+            prefs.ui.saveDenseListFilter(
+                LOGS_SAVED_FILTER_SCREEN,
+                current.describe(),
+                current.toPayload()
+            )
+        }
+    }
+
+    fun applySavedFilter(filter: SavedDenseListFilter) {
+        logFiltersFromPayload(filter.payload)?.let { saved ->
+            _searchQuery.value = saved.query
+            _showBlocked.value = saved.blocked
+            _queryTypeFilter.value = saved.queryType
+            _threatIntelOnly.value = saved.threatIntelOnly
+        }
+    }
+
+    fun clearSavedFilters() {
+        viewModelScope.launch {
+            prefs.ui.clearDenseListFilters(LOGS_SAVED_FILTER_SCREEN)
+        }
+    }
 
     fun blockDomain(hostname: String) {
         val host = hostname.lowercase()

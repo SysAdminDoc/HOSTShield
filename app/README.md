@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.57-blue)
+![Version](https://img.shields.io/badge/version-6.9.58-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -8,7 +8,7 @@
 
 > System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, rate-limited GeoIP enrichment, and a professional AMOLED dark UI with an optional high-contrast mode.
 
-Current module baseline: v6.9.57, versionCode 139.
+Current module baseline: v6.9.58, versionCode 140.
 
 ## Quick Start
 
@@ -37,6 +37,7 @@ Current module baseline: v6.9.57, versionCode 139.
 | **Block Response Types** | NXDOMAIN (with SOA), Null IP (0.0.0.0/::), or REFUSED — configurable |
 | **Blocking Profiles** | Switch between profile sets on schedule |
 | **Live Query Stream** | Real-time DNS log feed with zero-latency SharedFlow |
+| **Dense List Controls** | Logs, Sources, Apps, and Firewall keep reusable saved filters and top/middle/end jump controls for large local datasets |
 | **7-Day Trend Charts** | Blocked vs. total queries line chart, hourly bar chart, daily history |
 | **Per-Query Detail View** | Query type, response time, upstream server, CNAME chain, resolved IPs, GeoIP |
 | **Tracker SDK Scanner** | Exodus-style APK dex scanning for 405 tracker SDK signatures |

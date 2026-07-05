@@ -1,4 +1,15 @@
-# HostShield Unreleased
+# HostShield v6.9.58
+
+## Dense List Ergonomics
+
+### Added
+- Logs, Sources, Apps, and Firewall now expose persisted saved filter chips with accessible save/apply/clear actions for reusable dense-list views.
+- Large result lists now include top, middle, and end jump controls plus filtered empty states that explain how to recover from no-result saved filters.
+
+### Tests
+- Added JVM coverage for saved dense-list filter persistence and apply/clear behavior, plus large-font Compose coverage for the shared dense-list controls.
+
+---
 
 ## LocaleConfig Readiness
 

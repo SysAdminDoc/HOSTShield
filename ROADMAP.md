@@ -672,10 +672,3 @@ dependency/licensing review, and implementation-test corpus design.
 ### P2
 
 ### P3
-
-- [ ] P3 — Add fast-scroll and saved filters for dense lists
-  Why: Logs, Sources, Apps, and Firewall screens can hold large local datasets; competitor issues and DNS dashboards show that fast navigation and reusable filters become table-stakes once logs are useful.
-  Evidence: `app/app/src/main/java/com/hostshield/ui/screens/logs/LogsScreen.kt`; `app/app/src/main/java/com/hostshield/ui/screens/sources/SourcesScreen.kt`; `app/app/src/main/java/com/hostshield/ui/screens/apps/AppsScreen.kt`; https://github.com/celzero/rethink-app/issues/1066; https://help.nextdns.io/t/83htqp1/more-information-in-the-analytics-page
-  Touches: shared list/filter components, Logs/Sources/Apps/Firewall screens, UI tests for empty/large/filter states.
-  Acceptance: Dense lists expose accessible fast-scroll or jump controls, saved filter chips, clear empty states, and no text clipping at large font scale; Compose tests cover large list, no-results, and filtered-result states.
-  Complexity: M

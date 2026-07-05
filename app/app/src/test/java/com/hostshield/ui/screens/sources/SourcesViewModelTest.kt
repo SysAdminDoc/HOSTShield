@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.SourceCategory
+import com.hostshield.data.preferences.SavedDenseListFilter
+import com.hostshield.data.preferences.UiPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.domain.BlocklistHolder
@@ -25,6 +27,7 @@ class SourcesViewModelTest {
     private lateinit var repository: HostShieldRepository
     private lateinit var downloader: SourceDownloader
     private lateinit var blocklistHolder: BlocklistHolder
+    private lateinit var uiPreferences: UiPreferences
     private val sourcesFlow = MutableStateFlow<List<HostSource>>(emptyList())
     private val createdViewModels = mutableListOf<ViewModel>()
 
@@ -34,7 +37,9 @@ class SourcesViewModelTest {
         repository = mockk(relaxed = true, relaxUnitFun = true)
         downloader = mockk(relaxed = true)
         blocklistHolder = mockk(relaxed = true)
+        uiPreferences = mockk(relaxed = true, relaxUnitFun = true)
         every { repository.getAllSources() } returns sourcesFlow
+        every { uiPreferences.savedDenseListFilters(any()) } returns kotlinx.coroutines.flow.flowOf(emptyList())
     }
 
     @After
@@ -44,7 +49,7 @@ class SourcesViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = SourcesViewModel(repository, downloader, blocklistHolder)
+    private fun createViewModel() = SourcesViewModel(repository, downloader, blocklistHolder, uiPreferences)
         .also { createdViewModels += it }
 
     @Test
@@ -85,6 +90,45 @@ class SourcesViewModelTest {
         advanceUntilIdle()
 
         coVerify { repository.toggleSource(7L, false) }
+    }
+
+    @Test
+    fun `saved source filters persist apply and clear`() = runTest {
+        val vm = createViewModel()
+
+        vm.setSearchQuery("hagezi")
+        vm.setFilter(SourceListFilter.UNHEALTHY)
+        vm.saveCurrentFilter()
+        advanceUntilIdle()
+
+        coVerify {
+            uiPreferences.saveDenseListFilter(
+                "sources",
+                match { it.contains("hagezi") && it.contains("Needs review") },
+                match { it.contains("\"query\":\"hagezi\"") && it.contains("\"filter\":\"UNHEALTHY\"") }
+            )
+        }
+
+        vm.clearFilters()
+        assertEquals("", vm.searchQuery.value)
+        assertEquals(SourceListFilter.ALL, vm.filter.value)
+
+        vm.applySavedFilter(
+            SavedDenseListFilter(
+                screen = "sources",
+                label = "Allowlists",
+                payload = """{"query":"allow","filter":"ALLOWLIST"}""",
+                updatedAt = 1L
+            )
+        )
+
+        assertEquals("allow", vm.searchQuery.value)
+        assertEquals(SourceListFilter.ALLOWLIST, vm.filter.value)
+
+        vm.clearSavedFilters()
+        advanceUntilIdle()
+
+        coVerify { uiPreferences.clearDenseListFilters("sources") }
     }
 
     @Test

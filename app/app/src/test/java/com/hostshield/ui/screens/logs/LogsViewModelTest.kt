@@ -9,6 +9,8 @@ import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.data.preferences.SavedDenseListFilter
+import com.hostshield.data.preferences.UiPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.service.AppDnsRuleEngine
@@ -34,6 +36,7 @@ class LogsViewModelTest {
     private lateinit var blocklist: BlocklistHolder
     private lateinit var rootUtil: RootUtil
     private lateinit var prefs: AppPreferences
+    private lateinit var uiPreferences: UiPreferences
     private lateinit var geoIpLookup: GeoIpLookup
     private lateinit var appDnsRuleDao: AppDnsRuleDao
     private lateinit var appDnsRuleEngine: AppDnsRuleEngine
@@ -48,6 +51,7 @@ class LogsViewModelTest {
         blocklist = mockk(relaxed = true, relaxUnitFun = true)
         rootUtil = mockk(relaxed = true, relaxUnitFun = true)
         prefs = mockk(relaxed = true)
+        uiPreferences = mockk(relaxed = true, relaxUnitFun = true)
         geoIpLookup = mockk(relaxed = true)
         appDnsRuleDao = mockk(relaxed = true, relaxUnitFun = true)
         appDnsRuleEngine = mockk(relaxed = true, relaxUnitFun = true)
@@ -56,6 +60,8 @@ class LogsViewModelTest {
         coEvery { repository.getEnabledRulesByType(RuleType.BLOCK) } returns emptyList()
         coEvery { repository.getEnabledRulesByType(RuleType.ALLOW) } returns emptyList()
         every { prefs.pinnedDomains } returns flowOf(emptySet())
+        every { prefs.ui } returns uiPreferences
+        every { uiPreferences.savedDenseListFilters(any()) } returns flowOf(emptyList())
     }
 
     @After
@@ -120,6 +126,56 @@ class LogsViewModelTest {
             vm.setQueryTypeFilter("AAAA")
             assertEquals("AAAA", awaitItem())
         }
+    }
+
+    @Test
+    fun `saved log filters persist apply and clear`() = runTest {
+        val vm = createViewModel()
+
+        vm.setSearch("ads")
+        vm.setFilter(true)
+        vm.setQueryTypeFilter("AAAA")
+        vm.setThreatIntelOnly(true)
+        vm.saveCurrentFilter()
+        advanceUntilIdle()
+
+        coVerify {
+            uiPreferences.saveDenseListFilter(
+                "logs",
+                match { it.contains("ads") && it.contains("Blocked") && it.contains("AAAA") },
+                match {
+                    it.contains("\"query\":\"ads\"") &&
+                        it.contains("\"blocked\":true") &&
+                        it.contains("\"queryType\":\"AAAA\"") &&
+                        it.contains("\"threatIntelOnly\":true")
+                }
+            )
+        }
+
+        vm.clearFilters()
+        assertEquals("", vm.searchQuery.value)
+        assertNull(vm.showBlocked.value)
+        assertNull(vm.queryTypeFilter.value)
+        assertFalse(vm.threatIntelOnly.value)
+
+        vm.applySavedFilter(
+            SavedDenseListFilter(
+                screen = "logs",
+                label = "Saved",
+                payload = """{"query":"ads","blocked":true,"queryType":"AAAA","threatIntelOnly":true}""",
+                updatedAt = 1L
+            )
+        )
+
+        assertEquals("ads", vm.searchQuery.value)
+        assertEquals(true, vm.showBlocked.value)
+        assertEquals("AAAA", vm.queryTypeFilter.value)
+        assertTrue(vm.threatIntelOnly.value)
+
+        vm.clearSavedFilters()
+        advanceUntilIdle()
+
+        coVerify { uiPreferences.clearDenseListFilters("logs") }
     }
 
     @Test

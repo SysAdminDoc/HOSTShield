@@ -33,6 +33,15 @@ object HostShieldTestTags {
         const val SearchField = "logs:search_field"
     }
 
+    object DenseList {
+        const val SaveFilter = "dense_list:save_filter"
+        const val ClearSavedFilters = "dense_list:clear_saved_filters"
+        fun savedFilter(screen: String, label: String): String =
+            "dense_list:saved:${slug(screen)}:${slug(label)}"
+        fun jump(screen: String, target: String): String =
+            "dense_list:jump:${slug(screen)}:${slug(target)}"
+    }
+
     object Settings {
         fun section(title: String): String = "settings:section:${slug(title)}"
         fun row(title: String): String = "settings:row:${slug(title)}"

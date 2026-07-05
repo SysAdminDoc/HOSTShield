@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.57-blue)
+![Version](https://img.shields.io/badge/version-6.9.58-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -154,6 +154,7 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 | Feature | Description |
 |---------|-------------|
 | **Live Query Stream** | Real-time DNS log feed via SharedFlow with search, filter, and export |
+| **Dense List Controls** | Logs, Sources, Apps, and Firewall expose saved filters, filtered empty states, and top/middle/end jump controls for large local datasets |
 | **Per-Query Detail** | Query type, response time, upstream server, CNAME chain, resolved IPs, GeoIP |
 | **7-Day Trend Charts** | Blocked vs. total queries line chart, hourly bar chart, daily history |
 | **DNS Latency Chart** | Per-hour average and peak response time with sparkline on Home |
@@ -431,6 +432,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.58** | Dense Logs, Sources, Apps, and Firewall lists now support persisted saved filters, accessible filtered empty states, and top/middle/end jump controls for large local datasets. |
 | **6.9.57** | AdGuard `$dnstype=` block and allow rules now survive source rebuilds as qtype-aware policy, with A/AAAA/negated type enforcement in VPN, proxy, root, and local DNS decisions instead of being silently dropped or globalized. |
 | **6.9.56** | Release builds now make experimental DNS controls truthful: DoQ and WireGuard DNS are documented as debug-only, release docs are guarded against release-effective claims, and disclosure tests lock the forced-off production policy. |
 | **6.9.55** | Removed premature Local DNS Server feature claims from current release docs until a production Settings, lifecycle, permission, and status path is wired; release-doc checks now reject reintroduced current Local DNS Server claims. |

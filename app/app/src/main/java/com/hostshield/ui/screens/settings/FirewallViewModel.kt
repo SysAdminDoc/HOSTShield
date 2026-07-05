@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.data.database.FirewallRuleDao
 import com.hostshield.data.model.FirewallRule
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.data.preferences.SavedDenseListFilter
 import com.hostshield.service.IptablesManager
 import com.hostshield.service.NflogReader
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,7 +13,32 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import javax.inject.Inject
+
+private const val FIREWALL_SAVED_FILTER_SCREEN = "firewall"
+
+private fun describeFirewallFilter(
+    query: String,
+    filter: FirewallFilter,
+    tab: FirewallTab,
+    showSystem: Boolean
+): String = buildList {
+    add(
+        when (tab) {
+            FirewallTab.DNS -> "DNS"
+            FirewallTab.NETWORK -> "Network"
+            FirewallTab.CONTEXT -> "Context"
+        }
+    )
+    if (query.isNotBlank()) add("\"${query.take(18)}\"")
+    when (filter) {
+        FirewallFilter.ALL -> Unit
+        FirewallFilter.BLOCKED -> add("Blocked")
+        FirewallFilter.UNBLOCKED -> add("Allowed")
+    }
+    if (showSystem) add("System")
+}.joinToString(" + ")
 
 @HiltViewModel
 class FirewallViewModel @Inject constructor(
@@ -50,6 +76,9 @@ class FirewallViewModel @Inject constructor(
     val filter = _filter.asStateFlow()
     private val _tab = MutableStateFlow(FirewallTab.DNS)
     val tab = _tab.asStateFlow()
+    val savedFilters: StateFlow<List<SavedDenseListFilter>> = prefs.ui
+        .savedDenseListFilters(FIREWALL_SAVED_FILTER_SCREEN)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing = _isSyncing.asStateFlow()
     private val _isApplyingIptables = MutableStateFlow(false)
@@ -59,6 +88,52 @@ class FirewallViewModel @Inject constructor(
     fun toggleShowSystem() { _showSystem.update { !it } }
     fun setFilter(f: FirewallFilter) { _filter.value = f }
     fun setTab(t: FirewallTab) { _tab.value = t }
+    fun clearFilters() {
+        _searchQuery.value = ""
+        _showSystem.value = false
+        _filter.value = FirewallFilter.ALL
+        _tab.value = FirewallTab.DNS
+    }
+
+    fun saveCurrentFilter() {
+        val query = _searchQuery.value.trim()
+        val filter = _filter.value
+        val tab = _tab.value
+        val showSystem = _showSystem.value
+        if (query.isBlank() && filter == FirewallFilter.ALL && !showSystem && tab == FirewallTab.DNS) return
+        viewModelScope.launch {
+            prefs.ui.saveDenseListFilter(
+                FIREWALL_SAVED_FILTER_SCREEN,
+                describeFirewallFilter(query, filter, tab, showSystem),
+                JSONObject()
+                    .put("query", query)
+                    .put("filter", filter.name)
+                    .put("tab", tab.name)
+                    .put("showSystem", showSystem)
+                    .toString()
+            )
+        }
+    }
+
+    fun applySavedFilter(saved: SavedDenseListFilter) {
+        runCatching {
+            val json = JSONObject(saved.payload)
+            _searchQuery.value = json.optString("query")
+            _filter.value = runCatching {
+                FirewallFilter.valueOf(json.optString("filter"))
+            }.getOrDefault(FirewallFilter.ALL)
+            _tab.value = runCatching {
+                FirewallTab.valueOf(json.optString("tab"))
+            }.getOrDefault(FirewallTab.DNS)
+            _showSystem.value = json.optBoolean("showSystem", false)
+        }
+    }
+
+    fun clearSavedFilters() {
+        viewModelScope.launch {
+            prefs.ui.clearDenseListFilters(FIREWALL_SAVED_FILTER_SCREEN)
+        }
+    }
 
     // ---- DNS Firewall -------------------------------------------
 

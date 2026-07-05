@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -36,10 +37,12 @@ import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.components.HostShieldActionIconButton
+import com.hostshield.ui.components.HostShieldDenseListJumpBar
 import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldFilterChip
 import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.components.HostShieldMetricTile
+import com.hostshield.ui.components.HostShieldSavedFilterBar
 import com.hostshield.ui.components.HostShieldScreenHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
@@ -49,6 +52,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SourcesScreen(
     viewModel: SourcesViewModel = hiltViewModel(),
@@ -63,8 +67,39 @@ fun SourcesScreen(
     val allowlistImpacts by viewModel.allowlistImpacts.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val sourceFilter by viewModel.filter.collectAsStateWithLifecycle()
+    val savedFilters by viewModel.savedFilters.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
     var pendingDeleteSource by remember { mutableStateOf<HostSource?>(null) }
+    val filteredSources = remember(sources, searchQuery, sourceFilter) {
+        sources.filter { source ->
+            (searchQuery.isBlank() ||
+                source.label.contains(searchQuery, ignoreCase = true) ||
+                source.url.contains(searchQuery, ignoreCase = true) ||
+                source.description.contains(searchQuery, ignoreCase = true)) &&
+                when (sourceFilter) {
+                    SourceListFilter.ALL -> true
+                    SourceListFilter.ENABLED -> source.enabled
+                    SourceListFilter.DISABLED -> !source.enabled
+                    SourceListFilter.UNHEALTHY -> source.health in setOf(SourceHealth.STALE, SourceHealth.ERROR, SourceHealth.DEAD)
+                    SourceListFilter.ALLOWLIST -> source.category == SourceCategory.ALLOWLIST
+                }
+        }
+    }
+    val hasActiveFilters = searchQuery.isNotBlank() || sourceFilter != SourceListFilter.ALL
+    val groupedSources = remember(filteredSources) { filteredSources.groupBy { it.category } }
+    val visibleCategories = remember(groupedSources) {
+        SourceCategory.entries.mapNotNull { category ->
+            groupedSources[category]?.takeIf { it.isNotEmpty() }?.let { category to it }
+        }
+    }
+    val listState = rememberLazyListState()
+    val lazyItemCount = 1 + if (filteredSources.isEmpty()) {
+        1
+    } else {
+        visibleCategories.sumOf { (_, items) -> 1 + items.size } + 1
+    }
 
     Box(
         modifier = Modifier
@@ -87,6 +122,7 @@ fun SourcesScreen(
             }
         } else {
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -189,25 +225,73 @@ fun SourcesScreen(
                     }
                 }
                 Spacer(Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.setSearchQuery(it) },
+                    placeholder = { Text("Search source name or URL", color = TextDim) },
+                    leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextDim) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Teal,
+                        unfocusedBorderColor = Surface3,
+                        cursorColor = Teal,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    )
+                )
+                Spacer(Modifier.height(8.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    HostShieldFilterChip("All", sourceFilter == SourceListFilter.ALL, { viewModel.setFilter(SourceListFilter.ALL) }, accent = Teal)
+                    HostShieldFilterChip("Enabled", sourceFilter == SourceListFilter.ENABLED, { viewModel.setFilter(SourceListFilter.ENABLED) }, accent = Green)
+                    HostShieldFilterChip("Disabled", sourceFilter == SourceListFilter.DISABLED, { viewModel.setFilter(SourceListFilter.DISABLED) }, accent = TextDim)
+                    HostShieldFilterChip("Needs review", sourceFilter == SourceListFilter.UNHEALTHY, { viewModel.setFilter(SourceListFilter.UNHEALTHY) }, accent = Red)
+                    HostShieldFilterChip("Allowlists", sourceFilter == SourceListFilter.ALLOWLIST, { viewModel.setFilter(SourceListFilter.ALLOWLIST) }, accent = Blue)
+                }
+                if (hasActiveFilters || savedFilters.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    HostShieldSavedFilterBar(
+                        screen = "sources",
+                        savedFilters = savedFilters,
+                        canSaveCurrent = hasActiveFilters,
+                        onSaveCurrent = { viewModel.saveCurrentFilter() },
+                        onApplyFilter = { viewModel.applySavedFilter(it) },
+                        onClearSavedFilters = { viewModel.clearSavedFilters() },
+                    )
+                }
+                HostShieldDenseListJumpBar(
+                    screen = "sources",
+                    label = "source results",
+                    totalItems = lazyItemCount,
+                    listState = listState,
+                    minItems = 16,
+                )
             }
 
-            val grouped = sources.groupBy { it.category }
-            if (sources.isEmpty()) {
+            if (filteredSources.isEmpty()) {
                 item {
                     HostShieldEmptyState(
-                        icon = Icons.Filled.CloudOff,
-                        title = "No sources configured",
-                        message = "Add a trusted blocklist or browse the curated gallery before enabling source-based protection.",
+                        icon = if (hasActiveFilters) Icons.Filled.FilterAltOff else Icons.Filled.CloudOff,
+                        title = if (hasActiveFilters) "No matching sources" else "No sources configured",
+                        message = if (hasActiveFilters) {
+                            "Clear the search or saved filter to show configured blocklists again."
+                        } else {
+                            "Add a trusted blocklist or browse the curated gallery before enabling source-based protection."
+                        },
                         accent = Teal,
-                        primaryActionLabel = "Browse gallery",
-                        onPrimaryAction = onNavigateToGallery,
-                        secondaryActionLabel = "Add URL",
-                        onSecondaryAction = { showAddDialog = true },
+                        primaryActionLabel = if (hasActiveFilters) "Clear filters" else "Browse gallery",
+                        onPrimaryAction = if (hasActiveFilters) viewModel::clearFilters else onNavigateToGallery,
+                        secondaryActionLabel = if (hasActiveFilters) null else "Add URL",
+                        onSecondaryAction = if (hasActiveFilters) null else ({ showAddDialog = true }),
                     )
                 }
             }
-            SourceCategory.entries.forEach { category ->
-                val items = grouped[category] ?: return@forEach
+            visibleCategories.forEach { (category, items) ->
                 item {
                     Text(
                         "${category.name.lowercase().replaceFirstChar { it.uppercase() }} (${items.size})",

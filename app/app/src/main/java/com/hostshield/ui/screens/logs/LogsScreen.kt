@@ -9,6 +9,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -35,11 +36,13 @@ import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.ConfirmDestructiveDialog
+import com.hostshield.ui.components.HostShieldDenseListJumpBar
 import com.hostshield.ui.components.HostShieldActionIconButton
 import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldFilterChip
 import com.hostshield.ui.components.HostShieldInlineAction
 import com.hostshield.ui.components.HostShieldLoadingState
+import com.hostshield.ui.components.HostShieldSavedFilterBar
 import com.hostshield.ui.components.HostShieldScreenHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.theme.*
@@ -73,6 +76,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val totalDomains by viewModel.totalDomains.collectAsStateWithLifecycle()
     val blockedCount by viewModel.blockedCount.collectAsStateWithLifecycle()
     val threatReviewCount by viewModel.threatReviewCount.collectAsStateWithLifecycle()
+    val savedFilters by viewModel.savedFilters.collectAsStateWithLifecycle()
     val backAction = onBack
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
@@ -247,6 +251,19 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
         Spacer(Modifier.height(8.dp))
 
         val hasActiveFilters = query.isNotBlank() || blockedFilter != null || queryTypeFilter != null || threatIntelOnly
+        if (hasActiveFilters || savedFilters.isNotEmpty()) {
+            HostShieldSavedFilterBar(
+                screen = "logs",
+                savedFilters = savedFilters,
+                canSaveCurrent = hasActiveFilters,
+                onSaveCurrent = { viewModel.saveCurrentFilter() },
+                onApplyFilter = { viewModel.applySavedFilter(it) },
+                onClearSavedFilters = { viewModel.clearSavedFilters() },
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+
         if (deduped.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -270,10 +287,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                     primaryActionLabel = if (hasActiveFilters) "Clear filters" else null,
                     onPrimaryAction = if (hasActiveFilters) {
                         {
-                            viewModel.setSearch("")
-                            viewModel.setFilter(null)
-                            viewModel.setQueryTypeFilter(null)
-                            viewModel.setThreatIntelOnly(false)
+                            viewModel.clearFilters()
                         }
                     } else {
                         null
@@ -281,7 +295,16 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                 )
             }
         } else {
+            val listState = rememberLazyListState()
+            HostShieldDenseListJumpBar(
+                screen = "logs",
+                label = "DNS log results",
+                totalItems = deduped.size,
+                listState = listState,
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
             LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {

@@ -61,6 +61,12 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   domain and resolved-IP checks, so false-positive recovery does not require
   disabling malware feeds.
 
+## [v6.9.58] - 2026-07-05
+
+### Added
+- Logs, Sources, Apps, and Firewall dense lists now expose persisted saved filters, filtered empty states, and accessible top/middle/end jump controls for large local datasets.
+- Added JVM coverage for saved dense-list filter save/apply/clear behavior and large-font Compose coverage for the shared dense-list controls.
+
 ## [v6.9.57] - 2026-07-01
 
 ### Fixed

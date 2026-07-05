@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,8 +35,10 @@ import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
 import com.hostshield.ui.components.HostShieldActionIconButton
 import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldDenseListJumpBar
 import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldLoadingState
+import com.hostshield.ui.components.HostShieldSavedFilterBar
 import com.hostshield.ui.components.HostShieldSegmentOption
 import com.hostshield.ui.components.HostShieldSegmentedTabs
 import com.hostshield.ui.components.HostShieldStatusBanner
@@ -61,6 +64,7 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
     val isDiagnosing by viewModel.isDiagnosing.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val savedFilters by viewModel.savedFilters.collectAsStateWithLifecycle()
 
     // Installed apps for DNS tab
     val allApps = remember {
@@ -134,6 +138,19 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
         )
 
         Spacer(Modifier.height(8.dp))
+        val hasActiveFilters = searchQuery.isNotBlank() || showSystem || filter != FirewallFilter.ALL || tab != FirewallTab.DNS
+        if (hasActiveFilters || savedFilters.isNotEmpty()) {
+            HostShieldSavedFilterBar(
+                screen = "firewall",
+                savedFilters = savedFilters,
+                canSaveCurrent = hasActiveFilters,
+                onSaveCurrent = { viewModel.saveCurrentFilter() },
+                onApplyFilter = { viewModel.applySavedFilter(it) },
+                onClearSavedFilters = { viewModel.clearSavedFilters() },
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+        }
 
         when (tab) {
             FirewallTab.DNS -> DnsFirewallTab(viewModel, allApps, blocked, excluded, searchQuery, showSystem, filter)
@@ -208,7 +225,16 @@ private fun DnsFirewallTab(
         }
     }
 
-    LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)) {
+    val listState = rememberLazyListState()
+    HostShieldDenseListJumpBar(
+        screen = "firewall_dns",
+        label = "DNS firewall app results",
+        totalItems = filteredApps.size,
+        listState = listState,
+        modifier = Modifier.padding(horizontal = 16.dp),
+    )
+
+    LazyColumn(state = listState, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)) {
         if (filteredApps.isEmpty()) {
             item {
                 HostShieldEmptyState(
@@ -441,7 +467,16 @@ private fun NetworkFirewallTab(
         )
     }
 
-    LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp)) {
+    val listState = rememberLazyListState()
+    HostShieldDenseListJumpBar(
+        screen = "firewall_network",
+        label = "network firewall rule results",
+        totalItems = filtered.size,
+        listState = listState,
+        modifier = Modifier.padding(horizontal = 16.dp),
+    )
+
+    LazyColumn(state = listState, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp)) {
         if (filtered.isEmpty() && !isSyncing) {
             item {
                 HostShieldEmptyState(
@@ -551,7 +586,16 @@ private fun ContextFirewallTab(
         }
     }
 
-    LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp)) {
+    val listState = rememberLazyListState()
+    HostShieldDenseListJumpBar(
+        screen = "firewall_context",
+        label = "context firewall rule results",
+        totalItems = filtered.size,
+        listState = listState,
+        modifier = Modifier.padding(horizontal = 16.dp),
+    )
+
+    LazyColumn(state = listState, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp)) {
         if (filtered.isEmpty()) {
             item {
                 HostShieldEmptyState(

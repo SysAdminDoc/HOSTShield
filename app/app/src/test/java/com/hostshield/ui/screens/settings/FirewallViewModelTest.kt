@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.data.database.FirewallRuleDao
 import com.hostshield.data.model.FirewallRule
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.data.preferences.SavedDenseListFilter
+import com.hostshield.data.preferences.UiPreferences
 import com.hostshield.service.IptablesManager
 import com.hostshield.service.NflogReader
 import io.mockk.*
@@ -24,6 +26,7 @@ import org.junit.Test
 class FirewallViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var prefs: AppPreferences
+    private lateinit var uiPreferences: UiPreferences
     private lateinit var firewallRuleDao: FirewallRuleDao
     private lateinit var iptablesManager: IptablesManager
     private lateinit var nflogReader: NflogReader
@@ -38,12 +41,15 @@ class FirewallViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         prefs = mockk(relaxed = true)
+        uiPreferences = mockk(relaxed = true, relaxUnitFun = true)
         firewallRuleDao = mockk(relaxed = true, relaxUnitFun = true)
         iptablesManager = mockk(relaxed = true, relaxUnitFun = true)
         nflogReader = mockk(relaxed = true, relaxUnitFun = true)
 
         every { prefs.blockedApps } returns flowOf(emptySet())
         every { prefs.excludedApps } returns flowOf(emptySet())
+        every { prefs.ui } returns uiPreferences
+        every { uiPreferences.savedDenseListFilters(any()) } returns flowOf(emptyList())
         every { firewallRuleDao.getAllRules() } returns rulesFlow
         every { firewallRuleDao.getBlockedCount() } returns blockedCountFlow
         every { iptablesManager.isActive } returns iptablesActiveFlow
@@ -117,5 +123,60 @@ class FirewallViewModelTest {
             vm.setFilter(FirewallFilter.BLOCKED)
             assertEquals(FirewallFilter.BLOCKED, awaitItem())
         }
+    }
+
+    @Test
+    fun `saved firewall filters persist apply and clear all active state`() = runTest {
+        val vm = createViewModel()
+
+        vm.setTab(FirewallTab.NETWORK)
+        vm.setSearchQuery("chrome")
+        vm.setFilter(FirewallFilter.BLOCKED)
+        vm.toggleShowSystem()
+        vm.saveCurrentFilter()
+        advanceUntilIdle()
+
+        coVerify {
+            uiPreferences.saveDenseListFilter(
+                "firewall",
+                match {
+                    it.contains("Network") &&
+                        it.contains("chrome") &&
+                        it.contains("Blocked") &&
+                        it.contains("System")
+                },
+                match {
+                    it.contains("\"query\":\"chrome\"") &&
+                        it.contains("\"filter\":\"BLOCKED\"") &&
+                        it.contains("\"tab\":\"NETWORK\"") &&
+                        it.contains("\"showSystem\":true")
+                }
+            )
+        }
+
+        vm.clearFilters()
+        assertEquals("", vm.searchQuery.value)
+        assertEquals(FirewallFilter.ALL, vm.filter.value)
+        assertEquals(FirewallTab.DNS, vm.tab.value)
+        assertFalse(vm.showSystem.value)
+
+        vm.applySavedFilter(
+            SavedDenseListFilter(
+                screen = "firewall",
+                label = "Context apps",
+                payload = """{"query":"maps","filter":"UNBLOCKED","tab":"CONTEXT","showSystem":true}""",
+                updatedAt = 1L
+            )
+        )
+
+        assertEquals("maps", vm.searchQuery.value)
+        assertEquals(FirewallFilter.UNBLOCKED, vm.filter.value)
+        assertEquals(FirewallTab.CONTEXT, vm.tab.value)
+        assertTrue(vm.showSystem.value)
+
+        vm.clearSavedFilters()
+        advanceUntilIdle()
+
+        coVerify { uiPreferences.clearDenseListFilters("firewall") }
     }
 }

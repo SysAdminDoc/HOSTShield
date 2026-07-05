@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -33,27 +34,38 @@ import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.ui.accessibility.accessibilityAction
 import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldDenseListJumpBar
 import com.hostshield.ui.components.HostShieldEmptyState
+import com.hostshield.ui.components.HostShieldFilterChip
 import com.hostshield.ui.components.HostShieldMetricTile
+import com.hostshield.ui.components.HostShieldSavedFilterBar
 import com.hostshield.util.RootUtil
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 
 // Apps screen
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = {}) {
     val apps by viewModel.apps.collectAsStateWithLifecycle()
     val selectedApp by viewModel.selectedApp.collectAsStateWithLifecycle()
     val appDomains by viewModel.appDomains.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val appFilter by viewModel.filter.collectAsStateWithLifecycle()
+    val savedFilters by viewModel.savedFilters.collectAsStateWithLifecycle()
     val locallyBlocked by viewModel.locallyBlocked.collectAsStateWithLifecycle()
 
-    val filtered = remember(apps, query) {
-        if (query.isBlank()) apps
-        else apps.filter {
-            it.appLabel.contains(query, ignoreCase = true) ||
-            it.appPackage.contains(query, ignoreCase = true)
+    val filtered = remember(apps, query, appFilter) {
+        apps.filter { app ->
+            (query.isBlank() ||
+                app.appLabel.contains(query, ignoreCase = true) ||
+                app.appPackage.contains(query, ignoreCase = true)) &&
+                when (appFilter) {
+                    AppsActivityFilter.ALL -> true
+                    AppsActivityFilter.BLOCKED -> app.blockedQueries > 0
+                    AppsActivityFilter.UNBLOCKED -> app.blockedQueries == 0
+                }
         }
     }
     val totalQueries = remember(apps) { apps.sumOf { it.totalQueries } }
@@ -122,6 +134,32 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
 
             Spacer(Modifier.height(8.dp))
 
+            FlowRow(
+                modifier = Modifier.padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                HostShieldFilterChip("All", appFilter == AppsActivityFilter.ALL, { viewModel.setFilter(AppsActivityFilter.ALL) }, accent = Mauve)
+                HostShieldFilterChip("Blocked", appFilter == AppsActivityFilter.BLOCKED, { viewModel.setFilter(AppsActivityFilter.BLOCKED) }, accent = Red)
+                HostShieldFilterChip("No blocks", appFilter == AppsActivityFilter.UNBLOCKED, { viewModel.setFilter(AppsActivityFilter.UNBLOCKED) }, accent = Teal)
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            val hasActiveFilters = query.isNotBlank() || appFilter != AppsActivityFilter.ALL
+            if (hasActiveFilters || savedFilters.isNotEmpty()) {
+                HostShieldSavedFilterBar(
+                    screen = "apps",
+                    savedFilters = savedFilters,
+                    canSaveCurrent = hasActiveFilters,
+                    onSaveCurrent = { viewModel.saveCurrentFilter() },
+                    onApplyFilter = { viewModel.applySavedFilter(it) },
+                    onClearSavedFilters = { viewModel.clearSavedFilters() },
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
             // App list
             if (filtered.isEmpty()) {
                 HostShieldEmptyState(
@@ -130,13 +168,24 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
                     message = if (query.isBlank()) {
                         "Enable VPN protection and open a few apps. HostShield will group DNS activity here by app."
                     } else {
-                        "Try a different app name or package id."
+                        "Try a different app name, package id, or saved filter."
                     },
                     accent = Mauve,
+                    primaryActionLabel = if (hasActiveFilters) "Clear filters" else null,
+                    onPrimaryAction = if (hasActiveFilters) viewModel::clearFilters else null,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
                 )
             } else {
+                val appListState = rememberLazyListState()
+                HostShieldDenseListJumpBar(
+                    screen = "apps",
+                    label = "app activity results",
+                    totalItems = filtered.size,
+                    listState = appListState,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
                 LazyColumn(
+                    state = appListState,
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -182,7 +231,16 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                 )
             } else {
+                val domainListState = rememberLazyListState()
+                HostShieldDenseListJumpBar(
+                    screen = "app_domains",
+                    label = "selected app domains",
+                    totalItems = effectiveDomains.size,
+                    listState = domainListState,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
                 LazyColumn(
+                    state = domainListState,
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {

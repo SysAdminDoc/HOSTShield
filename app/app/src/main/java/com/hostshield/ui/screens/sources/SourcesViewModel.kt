@@ -8,6 +8,8 @@ import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.model.SourceHealth
+import com.hostshield.data.preferences.SavedDenseListFilter
+import com.hostshield.data.preferences.UiPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.SourceUrlPolicy
@@ -17,7 +19,23 @@ import com.hostshield.domain.parser.HostsParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import javax.inject.Inject
+
+private const val SOURCES_SAVED_FILTER_SCREEN = "sources"
+
+enum class SourceListFilter { ALL, ENABLED, DISABLED, UNHEALTHY, ALLOWLIST }
+
+private fun describeSourceFilter(query: String, filter: SourceListFilter): String = buildList {
+    if (query.isNotBlank()) add("\"${query.take(18)}\"")
+    when (filter) {
+        SourceListFilter.ALL -> Unit
+        SourceListFilter.ENABLED -> add("Enabled")
+        SourceListFilter.DISABLED -> add("Disabled")
+        SourceListFilter.UNHEALTHY -> add("Needs review")
+        SourceListFilter.ALLOWLIST -> add("Allowlists")
+    }
+}.joinToString(" + ").ifBlank { "Source filter" }
 
 data class AllowlistImpact(
     val neutralizedCount: Int,
@@ -47,7 +65,8 @@ data class SourceImpactQueryChange(
 class SourcesViewModel @Inject constructor(
     private val repository: HostShieldRepository,
     private val downloader: SourceDownloader,
-    private val blocklistHolder: BlocklistHolder
+    private val blocklistHolder: BlocklistHolder,
+    private val uiPreferences: UiPreferences
 ) : ViewModel() {
     private companion object {
         const val TAG = "SourcesViewModel"
@@ -78,6 +97,13 @@ class SourcesViewModel @Inject constructor(
     val isPreviewingSourceImpact: StateFlow<Boolean> = _isPreviewingSourceImpact.asStateFlow()
     private val _sourceImpactPreview = MutableStateFlow<SourceImpactPreview?>(null)
     val sourceImpactPreview: StateFlow<SourceImpactPreview?> = _sourceImpactPreview.asStateFlow()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+    private val _filter = MutableStateFlow(SourceListFilter.ALL)
+    val filter = _filter.asStateFlow()
+    val savedFilters: StateFlow<List<SavedDenseListFilter>> = uiPreferences
+        .savedDenseListFilters(SOURCES_SAVED_FILTER_SCREEN)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         // Track when sources have emitted their first real value
@@ -95,6 +121,45 @@ class SourcesViewModel @Inject constructor(
                 Log.e(TAG, "Failed to toggle source $id", e)
                 _error.value = "Could not update the source. Try again."
             }
+        }
+    }
+
+    fun setSearchQuery(query: String) { _searchQuery.value = query }
+    fun setFilter(filter: SourceListFilter) { _filter.value = filter }
+    fun clearFilters() {
+        _searchQuery.value = ""
+        _filter.value = SourceListFilter.ALL
+    }
+
+    fun saveCurrentFilter() {
+        val query = _searchQuery.value.trim()
+        val filter = _filter.value
+        if (query.isBlank() && filter == SourceListFilter.ALL) return
+        viewModelScope.launch {
+            uiPreferences.saveDenseListFilter(
+                SOURCES_SAVED_FILTER_SCREEN,
+                describeSourceFilter(query, filter),
+                JSONObject()
+                    .put("query", query)
+                    .put("filter", filter.name)
+                    .toString()
+            )
+        }
+    }
+
+    fun applySavedFilter(saved: SavedDenseListFilter) {
+        runCatching {
+            val json = JSONObject(saved.payload)
+            _searchQuery.value = json.optString("query")
+            _filter.value = runCatching {
+                SourceListFilter.valueOf(json.optString("filter"))
+            }.getOrDefault(SourceListFilter.ALL)
+        }
+    }
+
+    fun clearSavedFilters() {
+        viewModelScope.launch {
+            uiPreferences.clearDenseListFilters(SOURCES_SAVED_FILTER_SCREEN)
         }
     }
     fun deleteSource(source: HostSource) {

@@ -1,0 +1,4 @@
+v6.9.58 - Dense list ergonomics:
+- Adds saved filters for Logs, Sources, Apps, and Firewall dense lists
+- Adds top, middle, and end jump controls for large local datasets
+- Improves filtered empty states and large-font coverage for dense-list controls
