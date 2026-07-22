@@ -71,8 +71,9 @@ class BlockNotificationService @Inject constructor(
         val now = System.currentTimeMillis()
 
         try {
-            // Get apps with high blocked query counts in recent window
-            val topApps = dnsLogDao.getTopBlockedApps(limit = 10).first()
+            // Get apps with high blocked query counts in the recent window only —
+            // all-time counts would fire "high tracker activity" alerts forever.
+            val topApps = dnsLogDao.getTopBlockedAppsSince(since = since, limit = 10).first()
             for (app in topApps) {
                 if (app.cnt < BURST_THRESHOLD) continue
                 if (app.appPackage.isBlank()) continue

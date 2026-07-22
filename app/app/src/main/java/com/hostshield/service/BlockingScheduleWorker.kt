@@ -99,7 +99,11 @@ class BlockingScheduleWorker @AssistedInject constructor(
                             applicationContext,
                             "BlockingScheduleWorker"
                         )
-                        else -> { }
+                        BlockMethod.DNS_PROXY -> DnsProxyService.start(
+                            applicationContext,
+                            "BlockingScheduleWorker"
+                        )
+                        BlockMethod.DISABLED -> { }
                     }
                 } else {
                     when (method) {
@@ -109,7 +113,8 @@ class BlockingScheduleWorker @AssistedInject constructor(
                             applicationContext.startService(intent)
                         }
                         BlockMethod.ROOT_HOSTS -> RootDnsService.stop(applicationContext)
-                        else -> { }
+                        BlockMethod.DNS_PROXY -> DnsProxyService.stop(applicationContext)
+                        BlockMethod.DISABLED -> { }
                     }
                 }
 

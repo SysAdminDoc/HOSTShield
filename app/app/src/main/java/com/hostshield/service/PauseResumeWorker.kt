@@ -64,7 +64,13 @@ class PauseResumeWorker @AssistedInject constructor(
                 BlockMethod.DNS_PROXY -> {
                     DnsProxyService.start(appContext, "PauseResumeWorker")
                 }
-                BlockMethod.DISABLED -> { /* user disabled while paused — respect that */ }
+                BlockMethod.DISABLED -> {
+                    // User disabled while paused — respect that. Do NOT fall through
+                    // to setEnabled(true) below, which would silently re-enable the pref.
+                    prefs.setPauseEndTime(0L)
+                    Log.i("PauseResume", "Pause expired but method is DISABLED — leaving protection off")
+                    return Result.success()
+                }
             }
             prefs.setEnabled(true)
             prefs.setPauseEndTime(0L)

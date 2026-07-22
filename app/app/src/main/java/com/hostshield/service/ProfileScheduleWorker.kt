@@ -77,9 +77,9 @@ class ProfileScheduleWorker @AssistedInject constructor(
             val activeProfile = profileDao.getActiveProfile()
 
             if (targetProfile != null && activeProfile?.id != targetProfile.id) {
-                // Activate the scheduled profile
-                profileDao.deactivateAll()
-                profileDao.activate(targetProfile.id)
+                // Activate the scheduled profile (single transaction — a non-atomic
+                // deactivateAll+activate pair can leave no profile active on interruption)
+                profileDao.activateExclusive(targetProfile.id)
 
                 // Rebuild in-memory blocklist — the running DNS proxy reads from
                 // BlocklistHolder, so this takes effect immediately for both

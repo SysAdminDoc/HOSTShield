@@ -3,6 +3,7 @@ package com.hostshield.data.preferences
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
@@ -37,6 +38,54 @@ class UiPreferencesRobolectricTest {
         val cacheDir = context.cacheDir
         assertNotNull(cacheDir)
         assertTrue(cacheDir.exists() || cacheDir.mkdirs())
+    }
+
+    @Test
+    fun `pinDomain and unpinDomain update the pinned set`(): Unit = runBlocking {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val prefs = UiPreferences(context)
+        val a = "pin-a-${System.nanoTime()}.example.com"
+        val b = "pin-b-${System.nanoTime()}.example.com"
+
+        prefs.pinDomain(a.uppercase())
+        prefs.pinDomain(b)
+        val pinned = prefs.pinnedDomains.first()
+        assertTrue(a.lowercase() in pinned)
+        assertTrue(b in pinned)
+
+        prefs.unpinDomain(a)
+        val afterUnpin = prefs.pinnedDomains.first()
+        assertFalse(a.lowercase() in afterUnpin)
+        assertTrue(b in afterUnpin)
+
+        prefs.unpinDomain(b)
+    }
+
+    @Test
+    fun `concurrent pins are not lost`() = runBlocking {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val prefs = UiPreferences(context)
+        val tag = System.nanoTime()
+        val domains = (0 until 20).map { "race-$tag-$it.example.com" }
+
+        // Regression: read-modify-write via pinnedDomains.first() + setPinnedDomains()
+        // could drop concurrent pins; mutation inside a single ds.edit {} serializes.
+        kotlinx.coroutines.coroutineScope {
+            domains.forEach { domain ->
+                launch { prefs.pinDomain(domain) }
+            }
+        }
+
+        val pinned = prefs.pinnedDomains.first()
+        domains.forEach { domain -> assertTrue("missing $domain", domain in pinned) }
+
+        kotlinx.coroutines.coroutineScope {
+            domains.forEach { domain ->
+                launch { prefs.unpinDomain(domain) }
+            }
+        }
+        val afterUnpin = prefs.pinnedDomains.first()
+        domains.forEach { domain -> assertFalse("still pinned $domain", domain in afterUnpin) }
     }
 
     @Test

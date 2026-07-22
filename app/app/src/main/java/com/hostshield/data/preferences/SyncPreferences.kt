@@ -3,10 +3,13 @@ package com.hostshield.data.preferences
 import android.content.Context
 import androidx.datastore.preferences.core.*
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -75,8 +78,13 @@ class SyncPreferences @Inject constructor(
     val webdavUsername: Flow<String> = ds.data.map { it[Keys.WEBDAV_USERNAME] ?: "" }
     suspend fun setWebdavUsername(user: String) = ds.edit { it[Keys.WEBDAV_USERNAME] = user }
 
-    /** WebDAV password is now served from SecureStore (Flow wrapper for API compat). */
-    val webdavPassword: Flow<String> get() = flowOf(secureStore.getString(SEC_WEBDAV_PASSWORD))
+    /**
+     * WebDAV password is now served from SecureStore (Flow wrapper for API compat).
+     * Cold flow so the Keystore decrypt + disk I/O runs on collection (off the
+     * caller's thread), not eagerly at property access.
+     */
+    val webdavPassword: Flow<String>
+        get() = flow { emit(secureStore.getString(SEC_WEBDAV_PASSWORD)) }.flowOn(Dispatchers.IO)
     suspend fun setWebdavPassword(pass: String) = secureStore.putString(SEC_WEBDAV_PASSWORD, pass)
 
     // Rule sync
@@ -89,14 +97,23 @@ class SyncPreferences @Inject constructor(
         else raw.split(",").map { it.trim() }.filter { it.startsWith("http") }
     }
 
-    // Sync URL content hashes — for integrity tracking
+    // Sync URL content hashes — for integrity tracking.
+    // Keyed on hex SHA-256 of the URL: String.hashCode() is 32-bit and collisions
+    // could cross-wire the integrity hashes of two different sync URLs. Entries
+    // stored under the old hashCode keys simply miss and get re-stored.
+    private fun syncUrlHashKey(url: String): Preferences.Key<String> {
+        val digest = MessageDigest.getInstance("SHA-256").digest(url.toByteArray(Charsets.UTF_8))
+        val hex = digest.joinToString("") { "%02x".format(it) }
+        return stringPreferencesKey("sync_url_hash_$hex")
+    }
+
     suspend fun getSyncUrlHash(url: String): String? {
-        val key = stringPreferencesKey("sync_url_hash_${url.hashCode()}")
+        val key = syncUrlHashKey(url)
         return ds.data.map { it[key] }.first()
     }
 
     suspend fun setSyncUrlHash(url: String, hash: String) {
-        val key = stringPreferencesKey("sync_url_hash_${url.hashCode()}")
+        val key = syncUrlHashKey(url)
         ds.edit { it[key] = hash }
     }
 

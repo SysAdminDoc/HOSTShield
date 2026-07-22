@@ -61,7 +61,10 @@ class SourceHealthWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            val sources = sourceDao.getAllSourcesList()
+            // Only validate enabled sources — probing disabled lists downloads up to
+            // 5MB per source every 12h and raises failure alerts for lists the user
+            // deliberately turned off.
+            val sources = sourceDao.getEnabledSources()
             val failedSources = mutableListOf<SourceFailureNotice>()
 
             for (source in sources) {

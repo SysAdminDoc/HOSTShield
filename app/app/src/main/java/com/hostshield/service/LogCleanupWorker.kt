@@ -33,6 +33,11 @@ class LogCleanupWorker @AssistedInject constructor(
         const val WORK_NAME = "hostshield_log_cleanup"
         private const val CONNECTION_LOG_RETENTION_DAYS = 3
         private const val NOTIFICATION_ID_CLEANUP = 201
+        // Dedicated low-importance channel for maintenance notices. Do NOT reuse
+        // DnsVpnService.ALERT_CHANNEL_ID here: recreating that shared channel with
+        // IMPORTANCE_LOW would permanently demote captive-portal and source-failure
+        // alerts (channel importance can only be lowered, never raised, after creation).
+        const val MAINTENANCE_CHANNEL_ID = "hostshield_maintenance"
 
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<LogCleanupWorker>(
@@ -92,14 +97,14 @@ class LogCleanupWorker @AssistedInject constructor(
     private fun notifyCleanup(deletedCount: Int, retentionDays: Int) {
         val nm = applicationContext.getSystemService(NotificationManager::class.java) ?: return
         NotificationChannel(
-            DnsVpnService.ALERT_CHANNEL_ID,
-            "HostShield Alerts",
+            MAINTENANCE_CHANNEL_ID,
+            "HostShield Maintenance",
             NotificationManager.IMPORTANCE_LOW,
-        ).apply { description = "Source health and system alerts" }
+        ).apply { description = "Log cleanup and other background maintenance notices" }
             .let { nm.createNotificationChannel(it) }
 
         val text = "$deletedCount old DNS log entries removed (retention: ${retentionDays}d)"
-        val notification = NotificationCompat.Builder(applicationContext, DnsVpnService.ALERT_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(applicationContext, MAINTENANCE_CHANNEL_ID)
             .setContentTitle("Log cleanup complete")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_menu_delete)

@@ -138,6 +138,9 @@ interface DnsLogDao {
     @Query("SELECT app_package, app_label, COUNT(*) as cnt FROM dns_logs WHERE blocked = 1 AND app_package != '' GROUP BY app_package ORDER BY cnt DESC LIMIT :limit")
     fun getTopBlockedApps(limit: Int = 20): Flow<List<TopApp>>
 
+    @Query("SELECT app_package, app_label, COUNT(*) as cnt FROM dns_logs WHERE blocked = 1 AND app_package != '' AND timestamp > :since GROUP BY app_package ORDER BY cnt DESC LIMIT :limit")
+    fun getTopBlockedAppsSince(since: Long, limit: Int = 20): Flow<List<TopApp>>
+
     @Query("SELECT app_package, app_label, COUNT(*) as cnt FROM dns_logs WHERE app_package != '' GROUP BY app_package ORDER BY cnt DESC LIMIT :limit")
     fun getTopQueryApps(limit: Int = 20): Flow<List<TopApp>>
 

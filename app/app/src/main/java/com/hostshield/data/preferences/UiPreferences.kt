@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.preferences.core.*
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
@@ -57,13 +56,16 @@ class UiPreferences @Inject constructor(
     suspend fun setPinnedDomains(domains: Set<String>) = ds.edit {
         it[Keys.PINNED_DOMAINS] = domains.joinToString(",")
     }
-    suspend fun pinDomain(domain: String) {
-        val current = pinnedDomains.first()
-        setPinnedDomains(current + domain.lowercase())
+    // Mutate inside a single ds.edit {} (like addSearchQuery) — a read-then-write via
+    // pinnedDomains.first() + setPinnedDomains() is non-atomic and can drop a
+    // concurrent pin/unpin.
+    suspend fun pinDomain(domain: String) = ds.edit {
+        val current = (it[Keys.PINNED_DOMAINS] ?: "").split(",").filter { s -> s.isNotBlank() }.toSet()
+        it[Keys.PINNED_DOMAINS] = (current + domain.lowercase()).joinToString(",")
     }
-    suspend fun unpinDomain(domain: String) {
-        val current = pinnedDomains.first()
-        setPinnedDomains(current - domain.lowercase())
+    suspend fun unpinDomain(domain: String) = ds.edit {
+        val current = (it[Keys.PINNED_DOMAINS] ?: "").split(",").filter { s -> s.isNotBlank() }.toSet()
+        it[Keys.PINNED_DOMAINS] = (current - domain.lowercase()).joinToString(",")
     }
 
     // Search history

@@ -120,7 +120,6 @@ class AutomationReceiver : BroadcastReceiver() {
                         if (profileName.isNullOrBlank()) {
                             Log.w(TAG, "SET_PROFILE missing '${AutomationActionContract.EXTRA_PROFILE_NAME}' extra")
                             logAudit(action, callerUid, callerPkg, "ERROR_MISSING_EXTRA")
-                            pendingResult.finish()
                             return@launch
                         }
                         val profiles = profileDao.getAllProfilesList()
@@ -128,11 +127,9 @@ class AutomationReceiver : BroadcastReceiver() {
                         if (match == null) {
                             Log.w(TAG, "SET_PROFILE profile not found: $profileName")
                             logAudit(action, callerUid, callerPkg, "ERROR_NOT_FOUND")
-                            pendingResult.finish()
                             return@launch
                         }
-                        profileDao.deactivateAll()
-                        profileDao.activate(match.id)
+                        profileDao.activateExclusive(match.id)
                         PrivacyLog.i(TAG, "Profile activated via automation: '${match.name}' (caller=$callerPkg)")
                     }
                     AutomationActionContract.ACTION_SET_DNS -> {
@@ -140,14 +137,12 @@ class AutomationReceiver : BroadcastReceiver() {
                         if (dnsServers.isNullOrBlank()) {
                             Log.w(TAG, "SET_DNS missing '${AutomationActionContract.EXTRA_DNS_SERVERS}' extra")
                             logAudit(action, callerUid, callerPkg, "ERROR_MISSING_EXTRA")
-                            pendingResult.finish()
                             return@launch
                         }
                         val normalizedDnsServers = DnsServerInputPolicy.normalizeServerList(dnsServers)
                         if (normalizedDnsServers.isBlank()) {
                             Log.w(TAG, "SET_DNS invalid '${AutomationActionContract.EXTRA_DNS_SERVERS}' extra")
                             logAudit(action, callerUid, callerPkg, "ERROR_INVALID_EXTRA")
-                            pendingResult.finish()
                             return@launch
                         }
                         prefs.setCustomUpstreamDns(normalizedDnsServers)
