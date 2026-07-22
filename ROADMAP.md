@@ -479,9 +479,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
       root session, and `stop()` runs `removeIptablesRules()` async with no
       ordering against a subsequent `start()` (quick toggle can delete the fresh
       NAT redirect). Add eviction + serialize teardown/setup.
-- [ ] `ThreatIntelManager` partial refresh drops a failed feed's last-good IOCs
-      from enforcement even though valid data was cached. Carry forward the
-      previous run's entries for feeds whose download/parse failed.
 - [ ] Backup schema v2 + encrypted-backup passphrase UI: the crypto backend
       exists but Settings has no passphrase prompt, and the schema omits several
       v6.x preferences on round-trip. (Pre-existing spec above.)

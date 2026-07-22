@@ -189,6 +189,10 @@ class ThreatIntelManager @Inject constructor(
     @Volatile private var ipTrie = IpRadixTrie()
     @Volatile
     private var domainThreats = ConcurrentHashMap<String, String>()  // domain -> feedName
+    // Raw CIDR strings paired with their feed name, kept so a partial refresh can
+    // carry forward the last-good IOCs of a feed that failed this round (the trie
+    // does not enumerate its entries).
+    @Volatile private var cachedRawCidrs: List<Pair<String, String>> = emptyList()
 
     @Volatile var feedCount = 0; private set
     @Volatile var domainCount = 0; private set
@@ -258,11 +262,15 @@ class ThreatIntelManager @Inject constructor(
             val newDomains = ConcurrentHashMap<String, String>()
 
             // Load IP CIDRs
+            val loadedCidrs = mutableListOf<Pair<String, String>>()
             val cidrs = json.optJSONArray(CACHE_KEY_IP_CIDRS)
             if (cidrs != null) {
                 for (i in 0 until cidrs.length()) {
                     val entry = cidrs.getJSONObject(i)
-                    newTrie.insert(entry.getString("cidr"), entry.getString("source"))
+                    val cidr = entry.getString("cidr")
+                    val source = entry.getString("source")
+                    newTrie.insert(cidr, source)
+                    loadedCidrs.add(cidr to source)
                 }
             }
 
@@ -301,6 +309,7 @@ class ThreatIntelManager @Inject constructor(
             synchronized(this) {
                 ipTrie = newTrie
                 domainThreats = swappedDomains
+                cachedRawCidrs = loadedCidrs.toList()
                 feedCount = json.optInt(CACHE_KEY_FEEDS, 0)
                 lastUpdated = json.optLong(CACHE_KEY_LAST_UPDATED, 0L)
                 domainCount = domainThreats.size
@@ -440,6 +449,7 @@ class ThreatIntelManager @Inject constructor(
             val rawCidrs = mutableListOf<Pair<String, String>>()
             val previousHealth = feedHealthMap
             val newHealth = mutableMapOf<String, FeedHealth>()
+            val failedFeeds = mutableSetOf<String>()
             var successCount = 0
 
             for (feed in feeds) {
@@ -472,6 +482,7 @@ class ThreatIntelManager @Inject constructor(
                         Log.i(TAG, "Parsed ${feed.name}: ${result.domains.size} domains, ${result.cidrs.size} CIDRs")
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to parse feed ${feed.name}: ${e.message}")
+                        failedFeeds.add(feed.name)
                         newHealth[feed.name] = FeedHealth(
                             name = feed.name,
                             lastSuccess = prev?.lastSuccess ?: 0L,
@@ -485,6 +496,7 @@ class ThreatIntelManager @Inject constructor(
                         )
                     }
                 } else {
+                    failedFeeds.add(feed.name)
                     newHealth[feed.name] = FeedHealth(
                         name = feed.name,
                         lastSuccess = prev?.lastSuccess ?: 0L,
@@ -505,11 +517,29 @@ class ThreatIntelManager @Inject constructor(
                 return false
             }
 
+            // Carry forward the last-good IOCs of any feed that failed this round
+            // (partial failure) so a one-day outage does not drop that feed's
+            // domains/CIDRs from enforcement while valid cached data exists.
+            if (failedFeeds.isNotEmpty()) {
+                val prevDomains = domainThreats
+                for ((domain, source) in prevDomains) {
+                    if (source in failedFeeds) newDomains.putIfAbsent(domain, source)
+                }
+                for ((cidr, source) in cachedRawCidrs) {
+                    if (source in failedFeeds) {
+                        newTrie.insert(cidr, source)
+                        rawCidrs.add(cidr to source)
+                    }
+                }
+                Log.i(TAG, "Carried forward last-good IOCs for ${failedFeeds.size} failed feed(s)")
+            }
+
             val swappedDomains = ConcurrentHashMap<String, String>(newDomains.size)
             swappedDomains.putAll(newDomains)
             synchronized(this) {
                 ipTrie = newTrie
                 domainThreats = swappedDomains
+                cachedRawCidrs = rawCidrs.toList()
                 feedCount = successCount
                 lastUpdated = System.currentTimeMillis()
                 domainCount = domainThreats.size
