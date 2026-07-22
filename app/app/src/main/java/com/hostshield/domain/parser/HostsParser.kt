@@ -124,6 +124,14 @@ object HostsParser {
         val wildcardAllowDomains = mutableSetOf<String>()
         val dnsTypeRules = mutableListOf<DnsTypeRule>()
 
+        // Domains an $important block rule protects: a non-important allow in the
+        // same source must not override them (AdGuard priority: ||x^$important
+        // outranks @@||x^). An @@...$important allow still wins.
+        val importantBlockDomains = parsed.blockRules
+            .filter { it.isImportant && it.dnsTypes == null && it.redirectIp == null && it.domain.isNotBlank() }
+            .map { it.domain }
+            .toSet()
+
         parsed.blockRules.forEach { rule ->
             if (rule.isRegex || rule.redirectIp != null || rule.domain.isBlank()) return@forEach
 
@@ -161,6 +169,9 @@ object HostsParser {
                 dnsTypeRules.add(rule.toDnsTypeRule(allow = true))
                 return@forEach
             }
+            // A non-important allow cannot override an $important block in the
+            // same source.
+            if (!rule.isImportant && rule.domain in importantBlockDomains) return@forEach
             allowDomains.add(rule.domain)
             if (rule.matchesSubdomains || rule.isWildcard) {
                 wildcardAllowDomains.add(rule.domain)

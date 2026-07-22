@@ -137,6 +137,40 @@ class HostsParserTest {
     }
 
     @Test
+    fun `important block outranks non-important allow in the same source`() {
+        val content = """
+            [Adblock Plus]
+            ||forced.example^${'$'}important
+            @@||forced.example^
+            ||plain.example^
+            @@||plain.example^
+        """.trimIndent()
+
+        val result = HostsParser.parseForBlocking(content)
+
+        // The $important block is not overridden by the plain exception. `||x^`
+        // matches subdomains, so it lands in the wildcard block set.
+        assertTrue(result.wildcardBlockDomains.contains("forced.example"))
+        assertFalse(result.allowDomains.contains("forced.example"))
+        assertFalse(result.wildcardAllowDomains.contains("forced.example"))
+        // A normal block/allow pair still lets the allow win (unchanged behavior).
+        assertTrue(result.allowDomains.contains("plain.example"))
+    }
+
+    @Test
+    fun `important allow still overrides an important block`() {
+        val content = """
+            [Adblock Plus]
+            ||override.example^${'$'}important
+            @@||override.example^${'$'}important
+        """.trimIndent()
+
+        val result = HostsParser.parseForBlocking(content)
+
+        assertTrue(result.allowDomains.contains("override.example"))
+    }
+
+    @Test
     fun `parseForBlocking preserves dnstype allow and negated block rules`() {
         val content = """
             [Adblock Plus]

@@ -489,9 +489,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
 - [ ] Adblock `$denyallow` is still approximated as a global wildcard-allow (the
       cross-source exact-allow leak was removed in v6.9.59). Attach the exception
       to the owning rule for full AdGuard-correct scoping.
-- [ ] `$important` / rule-priority is parsed and unit-tested but never enforced —
-      an `$important` block is still overridden by a plain exception. Enforce the
-      documented precedence or delete the dead priority machinery.
 - [ ] `PcapExporter` drops IPv6 connection-log rows (only IPv4 SYN packets are
       emitted). Emit an IPv6 header for v6 destinations.
 - [ ] `DomainAgeChecker` uses a small hard-coded multi-part-suffix table; adopt a
