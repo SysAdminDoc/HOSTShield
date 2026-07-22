@@ -50,7 +50,20 @@ class BlocklistSourceCoordinator @Inject constructor(
     private val dohBypassUpdater: DohBypassUpdater,
 ) {
     suspend fun downloadEnabledSourcesForFullSnapshot(): BlocklistSourceSnapshot {
+        // When a blocking profile is active and declares an explicit source set,
+        // restrict the rebuild to those sources so profile switching actually
+        // changes what is blocked (an empty source_ids means "all enabled").
+        val profileSourceIds = repository.getActiveProfile()
+            ?.sourceIds
+            ?.split(',')
+            ?.mapNotNull { it.trim().toLongOrNull() }
+            ?.toSet()
+            ?.takeIf { it.isNotEmpty() }
         val blockSources = repository.getEnabledBlockSources()
+            .let { list -> if (profileSourceIds != null) list.filter { it.id in profileSourceIds } else list }
+        // Allowlist sources are always applied: they only subtract from the
+        // blocklist, so narrowing a profile must never accidentally re-block a
+        // domain the user allowlisted.
         val allowlistSources = repository.getEnabledAllowlistSources()
         val enabledSourceCount = blockSources.size + allowlistSources.size
         val blockDomains = mutableSetOf<String>()

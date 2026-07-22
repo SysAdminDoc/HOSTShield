@@ -95,10 +95,16 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 if (fwEnabled && autoApply) {
                     iptablesManager.applyRules()
                 }
-            } else if (targetProfile == null && activeProfile != null && activeProfile.scheduleStart.isNotBlank()) {
-                // No scheduled profile is active; deactivate the scheduled one
-                // and fall back to default (no profile active = use all enabled sources)
+            } else if (targetProfile == null && activeProfile != null &&
+                (activeProfile.scheduleStart.isNotBlank() || activeProfile.wifiSsids.isNotBlank())
+            ) {
+                // The active profile is schedule- or SSID-driven and no longer
+                // matches: deactivate it and rebuild so its narrowed source set
+                // reverts to all enabled sources (mirrors the activation rebuild).
                 profileDao.deactivateAll()
+                val rebuild = sourceCoordinator.rebuildBlocklistHolder()
+                prefs.setLastApplyTime(System.currentTimeMillis())
+                prefs.setLastApplyCount(rebuild.domainCount)
             }
         } catch (e: Exception) {
             Log.e("ProfileSchedule", "Profile schedule check failed: ${e.message}", e)

@@ -257,6 +257,27 @@ class BlocklistSourceCoordinatorTest {
     }
 
     @Test
+    fun `active profile source ids restrict which block sources are downloaded`() = runTest {
+        val s1 = HostSource(id = 1, url = "https://example.com/a.txt", label = "A")
+        val s2 = HostSource(id = 2, url = "https://example.com/b.txt", label = "B")
+        coEvery { repository.getEnabledBlockSources() } returns listOf(s1, s2)
+        coEvery { repository.getActiveProfile() } returns com.hostshield.data.model.BlockingProfile(
+            id = 5, name = "Work", isActive = true, sourceIds = "2",
+        )
+        coEvery {
+            downloader.download(s2, forceDownload = true)
+        } returns Result.success(DownloadResult(content = "b.example.com"))
+
+        val snapshot = coordinator.downloadEnabledSourcesForFullSnapshot()
+
+        assertEquals(setOf("b.example.com"), snapshot.blockDomains)
+        assertEquals(1, snapshot.downloadedSourceCount)
+        assertEquals(1, snapshot.enabledSourceCount)
+        coVerify(exactly = 0) { downloader.download(s1, forceDownload = true) }
+        coVerify(exactly = 1) { downloader.download(s2, forceDownload = true) }
+    }
+
+    @Test
     fun `total download failure preserves the live blocklist instead of swapping empty`() = runTest {
         // Seed the holder with a populated snapshot (simulating a prior good build).
         blocklistHolder.update(setOf("ads.example.com", "tracker.example.com"), emptyList(), emptyList())

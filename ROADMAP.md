@@ -475,14 +475,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
 
 ### P1 — Product decision
 
-- [ ] Blocking-profile `sourceIds` is a no-op. It is written by SchedulePresets
-      and backup/restore and serialized, but no rebuild path reads it — activating
-      a profile changes nothing beyond the time window (all enabled sources are
-      always used). Wire per-profile source enablement into
-      `BlocklistSourceCoordinator.downloadEnabledSourcesForFullSnapshot()`, or
-      remove the field and the preset parameter.
-      Where: `service/ProfileScheduleWorker.kt`, `util/SchedulePresets.kt`,
-      `service/BlocklistSourceCoordinator.kt`, `data/model/Entities.kt`.
 - [ ] Several preferences are collected into `SettingsUiState` but have no UI
       control: auto-update on/off, Wi-Fi-only sync, blocking notification,
       hosts IPv4/IPv6 redirect targets, DNS-log retention window. Wire the
@@ -492,11 +484,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
 
 ### P2 — Needs device / live verification
 
-- [ ] `IptablesManager` `hs-lan` chain is populated but never jumped from
-      `hs-main`, so the documented "always allow LAN" exemption does not exist;
-      IPv6 LAN is uncovered; `FirewallMode.WHITELIST` has no caller. Now that the
-      firewall actually applies (v6.9.59 P0 fix), wire the LAN jump and verify on
-      a rooted device, or delete the dead chain + whitelist branch.
 - [ ] `RootDnsLogger`: `hostnameUidMap` / `pendingUidLookup` grow unbounded for a
       root session, and `stop()` runs `removeIptablesRules()` async with no
       ordering against a subsequent `start()` (quick toggle can delete the fresh
@@ -507,18 +494,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
 - [ ] Backup schema v2 + encrypted-backup passphrase UI: the crypto backend
       exists but Settings has no passphrase prompt, and the schema omits several
       v6.x preferences on round-trip. (Pre-existing spec above.)
-
-### P2 — Blocked on external key / unreleased SDK
-
-- [ ] `doh-bypass-list.json` fails `tools/check-release-docs.ps1`: its RSA
-      signature does not validate against the pinned certificate and
-      `payload_sha256` does not match the canonical payload. Regenerating a valid
-      signature needs the release private key (`hostshield-release-rsa-v1`). The
-      release-doc gate is red until this is re-signed.
-- [ ] `LocalDnsServerPolicy.localDnsRequiresLocalNetworkPermission()` is dead
-      code — `ACCESS_LOCAL_NETWORK` is declared but never requested at runtime.
-      Wire the request/denial flow before moving `targetSdk` to 37, or the LAN
-      server will silently fail on API 37 devices.
 
 ### P3 — Deferred correctness / coverage
 
@@ -532,9 +507,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
       emitted). Emit an IPv6 header for v6 destinations.
 - [ ] `DomainAgeChecker` uses a small hard-coded multi-part-suffix table; adopt a
       full public-suffix list for complete ccSLD coverage.
-- [ ] Migration test coverage: schema JSONs for DB versions 1-6, 10, 11, 13 are
-      absent from `app/app/schemas/`, blocking `MigrationTestHelper` through those
-      versions.
 - [ ] WireGuard key-entry UI is missing even in debug builds (keys can only
       arrive via QR/backup import), so the experimental transport can't be
       completed from Settings.
