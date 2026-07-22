@@ -467,208 +467,78 @@ cache, whether URLhaus should remain on the public hostfile path or migrate to
 an authenticated API/download path, and whether Spamhaus eDROP should be removed
 from defaults or retained as a compatibility alias after the 2024 DROP merge.
 
-## Research Log
+## Audit Findings — 2026-07-22 (v6.9.59 deep audit)
 
-| Date | Cycle | Research Area | Sources / Files Reviewed | Key Findings | Roadmap Changes |
-|---|---|---|---|---|---|
-| 2026-06-06 | Cycle 1 | Repository comprehension | `ROADMAP.md`, `PROJECT_CONTEXT.md`, `README.md`, `docs/RESEARCH.md`, `git log -10`, `git status` | Roadmap baseline was older than current `main`; current baseline remains v6.5.9/versionCode 67 at HEAD `9d361b4`. | Updated refresh date/baseline and added autonomous refresh section. |
-| 2026-06-06 | Cycle 2 | Current feature inventory | `TopFlowComposeTest.kt`, `SecureStore.kt`, `PasswordKdf.kt`, `AutomationReceiver.kt`, `AndroidManifest.xml`, `.github/workflows/release.yml` | UI smoke tests now exist; Argon2id and secure-store migration are current; automation docs drift from code; release workflow does not run local gates. | Split UI-test item into completed smoke coverage and remaining connected coverage; added automation and CI backlog items. |
-| 2026-06-06 | Cycle 3 | Platform resilience | Android Developers FGS docs, Android VPN docs, `BootReceiver.kt`, service declarations | `dataSync` services have Android 15 timeout/boot restrictions; HostShield uses `dataSync` for long-running protection services. | Added P0 Android 15/16 service resilience item and detailed spec. |
-| 2026-06-06 | Cycle 4 | Competitive landscape | RethinkDNS, AdGuard Android, NetGuard, AdAway, PCAPdroid, Play policy | Competitors set expectations around split DNS/firewall, app/global firewall rules, screen/roaming conditions, root+VPN hosts blocking, PCAPng/TLS diagnostics, and package-visibility justification. | Added source IDs, PCAPng export item, Play AAB/package-visibility notes, and future research leads. |
-| 2026-06-06 | Cycle 5 | Android foreground-service start surface | `RootDnsService.kt`, `DnsProxyService.kt`, `BlockingScheduleWorker.kt`, `PauseResumeWorker.kt`, `HostShieldTileService.kt`, `rg startForegroundService` | Protection starts come from boot, WorkManager schedule/resume, automation, tile, direct helpers, and service restarts; no inspected service exposes `onTimeout()` handling. | Expanded P0 item with start-surface matrix requirement and updated continuation state. |
-| 2026-06-06 | Cycle 6 | Automation API contract | `AutomationReceiver.kt`, `AutomationAuditScreen.kt`, `Daos.kt`, `Entities.kt`, `README.md`, `app/README.md`, `AndroidManifest.xml`, `rg AutomationReceiver` | Receiver supports 10 actions; docs cover only 5 and use stale lowercase strings; pause docs use `pause_minutes` while receiver expects `duration_minutes`; no direct receiver behavior tests found. | Added command matrix and automation helper backlog item. |
-| 2026-06-06 | Cycle 7 | Release and distribution readiness | `.github/workflows/release.yml`, `tools/release-provenance.ps1`, `tools/check-release-docs.ps1`, `app/README.md`, `app/metadata/en-US/*` | CI only builds/uploads full APK; provenance Kotlin regex misses current compose-plugin version; metadata/changelogs are stale v1.x-era copy; release-doc check misses metadata, badges, and automation example drift. | Added store metadata release-truth gate and expanded release CI/doc-check items. |
-| 2026-06-06 | Cycle 8 | Connected UI, backup, diagnostics, and export gaps | `TopFlowComposeTest.kt`, `SettingsScreen.kt`, `SettingsViewModel.kt`, `BackupRestoreUtil.kt`, `BackupRestoreUtilTest.kt`, `BackupCryptoTest.kt`, `DiagnosticExporter.kt`, `PcapExporter.kt`, `AppPreferences.kt` | Connected UI tests cover source/rule/log/parental behavior but backup and diagnostics are affordance-only; encrypted backup backend has no Settings passphrase flow; backup schema v1 misses newer preferences; diagnostic sharing and PCAP cache output need observable save/share paths. | Added backup schema v2, encrypted-backup UI, diagnostic ZIP seam, and PCAP share/save backlog/spec items. |
-| 2026-06-06 | Cycle 9 | PCAPng, diagnostic export, and privacy-preserving destination design | `PcapExporter.kt`, `PcapExporterTest.kt`, `ProtectionSettingsSection.kt`, `SettingsViewModel.kt`, `DiagnosticExporter.kt`, `DiagnosticEventStore.kt`, `file_paths.xml`, Android FileProvider/SAF docs, IETF pcapng draft, PCAPdroid docs, Wireshark TLS/DSB notes | PCAPng can carry useful HostShield context through standard blocks, comments, and custom options, but custom-copy behavior is not privacy protection; PCAP export is the only major Settings export still cache-only; FileProvider and SAF already provide the right destination patterns. | Added PCAPng metadata export v1, unified export destination controller, source IDs E096-E100, and a full PCAPng/export destination spec. |
-| 2026-06-06 | Cycle 10 | Threat-intel freshness dashboard and feed health UX | `ThreatIntelManager.kt`, `ThreatIntelWorker.kt`, `DnsVpnService.kt`, `Entities.kt`, `Daos.kt`, `StatsScreen.kt`, `HomeStatsSection.kt`, `SourcesScreen.kt`, `SourceHealthWorker.kt`, URLhaus docs, Spamhaus DROP FAQ, Emerging Threats feed, PCAPdroid malware UX, HaGeZi blocklists | Threat intel stores only aggregate freshness and counts; partial refresh can appear healthy; DNS logs lose feed/match attribution; the current Emerging Threats feed shape is whitespace-separated and likely missed by the line-only parser; PCAPdroid and HostShield's own source-health UI define a better status model. | Added feed-health dashboard, match attribution analytics, parser/refresh hardening, false-positive review backlog items, source IDs E101-E105, and a full threat-intel dashboard spec. |
+The v6.9.59 pass fixed ~45 issues across correctness, security, UX, theming, and
+accessibility (see CHANGELOG). The items below were found but deferred because
+they need a device, a product decision, an external key, or an unreleased SDK.
 
-## Research Queries To Run Later
+### P1 — Product decision
 
-- Android 15 VpnService foreground service `dataSync` timeout real device behavior
-- Android 16 VPN update bug Issue Tracker HostShield mitigation zero inbound TUN
-- HostShield AdAway Magisk KernelSU APatch systemless hosts compatibility
-- RethinkDNS split DNS domain rules app attribution Android 12 native DNS logs
-- PCAPng Android app UID annotation Wireshark custom comments best practice
-- Google Play VPN content filtering QUERY_ALL_PACKAGES acceptable use declaration
-- F-Droid IzzyOnDroid reproducible Android app Gradle 9 AGP 9 requirements
-- DNSCrypt Android gomobile AAR size dnscrypt-proxy extraction examples
-- Compose pseudolocale instrumentation Android Gradle Managed Devices
-- Hagezi OISD false positive user complaints Android DNS blocker allowlist UX
-- Android SAF encrypted backup binary MIME type and passphrase UX patterns
-- Android FileProvider PCAP share cache retention privacy best practice
-- IANA Private Enterprise Number Android app pcapng custom option precedent
-- Wireshark pcapng custom option display plugin practical examples
-- Android Wireshark PCAPng Name Resolution Block app attribution examples
-- PCAPdroid pcapng decryption secrets user complaints privacy review
-- ThreatIntelManager Emerging Threats whitespace-separated feed parser Android test
-- URLhaus hostfile auth-key migration public downloads HostShield
-- Spamhaus EDROP merged into DROP mobile app refresh policy
-- Threat intel false positive whitelist UX DNS firewall Android
-- Android malware DNS blocker feed freshness dashboard URLhaus Spamhaus UX
+- [ ] Blocking-profile `sourceIds` is a no-op. It is written by SchedulePresets
+      and backup/restore and serialized, but no rebuild path reads it — activating
+      a profile changes nothing beyond the time window (all enabled sources are
+      always used). Wire per-profile source enablement into
+      `BlocklistSourceCoordinator.downloadEnabledSourcesForFullSnapshot()`, or
+      remove the field and the preset parameter.
+      Where: `service/ProfileScheduleWorker.kt`, `util/SchedulePresets.kt`,
+      `service/BlocklistSourceCoordinator.kt`, `data/model/Entities.kt`.
+- [ ] Several preferences are collected into `SettingsUiState` but have no UI
+      control: auto-update on/off, Wi-Fi-only sync, blocking notification,
+      hosts IPv4/IPv6 redirect targets, DNS-log retention window. Wire the
+      toggles/fields into the appropriate Settings sections (the setters already
+      exist) or remove the dead state + setters.
+      Where: `ui/screens/settings/SettingsViewModel.kt` (setters ~601-647).
 
-## Open Questions
+### P2 — Needs device / live verification
 
-- Should HostShield keep `dataSync`, return to `specialUse`, or use another
-  foreground-service policy shape for always-on local protection services?
-- How should a future automation command-helper surface explain canonical
-  actions versus legacy lowercase aliases without encouraging new alias usage?
-- Is Play distribution a near-term goal, or should full APK/F-Droid/Obtainium
-  remain the primary distribution lane?
-- How much packet detail should PCAPng export include by default without
-  surprising privacy-sensitive users?
-- Should WebDAV credentials and other secrets be excluded from backup v2 unless
-  the backup is encrypted?
-- Should PCAP/PCAPng defaults include app labels/packages, or should that
-  metadata require a separate privacy confirmation?
-- Should HostShield register an IANA Private Enterprise Number before writing
-  portable custom PCAPng options, or keep PCAPng v1 comments-only?
-- Should TLS/decryption-secret export stay prohibited until DNSCrypt/DoH/DoT
-  troubleshooting has a separate audited consent model?
-- Should Spamhaus eDROP remain in the default feed list now that Spamhaus merged
-  eDROP data into DROP in 2024?
-- Should threat-intel feed health live in Room for queryability or remain in the
-  existing JSON/cache path for smaller migration risk?
-- Should URLhaus use an authenticated API/download path, the current public
-  hostfile URL, or a curated threat-intel pack instead?
+- [ ] `IptablesManager` `hs-lan` chain is populated but never jumped from
+      `hs-main`, so the documented "always allow LAN" exemption does not exist;
+      IPv6 LAN is uncovered; `FirewallMode.WHITELIST` has no caller. Now that the
+      firewall actually applies (v6.9.59 P0 fix), wire the LAN jump and verify on
+      a rooted device, or delete the dead chain + whitelist branch.
+- [ ] `RootDnsLogger`: `hostnameUidMap` / `pendingUidLookup` grow unbounded for a
+      root session, and `stop()` runs `removeIptablesRules()` async with no
+      ordering against a subsequent `start()` (quick toggle can delete the fresh
+      NAT redirect). Add eviction + serialize teardown/setup.
+- [ ] `ThreatIntelManager` partial refresh drops a failed feed's last-good IOCs
+      from enforcement even though valid data was cached. Carry forward the
+      previous run's entries for feeds whose download/parse failed.
+- [ ] Backup schema v2 + encrypted-backup passphrase UI: the crypto backend
+      exists but Settings has no passphrase prompt, and the schema omits several
+      v6.x preferences on round-trip. (Pre-existing spec above.)
 
-## Next Research Cycles
+### P2 — Blocked on external key / unreleased SDK
 
-1. Cycle 11: DNSCrypt engine spike planning with dependency/licensing review.
-2. Cycle 12: Play flavor/package visibility policy and manifest review.
-3. Cycle 13: Competitor UX teardown of firewall and resolver health flows.
-4. Cycle 14: Accessibility, RTL, pseudolocale, and dynamic type evidence pass.
-5. Cycle 15: Android 15 foreground-service connected-device matrix execution
-   plan.
-6. Cycle 16: Automation receiver compatibility-alias and generated-help design.
-7. Cycle 17: Export-state implementation decomposition and test fixture design.
-8. Cycle 18: Threat-intel feed-state migration and parser-test decomposition.
+- [ ] `doh-bypass-list.json` fails `tools/check-release-docs.ps1`: its RSA
+      signature does not validate against the pinned certificate and
+      `payload_sha256` does not match the canonical payload. Regenerating a valid
+      signature needs the release private key (`hostshield-release-rsa-v1`). The
+      release-doc gate is red until this is re-signed.
+- [ ] `LocalDnsServerPolicy.localDnsRequiresLocalNetworkPermission()` is dead
+      code — `ACCESS_LOCAL_NETWORK` is declared but never requested at runtime.
+      Wire the request/denial flow before moving `targetSdk` to 37, or the LAN
+      server will silently fail on API 37 devices.
 
-## Continuation State
+### P3 — Deferred correctness / coverage
 
-### Last Completed Cycle
-
-Cycle 10: Threat-intel freshness dashboard and feed health UX.
-
-### Current Focus
-
-Preparing the next autonomous pass around DNSCrypt engine spike planning,
-dependency/licensing review, and implementation-test corpus design.
-
-### Important Findings So Far
-
-- `ROADMAP.md` now reflects HEAD `9d361b4` and current date.
-- `tools/check-release-docs.ps1` passed locally for v6.5.9/versionCode 67.
-- `TopFlowComposeTest.kt` adds meaningful smoke coverage but not full connected
-  behavior coverage.
-- Android 15 `dataSync` service limits are the highest-risk newly identified
-  platform issue because HostShield targets SDK 35 and declares all protection
-  services as `dataSync`.
-- Foreground-service starts occur from boot, schedule, pause/resume,
-  automation, Quick Settings tile, and direct helper paths; the next platform
-  pass should convert this into an executable matrix.
-- Automation docs are stale relative to `AutomationReceiver.kt`; receiver
-  behavior needs direct tests and a generated command/help surface.
-- Release/distribution metadata is stale outside the current release-doc gate,
-  and CI does not yet enforce local release checks or provenance.
-- Backup crypto primitives are well covered, but Settings currently exposes no
-  encrypted-backup passphrase flow and restore uses a string sentinel for an
-  encrypted-backup prompt.
-- Backup schema v1 omits multiple modern v6.x settings exposed through
-  `AppPreferences`, including custom DNS, DoT/DoQ, WireGuard DNS, schedule,
-  content/parental controls, WebDAV, and theme/accessibility state.
-- Diagnostic ZIP generation and PCAP export need observable save/share state so
-  tests and users can retrieve generated artifacts intentionally.
-- PCAPng should be opt-in and metadata-aware, not a simple extension rename.
-  Use standard blocks first, treat comments/custom options as sensitive, and
-  keep TLS/decryption secrets behind a separate future consent model.
-- Android SAF and FileProvider are already available patterns in the app; PCAP
-  export should join the same save/share/discard destination model used by
-  backup/rules/CSV/diagnostic flows.
-- Threat-intel refresh state is aggregate-only today; the worker treats partial
-  success as success and does not persist per-feed HTTP status, bytes, checksum,
-  parse counts, last success/failure, or consecutive failures.
-- DNS log rows lose threat-intel attribution even though `DnsVpnService` has
-  feed name and match type at decision time.
-- The current Emerging Threats feed output is whitespace-separated; v6.6.4 added
-  parser coverage for that shape, but malformed-token counters are still pending
-  feed-state persistence.
-- PCAPdroid's malware-detection status UX and HostShield's existing
-  `SourcesScreen` health model provide a practical blueprint for threat-intel
-  freshness, impact, manual refresh, and false-positive review.
-
-### Next Best Actions
-
-1. Inspect `DnsStampParser.kt`, `DnsCryptRoutePlanner.kt`, DNSCrypt-related
-   tests, and current build dependencies for real versus placeholder engine
-   behavior.
-2. Research Android-compatible DNSCrypt implementation options, including
-   upstream `dnscrypt-proxy`/gomobile, libsodium-compatible primitives, AAR size,
-   licensing, and maintenance burden.
-3. Convert DNSCrypt findings into a dependency/licensing decision record,
-   hidden-engine spike plan, and corpus-test requirements, then refresh the
-   continuation state again.
-
-### Unprocessed Leads
-
-- NetGuard FAQ compatibility notes around always-on VPN, work profiles, and OEM
-  VPN bugs.
-- RethinkDNS split DNS/app attribution implementation details in firestack.
-- PCAPdroid PCAPng metadata and remote-streaming docs for diagnostics export.
-- DNSCrypt gomobile extraction feasibility and AAR size.
-- Whether legacy lowercase automation aliases should remain indefinitely or be
-  removed after a documented compatibility window.
-- Whether store metadata should live under fastlane-compatible ownership or be
-  generated from README/release notes to prevent drift.
-- Whether encrypted backup export should use `.json`, `.hsbackup`, or another
-  extension/MIME type to avoid implying readable plaintext.
-- Whether diagnostics should offer separate "support bundle" and "packet
-  evidence" exports so PCAP data is never bundled accidentally.
-- Whether PCAPng metadata should use comments-only for v1 or wait for a
-  registered PEN-backed custom option schema.
-- Whether classic PCAP should remain the default forever because it is easier to
-  inspect and less metadata-rich.
-
-### Files Still To Inspect
-
-- `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt` focused
-  chunks around `startForeground`, `onDestroy`, watchdog, and restart paths
-- `app/app/src/main/java/com/hostshield/service/CaptivePortalHandler.kt`
-- `app/app/src/main/java/com/hostshield/ui/screens/logs/LogsScreen.kt`
-- `app/app/src/main/java/com/hostshield/ui/screens/settings/ProtectionSettingsSection.kt`
-- `app/app/src/main/java/com/hostshield/util/DiagnosticEventStore.kt`
-- `app/app/src/test/java/com/hostshield/util/PcapExporterTest.kt`
-- `app/app/src/main/java/com/hostshield/util/DnsStampParser.kt`
-- `app/app/src/main/java/com/hostshield/service/DnsCryptRoutePlanner.kt`
-- DNSCrypt unit tests, fixtures, and dependency declarations
-
-### Searches Still To Run
-
-- `rg -n "startForegroundService|onTimeout|ForegroundServiceStartNotAllowedException|ACTION_SET_PROFILE|duration_minutes|pause_minutes" app/app/src`
-- `rg -n "androidTest|connectedAndroidTest|managedDevices|testOptions|pseudolocale|locale" app`
-- `rg -n "generateDiagnosticReport|generateAndShare|exportPcap|PcapExporter|FileProvider|CreateDocument" app/app/src`
-- `rg -n "ThreatIntel|threat intel|URLhaus|Spamhaus|Emerging|feed|lastUpdate|malware" app/app/src`
-- `rg -n "DnsCrypt|DnsStamp|dnscrypt|XSalsa|XChaCha|libsodium|gomobile|stamp" app/app/src app/app/build.gradle.kts`
-- Web: `Android 15 VpnService dataSync foreground service timeout`
-- Web: `dnscrypt-proxy gomobile Android AAR DNSCrypt client`
-
-### P3 - Operational Maturity
-
-## Research-Driven Additions — 2026-06-19
-
-### P2
-
-## Audit Findings — 2026-06-17
-
-## Research-Driven Additions - 2026-06-28
-
-### P2
-
-## Research-Driven Additions
-
-### P2
-
-## Research-Driven Additions
-
-### P2
-
-### P3
+- [ ] Adblock `$denyallow` is still approximated as a global wildcard-allow (the
+      cross-source exact-allow leak was removed in v6.9.59). Attach the exception
+      to the owning rule for full AdGuard-correct scoping.
+- [ ] `$important` / rule-priority is parsed and unit-tested but never enforced —
+      an `$important` block is still overridden by a plain exception. Enforce the
+      documented precedence or delete the dead priority machinery.
+- [ ] `PcapExporter` drops IPv6 connection-log rows (only IPv4 SYN packets are
+      emitted). Emit an IPv6 header for v6 destinations.
+- [ ] `DomainAgeChecker` uses a small hard-coded multi-part-suffix table; adopt a
+      full public-suffix list for complete ccSLD coverage.
+- [ ] Migration test coverage: schema JSONs for DB versions 1-6, 10, 11, 13 are
+      absent from `app/app/schemas/`, blocking `MigrationTestHelper` through those
+      versions.
+- [ ] WireGuard key-entry UI is missing even in debug builds (keys can only
+      arrive via QR/backup import), so the experimental transport can't be
+      completed from Settings.
+- [ ] `MainActivity` is exported (required for the launcher) and its
+      `SHORTCUT_TOGGLE` action flips protection from any explicit-intent caller.
+      The service dispatch is fixed (v6.9.59), but add a caller/signature gate so
+      a third-party app cannot toggle the firewall.
