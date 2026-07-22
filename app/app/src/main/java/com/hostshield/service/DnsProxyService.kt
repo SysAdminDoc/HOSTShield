@@ -65,7 +65,10 @@ class DnsProxyService : Service() {
         private const val TAG = "DnsProxyService"
 
         private const val DEFAULT_LISTEN_PORT = 5353
-        private const val DNS_PACKET_MAX = 512
+        // EDNS0 clients advertise payload sizes up to 4096; a 512-byte buffer
+        // would silently truncate larger upstream answers (DatagramSocket drops
+        // the overflow with no TC handling).
+        private const val DNS_PACKET_MAX = 4096
         private val DEFAULT_UPSTREAM = arrayOf("1.1.1.1", "8.8.8.8")
         private const val UPSTREAM_TIMEOUT_MS = 5_000
 
@@ -326,7 +329,15 @@ class DnsProxyService : Service() {
             }
         }
 
-        // Plaintext UDP fallback
+        // Fail closed: when the user enabled an encrypted transport, a transient
+        // resolver failure must never leak the query as plaintext UDP (same
+        // invariant as DnsVpnService.failClosedEncrypted).
+        if (useDoT || useDoH) {
+            Log.w(TAG, "Encrypted DNS failed in proxy mode; returning SERVFAIL instead of plaintext fallback")
+            return DnsPacketBuilder.buildServfail(queryData)
+        }
+
+        // Plaintext UDP fallback (only reachable when no encrypted transport is enabled)
         for (upstream in upstreamServers) {
             var upstreamSocket: DatagramSocket? = null
             try {

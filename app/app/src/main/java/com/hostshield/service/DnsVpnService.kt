@@ -1587,7 +1587,11 @@ class DnsVpnService : VpnService() {
         val blocked = if (hostname != null) isDomainBlocked(hostname, qtypeNum) else true
 
         if (blocked) {
-            val rst = if (isV6) buildTcpRstV6(packet) else buildTcpRst(packet, headerOffset)
+            // Trim to the captured length: the shared MTU-sized read buffer would
+            // otherwise inflate the payload term in the RST ACK computation,
+            // producing an out-of-window RST the client TCP stack ignores.
+            val trimmed = packet.copyOf(length)
+            val rst = if (isV6) buildTcpRstV6(trimmed) else buildTcpRst(trimmed, headerOffset)
             rst ?: return
             sendToTun(rst)
             blockedCount.incrementAndGet()
