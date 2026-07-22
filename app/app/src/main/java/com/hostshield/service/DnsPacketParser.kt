@@ -111,7 +111,38 @@ object DnsPacketParser {
             r[hdr + 4] = ((udpLen shr 8) and 0xFF).toByte(); r[hdr + 5] = (udpLen and 0xFF).toByte()
             r[hdr + 6] = 0; r[hdr + 7] = 0
             System.arraycopy(dns, 0, r, hdr + 8, dns.size)
+            // UDP checksum is mandatory over IPv6 (RFC 8200 §8.1) — a zero
+            // checksum makes the local stack discard the datagram, so the IPv6
+            // DNS path only worked via IPv4 fallback until this was computed.
+            writeUdpChecksumV6(r, hdr, udpLen)
             return r
         } catch (_: Exception) { return null }
+    }
+
+    /** Compute and write the IPv6 UDP checksum (pseudo-header + UDP header + payload). */
+    private fun writeUdpChecksumV6(pkt: ByteArray, hdr: Int, udpLen: Int) {
+        var sum = 0L
+        // Pseudo-header: source (16) + destination (16) addresses.
+        for (i in 8 until 40 step 2) {
+            sum += ((pkt[i].toInt() and 0xFF) shl 8) or (pkt[i + 1].toInt() and 0xFF)
+        }
+        // Upper-layer packet length (32-bit; udpLen < 65536 so high word is 0).
+        sum += udpLen.toLong()
+        // Next header = 17 (UDP).
+        sum += 17L
+        // UDP header + payload, checksum field already zeroed.
+        var i = hdr
+        val end = hdr + udpLen
+        while (i + 1 < end) {
+            sum += ((pkt[i].toInt() and 0xFF) shl 8) or (pkt[i + 1].toInt() and 0xFF)
+            i += 2
+        }
+        if (i < end) sum += (pkt[i].toInt() and 0xFF) shl 8
+        while (sum shr 16 != 0L) sum = (sum and 0xFFFF) + (sum shr 16)
+        var ck = sum.inv().toInt() and 0xFFFF
+        // A computed checksum of zero is transmitted as all ones over IPv6.
+        if (ck == 0) ck = 0xFFFF
+        pkt[hdr + 6] = ((ck shr 8) and 0xFF).toByte()
+        pkt[hdr + 7] = (ck and 0xFF).toByte()
     }
 }

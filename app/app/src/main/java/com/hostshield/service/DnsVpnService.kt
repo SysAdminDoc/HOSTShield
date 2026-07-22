@@ -56,16 +56,20 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import javax.inject.Inject
 import java.util.concurrent.atomic.AtomicLong
 
-internal val THREAT_INTEL_BYPASS_REASONS = setOf(
-    "allowlist",
-    "allowlist_wildcard",
-    "dns_type_allow",
-    "regex_allow",
-    "protection_paused"
+// Only USER-originated allow decisions bypass threat-intel re-blocking. Source
+// (downloaded) allowlists share the same reason codes ("allowlist",
+// "allowlist_wildcard", "dns_type_allow") but must NOT be able to whitelist a
+// malware domain past URLhaus/Spamhaus — otherwise a compromised or careless
+// remote allowlist silently defeats threat-intel protection. The distinguishing
+// signal is the decision's `source`, not its `reason`.
+internal val THREAT_INTEL_BYPASS_SOURCES = setOf(
+    "User allow rule",
+    "User wildcard allow rule",
+    "User regex allow rule",
 )
 
 internal fun BlockDecision.skipsThreatIntelChecks(): Boolean =
-    !blocked && reason in THREAT_INTEL_BYPASS_REASONS
+    !blocked && (reason == "protection_paused" || source in THREAT_INTEL_BYPASS_SOURCES)
 
 // VPN DNS blocking service
 //
@@ -293,6 +297,7 @@ class DnsVpnService : VpnService() {
     // Custom upstream DNS — updated live by startDnsConfigObserver()
     @Volatile private var upstreamDnsServers = UPSTREAM_DNS.toList()
     private var dnsConfigJob: Job? = null
+    private var filterConfigJob: Job? = null
 
     private var writeChannel = Channel<ByteArray>(WRITE_CHANNEL_CAPACITY)
     private val blockedCount = AtomicInteger(0)
@@ -780,6 +785,7 @@ class DnsVpnService : VpnService() {
         cancelVpnRecoveryMonitor()
         unregisterNetworkCallback()
         dnsConfigJob?.cancel(); dnsConfigJob = null
+        filterConfigJob?.cancel(); filterConfigJob = null
         logFlushJob?.cancel(); logFlushJob = null
         stabilityFlushJob?.cancel(); stabilityFlushJob = null
         // Disconnect WireGuard proxy if active
@@ -830,6 +836,7 @@ class DnsVpnService : VpnService() {
             cancelTunnelHeartbeat()
             cancelVpnRecoveryMonitor()
             dnsConfigJob?.cancel(); dnsConfigJob = null
+            filterConfigJob?.cancel(); filterConfigJob = null
             unregisterNetworkCallback()
             // Flush buffered logs before restart — don't lose entries
             logFlushJob?.cancel(); logFlushJob = null
@@ -1936,6 +1943,39 @@ class DnsVpnService : VpnService() {
                 .drop(1) // startVpn() already loaded the initial config
                 .collect { applyLiveDnsConfig() }
         }
+        // Content-filter / safe-search / threat-intel / parental toggles were
+        // previously read only at startVpn(), so changing them while protection
+        // ran had no effect until a full restart — contradicting the "changes
+        // take effect immediately" copy on those screens. Reload them live too.
+        filterConfigJob?.cancel()
+        filterConfigJob = serviceScope.launch {
+            combine(
+                prefs.threatIntelEnabled.map { it.toString() },
+                prefs.safeSearchEnabled.map { it.toString() },
+                prefs.contentFilterCategories.map { it.sorted().joinToString(",") },
+                prefs.parentalEnabled.map { it.toString() },
+                prefs.parentalAgeProfile,
+            ) { values -> values.joinToString("|") }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { applyLiveFilterConfig() }
+        }
+    }
+
+    private suspend fun applyLiveFilterConfig() {
+        threatIntelEnabled = prefs.threatIntelEnabled.first()
+        safeSearchEnabled = prefs.safeSearchEnabled.first()
+        contentFilterCategories = prefs.contentFilterCategories.first()
+            .mapNotNull { name -> try { ContentCategory.valueOf(name) } catch (_: Exception) { null } }
+            .toSet()
+        try {
+            parentalControlManager.loadState()
+        } catch (e: Exception) {
+            Log.w(TAG, "Parental control live reload failed: ${e.message}")
+        }
+        PrivacyLog.i(TAG, "Filter config reloaded live: " +
+            "threatIntel=$threatIntelEnabled, safeSearch=$safeSearchEnabled, " +
+            "contentCategories=${contentFilterCategories.size}")
     }
 
     private suspend fun applyLiveDnsConfig() {

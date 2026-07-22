@@ -549,7 +549,15 @@ class ThreatIntelManager @Inject constructor(
             }
             json.put(CACHE_KEY_FEED_HEALTH, healthArray)
 
-            File(context.filesDir, CACHE_FILE).writeText(json.toString())
+            // Write atomically (temp + rename) so a process kill mid-write can't
+            // truncate threat_intel_cache.json and leave loadCached() empty.
+            val cacheFile = File(context.filesDir, CACHE_FILE)
+            val tmpFile = File(context.filesDir, "$CACHE_FILE.tmp")
+            tmpFile.writeText(json.toString())
+            if (!tmpFile.renameTo(cacheFile)) {
+                cacheFile.writeText(json.toString())
+                tmpFile.delete()
+            }
             val allFeedsSucceeded = successCount == feeds.size
             val status = if (allFeedsSucceeded) "complete" else "degraded"
             Log.i(TAG, "Threat intel refresh $status and persisted: $domainCount domains, $ipCidrCount CIDRs from $successCount/${feeds.size} feeds")

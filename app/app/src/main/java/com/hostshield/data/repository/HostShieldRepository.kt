@@ -62,6 +62,28 @@ class HostShieldRepository @Inject constructor(
         httpStatus: Int = 0
     ) = sourceDao.updateHealth(id, health, error, failures, httpStatus)
 
+    /**
+     * Persist download metadata for a successfully refreshed source using
+     * targeted column updates only. Unlike a full-row `@Update`, this never
+     * rewrites user-editable columns (url/label/description/enabled/category),
+     * so a concurrent toggle or edit made while a long download is in flight is
+     * not silently reverted.
+     */
+    suspend fun updateSourceDownloadMeta(
+        id: Long,
+        entryCount: Int,
+        etag: String,
+        sizeBytes: Long,
+        parseWarning: String,
+        prevEntryCount: Int,
+        domainsAdded: Int,
+        domainsRemoved: Int,
+    ) {
+        sourceDao.updateSourceMeta(id, entryCount, System.currentTimeMillis(), etag, sizeBytes)
+        sourceDao.updateHealth(id, SourceHealth.OK, parseWarning, 0, 0)
+        sourceDao.updateChangelog(id, prevEntryCount, domainsAdded, domainsRemoved)
+    }
+
     // ── User Rules (delegated) ──────────────────────────────
     fun getAllRules(): Flow<List<UserRule>> = rules.getAllRules()
     fun getRulesByType(type: RuleType): Flow<List<UserRule>> = rules.getRulesByType(type)

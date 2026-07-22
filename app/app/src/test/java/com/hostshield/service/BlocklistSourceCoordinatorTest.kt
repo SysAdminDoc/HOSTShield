@@ -66,9 +66,7 @@ class BlocklistSourceCoordinatorTest {
             health = SourceHealth.ERROR,
             consecutiveFailures = 2,
         )
-        val updatedSources = mutableListOf<HostSource>()
         coEvery { repository.getEnabledBlockSources() } returns listOf(source)
-        coEvery { repository.updateSource(capture(updatedSources)) } just Runs
         coEvery {
             downloader.download(source, forceDownload = true)
         } returns Result.success(
@@ -89,22 +87,24 @@ class BlocklistSourceCoordinatorTest {
         assertEquals(setOf("ads.example.com", "tracker.example.com"), snapshot.blockDomains)
         assertEquals(1, snapshot.downloadedSourceCount)
         assertTrue(snapshot.failedSources.isEmpty())
-        val updated = updatedSources.single()
-        assertEquals(3, updated.entryCount)
         assertEquals(1, snapshot.dnsTypeRules.size)
         assertEquals("typed.example", snapshot.dnsTypeRules.single().domain)
         assertEquals("Example", snapshot.dnsTypeRules.single().source)
-        assertEquals("new", updated.etag)
-        assertEquals("Wed, 24 Jun 2026 12:00:00 GMT", updated.lastModifiedOnline)
-        assertEquals(64, updated.sizeBytes)
-        assertEquals(SourceHealth.OK, updated.health)
-        assertEquals("", updated.lastError)
-        assertEquals(0, updated.lastHttpStatus)
-        assertEquals(0, updated.consecutiveFailures)
-        assertEquals(1, updated.prevEntryCount)
-        assertEquals(2, updated.domainsAdded)
-        assertEquals(0, updated.domainsRemoved)
-        assertTrue(updated.lastUpdated > 0)
+        // Download metadata is persisted via a targeted column update (never a
+        // full-row rewrite) so concurrent user edits are not clobbered.
+        coVerify(exactly = 1) {
+            repository.updateSourceDownloadMeta(
+                id = 7,
+                entryCount = 3,
+                etag = "new",
+                sizeBytes = 64,
+                parseWarning = "",
+                prevEntryCount = 1,
+                domainsAdded = 2,
+                domainsRemoved = 0,
+            )
+        }
+        coVerify(exactly = 0) { repository.updateSource(any()) }
         coVerify(exactly = 1) { downloader.download(source, forceDownload = true) }
         coVerify(exactly = 0) { downloader.download(source) }
     }
@@ -191,9 +191,11 @@ class BlocklistSourceCoordinatorTest {
             label = "Scoped",
             entryCount = 0,
         )
-        val updatedSources = mutableListOf<HostSource>()
+        val parseWarnings = mutableListOf<String>()
         coEvery { repository.getEnabledBlockSources() } returns listOf(source)
-        coEvery { repository.updateSource(capture(updatedSources)) } just Runs
+        coEvery {
+            repository.updateSourceDownloadMeta(any(), any(), any(), any(), capture(parseWarnings), any(), any(), any())
+        } just Runs
         coEvery {
             downloader.download(source, forceDownload = true)
         } returns Result.success(
@@ -213,11 +215,9 @@ class BlocklistSourceCoordinatorTest {
         assertEquals(setOf("global.example"), snapshot.sourceWildcardBlocks)
         assertFalse(snapshot.sourceWildcardBlocks.contains("scoped.example"))
         assertFalse(snapshot.sourceWildcardBlocks.contains("client.example"))
-        val updated = updatedSources.single()
-        assertEquals(SourceHealth.OK, updated.health)
-        assertEquals(1, updated.entryCount)
-        assertTrue(updated.lastError.contains("Skipped 2 scoped AdGuard rule(s)"))
-        assertTrue(updated.lastError.contains("instead of applying them globally"))
+        val warning = parseWarnings.single()
+        assertTrue(warning.contains("Skipped 2 scoped AdGuard rule(s)"))
+        assertTrue(warning.contains("instead of applying them globally"))
     }
 
     @Test
@@ -254,6 +254,26 @@ class BlocklistSourceCoordinatorTest {
             )
         }
         coVerify(exactly = 0) { repository.updateSource(any()) }
+    }
+
+    @Test
+    fun `total download failure preserves the live blocklist instead of swapping empty`() = runTest {
+        // Seed the holder with a populated snapshot (simulating a prior good build).
+        blocklistHolder.update(setOf("ads.example.com", "tracker.example.com"), emptyList(), emptyList())
+        val before = blocklistHolder.domainCount
+        assertTrue(before > 0)
+
+        val source = HostSource(id = 21, url = "https://example.com/list.txt", label = "List")
+        coEvery { repository.getEnabledBlockSources() } returns listOf(source)
+        coEvery {
+            downloader.download(source, forceDownload = true)
+        } returns Result.failure(SourceDownloadException("offline", 0))
+
+        val result = coordinator.rebuildBlocklistHolder()
+
+        assertTrue(result.preservedOnTotalFailure)
+        assertEquals(before, blocklistHolder.domainCount)
+        assertEquals(before, result.domainCount)
     }
 
     @Test

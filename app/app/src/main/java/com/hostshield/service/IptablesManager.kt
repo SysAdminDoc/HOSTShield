@@ -216,24 +216,15 @@ class IptablesManager @Inject constructor(
         val script = buildScript(rules, mode)
 
         try {
-            // Phase 1: Execute chain creation commands separately and verify
-            val chainCmds = script.filter { it.contains("-N ") }
-            if (chainCmds.isNotEmpty()) {
-                val chainResult = runIptables(chainCmds)
-                // Chain creation uses 2>/dev/null so errors on existing chains are
-                // suppressed; a hard failure here means something is seriously wrong
-                if (!chainResult.isSuccess) {
-                    val err = chainResult.err.joinToString("\n").take(500)
-                    _lastError.value = "Chain creation failed: $err"
-                    Log.e(TAG, "Chain creation failed, rolling back: $err")
-                    clearRules()
-                    return false
-                }
-            }
-
-            // Phase 2: Execute the remaining rule commands
-            val ruleCmds = script.filter { !it.contains("-N ") }
-            val result = runIptables(ruleCmds)
+            // Run the whole script as one ordered job: clear (flush + delete old
+            // chains) -> create chains -> populate rules -> hook OUTPUT. Splitting
+            // creation from the rest reordered the embedded clear script AFTER the
+            // -N creates, so the clear's -X deleted the just-created chains and
+            // every -A rule failed ("no chain by that name") — the firewall never
+            // actually applied. Chain-create errors on pre-existing chains are
+            // absorbed by the "|| true" in buildScript, and isSuccess reflects the
+            // final OUTPUT hook, the meaningful "did it install" signal.
+            val result = runIptables(script)
 
             if (result.isSuccess) {
                 _isActive.value = true
@@ -356,10 +347,12 @@ class IptablesManager @Inject constructor(
         // Clear existing chains
         cmds.addAll(buildClearScript())
 
-        // Create chains
+        // Create chains. "|| true" so a pre-existing chain (exit 1) never aborts
+        // the combined apply job — the preceding clear script normally removes
+        // them first, but a partial prior state must not wedge re-apply.
         for (chain in arrayOf(CHAIN_MAIN, CHAIN_WIFI, CHAIN_MOBILE, CHAIN_VPN, CHAIN_TETHER, CHAIN_LAN, CHAIN_REJECT)) {
-            cmds.add("iptables -N $chain 2>/dev/null")
-            cmds.add("ip6tables -N $chain 2>/dev/null")
+            cmds.add("iptables -N $chain 2>/dev/null || true")
+            cmds.add("ip6tables -N $chain 2>/dev/null || true")
         }
 
         // Reject chain: log + reject.

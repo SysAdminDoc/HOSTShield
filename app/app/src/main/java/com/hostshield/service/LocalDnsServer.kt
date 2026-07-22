@@ -90,8 +90,19 @@ class LocalDnsServer @Inject constructor(
         allowExternalClients: Boolean = false
     ): Int {
         if (isRunning) {
-            Log.w(TAG, "Already running on port $port")
-            return port
+            // Rebind when the requested port or client policy actually changed —
+            // otherwise a "Restarting…" toggle (e.g. turning OFF external clients)
+            // would silently keep serving with the old bind. Only short-circuit
+            // when nothing changed.
+            val samePort = listenPort == port
+            val samePolicy = allowExternalClients == this.allowExternalClients
+            val sameUpstream = upstream == upstreamDns
+            if (samePort && samePolicy && sameUpstream) {
+                Log.w(TAG, "Already running on port $port with matching config")
+                return port
+            }
+            Log.i(TAG, "LAN DNS config changed while running — rebinding")
+            stop()
         }
         if (!isSupportedLocalDnsPort(listenPort)) {
             lastStatusMessage = "LAN DNS port must be between $LOCAL_DNS_MIN_UNPRIVILEGED_PORT and $LOCAL_DNS_MAX_PORT"

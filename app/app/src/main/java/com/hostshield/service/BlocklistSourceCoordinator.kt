@@ -25,6 +25,7 @@ data class BlocklistSourceSnapshot(
     val wildcardBlockOrigins: Map<String, String>,
     val failedSources: List<SourceFailureNotice>,
     val downloadedSourceCount: Int,
+    val enabledSourceCount: Int,
 )
 
 data class BlocklistRebuildResult(
@@ -32,6 +33,13 @@ data class BlocklistRebuildResult(
     val wildcardRuleCount: Int,
     val regexRuleCount: Int,
     val snapshot: BlocklistSourceSnapshot,
+    /**
+     * True when the live blocklist snapshot was preserved instead of swapped
+     * because every enabled source failed to download (e.g. offline refresh).
+     * Callers should treat this as "keep protecting with what we have" and
+     * schedule a retry, not as a successful rebuild.
+     */
+    val preservedOnTotalFailure: Boolean = false,
 )
 
 @Singleton
@@ -44,6 +52,7 @@ class BlocklistSourceCoordinator @Inject constructor(
     suspend fun downloadEnabledSourcesForFullSnapshot(): BlocklistSourceSnapshot {
         val blockSources = repository.getEnabledBlockSources()
         val allowlistSources = repository.getEnabledAllowlistSources()
+        val enabledSourceCount = blockSources.size + allowlistSources.size
         val blockDomains = mutableSetOf<String>()
         val sourceExactAllows = mutableSetOf<String>()
         val sourceWildcardBlocks = mutableSetOf<String>()
@@ -110,6 +119,7 @@ class BlocklistSourceCoordinator @Inject constructor(
             wildcardBlockOrigins = wildcardBlockOrigins,
             failedSources = failedSources,
             downloadedSourceCount = downloadedSourceCount,
+            enabledSourceCount = enabledSourceCount,
         )
     }
 
@@ -117,6 +127,28 @@ class BlocklistSourceCoordinator @Inject constructor(
         extraExactBlockOrigins: Map<String, String> = emptyMap(),
     ): BlocklistRebuildResult {
         val snapshot = downloadEnabledSourcesForFullSnapshot()
+
+        // Fail-safe: if every enabled source failed to download (offline refresh,
+        // upstream outage) and a populated blocklist is already live, keep it
+        // rather than swapping in a near-empty snapshot. Source content is
+        // network-only with no disk cache, so an unconditional swap here would
+        // silently drop the user to ~zero blocked domains until the next
+        // successful refresh. A fresh (empty) holder still swaps so first-run and
+        // legitimately-empty configurations behave normally.
+        if (snapshot.enabledSourceCount > 0 &&
+            snapshot.downloadedSourceCount == 0 &&
+            snapshot.blockDomains.isEmpty() &&
+            blocklistHolder.domainCount > 0
+        ) {
+            return BlocklistRebuildResult(
+                domainCount = blocklistHolder.domainCount,
+                wildcardRuleCount = blocklistHolder.wildcardRules.size,
+                regexRuleCount = repository.getEnabledRegexRules().size,
+                snapshot = snapshot,
+                preservedOnTotalFailure = true,
+            )
+        }
+
         val allDomains = snapshot.blockDomains.toMutableSet()
         val sourceAllowDomains = snapshot.sourceExactAllows.toMutableSet()
         val sourceWildcardBlocks = snapshot.sourceWildcardBlocks.toMutableSet()
@@ -186,21 +218,15 @@ class BlocklistSourceCoordinator @Inject constructor(
         parseWarning: String,
     ) {
         val previousCount = source.entryCount
-        repository.updateSource(
-            source.copy(
-                entryCount = entryCount,
-                lastUpdated = System.currentTimeMillis(),
-                lastModifiedOnline = dl.lastModified,
-                etag = dl.etag,
-                sizeBytes = dl.sizeBytes,
-                health = SourceHealth.OK,
-                lastError = parseWarning,
-                lastHttpStatus = 0,
-                consecutiveFailures = 0,
-                prevEntryCount = previousCount,
-                domainsAdded = max(entryCount - previousCount, 0),
-                domainsRemoved = max(previousCount - entryCount, 0),
-            )
+        repository.updateSourceDownloadMeta(
+            id = source.id,
+            entryCount = entryCount,
+            etag = dl.etag,
+            sizeBytes = dl.sizeBytes,
+            parseWarning = parseWarning,
+            prevEntryCount = previousCount,
+            domainsAdded = max(entryCount - previousCount, 0),
+            domainsRemoved = max(previousCount - entryCount, 0),
         )
     }
 
