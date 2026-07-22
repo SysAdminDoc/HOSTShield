@@ -20,6 +20,16 @@ class DomainAgeChecker @Inject constructor() {
     companion object {
         private const val TAG = "DomainAge"
         private const val MAX_RDAP_RESPONSE_BYTES = 64L * 1024L
+
+        // Common multi-part public suffixes where the registered domain is three labels
+        // (x.example.co.uk registers example.co.uk, not co.uk)
+        private val MULTI_PART_SUFFIXES = setOf(
+            "co.uk", "org.uk", "gov.uk", "ac.uk",
+            "com.au", "net.au", "org.au",
+            "co.jp", "ne.jp", "or.jp",
+            "co.nz", "co.za", "com.br", "com.mx", "com.ar", "co.in",
+            "com.cn", "com.tw", "com.sg", "com.hk", "co.kr"
+        )
     }
 
     data class DomainAge(
@@ -80,9 +90,15 @@ class DomainAgeChecker @Inject constructor() {
         }
     }
 
-    private fun extractRegisteredDomain(hostname: String): String {
+    internal fun extractRegisteredDomain(hostname: String): String {
         val parts = hostname.lowercase().split('.')
-        return if (parts.size >= 2) "${parts[parts.size - 2]}.${parts.last()}" else hostname
+        if (parts.size < 2) return hostname
+        val lastTwo = "${parts[parts.size - 2]}.${parts.last()}"
+        return if (parts.size >= 3 && lastTwo in MULTI_PART_SUFFIXES) {
+            "${parts[parts.size - 3]}.$lastTwo"
+        } else {
+            lastTwo
+        }
     }
 
     private fun extractDate(json: String, keyword: String): String? {

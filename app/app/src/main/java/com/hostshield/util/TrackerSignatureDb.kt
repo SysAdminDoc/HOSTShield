@@ -8,6 +8,7 @@ import com.hostshield.data.model.TrackerScanCacheEntry
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.InputStream
 import java.util.zip.ZipFile
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,6 +27,51 @@ class TrackerSignatureDb @Inject constructor(
         private const val TAG = "TrackerSigDb"
         private const val CACHE_MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000 // 7 days
         private const val MAX_DEX_SCAN_BYTES = 64L * 1024L * 1024L
+        private const val DEX_SCAN_CHUNK_BYTES = 4 * 1024 * 1024
+
+        /**
+         * Scan a dex stream in bounded chunks instead of materializing the whole
+         * entry (up to 64MB byte[] + ISO_8859_1 String was an OOM risk). The last
+         * [overlap] bytes of each chunk are carried into the next so signatures
+         * spanning a chunk boundary are still found. [buffer] must be larger than
+         * [overlap]; matched signature prefixes are added to [prefixes].
+         */
+        internal fun scanDexStream(
+            input: InputStream,
+            dexSignatures: List<Pair<String, String>>,
+            overlap: Int,
+            buffer: ByteArray,
+            prefixes: MutableSet<String>
+        ) {
+            var carried = 0
+            var totalRead = 0L
+            while (true) {
+                var filled = carried
+                var eof = false
+                while (filled < buffer.size) {
+                    val read = input.read(buffer, filled, buffer.size - filled)
+                    if (read == -1) {
+                        eof = true
+                        break
+                    }
+                    filled += read
+                    totalRead += read
+                    if (totalRead > MAX_DEX_SCAN_BYTES) return // entry lied about its size — stop
+                }
+                if (filled > carried) {
+                    val content = String(buffer, 0, filled, Charsets.ISO_8859_1)
+                    for ((sig, dexSig) in dexSignatures) {
+                        if (sig !in prefixes && content.contains(dexSig)) {
+                            prefixes.add(sig)
+                        }
+                    }
+                }
+                if (eof) return
+                val keep = minOf(overlap, filled)
+                System.arraycopy(buffer, filled - keep, buffer, 0, keep)
+                carried = keep
+            }
+        }
     }
 
     data class TrackerInfo(
@@ -643,6 +689,11 @@ class TrackerSignatureDb @Inject constructor(
 
     private fun extractClassPrefixes(apkPath: String): Set<String> {
         val prefixes = mutableSetOf<String>()
+        val dexSignatures = trackers.flatMap { tracker ->
+            tracker.signatures.map { sig -> sig to "L${sig.replace('.', '/')}/" }
+        }
+        val overlap = (dexSignatures.maxOf { it.second.length } - 1).coerceAtLeast(0)
+        val buffer = ByteArray(DEX_SCAN_CHUNK_BYTES + overlap)
         try {
             ZipFile(apkPath).use { zip ->
                 val dexEntries = zip.entries().asSequence()
@@ -655,17 +706,8 @@ class TrackerSignatureDb @Inject constructor(
                             Log.w(TAG, "Skipping oversized DEX entry ${entry.name}: ${entry.size} bytes")
                             continue
                         }
-                        val bytes = zip.getInputStream(entry).use {
-                            BoundedInputReader.readBytes(it, MAX_DEX_SCAN_BYTES, "DEX entry ${entry.name}")
-                        }
-                        val content = String(bytes, Charsets.ISO_8859_1)
-                        for (tracker in trackers) {
-                            for (sig in tracker.signatures) {
-                                val dexSig = "L${sig.replace('.', '/')}/"
-                                if (content.contains(dexSig)) {
-                                    prefixes.add(sig)
-                                }
-                            }
+                        zip.getInputStream(entry).use { input ->
+                            scanDexStream(input, dexSignatures, overlap, buffer, prefixes)
                         }
                     } catch (_: Exception) { }
                 }

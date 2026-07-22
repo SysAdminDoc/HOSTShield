@@ -41,6 +41,21 @@ class PcapExporter @Inject constructor(
         private const val PCAP_VERSION_MINOR = 4
         private const val PCAP_SNAPLEN = 65535
         private const val LINKTYPE_RAW = 101  // Raw IPv4/IPv6
+
+        /** Parse a dotted-quad IPv4 string, rejecting out-of-range or non-numeric octets. */
+        internal fun parseIpv4OrNull(value: String): ByteArray? {
+            val parts = value.split('.')
+            if (parts.size != 4) return null
+            val bytes = ByteArray(4)
+            for (i in parts.indices) {
+                val part = parts[i]
+                if (part.isEmpty() || part.length > 3 || !part.all { it.isDigit() }) return null
+                val octet = part.toInt()
+                if (octet > 255) return null
+                bytes[i] = octet.toByte()
+            }
+            return bytes
+        }
     }
 
     /**
@@ -260,11 +275,7 @@ class PcapExporter @Inject constructor(
      * Build synthetic TCP SYN or UDP packet for a connection log entry.
      */
     private fun buildTcpSynPacket(dstIp: String, dstPort: Int, srcPort: Int, isTcp: Boolean): ByteArray? {
-        val dstBytes = try {
-            val parts = dstIp.split('.')
-            if (parts.size != 4) return null
-            parts.map { it.toInt().toByte() }.toByteArray()
-        } catch (_: Exception) { return null }
+        val dstBytes = parseIpv4OrNull(dstIp) ?: return null
 
         val transportLen = if (isTcp) 20 else 8
         val ipLen = 20 + transportLen

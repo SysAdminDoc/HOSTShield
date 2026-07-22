@@ -10,7 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
-import java.security.MessageDigest
+import java.security.SecureRandom
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.ceil
@@ -75,7 +77,7 @@ class EvidenceJsonlExporter @Inject constructor(
         val result = buildJsonl(dnsLogs, connectionLogs, options.copy(maxRows = boundedMaxRows))
         if (result.rowCount == 0) return@withContext null
 
-        val file = File(context.cacheDir, "hostshield_evidence_${System.currentTimeMillis()}.jsonl")
+        val file = prepareExportFile(context.cacheDir, System.currentTimeMillis())
         file.writeText(result.content, Charsets.UTF_8)
         Log.i(TAG, "Evidence JSONL export: ${file.absolutePath} (${file.length()} bytes)")
         EvidenceJsonlFileResult(
@@ -93,6 +95,24 @@ class EvidenceJsonlExporter @Inject constructor(
         const val DEFAULT_CHUNK_ROWS = 1_000
         private const val HARD_MAX_ROWS = 20_000
         private const val TAG = "EvidenceJsonlExport"
+        private const val EXPORT_DIR_NAME = "exports"
+        private const val EXPORT_FILE_PREFIX = "hostshield_evidence_"
+        private const val EXPORT_MAX_AGE_MS = 24L * 60L * 60L * 1000L
+
+        /**
+         * Resolve the export file inside the dedicated exports/ cache subdirectory
+         * (FileProvider "exports" cache-path) and sweep stale evidence files left
+         * behind by earlier exports — including legacy cache-root placement.
+         */
+        internal fun prepareExportFile(cacheDir: File, nowMs: Long): File {
+            val exportDir = File(cacheDir, EXPORT_DIR_NAME).apply { mkdirs() }
+            val cutoff = nowMs - EXPORT_MAX_AGE_MS
+            sequenceOf(cacheDir, exportDir)
+                .flatMap { dir -> dir.listFiles()?.asSequence().orEmpty() }
+                .filter { it.isFile && it.name.startsWith(EXPORT_FILE_PREFIX) && it.lastModified() < cutoff }
+                .forEach { it.delete() }
+            return File(exportDir, "$EXPORT_FILE_PREFIX$nowMs.jsonl")
+        }
 
         fun buildJsonl(
             dnsLogs: List<DnsLogEntry>,
@@ -122,12 +142,13 @@ class EvidenceJsonlExporter @Inject constructor(
                 ceil(rows.size.toDouble() / boundedChunkRows.toDouble()).toInt()
             }
 
+            val redaction = ExportRedaction()
             val sb = StringBuilder(rows.size * 256 + 512)
-            sb.appendLine(metadataJson(options, rows.size, chunkCount, truncated))
+            sb.appendLine(metadataJson(options, redaction, rows.size, chunkCount, truncated))
             rows.forEachIndexed { index, row ->
                 val chunkIndex = index / boundedChunkRows
                 val chunkRowIndex = index % boundedChunkRows
-                sb.appendLine(row.toJson(index, chunkIndex, chunkRowIndex, options))
+                sb.appendLine(row.toJson(index, chunkIndex, chunkRowIndex, options, redaction))
             }
             return EvidenceJsonlBuildResult(
                 content = sb.toString(),
@@ -139,6 +160,7 @@ class EvidenceJsonlExporter @Inject constructor(
 
         private fun metadataJson(
             options: EvidenceJsonlExportOptions,
+            redaction: ExportRedaction,
             rowCount: Int,
             chunkCount: Int,
             truncated: Boolean
@@ -158,8 +180,16 @@ class EvidenceJsonlExporter @Inject constructor(
                 JSONObject()
                     .put("since_ms", options.sinceMs)
                     .put("until_ms", options.untilMs)
-                    .put("query", options.query.trim())
-                    .put("app", options.appFilter.trim())
+                    // Filter text can contain the same identifiers as redacted rows
+                    .put(
+                        "query",
+                        options.query.trim().redact(
+                            "query",
+                            options.redactDomains || options.redactApps || options.redactIps,
+                            redaction
+                        )
+                    )
+                    .put("app", options.appFilter.trim().redact("app", options.redactApps, redaction))
                     .put("query_types", options.queryTypes.sorted().joinToString(","))
                     .put("include_blocked", options.includeBlocked)
                     .put("include_allowed", options.includeAllowed)
@@ -242,7 +272,8 @@ class EvidenceJsonlExporter @Inject constructor(
             rowIndex: Int,
             chunkIndex: Int,
             chunkRowIndex: Int,
-            options: EvidenceJsonlExportOptions
+            options: EvidenceJsonlExportOptions,
+            redaction: ExportRedaction
         ): String {
             val base = JSONObject()
                 .put("schema", SCHEMA_NAME)
@@ -252,64 +283,75 @@ class EvidenceJsonlExporter @Inject constructor(
                 .put("chunk_row_index", chunkRowIndex)
                 .put("timestamp_ms", timestampMs)
             return when (this) {
-                is EvidenceRow.Dns -> entry.toJson(base, options)
-                is EvidenceRow.Connection -> entry.toJson(base, options)
+                is EvidenceRow.Dns -> entry.toJson(base, options, redaction)
+                is EvidenceRow.Connection -> entry.toJson(base, options, redaction)
             }.toString()
         }
 
-        private fun DnsLogEntry.toJson(base: JSONObject, options: EvidenceJsonlExportOptions): JSONObject =
+        private fun DnsLogEntry.toJson(
+            base: JSONObject,
+            options: EvidenceJsonlExportOptions,
+            redaction: ExportRedaction
+        ): JSONObject =
             base
                 .put("row_type", "dns")
                 .put("id", id)
-                .put("hostname", hostname.redact("domain", options.redactDomains))
+                .put("hostname", hostname.redact("domain", options.redactDomains, redaction))
                 .put("blocked", blocked)
-                .put("app_package", appPackage.redact("app", options.redactApps))
-                .put("app_label", appLabel.redact("app", options.redactApps))
-                .put("source_ip", sourceIp.redact("ip", options.redactIps))
+                .put("app_package", appPackage.redact("app", options.redactApps, redaction))
+                .put("app_label", appLabel.redact("app", options.redactApps, redaction))
+                .put("source_ip", sourceIp.redact("ip", options.redactIps, redaction))
                 .put("query_type", queryType)
                 .put("response_time_ms", responseTimeMs)
-                .put("upstream_server", upstreamServer.redactEndpoint(options))
-                .put("cname_chain", cnameChain.redactList("domain", options.redactDomains))
-                .put("resolved_ips", resolvedIps.redactList("ip", options.redactIps))
+                .put("upstream_server", upstreamServer.redactEndpoint(options, redaction))
+                .put("cname_chain", cnameChain.redactList("domain", options.redactDomains, redaction))
+                .put("resolved_ips", resolvedIps.redactList("ip", options.redactIps, redaction))
                 .put("tracker_category", trackerCategory)
-                .put("tracker_owner", trackerOwner.redact("app", options.redactApps))
+                .put("tracker_owner", trackerOwner.redact("app", options.redactApps, redaction))
                 .put("decision_reason", decisionReason)
                 .put("decision_source", decisionSource)
-                .put("matched_value", matchedValue.redactEndpoint(options))
+                .put("matched_value", matchedValue.redactEndpoint(options, redaction))
                 .put("decision_precedence", decisionPrecedence)
 
-        private fun ConnectionLogEntry.toJson(base: JSONObject, options: EvidenceJsonlExportOptions): JSONObject =
+        private fun ConnectionLogEntry.toJson(
+            base: JSONObject,
+            options: EvidenceJsonlExportOptions,
+            redaction: ExportRedaction
+        ): JSONObject =
             base
                 .put("row_type", "connection")
                 .put("id", id)
                 .put("uid", uid)
-                .put("package_name", packageName.redact("app", options.redactApps))
-                .put("app_label", appLabel.redact("app", options.redactApps))
-                .put("destination", destination.redactEndpoint(options))
+                .put("package_name", packageName.redact("app", options.redactApps, redaction))
+                .put("app_label", appLabel.redact("app", options.redactApps, redaction))
+                .put("destination", destination.redactEndpoint(options, redaction))
                 .put("port", port)
                 .put("protocol", protocol)
                 .put("action", action)
                 .put("interface_name", interfaceName)
 
-        private fun String.redactEndpoint(options: EvidenceJsonlExportOptions): String {
+        private fun String.redactEndpoint(
+            options: EvidenceJsonlExportOptions,
+            redaction: ExportRedaction
+        ): String {
             if (isBlank()) return ""
             val kind = if (looksLikeIpList()) "ip" else "domain"
             val enabled = if (kind == "ip") options.redactIps else options.redactDomains
-            return redact(kind, enabled)
+            return redact(kind, enabled, redaction)
         }
 
-        private fun String.redactList(kind: String, enabled: Boolean): String {
+        private fun String.redactList(kind: String, enabled: Boolean, redaction: ExportRedaction): String {
             if (isBlank()) return ""
             return split(',')
-                .map { it.trim().redact(kind, enabled) }
+                .map { it.trim().redact(kind, enabled, redaction) }
                 .joinToString(",")
         }
 
-        private fun String.redact(kind: String, enabled: Boolean): String {
+        private fun String.redact(kind: String, enabled: Boolean, redaction: ExportRedaction): String {
             val value = trim()
             if (value.isBlank()) return ""
             if (!enabled) return value
-            return "redacted-$kind-${sha256(value).take(12)}"
+            return "redacted-$kind-${redaction.tag(value)}"
         }
 
         private fun String.looksLikeIpList(): Boolean =
@@ -317,10 +359,22 @@ class EvidenceJsonlExporter @Inject constructor(
                 item.all { ch -> ch.isDigit() || ch == '.' || ch == ':' || ch in 'a'..'f' || ch in 'A'..'F' }
             }
 
-        private fun sha256(value: String): String {
-            val digest = MessageDigest.getInstance("SHA-256")
-                .digest(value.lowercase().toByteArray(Charsets.UTF_8))
-            return digest.joinToString("") { "%02x".format(it) }
+        /**
+         * Per-export salted redaction. A random in-memory salt keys the hash so
+         * tokens stay stable within one export (correlation survives) but cannot
+         * be reversed offline by hashing candidate dictionaries. The salt is
+         * never written to the export.
+         */
+        private class ExportRedaction {
+            private val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
+
+            fun tag(value: String): String {
+                val mac = Mac.getInstance("HmacSHA256")
+                mac.init(SecretKeySpec(salt, "HmacSHA256"))
+                return mac.doFinal(value.lowercase().toByteArray(Charsets.UTF_8))
+                    .joinToString("") { "%02x".format(it) }
+                    .take(12)
+            }
         }
     }
 }

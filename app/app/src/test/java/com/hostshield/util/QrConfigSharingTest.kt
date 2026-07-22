@@ -92,6 +92,27 @@ class QrConfigSharingTest {
     }
 
     @Test
+    fun `import plan keeps bracketed IPv6 source hosts intact`() {
+        // URI.getHost() returns IPv6 literals already bracketed — no double wrap
+        val plan = QrConfigImportPlanner.buildPlan(
+            config = ShareableConfig(sourceUrls = listOf("https://[2001:db8::1]:8443/hosts.txt")),
+        )
+
+        assertEquals(listOf("https://[2001:db8::1]:8443/hosts.txt"), plan.sourcesToAdd.map { it.url })
+        assertEquals(0, plan.skippedSources)
+    }
+
+    @Test
+    fun `import plan rejects non-ASCII rule hostnames`() {
+        val plan = QrConfigImportPlanner.buildPlan(
+            config = ShareableConfig(userRules = listOf(RuleEntry("münchen.example", "block"))),
+        )
+
+        assertTrue(plan.rulesToAdd.isEmpty())
+        assertEquals(1, plan.skippedRules)
+    }
+
+    @Test
     fun `decode rejects encoded input over four kilobytes`() {
         val sharing = QrConfigSharing()
         val oversized = QrConfigSharing.SCHEME_PREFIX + "A".repeat(QrConfigSharing.MAX_DECODED_QR_CHARS + 1)

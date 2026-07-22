@@ -156,7 +156,7 @@ object QrConfigImportPlanner {
                     label.length > 63 ||
                     label.startsWith("-") ||
                     label.endsWith("-") ||
-                    label.any { !it.isLetterOrDigit() && it != '-' }
+                    label.any { it !in 'a'..'z' && it !in '0'..'9' && it != '-' }
             }
         ) return null
         return if (host.startsWith("*.")) "*.$base" else base
@@ -173,7 +173,8 @@ object QrConfigImportPlanner {
         if (!"https".equals(uri.scheme, ignoreCase = true)) return null
         val host = uri.host?.trim()?.lowercase().orEmpty()
         if (host.isEmpty() || uri.userInfo != null) return null
-        val authorityHost = if (host.contains(':')) "[$host]" else host
+        // URI.getHost() already brackets IPv6 literals — only wrap bare ones
+        val authorityHost = if (host.contains(':') && !host.startsWith("[")) "[$host]" else host
         val authority = if (uri.port >= 0) "$authorityHost:${uri.port}" else authorityHost
         val path = uri.rawPath?.ifEmpty { "/" } ?: "/"
         val query = uri.rawQuery?.let { "?$it" } ?: ""

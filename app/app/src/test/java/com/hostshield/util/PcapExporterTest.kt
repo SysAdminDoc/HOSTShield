@@ -90,4 +90,31 @@ class PcapExporterTest {
         assertEquals(1708123456, sec)
         assertEquals(789000, usec)
     }
+
+    @Test
+    fun `parseIpv4OrNull accepts valid dotted quads`() {
+        assertArrayEquals(byteArrayOf(8, 8, 8, 8), PcapExporter.parseIpv4OrNull("8.8.8.8"))
+        assertArrayEquals(
+            byteArrayOf(255.toByte(), 0, 10, 1),
+            PcapExporter.parseIpv4OrNull("255.0.10.1")
+        )
+    }
+
+    @Test
+    fun `parseIpv4OrNull rejects out of range octets`() {
+        // toInt().toByte() used to silently truncate these into wrong addresses
+        assertNull(PcapExporter.parseIpv4OrNull("8.8.8.999"))
+        assertNull(PcapExporter.parseIpv4OrNull("256.1.1.1"))
+        assertNull(PcapExporter.parseIpv4OrNull("1.1.1.1000"))
+    }
+
+    @Test
+    fun `parseIpv4OrNull rejects malformed input`() {
+        assertNull(PcapExporter.parseIpv4OrNull("a.b.c.d"))
+        assertNull(PcapExporter.parseIpv4OrNull("1.2.3"))
+        assertNull(PcapExporter.parseIpv4OrNull("1.2.3.4.5"))
+        assertNull(PcapExporter.parseIpv4OrNull("1.2.3."))
+        assertNull(PcapExporter.parseIpv4OrNull("+1.2.3.4"))
+        assertNull(PcapExporter.parseIpv4OrNull("2001:db8::1"))
+    }
 }

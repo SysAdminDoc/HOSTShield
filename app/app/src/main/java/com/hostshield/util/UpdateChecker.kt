@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
+import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,6 +23,17 @@ class UpdateChecker @Inject constructor() {
         private const val RELEASES_URL =
             "https://api.github.com/repos/SysAdminDoc/HostShield/releases?per_page=10"
         private const val MAX_RELEASES_RESPONSE_BYTES = 512L * 1024L
+
+        /** First non-draft, non-prerelease release in the page, or null when there is none. */
+        internal fun selectLatestStableRelease(releases: JSONArray): JSONObject? {
+            for (i in 0 until releases.length()) {
+                val rel = releases.getJSONObject(i)
+                if (!rel.optBoolean("draft", false) && !rel.optBoolean("prerelease", false)) {
+                    return rel
+                }
+            }
+            return null
+        }
     }
 
     data class UpdateInfo(
@@ -64,7 +76,10 @@ class UpdateChecker @Inject constructor() {
             }
 
             val releases = JSONArray(body)
-            if (releases.length() == 0) {
+            // Find the latest non-prerelease, non-draft release; if the page has
+            // none (empty or only drafts/prereleases), never prompt an update
+            val latestRelease = selectLatestStableRelease(releases)
+            if (latestRelease == null) {
                 return@withContext Result.success(UpdateInfo(
                     hasUpdate = false,
                     latestVersion = BuildConfig.VERSION_NAME,
@@ -74,16 +89,6 @@ class UpdateChecker @Inject constructor() {
                     publishedAt = "",
                     htmlUrl = ""
                 ))
-            }
-
-            // Find the latest non-prerelease, non-draft release
-            var latestRelease = releases.getJSONObject(0)
-            for (i in 0 until releases.length()) {
-                val rel = releases.getJSONObject(i)
-                if (!rel.optBoolean("draft", false) && !rel.optBoolean("prerelease", false)) {
-                    latestRelease = rel
-                    break
-                }
             }
 
             val tagName = latestRelease.optString("tag_name", "")

@@ -5,10 +5,17 @@ import com.hostshield.data.model.DnsLogEntry
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import java.io.File
 
 class EvidenceJsonlExporterTest {
+
+    @get:Rule
+    val tempDir = TemporaryFolder()
 
     @Test
     fun `buildJsonl redacts bounded rows and reports chunks`() {
@@ -167,5 +174,114 @@ class EvidenceJsonlExporterTest {
         assertEquals(1, connectionRow.getInt("schema_version"))
         assertEquals("redacted-domain-", connectionRow.getString("destination").take("redacted-domain-".length))
         assertEquals("ALLOW", connectionRow.getString("action"))
+    }
+
+    @Test
+    fun `redaction tokens are stable within an export but salted across exports`() {
+        val dns = DnsLogEntry(
+            id = 1,
+            hostname = "ads.example.com",
+            blocked = true,
+            appPackage = "com.example.browser",
+            appLabel = "Browser",
+            timestamp = 1_000L,
+            queryType = "A",
+            matchedValue = "ads.example.com"
+        )
+        val options = EvidenceJsonlExportOptions(
+            dataset = EvidenceJsonlDataset.DNS,
+            redactDomains = true,
+            redactApps = true,
+            redactIps = true
+        )
+
+        val first = JSONObject(
+            EvidenceJsonlExporter.buildJsonl(listOf(dns), emptyList(), options).content.trim().lines()[1]
+        )
+        // Same value redacted twice in one export correlates to the same token
+        assertEquals(first.getString("hostname"), first.getString("matched_value"))
+
+        val second = JSONObject(
+            EvidenceJsonlExporter.buildJsonl(listOf(dns), emptyList(), options).content.trim().lines()[1]
+        )
+        // A fresh export salt makes the token dictionary-unlinkable across exports
+        assertNotEquals(first.getString("hostname"), second.getString("hostname"))
+    }
+
+    @Test
+    fun `metadata filters are redacted when redaction is enabled`() {
+        val dns = DnsLogEntry(
+            id = 1,
+            hostname = "ads.example.com",
+            blocked = true,
+            appPackage = "com.example.browser",
+            appLabel = "Browser",
+            timestamp = 1_000L,
+            queryType = "A"
+        )
+
+        val redacted = EvidenceJsonlExporter.buildJsonl(
+            dnsLogs = listOf(dns),
+            connectionLogs = emptyList(),
+            options = EvidenceJsonlExportOptions(
+                dataset = EvidenceJsonlDataset.DNS,
+                query = "ads.example.com",
+                appFilter = "com.example.browser",
+                redactDomains = true,
+                redactApps = true,
+                redactIps = true
+            )
+        )
+        val redactedFilters = JSONObject(redacted.content.trim().lines()[0]).getJSONObject("filters")
+        assertTrue(redactedFilters.getString("query").startsWith("redacted-query-"))
+        assertTrue(redactedFilters.getString("app").startsWith("redacted-app-"))
+        assertFalse(redacted.content.contains("ads.example.com"))
+        assertFalse(redacted.content.contains("com.example.browser"))
+
+        val verbatim = EvidenceJsonlExporter.buildJsonl(
+            dnsLogs = listOf(dns),
+            connectionLogs = emptyList(),
+            options = EvidenceJsonlExportOptions(
+                dataset = EvidenceJsonlDataset.DNS,
+                query = "ads.example.com",
+                appFilter = "com.example.browser",
+                redactDomains = false,
+                redactApps = false,
+                redactIps = false
+            )
+        )
+        val verbatimFilters = JSONObject(verbatim.content.trim().lines()[0]).getJSONObject("filters")
+        assertEquals("ads.example.com", verbatimFilters.getString("query"))
+        assertEquals("com.example.browser", verbatimFilters.getString("app"))
+    }
+
+    @Test
+    fun `prepareExportFile sweeps stale evidence files and targets exports subdirectory`() {
+        val cacheDir = tempDir.newFolder("cache")
+        val exportsDir = File(cacheDir, "exports").apply { mkdirs() }
+        val now = System.currentTimeMillis()
+        val staleMs = now - 25L * 60L * 60L * 1000L
+        val staleRoot = File(cacheDir, "hostshield_evidence_1.jsonl").apply {
+            writeText("stale")
+            setLastModified(staleMs)
+        }
+        val staleExport = File(exportsDir, "hostshield_evidence_2.jsonl").apply {
+            writeText("stale")
+            setLastModified(staleMs)
+        }
+        val fresh = File(exportsDir, "hostshield_evidence_3.jsonl").apply { writeText("fresh") }
+        val unrelated = File(cacheDir, "hostshield_dns_1.pcap").apply {
+            writeText("keep")
+            setLastModified(staleMs)
+        }
+
+        val target = EvidenceJsonlExporter.prepareExportFile(cacheDir, now)
+
+        assertEquals(exportsDir, target.parentFile)
+        assertTrue(target.name.startsWith("hostshield_evidence_"))
+        assertFalse(staleRoot.exists())
+        assertFalse(staleExport.exists())
+        assertTrue(fresh.exists())
+        assertTrue(unrelated.exists())
     }
 }
