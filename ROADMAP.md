@@ -473,15 +473,6 @@ The v6.9.59 pass fixed ~45 issues across correctness, security, UX, theming, and
 accessibility (see CHANGELOG). The items below were found but deferred because
 they need a device, a product decision, an external key, or an unreleased SDK.
 
-### P1 — Product decision
-
-- [ ] Several preferences are collected into `SettingsUiState` but have no UI
-      control: auto-update on/off, Wi-Fi-only sync, blocking notification,
-      hosts IPv4/IPv6 redirect targets, DNS-log retention window. Wire the
-      toggles/fields into the appropriate Settings sections (the setters already
-      exist) or remove the dead state + setters.
-      Where: `ui/screens/settings/SettingsViewModel.kt` (setters ~601-647).
-
 ### P2 — Needs device / live verification
 
 - [ ] `RootDnsLogger`: `hostnameUidMap` / `pendingUidLookup` grow unbounded for a
@@ -496,6 +487,11 @@ they need a device, a product decision, an external key, or an unreleased SDK.
       v6.x preferences on round-trip. (Pre-existing spec above.)
 
 ### P3 — Deferred correctness / coverage
+
+- [ ] Hosts IPv4/IPv6 redirect-target prefs (`setIpv4Redirect`/`setIpv6Redirect`)
+      still have no Settings control — they default to `0.0.0.0`/`::` (correct for
+      blocking) and only matter for custom redirect responses. Add validated IP
+      text fields if the custom-redirect use case is prioritized.
 
 - [ ] Adblock `$denyallow` is still approximated as a global wildcard-allow (the
       cross-source exact-allow leak was removed in v6.9.59). Attach the exception

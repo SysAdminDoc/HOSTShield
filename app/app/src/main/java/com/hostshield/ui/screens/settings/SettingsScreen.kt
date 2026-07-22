@@ -377,6 +377,40 @@ fun SettingsScreen(
             SettingsToggle(stringResource(R.string.settings_online_ip_lookup), stringResource(R.string.settings_online_ip_lookup_sub), Icons.Filled.Public, state.onlineGeoIpEnabled) {
                 viewModel.setOnlineGeoIpEnabled(it)
             }
+            Spacer(Modifier.height(4.dp))
+            SettingsToggle(stringResource(R.string.settings_show_notification), stringResource(R.string.settings_show_notification_sub), Icons.Filled.Notifications, state.showNotification) {
+                viewModel.setShowNotification(it)
+            }
+            Spacer(Modifier.height(4.dp))
+            SettingsToggle(stringResource(R.string.settings_auto_update), stringResource(R.string.settings_auto_update_sub), Icons.Filled.Update, state.autoUpdate) {
+                viewModel.setAutoUpdate(it)
+            }
+            if (state.autoUpdate) {
+                Spacer(Modifier.height(4.dp))
+                SettingsRow(
+                    stringResource(R.string.settings_update_interval),
+                    stringResource(R.string.settings_update_interval_value, state.updateIntervalHours),
+                    Icons.Filled.Schedule,
+                ) {
+                    val steps = listOf(6, 12, 24, 48, 168)
+                    val next = steps.firstOrNull { it > state.updateIntervalHours } ?: steps.first()
+                    viewModel.setUpdateInterval(next)
+                }
+                Spacer(Modifier.height(4.dp))
+                SettingsToggle(stringResource(R.string.settings_wifi_only), stringResource(R.string.settings_wifi_only_sub), Icons.Filled.Wifi, state.wifiOnly) {
+                    viewModel.setWifiOnly(it)
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            SettingsRow(
+                stringResource(R.string.settings_log_retention),
+                stringResource(R.string.settings_log_retention_value, state.logRetentionDays),
+                Icons.Filled.AutoDelete,
+            ) {
+                val steps = listOf(1, 3, 7, 14, 30, 90)
+                val next = steps.firstOrNull { it > state.logRetentionDays } ?: steps.first()
+                viewModel.setLogRetention(next)
+            }
         }
 
         // Tools

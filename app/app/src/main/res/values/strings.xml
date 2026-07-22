@@ -102,6 +102,16 @@
     <string name="settings_dns_logging_sub">Record DNS queries for stats</string>
     <string name="settings_online_ip_lookup">Online IP lookup</string>
     <string name="settings_online_ip_lookup_sub">Use ipapi.co when offline GeoIP is unavailable</string>
+    <string name="settings_auto_update">Auto-update blocklists</string>
+    <string name="settings_auto_update_sub">Refresh enabled sources on a schedule</string>
+    <string name="settings_update_interval">Update interval</string>
+    <string name="settings_update_interval_value">Every %1$d hours</string>
+    <string name="settings_wifi_only">Update on Wi-Fi only</string>
+    <string name="settings_wifi_only_sub">Skip blocklist and feed downloads on mobile data</string>
+    <string name="settings_show_notification">Protection notification</string>
+    <string name="settings_show_notification_sub">Show the ongoing status notification while active</string>
+    <string name="settings_log_retention">Log retention</string>
+    <string name="settings_log_retention_value">Keep DNS logs for %1$d days</string>
     <string name="settings_view_hosts">View hosts file</string>
     <string name="settings_view_hosts_sub">Inspect current blocking rules</string>
     <string name="settings_edit_hosts">Edit hosts file</string>
