@@ -1,5 +1,6 @@
 package com.hostshield.ui.screens.onboarding
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -64,6 +65,9 @@ fun OnboardingScreen(
     val hasPrivateDnsIssue = privateDnsStatus?.bypassesVpn == true && selectedMethod == BlockMethod.VPN
     // Pages: Welcome(0), Method(1), Features(2), DnsConfig(3), [PrivateDns(4)], Ready(last)
     val totalPages = if (hasPrivateDnsIssue) 6 else 5
+
+    // System back steps to the previous onboarding page; only page 0 exits the app.
+    BackHandler(enabled = page > 0) { page -= 1 }
 
     Box(
         modifier = Modifier

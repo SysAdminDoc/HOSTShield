@@ -227,7 +227,7 @@ fun HostShieldFilterChip(
     val contentColor = when {
         !enabled -> TextDim.copy(alpha = 0.55f)
         selected -> accent
-        else -> TextDim
+        else -> TextSecondary
     }
 
     Surface(
@@ -368,14 +368,14 @@ fun <T> HostShieldSegmentedTabs(
                             Icon(
                                 icon,
                                 contentDescription = null,
-                                tint = if (isSelected) option.accent else TextDim,
+                                tint = if (isSelected) option.accent else TextSecondary,
                                 modifier = Modifier.size(15.dp),
                             )
                             Spacer(Modifier.width(5.dp))
                         }
                         Text(
                             option.label,
-                            color = if (isSelected) option.accent else TextDim,
+                            color = if (isSelected) option.accent else TextSecondary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,

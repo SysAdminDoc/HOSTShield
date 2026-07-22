@@ -62,7 +62,9 @@ class AppsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = AppsViewModel(dnsLogDao, repository, blocklist, prefs, rootUtil)
+    private fun createViewModel(
+        savedStateHandle: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle()
+    ) = AppsViewModel(dnsLogDao, repository, blocklist, prefs, rootUtil, savedStateHandle)
         .also { createdViewModels += it }
 
     @Test
@@ -80,6 +82,20 @@ class AppsViewModelTest {
             appsFlow.value = listOf(app)
             assertEquals(listOf(app), awaitItem())
         }
+    }
+
+    @Test
+    fun `search query seeds from nav arg in saved state handle`() = runTest {
+        val vm = createViewModel(
+            androidx.lifecycle.SavedStateHandle(mapOf("query" to "tracker"))
+        )
+        assertEquals("tracker", vm.searchQuery.value)
+    }
+
+    @Test
+    fun `search query defaults to empty without nav arg`() = runTest {
+        val vm = createViewModel()
+        assertEquals("", vm.searchQuery.value)
     }
 
     @Test

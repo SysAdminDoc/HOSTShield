@@ -71,7 +71,9 @@ class LogsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = LogsViewModel(
+    private fun createViewModel(
+        savedStateHandle: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle()
+    ) = LogsViewModel(
         appContext = context,
         repository = repository,
         blocklist = blocklist,
@@ -79,7 +81,8 @@ class LogsViewModelTest {
         prefs = prefs,
         geoIpLookup = geoIpLookup,
         appDnsRuleDao = appDnsRuleDao,
-        appDnsRuleEngine = appDnsRuleEngine
+        appDnsRuleEngine = appDnsRuleEngine,
+        savedStateHandle = savedStateHandle
     ).also { createdViewModels += it }
 
     @Test
@@ -88,6 +91,14 @@ class LogsViewModelTest {
         vm.searchQuery.test {
             assertEquals("", awaitItem())
         }
+    }
+
+    @Test
+    fun `search query seeds from nav arg in saved state handle`() = runTest {
+        val vm = createViewModel(
+            androidx.lifecycle.SavedStateHandle(mapOf("query" to "doubleclick"))
+        )
+        assertEquals("doubleclick", vm.searchQuery.value)
     }
 
     @Test

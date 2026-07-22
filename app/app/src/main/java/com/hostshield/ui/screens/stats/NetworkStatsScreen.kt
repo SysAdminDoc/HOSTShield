@@ -14,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -134,7 +133,7 @@ private fun AppStatsRow(
         Text(
             "$rank",
             modifier = Modifier.width(24.dp),
-            color = when (rank) { 1 -> Yellow; 2 -> TextSecondary; 3 -> Color(0xFFCD7F32); else -> TextDim },
+            color = when (rank) { 1 -> Yellow; 2 -> TextSecondary; 3 -> Peach; else -> TextDim },
             fontSize = 11.sp, fontWeight = if (rank <= 3) FontWeight.Bold else FontWeight.Normal
         )
 

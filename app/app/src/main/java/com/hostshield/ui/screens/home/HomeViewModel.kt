@@ -360,8 +360,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /** Seed job — joined by the resume path so a first launch can't rebuild before defaults exist. */
+    private var seedJob: kotlinx.coroutines.Job? = null
+
     private fun seedDefaults() {
-        viewModelScope.launch { repository.seedDefaultSources() }
+        seedJob = viewModelScope.launch { repository.seedDefaultSources() }
     }
 
     private fun observePrefs() {
@@ -697,6 +700,17 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(progressMessage = msg) }
             }
 
+            // Same zero-domain guard as the root path: don't activate an empty
+            // VPN when enabled sources exist but produced nothing.
+            if (count == 0 && repository.getEnabledBlockSources().isNotEmpty()) {
+                _uiState.update {
+                    it.copy(isApplying = false,
+                        errorMessage = "No domains downloaded. Check your internet connection.",
+                        progressMessage = "")
+                }
+                return
+            }
+
             _uiState.update { it.copy(progressMessage = "Starting VPN ($count domains)...") }
 
             val intent = Intent(getApplication(), DnsVpnService::class.java).apply {
@@ -752,6 +766,10 @@ class HomeViewModel @Inject constructor(
             val isEnabled = prefs.isEnabled.first()
             val method = prefs.blockMethod.first()
             if (!isEnabled) return@launch
+
+            // First-launch race: wait for default sources to finish seeding
+            // before rebuilding, or the very first activation builds 0 domains.
+            seedJob?.join()
 
             // Show loading spinner so the user knows we're not active yet
             _uiState.update {

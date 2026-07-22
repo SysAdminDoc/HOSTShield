@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -320,7 +322,7 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                                 colors = CheckboxDefaults.colors(
                                     checkedColor = Teal,
                                     uncheckedColor = TextDim,
-                                    checkmarkColor = Color.Black
+                                    checkmarkColor = MaterialTheme.colorScheme.onPrimary
                                 ),
                                 modifier = Modifier
                                     .size(48.dp)
@@ -576,6 +578,19 @@ private fun formatTime(ms: Long): String = try {
     Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("h:mm:ss a"))
 } catch (_: Exception) { "" }
 
+/** Open a reputation URL in the browser; browser-less devices get a toast instead of a crash. */
+private fun openReputationLink(context: android.content.Context, url: String) {
+    try {
+        context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, url.toUri()))
+    } catch (_: Exception) {
+        android.widget.Toast.makeText(
+            context,
+            "No browser available to open this link",
+            android.widget.Toast.LENGTH_SHORT
+        ).show()
+    }
+}
+
 private fun formatDecisionReason(reason: String): String =
     reason.split('_')
         .filter { it.isNotBlank() }
@@ -598,6 +613,7 @@ private fun QueryDetailSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 8.dp)
             .padding(bottom = 32.dp)
     ) {
@@ -821,25 +837,13 @@ private fun QueryDetailSheet(
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ReputationButton("VirusTotal", Blue) {
-                val intent = android.content.Intent(
-                    android.content.Intent.ACTION_VIEW,
-                    "https://www.virustotal.com/gui/domain/${entry.hostname}".toUri()
-                )
-                context.startActivity(intent)
+                openReputationLink(context, "https://www.virustotal.com/gui/domain/${entry.hostname}")
             }
             ReputationButton("URLhaus", Red) {
-                val intent = android.content.Intent(
-                    android.content.Intent.ACTION_VIEW,
-                    "https://urlhaus.abuse.ch/browse.php?search=${entry.hostname}".toUri()
-                )
-                context.startActivity(intent)
+                openReputationLink(context, "https://urlhaus.abuse.ch/browse.php?search=${entry.hostname}")
             }
             ReputationButton("Whois", Teal) {
-                val intent = android.content.Intent(
-                    android.content.Intent.ACTION_VIEW,
-                    "https://who.is/whois/${entry.hostname}".toUri()
-                )
-                context.startActivity(intent)
+                openReputationLink(context, "https://who.is/whois/${entry.hostname}")
             }
         }
     }

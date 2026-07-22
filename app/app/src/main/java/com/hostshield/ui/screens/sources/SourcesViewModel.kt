@@ -106,9 +106,12 @@ class SourcesViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        // Track when sources have emitted their first real value
+        // Track when sources have emitted their first REAL value. Await the
+        // upstream repository flow, not the stateIn'd `sources` flow — that one
+        // resolves instantly with its initial emptyList and would flash the
+        // empty state at users who actually have data.
         viewModelScope.launch {
-            sources.first { true }
+            repository.getAllSources().first()
             _isLoading.value = false
         }
     }

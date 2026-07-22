@@ -93,12 +93,14 @@ class LogsViewModel @Inject constructor(
     private val prefs: AppPreferences,
     private val geoIpLookup: GeoIpLookup,
     private val appDnsRuleDao: AppDnsRuleDao,
-    private val appDnsRuleEngine: AppDnsRuleEngine
+    private val appDnsRuleEngine: AppDnsRuleEngine,
+    savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
     val logs: StateFlow<List<DnsLogEntry>> = repository.getRecentLogs(2000)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _searchQuery = MutableStateFlow("")
+    // Seed search from the Home search suggestion nav arg ("logs?query=…").
+    private val _searchQuery = MutableStateFlow(savedStateHandle.get<String>("query").orEmpty())
     val searchQuery = _searchQuery.asStateFlow()
     private val _searchHistory = MutableStateFlow<List<String>>(emptyList())
     val searchHistory = _searchHistory.asStateFlow()

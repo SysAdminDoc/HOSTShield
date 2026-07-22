@@ -140,10 +140,27 @@ class SourcesViewModelTest {
             val items = mutableListOf<Boolean>()
             // Collect available items (init fires immediately with Unconfined)
             items.add(awaitItem())
-            // The init block sets isLoading=false after sources.first{true}
-            // With UnconfinedTestDispatcher the flow already emitted, so it should be false
+            // The init block sets isLoading=false after the upstream flow's
+            // first emission. With UnconfinedTestDispatcher the repository
+            // flow already emitted, so it should be false.
             assertFalse(items.last())
         }
+    }
+
+    @Test
+    fun `isLoading stays true until the repository flow actually emits`() = runTest {
+        // Cold repository flow that has NOT emitted yet — the stateIn'd
+        // `sources` initial emptyList must not flip isLoading to false.
+        val upstream = kotlinx.coroutines.flow.MutableSharedFlow<List<HostSource>>()
+        every { repository.getAllSources() } returns upstream
+
+        val vm = createViewModel()
+        assertTrue(vm.isLoading.value)
+
+        upstream.emit(listOf(HostSource(id = 1, url = "https://example.com/hosts", label = "Real", category = SourceCategory.ADS)))
+        advanceUntilIdle()
+
+        assertFalse(vm.isLoading.value)
     }
 
     @Test

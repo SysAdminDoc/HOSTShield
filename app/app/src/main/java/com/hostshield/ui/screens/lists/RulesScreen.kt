@@ -335,7 +335,7 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
                     Checkbox(
                         checked = isRegex,
                         onCheckedChange = null,
-                        colors = CheckboxDefaults.colors(checkedColor = Mauve, uncheckedColor = TextDim, checkmarkColor = Color.Black),
+                        colors = CheckboxDefaults.colors(checkedColor = Mauve, uncheckedColor = TextDim, checkmarkColor = MaterialTheme.colorScheme.onSecondary),
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(Modifier.width(8.dp))

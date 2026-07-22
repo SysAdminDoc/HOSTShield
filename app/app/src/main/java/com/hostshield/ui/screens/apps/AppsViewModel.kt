@@ -40,7 +40,8 @@ class AppsViewModel @Inject constructor(
     private val repository: HostShieldRepository,
     private val blocklist: BlocklistHolder,
     private val prefs: AppPreferences,
-    private val rootUtil: RootUtil
+    private val rootUtil: RootUtil,
+    savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
     val apps: StateFlow<List<AppQueryStat>> = dnsLogDao.getAllAppsWithCounts()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -51,7 +52,8 @@ class AppsViewModel @Inject constructor(
     private val _appDomains = MutableStateFlow<List<AppDomainStat>>(emptyList())
     val appDomains = _appDomains.asStateFlow()
 
-    private val _searchQuery = MutableStateFlow("")
+    // Seed search from the Home search suggestion nav arg ("apps?query=…").
+    private val _searchQuery = MutableStateFlow(savedStateHandle.get<String>("query").orEmpty())
     val searchQuery = _searchQuery.asStateFlow()
     private val _filter = MutableStateFlow(AppsActivityFilter.ALL)
     val filter = _filter.asStateFlow()

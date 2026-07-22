@@ -25,8 +25,8 @@ fun HomeSearchSection(
     onSearchExpandedChange: (Boolean) -> Unit,
     searchHistory: List<String>,
     onSaveSearch: (String) -> Unit,
-    onNavigateToLogs: () -> Unit,
-    onNavigateToApps: () -> Unit
+    onSearchLogs: (String) -> Unit,
+    onSearchApps: (String) -> Unit
 ) {
     Spacer(Modifier.height(12.dp))
     OutlinedTextField(
@@ -76,7 +76,7 @@ fun HomeSearchSection(
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
                     Surface(
-                        onClick = { onNavigateToLogs(); onSearchExpandedChange(false) },
+                        onClick = { onSaveSearch(searchQuery); onSearchLogs(searchQuery); onSearchExpandedChange(false) },
                         shape = RoundedCornerShape(8.dp),
                         color = Surface2
                     ) {
@@ -93,7 +93,7 @@ fun HomeSearchSection(
                     }
                     Spacer(Modifier.height(4.dp))
                     Surface(
-                        onClick = { onNavigateToApps(); onSearchExpandedChange(false) },
+                        onClick = { onSaveSearch(searchQuery); onSearchApps(searchQuery); onSearchExpandedChange(false) },
                         shape = RoundedCornerShape(8.dp),
                         color = Surface2
                     ) {

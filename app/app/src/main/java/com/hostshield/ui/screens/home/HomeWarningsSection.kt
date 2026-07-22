@@ -395,7 +395,7 @@ fun HomeWarningsSection(
                     path = path,
                     color = sparklineColor,
                     style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = 2f,
+                        width = 2.dp.toPx(),
                         cap = androidx.compose.ui.graphics.StrokeCap.Round
                     )
                 )

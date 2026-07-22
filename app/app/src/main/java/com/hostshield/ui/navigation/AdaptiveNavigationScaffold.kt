@@ -87,15 +87,19 @@ internal fun HostShieldAdaptiveNavigationScaffold(
             layoutType = layout.toNavigationSuiteType(),
             containerColor = Black,
         ) {
+            // Bottom-bar layout: the NavigationBar consumes the bottom inset.
+            // Sub-screens (None) and Rail layouts have nothing at the bottom,
+            // so the content itself must pad past the navigation bar.
+            val contentSides = if (layout == HostShieldAdaptiveNavigationLayout.Bar) {
+                WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+            } else {
+                WindowInsetsSides.Top + WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+            }
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Black)
-                    .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-                        )
-                    )
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(contentSides))
             ) {
                 content()
             }

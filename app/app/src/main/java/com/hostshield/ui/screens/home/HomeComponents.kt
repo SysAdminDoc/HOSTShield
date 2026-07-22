@@ -80,26 +80,50 @@ fun ShieldOrb(
     blockedCount: Int,
     onToggle: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "orb")
+    // Respect the system "remove animations" setting for the decorative
+    // infinite pulse/rotation animations (they'd otherwise burn frames forever).
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val animationsEnabled = remember {
+        android.provider.Settings.Global.getFloat(
+            context.contentResolver,
+            android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f
+        ) != 0f
+    }
 
-    val glowPulse by infiniteTransition.animateFloat(
-        initialValue = 0.2f, targetValue = 0.45f,
-        animationSpec = infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "glow"
-    )
-    val ringRotation by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing), RepeatMode.Restart),
-        label = "ring"
-    )
-    val spinnerRotation by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart),
-        label = "spinner"
-    )
+    val glowPulse: Float
+    val ringRotation: Float
+    if (animationsEnabled) {
+        val infiniteTransition = rememberInfiniteTransition(label = "orb")
+        glowPulse = infiniteTransition.animateFloat(
+            initialValue = 0.2f, targetValue = 0.45f,
+            animationSpec = infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+            label = "glow"
+        ).value
+        ringRotation = infiniteTransition.animateFloat(
+            initialValue = 0f, targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing), RepeatMode.Restart),
+            label = "ring"
+        ).value
+    } else {
+        glowPulse = 0.32f
+        ringRotation = 0f
+    }
+    // Spinner only animates while applying — no idle infinite transition.
+    val spinnerRotation: Float
+    if (isApplying && animationsEnabled) {
+        val spinnerTransition = rememberInfiniteTransition(label = "spinner")
+        spinnerRotation = spinnerTransition.animateFloat(
+            initialValue = 0f, targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart),
+            label = "spinner"
+        ).value
+    } else {
+        spinnerRotation = 0f
+    }
     var activeFrameNanos by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(isEnabled, isApplying) {
-        if (isEnabled && !isApplying) {
+    LaunchedEffect(isEnabled, isApplying, animationsEnabled) {
+        if (isEnabled && !isApplying && animationsEnabled) {
             val startNanos = withFrameNanos { it }
             while (true) {
                 activeFrameNanos = withFrameNanos { it - startNanos }

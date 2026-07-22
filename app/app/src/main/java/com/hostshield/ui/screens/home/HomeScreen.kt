@@ -47,7 +47,9 @@ fun HomeScreen(
     onNavigateToConnectionLog: () -> Unit = {},
     onRequestVpnPermission: ((Boolean) -> Unit) -> Unit = {},
     onRequestNotificationPermission: () -> Unit = {},
-    onNavigateToAppLogs: (String) -> Unit = {}
+    onNavigateToAppLogs: (String) -> Unit = {},
+    onSearchLogs: (String) -> Unit = {},
+    onSearchApps: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val liveLogs by viewModel.liveLogs.collectAsStateWithLifecycle()
@@ -101,8 +103,8 @@ fun HomeScreen(
             onSearchExpandedChange = { searchExpanded = it },
             searchHistory = searchHistory,
             onSaveSearch = { viewModel.saveSearch(it) },
-            onNavigateToLogs = onNavigateToLogs,
-            onNavigateToApps = onNavigateToApps
+            onSearchLogs = onSearchLogs,
+            onSearchApps = onSearchApps
         )
 
         Spacer(Modifier.height(24.dp))

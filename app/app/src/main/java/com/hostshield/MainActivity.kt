@@ -36,9 +36,14 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.service.DnsProxyService
+import com.hostshield.service.DnsVpnService
+import com.hostshield.service.HostShieldWidgetProvider
 import com.hostshield.service.HostsUpdateWorker
 import com.hostshield.service.LogCleanupWorker
 import com.hostshield.service.ProfileScheduleWorker
+import com.hostshield.service.ProtectionServiceStarter
+import com.hostshield.service.RootDnsService
 import com.hostshield.service.SourceHealthWorker
 import com.hostshield.ui.navigation.HostShieldAdaptiveNavigationScaffold
 import com.hostshield.ui.navigation.Screen
@@ -88,22 +93,23 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { }
 
-    /** Pending deep link from shortcut — consumed by NavHost on first composition. */
-    var pendingDeepLink: String? = null
+    /**
+     * Pending deep link from shortcut — observed as Compose state so that
+     * singleTop deliveries via [onNewIntent] navigate too, not just the
+     * first composition.
+     */
+    var pendingDeepLink: String? by mutableStateOf(null)
         private set
 
-    fun consumeDeepLink(): String? {
-        val link = pendingDeepLink
+    fun consumeDeepLink() {
         pendingDeepLink = null
-        return link
     }
 
     private fun handleShortcutIntent(intent: Intent?) {
         when (intent?.action) {
             "com.hostshield.SHORTCUT_TOGGLE" -> {
                 CoroutineScope(Dispatchers.IO).launch {
-                    val enabled = prefs.isEnabled.first()
-                    prefs.setEnabled(!enabled)
+                    toggleProtectionFromShortcut()
                 }
             }
             "com.hostshield.SHORTCUT_REFRESH" -> {
@@ -128,6 +134,48 @@ class MainActivity : ComponentActivity() {
                     else -> null
                 }
             }
+        }
+    }
+
+    /**
+     * Launcher-shortcut toggle. Mirrors [com.hostshield.service.HostShieldTileService.onClick]:
+     * stop/start the service matching the configured block method so the pref
+     * and the actually-running protection never diverge.
+     */
+    private suspend fun toggleProtectionFromShortcut() {
+        val enabled = prefs.isEnabled.first()
+        val method = prefs.blockMethod.first()
+        if (enabled) {
+            when (method) {
+                BlockMethod.VPN -> {
+                    val intent = Intent(this, DnsVpnService::class.java)
+                        .apply { action = DnsVpnService.ACTION_STOP }
+                    startService(intent)
+                }
+                BlockMethod.ROOT_HOSTS -> RootDnsService.stop(this)
+                BlockMethod.DNS_PROXY -> stopService(Intent(this, DnsProxyService::class.java))
+                BlockMethod.DISABLED -> { }
+            }
+            prefs.setEnabled(false)
+            HostShieldWidgetProvider.updateWidget(applicationContext, false, 0)
+        } else {
+            when (method) {
+                BlockMethod.VPN -> {
+                    val intent = Intent(this, DnsVpnService::class.java)
+                        .apply { action = DnsVpnService.ACTION_START }
+                    ProtectionServiceStarter.startForegroundService(
+                        this,
+                        intent,
+                        "MainActivity.shortcutToggle"
+                    )
+                }
+                BlockMethod.ROOT_HOSTS -> RootDnsService.start(this, "MainActivity.shortcutToggle")
+                BlockMethod.DNS_PROXY -> DnsProxyService.start(this, "MainActivity.shortcutToggle")
+                BlockMethod.DISABLED -> { }
+            }
+            prefs.setEnabled(true)
+            val count = prefs.lastApplyCount.first()
+            HostShieldWidgetProvider.updateWidget(applicationContext, true, count)
         }
     }
 
@@ -182,7 +230,9 @@ class MainActivity : ComponentActivity() {
                 dynamicColor = dynamicColor,
                 themeMode = themeMode,
             ) {
-                val isFirstLaunch by prefs.isFirstLaunch.collectAsState(initial = true)
+                // null = DataStore hasn't emitted yet — render the splash-like
+                // loading state instead of flashing onboarding at existing users.
+                val isFirstLaunch by prefs.isFirstLaunch.collectAsState(initial = null as Boolean?)
                 var isRootAvailable by remember { mutableStateOf<Boolean?>(null) }
 
                 LaunchedEffect(Unit) {
@@ -191,7 +241,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (isFirstLaunch) {
+                if (isFirstLaunch == null) {
+                    StartupLoadingScreen()
+                } else if (isFirstLaunch == true) {
                     val rootAvail = isRootAvailable
                     if (rootAvail != null) {
                         OnboardingScreen(
@@ -275,16 +327,21 @@ private fun HostShieldMainApp(activity: MainActivity) {
     val showBottomBar = currentDestination?.route in bottomNavScreens.map { it.route }
     val parentalPinRehashRequired by activity.prefs.parentalPinRehashRequired.collectAsState(initial = false)
 
-    // Handle pending deep link from shortcuts/intents
     LaunchedEffect(Unit) {
         kotlinx.coroutines.withContext(Dispatchers.IO) {
             activity.prefs.refreshParentalPinRehashRequired()
         }
-        val deepLink = activity.consumeDeepLink()
-        if (deepLink != null) {
-            navController.navigate(deepLink) {
+    }
+
+    // Handle pending deep links from shortcuts/intents. Keyed on the pending
+    // value so singleTop deliveries via onNewIntent navigate too.
+    val pendingDeepLink = activity.pendingDeepLink
+    LaunchedEffect(pendingDeepLink) {
+        if (pendingDeepLink != null) {
+            navController.navigate(pendingDeepLink) {
                 launchSingleTop = true
             }
+            activity.consumeDeepLink()
         }
     }
 
@@ -334,7 +391,13 @@ private fun HostShieldMainApp(activity: MainActivity) {
                     onNavigateToConnectionLog = { navController.navigate(SubScreen.CONNECTION_LOG) },
                     onRequestVpnPermission = { onResult -> activity.requestVpnPermission(onResult) },
                     onRequestNotificationPermission = { activity.requestNotificationPermissionIfNeeded() },
-                    onNavigateToAppLogs = { pkg -> navController.navigate("${SubScreen.APP_LOGS}?pkg=$pkg") }
+                    onNavigateToAppLogs = { pkg -> navController.navigate("${SubScreen.APP_LOGS}?pkg=$pkg") },
+                    onSearchLogs = { q ->
+                        navController.navigate("${SubScreen.LOGS}?query=${android.net.Uri.encode(q)}")
+                    },
+                    onSearchApps = { q ->
+                        navController.navigate("${SubScreen.APPS}?query=${android.net.Uri.encode(q)}")
+                    }
                 )
             }
             composable(Screen.Sources.route) {
@@ -375,10 +438,16 @@ private fun HostShieldMainApp(activity: MainActivity) {
             composable(SubScreen.HOSTS_DIFF) {
                 HostsDiffScreen(onBack = { navController.popBackStack() })
             }
-            composable(SubScreen.LOGS) {
+            composable(
+                "${SubScreen.LOGS}?query={query}",
+                arguments = listOf(androidx.navigation.navArgument("query") { defaultValue = "" })
+            ) {
                 LogsScreen(onBack = { navController.popBackStack() })
             }
-            composable(SubScreen.APPS) {
+            composable(
+                "${SubScreen.APPS}?query={query}",
+                arguments = listOf(androidx.navigation.navArgument("query") { defaultValue = "" })
+            ) {
                 com.hostshield.ui.screens.apps.AppsScreen(onBack = { navController.popBackStack() })
             }
             composable(SubScreen.FIREWALL) {

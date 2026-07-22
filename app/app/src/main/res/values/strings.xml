@@ -11,6 +11,10 @@
     <string name="stats_widget_description">Blocking statistics dashboard</string>
     <string name="widget_shield_label">HS</string>
     <string name="widget_status_protected">Protected</string>
+    <string name="widget_status_inactive">Inactive</string>
+    <string name="widget_label_blocked">blocked</string>
+    <string name="widget_label_allowed">allowed</string>
+    <string name="widget_percent_blocked">%1$d%% blocked</string>
     <string name="widget_toggle_enable">Enable</string>
     <string name="widget_stats_title">HostShield Stats</string>
     <string name="widget_blocked_today">blocked today</string>
@@ -260,7 +264,7 @@
     <string name="home_status_protection_active">Protection active</string>
     <string name="home_status_tap_activate">Tap to activate</string>
     <string name="home_shield_applying">HostShield is applying protection</string>
-    <string name="home_shield_active_a11y">HostShield protection is active. Tap to pause protection.</string>
+    <string name="home_shield_active_a11y">HostShield protection is active. Tap to turn off protection.</string>
     <string name="home_shield_off_a11y">HostShield protection is off. Tap to activate protection.</string>
     <string name="home_protection_disabled">Protection disabled</string>
     <string name="home_protection_disabled_sub">Tap the shield to re-enable</string>

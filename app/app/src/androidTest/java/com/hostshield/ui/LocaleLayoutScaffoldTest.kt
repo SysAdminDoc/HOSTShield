@@ -207,8 +207,8 @@ class LocaleLayoutScaffoldTest {
                                     onSearchExpandedChange = {},
                                     searchHistory = listOf("tracker"),
                                     onSaveSearch = {},
-                                    onNavigateToLogs = {},
-                                    onNavigateToApps = {},
+                                    onSearchLogs = {},
+                                    onSearchApps = {},
                                 )
                                 HostShieldPanelHeader(
                                     icon = Icons.Filled.Dns,

@@ -10,15 +10,16 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
-import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
@@ -26,13 +27,13 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
-import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.hostshield.MainActivity
+import com.hostshield.R
 
 // ---------- Colors ----------
 
@@ -87,7 +88,11 @@ class HostShieldGlanceWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (isActive) "Protected" else "Inactive",
+                        text = if (isActive) {
+                            LocalContext.current.getString(R.string.widget_status_protected)
+                        } else {
+                            LocalContext.current.getString(R.string.widget_status_inactive)
+                        },
                         style = TextStyle(
                             color = if (isActive) TealAccent else InactiveRed,
                             fontSize = 14.sp,
@@ -117,7 +122,7 @@ class HostShieldGlanceWidget : GlanceAppWidget() {
                             )
                         )
                         Text(
-                            text = "blocked",
+                            text = LocalContext.current.getString(R.string.widget_label_blocked),
                             style = TextStyle(color = TextSecondary, fontSize = 10.sp)
                         )
                     }
@@ -135,7 +140,7 @@ class HostShieldGlanceWidget : GlanceAppWidget() {
                             )
                         )
                         Text(
-                            text = "allowed",
+                            text = LocalContext.current.getString(R.string.widget_label_allowed),
                             style = TextStyle(color = TextSecondary, fontSize = 10.sp)
                         )
                     }
@@ -211,41 +216,28 @@ class HostShieldStatsGlanceWidget : GlanceAppWidget() {
                 Spacer(modifier = GlanceModifier.height(2.dp))
 
                 Text(
-                    text = "blocked today",
+                    text = LocalContext.current.getString(R.string.widget_blocked_today),
                     style = TextStyle(color = TextSecondary, fontSize = 12.sp)
                 )
 
                 Spacer(modifier = GlanceModifier.height(8.dp))
 
-                // Block rate bar
-                Row(
+                // Block rate bar — proportional fill (0-100%), not dp-as-percent
+                LinearProgressIndicator(
+                    progress = blockRate.coerceIn(0, 100) / 100f,
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .height(6.dp)
-                ) {
-                    val filledWidth = blockRate.coerceIn(0, 100)
-                    if (filledWidth > 0) {
-                        Box(
-                            modifier = GlanceModifier
-                                .height(6.dp)
-                                .width(filledWidth.dp)
-                                .background(TealAccent)
-                        ) {}
-                    }
-                    if (filledWidth < 100) {
-                        Box(
-                            modifier = GlanceModifier
-                                .height(6.dp)
-                                .defaultWeight()
-                                .background(SurfaceColor)
-                        ) {}
-                    }
-                }
+                        .height(6.dp),
+                    color = TealAccent,
+                    backgroundColor = SurfaceColor
+                )
 
                 Spacer(modifier = GlanceModifier.height(4.dp))
 
                 Text(
-                    text = "$blockRate% blocked",
+                    text = LocalContext.current.getString(
+                        R.string.widget_percent_blocked, blockRate.coerceIn(0, 100)
+                    ),
                     style = TextStyle(color = TextSecondary, fontSize = 10.sp)
                 )
             }
