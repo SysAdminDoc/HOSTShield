@@ -59,6 +59,44 @@ class HostsParserTest {
     }
 
     @Test
+    fun `multi-host line emits every hostname`() {
+        val content = "0.0.0.0 a.example.com b.example.com c.example.com"
+        val results = HostsParser.parse(content)
+        assertEquals(3, results.size)
+        assertEquals(
+            setOf("a.example.com", "b.example.com", "c.example.com"),
+            results.map { it.hostname }.toSet()
+        )
+    }
+
+    @Test
+    fun `multi-host line skips invalid tokens individually`() {
+        val content = "127.0.0.1 good.example.com localhost bad_token -bad.com also.example.com"
+        val results = HostsParser.parse(content)
+        assertEquals(
+            setOf("good.example.com", "also.example.com"),
+            results.map { it.hostname }.toSet()
+        )
+    }
+
+    @Test
+    fun `multi-host line with inline comment keeps hosts before the comment`() {
+        val content = "0.0.0.0 a.example.com b.example.com # c.example.com"
+        val results = HostsParser.parse(content)
+        assertEquals(
+            setOf("a.example.com", "b.example.com"),
+            results.map { it.hostname }.toSet()
+        )
+    }
+
+    @Test
+    fun `multi-host line is capped at 16 hostnames`() {
+        val hosts = (1..20).joinToString(" ") { "host$it.example.com" }
+        val results = HostsParser.parse("0.0.0.0 $hosts")
+        assertEquals(16, results.size)
+    }
+
+    @Test
     fun `parse domain-only format`() {
         val content = """
             ads.example.com
@@ -87,6 +125,11 @@ class HostsParserTest {
         assertTrue(result.wildcardAllowDomains.contains("trusted.africa"))
         assertTrue(result.wildcardAllowDomains.contains("allowed.actor"))
         assertTrue(result.allowDomains.contains("allowed.actor"))
+        // $denyallow only weakens its own rule: its domains stay out of the
+        // global exact allowDomains set (they'd override exact blocks and
+        // threat intel from every other source).
+        assertFalse(result.allowDomains.contains("nation.africa"))
+        assertFalse(result.allowDomains.contains("trusted.africa"))
         assertFalse(result.blockDomains.contains("exact.example"))
         assertTrue(result.dnsTypeRules.any {
             it.domain == "exact.example" && it.dnsTypes == setOf(1) && !it.dnsTypesNegated && !it.allow

@@ -84,6 +84,7 @@ object AdblockRuleParser {
         val skippedLines: Int,
         val dnsRewriteSkipped: Int = 0,
         val scopedModifierSkipped: Int = 0,
+        val unsupportedModifierSkipped: Int = 0,
         val diagnostics: List<ParseDiagnostic> = emptyList()
     ) {
         /**
@@ -145,6 +146,7 @@ object AdblockRuleParser {
         var skippedLines = 0
         var dnsRewriteSkipped = 0
         var scopedModifierSkipped = 0
+        var unsupportedModifierSkipped = 0
         val diagnostics = mutableListOf<ParseDiagnostic>()
 
         content.lineSequence().forEachIndexed { lineIndex, rawLine ->
@@ -182,16 +184,33 @@ object AdblockRuleParser {
                     skippedLines++
                     return@forEachIndexed
                 }
+                val unsupportedModifier = findUnsupportedModifier(line)
+                if (unsupportedModifier != null) {
+                    unsupportedModifierSkipped++
+                    diagnostics.add(
+                        ParseDiagnostic(
+                            lineNumber = lineNumber,
+                            reason = "unsupported_modifier",
+                            modifier = unsupportedModifier,
+                            message = "Skipped rule with browser-only modifier '\$$unsupportedModifier' instead of applying it as an unconditional DNS block."
+                        )
+                    )
+                    skippedLines++
+                    return@forEachIndexed
+                }
                 if (line.contains("dnsrewrite=", ignoreCase = true)) {
                     dnsRewriteSkipped++
                     skippedLines++
                     return@forEachIndexed
                 }
                 // Try as hosts-style or domains-only
-                val hostRule = parseAsHostsOrDomain(line)
-                if (hostRule != null) {
+                val hostRules = parseAsHostsOrDomain(line)
+                if (hostRules.isNotEmpty()) {
+                    // One parsed LINE may emit several rules (multi-host hosts
+                    // lines); parsedRules stays line-based so the invariant
+                    // totalLines == parsedRules + skippedLines holds.
                     parsedRules++
-                    blockRules.add(hostRule)
+                    blockRules.addAll(hostRules)
                 } else {
                     skippedLines++
                 }
@@ -211,6 +230,7 @@ object AdblockRuleParser {
             skippedLines = skippedLines,
             dnsRewriteSkipped = dnsRewriteSkipped,
             scopedModifierSkipped = scopedModifierSkipped,
+            unsupportedModifierSkipped = unsupportedModifierSkipped,
             diagnostics = diagnostics
         )
     }
@@ -314,7 +334,13 @@ object AdblockRuleParser {
                     m.startsWith("app=") || m.startsWith("client=") || m.startsWith("ctag=") -> {
                         return null
                     }
-                    // Unknown modifiers — ignore silently (forward-compatible)
+                    // Any other modifier is NOT DNS-supported (e.g. $removeparam,
+                    // $redirect, $csp, $media). Ignoring it would turn a scoped
+                    // browser rule into an unconditional whole-domain DNS block —
+                    // the same over-globalization class fixed for $app/$client/$ctag.
+                    // Skip the whole rule; parse() emits an "unsupported_modifier"
+                    // diagnostic for it.
+                    else -> return null
                 }
             }
         }
@@ -366,57 +392,108 @@ object AdblockRuleParser {
         )
     }
 
-    /** Try to parse a line as hosts-style (0.0.0.0 domain) or domains-only. */
-    private fun parseAsHostsOrDomain(line: String): DnsRule? {
+    /**
+     * Try to parse a line as hosts-style (0.0.0.0 domain [domain ...]) or
+     * domains-only. Hosts lines may carry multiple hostnames after the sinkhole
+     * IP; every valid hostname token becomes its own rule (capped at
+     * [MAX_HOSTS_PER_LINE] tokens per line for safety). Invalid tokens are
+     * skipped individually. Returns an empty list when nothing parses.
+     */
+    private fun parseAsHostsOrDomain(line: String): List<DnsRule> {
         val text = line.substringBefore('#').trim()
-        if (text.isEmpty()) return null
+        if (text.isEmpty()) return emptyList()
 
-        // Hosts-style: "0.0.0.0 example.com" or "127.0.0.1 example.com"
-        val parts = text.split(Regex("\\s+"), limit = 2)
-        if (parts.size == 2) {
+        // Hosts-style: "0.0.0.0 example.com other.example.com ..."
+        val parts = text.split(WHITESPACE_PATTERN)
+        if (parts.size >= 2) {
             val ip = parts[0]
-            val host = parts[1].lowercase()
-            if ((ip == "0.0.0.0" || ip == "127.0.0.1" || ip == "::" || ip == "::1") &&
-                isValidDomain(host)) {
-                return DnsRule(domain = host, matchesSubdomains = false) // hosts = exact match only
+            if (ip == "0.0.0.0" || ip == "127.0.0.1" || ip == "::" || ip == "::1") {
+                return parts.asSequence()
+                    .drop(1)
+                    .take(MAX_HOSTS_PER_LINE)
+                    .map { it.lowercase() }
+                    .filter { isValidDomain(it) }
+                    .map { DnsRule(domain = it, matchesSubdomains = false) } // hosts = exact match only
+                    .toList()
             }
+            return emptyList()
         }
 
         // Domains-only: just "example.com"
         val domain = text.lowercase()
         if (isValidDomain(domain)) {
-            return DnsRule(domain = domain, matchesSubdomains = false) // domains-only = exact match
+            return listOf(DnsRule(domain = domain, matchesSubdomains = false)) // domains-only = exact match
         }
 
-        return null
+        return emptyList()
     }
 
     /**
-     * Apply $badfilter rules — remove rules that match on domain + exception status.
-     * Per AdGuard spec, $badfilter disables a rule with the same domain and same
-     * type (block/allow). A badfilter for @@||domain^ only removes allow rules,
-     * and a badfilter for ||domain^ only removes block rules.
+     * Apply $badfilter rules — remove rules whose full signature matches.
+     * Per AdGuard spec, $badfilter disables the rule whose text equals the
+     * badfilter rule minus the badfilter modifier — not every rule for the
+     * domain. So `||x.com^$dnstype=AAAA,badfilter` cancels only the
+     * `||x.com^$dnstype=AAAA` rule, and a plain `||x.com^$badfilter` cancels
+     * only the plain `||x.com^` rule. The match key is the badfilter rule with
+     * isBadfilter cleared, which covers domain, exception status, important,
+     * wildcard/regex/subdomain shape, dnstype (incl. negation), denyallow,
+     * and dnsrewrite redirect targets.
      */
     private fun applyBadfilters(rules: List<DnsRule>, badfilters: List<DnsRule>): List<DnsRule> {
         if (badfilters.isEmpty()) return rules
-        // Build set of (domain, isException) pairs for efficient lookup
-        val badKeys = badfilters.map { Pair(it.domain, it.isException) }.toSet()
-        return rules.filter { Pair(it.domain, it.isException) !in badKeys }
+        val badKeys = badfilters.map { it.copy(isBadfilter = false) }.toSet()
+        return rules.filter { it !in badKeys }
     }
 
     private val SCOPED_MODIFIER_PATTERN = Regex("""(?:\$|,)(app|client|ctag)=""", RegexOption.IGNORE_CASE)
+
+    /**
+     * Modifier names this DNS parser understands. Everything here is either
+     * enforced (important, badfilter, dnstype, denyallow, dnsrewrite) or
+     * recognized-and-rejected with dedicated handling (scoped app/client/ctag
+     * via [findScopedModifier], plus the browser modifiers explicitly rejected
+     * in [parseLine]). Any modifier NOT in this set marks the rule as a
+     * browser-list rule that must be skipped, never globalized.
+     */
+    private val DNS_SUPPORTED_MODIFIER_NAMES = setOf(
+        "important", "badfilter", "dnstype", "denyallow", "dnsrewrite",
+        "app", "client", "ctag"
+    )
     private val DOMAIN_PATTERN = Regex("""^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$""")
     private val LOCALHOST = setOf("localhost", "localhost.localdomain", "local", "broadcasthost",
         "ip6-localhost", "ip6-loopback")
     private val IPV4_PATTERN = Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$""")
     private val IPV6_PATTERN = Regex("""^[0-9a-fA-F:]+$""")
     private val NULL_IPS = setOf("0.0.0.0", "::", "::0", "0:0:0:0:0:0:0:0")
+    private val WHITESPACE_PATTERN = Regex("""\s+""")
+
+    /** Safety cap on hostname tokens consumed from one multi-host hosts line. */
+    private const val MAX_HOSTS_PER_LINE = 16
 
     private fun isValidDomain(s: String): Boolean =
         s.length in 3..253 && s.contains('.') && s !in LOCALHOST && DOMAIN_PATTERN.matches(s)
 
     private fun findScopedModifier(line: String): String? =
         SCOPED_MODIFIER_PATTERN.find(line)?.groupValues?.getOrNull(1)?.lowercase()
+
+    /**
+     * Find the first DNS-unsupported modifier on an adblock domain rule line,
+     * or null if all modifiers are known. Used by [parse] to diagnose skipped
+     * browser-list rules ($removeparam, $redirect, $csp, ...) so they are
+     * reported instead of silently dropped — and never globalized.
+     */
+    private fun findUnsupportedModifier(line: String): String? {
+        var text = line.trim()
+        if (text.startsWith("@@")) text = text.removePrefix("@@")
+        if (!text.startsWith("||")) return null
+        val dollarIdx = text.indexOf('$')
+        if (dollarIdx < 0) return null
+        for (mod in text.substring(dollarIdx + 1).split(',')) {
+            val name = mod.trim().removePrefix("~").substringBefore('=').lowercase()
+            if (name.isNotEmpty() && name !in DNS_SUPPORTED_MODIFIER_NAMES) return name
+        }
+        return null
+    }
 
     /**
      * Parse a $dnsrewrite= value.

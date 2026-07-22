@@ -47,8 +47,11 @@ object HostsParser {
         val parseWarning: String get() = parseDiagnostics.toParseWarning()
     }
 
-    private val HOSTS_LINE_REGEX = Regex("""^\s*(\S+)\s+(\S+)""")
+    private val WHITESPACE_REGEX = Regex("""\s+""")
     private val DOMAIN_REGEX = Regex("""^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$""")
+
+    /** Safety cap on hostname tokens consumed from one multi-host hosts line. */
+    private const val MAX_HOSTS_PER_LINE = 16
     private val LOCALHOST_ENTRIES = setOf(
         "localhost", "localhost.localdomain", "local",
         "broadcasthost", "ip6-localhost", "ip6-loopback",
@@ -126,12 +129,16 @@ object HostsParser {
 
             if (rule.dnsTypes != null) {
                 dnsTypeRules.add(rule.toDnsTypeRule(allow = false))
+                // $denyallow approximation: per AdGuard semantics $denyallow only
+                // weakens its OWN rule, but BlocklistHolder has no per-rule
+                // exception attachment, so the exception is approximated as a
+                // wildcard allow. Remaining approximation: this can still
+                // whitelist the domain against OTHER sources' wildcard blocks.
+                // It must NOT be added to the global exact allowDomains set,
+                // which would also override exact blocks and threat intel.
                 rule.denyAllowDomains.orEmpty()
                     .filter { isValidDomain(it) }
-                    .forEach {
-                        allowDomains.add(it)
-                        wildcardAllowDomains.add(it)
-                    }
+                    .forEach { wildcardAllowDomains.add(it) }
                 return@forEach
             }
 
@@ -141,12 +148,11 @@ object HostsParser {
                 blockDomains.add(rule.domain)
             }
 
+            // $denyallow only weakens its own rule (see comment above): keep the
+            // wildcard-allow approximation, never the global exact allow.
             rule.denyAllowDomains.orEmpty()
                 .filter { isValidDomain(it) }
-                .forEach {
-                    allowDomains.add(it)
-                    wildcardAllowDomains.add(it)
-                }
+                .forEach { wildcardAllowDomains.add(it) }
         }
 
         parsed.allowRules.forEach { rule ->
@@ -227,17 +233,23 @@ object HostsParser {
             val line = rawLine.substringBefore('#').trim()
             if (line.isEmpty()) return@forEach
 
-            val match = HOSTS_LINE_REGEX.find(line)
-            if (match != null) {
-                val ip = match.groupValues[1]
-                val host = match.groupValues[2].lowercase()
-                if (isBlockingIp(ip) && isValidDomain(host) && host !in LOCALHOST_ENTRIES) {
-                    results.add(ParsedHost(host, ip))
+            val tokens = line.split(WHITESPACE_REGEX)
+            if (tokens.size >= 2) {
+                val ip = tokens[0]
+                // Hosts lines may carry multiple hostnames after the sinkhole IP
+                // ("0.0.0.0 a.com b.com c.com") — emit every valid token instead
+                // of keeping only the first. Invalid tokens are skipped
+                // individually; token count is capped per line for safety.
+                val hostTokens = tokens.asSequence()
+                    .drop(1)
+                    .take(MAX_HOSTS_PER_LINE)
+                    .map { it.lowercase() }
+                    .filter { isValidDomain(it) && it !in LOCALHOST_ENTRIES }
+                if (isBlockingIp(ip)) {
+                    hostTokens.forEach { results.add(ParsedHost(it, ip)) }
                 } else if (!isIpAddress(ip) && isValidDomain(ip)) {
                     results.add(ParsedHost(ip.lowercase()))
-                    if (isValidDomain(host) && host !in LOCALHOST_ENTRIES) {
-                        results.add(ParsedHost(host.lowercase()))
-                    }
+                    hostTokens.forEach { results.add(ParsedHost(it)) }
                 }
             } else {
                 // v5.0: Also try parsing as adblock-syntax single line
@@ -376,10 +388,14 @@ object HostsParser {
 
     private fun List<AdblockRuleParser.ParseDiagnostic>.toParseWarning(): String {
         val scoped = count { it.reason == "unsupported_scoped_modifier" }
-        return if (scoped > 0) {
-            "Skipped $scoped scoped AdGuard rule(s) with app/client/ctag modifiers; HostShield rejected them instead of applying them globally."
-        } else {
-            ""
+        val unsupported = count { it.reason == "unsupported_modifier" }
+        val parts = mutableListOf<String>()
+        if (scoped > 0) {
+            parts.add("Skipped $scoped scoped AdGuard rule(s) with app/client/ctag modifiers; HostShield rejected them instead of applying them globally.")
         }
+        if (unsupported > 0) {
+            parts.add("Skipped $unsupported rule(s) with browser-only modifiers (e.g. \$removeparam/\$redirect/\$csp) instead of applying them as whole-domain DNS blocks.")
+        }
+        return parts.joinToString(" ")
     }
 }

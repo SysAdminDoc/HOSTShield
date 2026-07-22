@@ -365,7 +365,11 @@ class BlocklistHolderTest {
         }
         val elapsedMs = (System.nanoTime() - start) / 1_000_000
 
-        assertTrue("10k cold negative wildcard lookups took ${elapsedMs}ms", elapsedMs < 1000)
+        // Regression tripwire, not a benchmark: without the bloom precheck this
+        // takes tens of seconds (full trie walk per cold miss). The generous
+        // ceiling keeps the assertion meaningful while staying immune to loaded
+        // CI/dev machines that made a 1000ms ceiling flaky.
+        assertTrue("10k cold negative wildcard lookups took ${elapsedMs}ms", elapsedMs < 10_000)
     }
 
     @Test

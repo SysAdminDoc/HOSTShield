@@ -184,4 +184,121 @@ class AdblockRuleParserTest {
         assertEquals(1, result.blockRules.size)
         assertEquals("keep-me.com", result.blockRules[0].domain)
     }
+
+    @Test
+    fun `removeparam rule is skipped not globalized`() {
+        val rule = AdblockRuleParser.parseLine("||example.com^\$removeparam=utm")
+        assertNull("Rule with \$removeparam must be skipped, not become a whole-domain block", rule)
+    }
+
+    @Test
+    fun `redirect rule is skipped not globalized`() {
+        val rule = AdblockRuleParser.parseLine("||example.com^\$media,redirect=noopmp3-0.1s")
+        assertNull("Rule with \$redirect must be skipped, not become a whole-domain block", rule)
+    }
+
+    @Test
+    fun `csp rule is skipped not globalized`() {
+        val rule = AdblockRuleParser.parseLine("||example.com^\$csp=script-src 'none'")
+        assertNull("Rule with \$csp must be skipped, not become a whole-domain block", rule)
+    }
+
+    @Test
+    fun `supported modifiers still parse after unknown-modifier whitelist`() {
+        assertNotNull(AdblockRuleParser.parseLine("||example.com^\$important"))
+        assertNotNull(AdblockRuleParser.parseLine("||example.com^\$badfilter"))
+        assertNotNull(AdblockRuleParser.parseLine("||example.com^\$dnstype=AAAA"))
+        assertNotNull(AdblockRuleParser.parseLine("||example.com^\$denyallow=safe.com"))
+        assertNotNull(AdblockRuleParser.parseLine("||example.com^\$dnsrewrite=NXDOMAIN"))
+        assertNotNull(AdblockRuleParser.parseLine("||example.com^\$important,dnstype=A"))
+    }
+
+    @Test
+    fun `bulk parse diagnoses browser-only modifier rules`() {
+        val content = """
+            ||tracker.com^
+            ||params.com^${'$'}removeparam=utm
+            ||media.com^${'$'}media,redirect=noopmp3-0.1s
+            ||secure.com^${'$'}csp=script-src 'none'
+            ||normal.com^
+        """.trimIndent()
+        val result = AdblockRuleParser.parse(content)
+
+        assertEquals(2, result.blockRules.size)
+        assertTrue(result.blockRules.any { it.domain == "tracker.com" })
+        assertTrue(result.blockRules.any { it.domain == "normal.com" })
+        assertFalse(result.blockRules.any { it.domain == "params.com" })
+        assertFalse(result.blockRules.any { it.domain == "media.com" })
+        assertFalse(result.blockRules.any { it.domain == "secure.com" })
+
+        assertEquals(3, result.unsupportedModifierSkipped)
+        val unsupported = result.diagnostics.filter { it.reason == "unsupported_modifier" }
+        assertEquals(3, unsupported.size)
+        assertEquals(setOf("removeparam", "media", "csp"), unsupported.map { it.modifier }.toSet())
+        assertTrue(unsupported.first().message.contains("instead of applying it"))
+    }
+
+    @Test
+    fun `badfilter with dnstype only cancels the matching typed rule`() {
+        val content = """
+            ||x.com^
+            ||x.com^${'$'}dnstype=AAAA
+            ||x.com^${'$'}dnstype=AAAA,badfilter
+        """.trimIndent()
+        val result = AdblockRuleParser.parse(content)
+
+        assertEquals(1, result.blockRules.size)
+        assertEquals("x.com", result.blockRules[0].domain)
+        assertNull("Plain block rule must survive a typed badfilter", result.blockRules[0].dnsTypes)
+    }
+
+    @Test
+    fun `plain badfilter does not cancel typed or wildcard rules`() {
+        val content = """
+            ||y.com^${'$'}dnstype=AAAA
+            ||*.y.com^
+            ||y.com^${'$'}badfilter
+        """.trimIndent()
+        val result = AdblockRuleParser.parse(content)
+
+        assertEquals(2, result.blockRules.size)
+        assertTrue(result.blockRules.any { it.dnsTypes == setOf(28) })
+        assertTrue(result.blockRules.any { it.isWildcard })
+    }
+
+    @Test
+    fun `badfilter still cancels identical plain rule`() {
+        val content = """
+            ||z.com^
+            ||z.com^${'$'}badfilter
+        """.trimIndent()
+        val result = AdblockRuleParser.parse(content)
+        assertTrue(result.blockRules.isEmpty())
+    }
+
+    @Test
+    fun `multi-host hosts line emits every valid hostname`() {
+        val result = AdblockRuleParser.parse("0.0.0.0 a.example.com b.example.com c.example.com")
+        assertEquals(3, result.blockRules.size)
+        assertEquals(
+            setOf("a.example.com", "b.example.com", "c.example.com"),
+            result.blockRules.map { it.domain }.toSet()
+        )
+    }
+
+    @Test
+    fun `multi-host hosts line skips invalid tokens individually`() {
+        val result = AdblockRuleParser.parse("0.0.0.0 good.example.com localhost bad_token -bad.com also.example.com")
+        assertEquals(
+            setOf("good.example.com", "also.example.com"),
+            result.blockRules.map { it.domain }.toSet()
+        )
+    }
+
+    @Test
+    fun `multi-host hosts line is capped at 16 hostnames`() {
+        val hosts = (1..20).joinToString(" ") { "host$it.example.com" }
+        val result = AdblockRuleParser.parse("0.0.0.0 $hosts")
+        assertEquals(16, result.blockRules.size)
+    }
 }

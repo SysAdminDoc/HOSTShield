@@ -122,7 +122,9 @@ class BlocklistHolder @Inject constructor() {
 
         private fun indexFor(value: String, round: Int): Int {
             val first = hash64(value, FNV_OFFSET)
-            val second = hash64(value, FNV_OFFSET xor BLOOM_HASH_SEED)
+            // Force h2 odd: an h2 ≡ 0 (mod bitCount) would degenerate every
+            // double-hash probe to the same bit, collapsing k hashes into one.
+            val second = hash64(value, FNV_OFFSET xor BLOOM_HASH_SEED) or 1L
             val combined = first + (round.toLong() * second)
             return Math.floorMod(combined, bitCount.toLong()).toInt()
         }
