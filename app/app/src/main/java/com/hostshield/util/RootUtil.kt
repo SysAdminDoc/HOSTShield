@@ -81,8 +81,11 @@ class RootUtil @Inject constructor(
             tmp.writeText(content)
             val tmpPath = tmp.absolutePath
 
-            // Backup current hosts
-            Shell.cmd("cp \"$path\" \"${path}.bak\" 2>/dev/null || true").exec()
+            // Backup current hosts — only if no backup exists yet, so the .bak
+            // stays the user's pristine pre-HostShield file. Unconditional cp
+            // would replace it with HostShield's own managed content on the
+            // second apply, making "restore original" restore our own file.
+            Shell.cmd("[ -f \"${path}.bak\" ] || cp \"$path\" \"${path}.bak\" 2>/dev/null || true").exec()
 
             if (path.startsWith("/system")) {
                 val r = Shell.cmd(

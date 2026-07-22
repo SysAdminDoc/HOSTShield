@@ -236,8 +236,11 @@ class AppPrivacyScorer @Inject constructor(
             val requested = info.requestedPermissions ?: return emptyList()
             val flags = info.requestedPermissionsFlags ?: return emptyList()
             requested.filterIndexed { index, perm ->
+                // PackageManager.PERMISSION_GRANTED is the constant 0 (a check
+                // *result*, not a flag bit) — masking with it always yields 0.
+                // The grant bit in requestedPermissionsFlags is REQUESTED_PERMISSION_GRANTED.
                 perm in dangerousPermissions &&
-                        (flags[index] and PackageManager.PERMISSION_GRANTED) != 0
+                        (flags[index] and android.content.pm.PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0
             }
         } catch (_: Exception) {
             emptyList()

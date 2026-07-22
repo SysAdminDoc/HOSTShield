@@ -65,7 +65,16 @@ class BackupRestoreUtil @Inject constructor(
             if (hostname.startsWith("*.") && !isWildcard) return null
             val bareHostname = hostname.removePrefix("*.")
             if (!isValidHostname(bareHostname)) return null
-            return bareHostname
+            // The canonical stored form for wildcard rules keeps the "*." prefix
+            // (RulesViewModel, QR import, HostsParser.matchesWildcard all dispatch
+            // on it) — stripping it here silently turned wildcards into exact rules.
+            return if (isWildcard) "*.$bareHostname" else bareHostname
+        }
+
+        internal fun normalizeRestoredRegex(rawPattern: String): String? {
+            val pattern = rawPattern.trim()
+            if (pattern.isEmpty() || pattern.length > 500) return null
+            return if (runCatching { Regex(pattern) }.isSuccess) pattern else null
         }
 
         internal fun normalizePackageName(rawPackageName: String): String? {
@@ -135,6 +144,7 @@ class BackupRestoreUtil @Inject constructor(
                 put("enabled", rule.enabled)
                 put("comment", rule.comment)
                 put("is_wildcard", rule.isWildcard)
+                put("is_regex", rule.isRegex)
             })
         }
         root.put("rules", rulesArr)
@@ -274,13 +284,17 @@ class BackupRestoreUtil @Inject constructor(
         var rulesCount = 0
         var profilesCount = 0
 
-        // Restore sources
+        // Restore sources — dedupe by URL: host_sources has no unique index on
+        // url, so blind inserts would duplicate seeded/built-in sources on every
+        // restore (each duplicate then downloads twice per rebuild).
+        val existingSourceUrls = hostSourceDao.getAllSourcesList().map { it.url }.toMutableSet()
         if (root.has("sources")) {
             val arr = root.getJSONArray("sources")
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
                 val url = normalizeRestoredSourceUrl(obj.optString("url", ""))
                     ?: continue
+                if (!existingSourceUrls.add(url)) continue
                 val label = boundedText(obj.optString("label", ""), 120)
                     .ifBlank { url.substringAfterLast('/').take(40).ifBlank { "Imported source" } }
                 hostSourceDao.insert(HostSource(
@@ -303,8 +317,14 @@ class BackupRestoreUtil @Inject constructor(
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
                 val isWildcard = obj.optBoolean("is_wildcard", false)
-                val hostname = normalizeRestoredHostname(obj.optString("hostname", ""), isWildcard)
-                    ?: continue
+                val isRegex = obj.optBoolean("is_regex", false)
+                // Regex patterns must bypass hostname normalization (metacharacters
+                // fail HOST_LABEL_RE) or every regex rule is silently dropped.
+                val hostname = if (isRegex) {
+                    normalizeRestoredRegex(obj.optString("hostname", "")) ?: continue
+                } else {
+                    normalizeRestoredHostname(obj.optString("hostname", ""), isWildcard) ?: continue
+                }
                 val type = try { RuleType.valueOf(obj.optString("type", "BLOCK")) }
                     catch (_: Exception) { RuleType.BLOCK }
                 val redirectIp = obj.optString("redirect_ip", "").trim()
@@ -315,19 +335,23 @@ class BackupRestoreUtil @Inject constructor(
                     redirectIp = if (type == RuleType.REDIRECT) redirectIp else "",
                     enabled = obj.optBoolean("enabled", true),
                     comment = boundedText(obj.optString("comment", ""), 500),
-                    isWildcard = isWildcard
+                    isWildcard = isWildcard && !isRegex,
+                    isRegex = isRegex
                 ))
                 rulesCount++
             }
         }
 
-        // Restore profiles
+        // Restore profiles — dedupe by name (no unique index; duplicate rows can
+        // carry multiple is_active=1 flags and make getActiveProfile() nondeterministic).
+        val existingProfileNames = profileDao.getAllProfilesList().map { it.name }.toMutableSet()
         if (root.has("profiles")) {
             val arr = root.getJSONArray("profiles")
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
                 val name = boundedText(obj.optString("name", ""), 80)
                 if (name.isBlank()) continue
+                if (!existingProfileNames.add(name)) continue
                 profileDao.insert(BlockingProfile(
                     name = name,
                     isActive = obj.optBoolean("is_active", false),
@@ -371,8 +395,17 @@ class BackupRestoreUtil @Inject constructor(
                 try { BlockMethod.valueOf(p.getString("block_method")) }
                 catch (_: Exception) { BlockMethod.ROOT_HOSTS }
             )
-            if (p.has("ipv4_redirect")) prefs.setIpv4Redirect(p.getString("ipv4_redirect"))
-            if (p.has("ipv6_redirect")) prefs.setIpv6Redirect(p.getString("ipv6_redirect"))
+            // Redirect targets are interpolated into the root-written hosts file
+            // ("<ip> <host>" lines) — restore only single IP literals so a crafted
+            // backup cannot inject extra host mappings via embedded whitespace/newlines.
+            if (p.has("ipv4_redirect")) {
+                val v4 = p.getString("ipv4_redirect").trim()
+                if (isValidRedirectIp(v4)) prefs.setIpv4Redirect(v4)
+            }
+            if (p.has("ipv6_redirect")) {
+                val v6 = p.getString("ipv6_redirect").trim()
+                if (isValidRedirectIp(v6)) prefs.setIpv6Redirect(v6)
+            }
             if (p.has("include_ipv6")) prefs.setIncludeIpv6(p.getBoolean("include_ipv6"))
             if (p.has("auto_update")) prefs.setAutoUpdate(p.getBoolean("auto_update"))
             if (p.has("update_interval")) prefs.setUpdateIntervalHours(p.getInt("update_interval"))

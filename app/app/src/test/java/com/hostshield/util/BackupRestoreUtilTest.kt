@@ -141,9 +141,20 @@ class BackupRestoreUtilTest {
         assertNull(BackupRestoreUtil.normalizeRestoredSourceUrl("http://192.168.1.50/hosts.txt"))
 
         assertEquals("example.com", BackupRestoreUtil.normalizeRestoredHostname(" Example.COM. "))
-        assertEquals("example.com", BackupRestoreUtil.normalizeRestoredHostname("*.example.com", isWildcard = true))
+        // Wildcard rules keep their canonical "*." prefix — the Rules UI, QR import,
+        // and HostsParser.matchesWildcard all dispatch on it.
+        assertEquals("*.example.com", BackupRestoreUtil.normalizeRestoredHostname("*.example.com", isWildcard = true))
+        assertEquals("*.example.com", BackupRestoreUtil.normalizeRestoredHostname("example.com", isWildcard = true))
         assertNull(BackupRestoreUtil.normalizeRestoredHostname("*.example.com", isWildcard = false))
         assertNull(BackupRestoreUtil.normalizeRestoredHostname("bad host.example"))
+    }
+
+    @Test
+    fun `restored regex rules validate the pattern instead of hostname syntax`() {
+        assertEquals("""^ads?\d+\..*""", BackupRestoreUtil.normalizeRestoredRegex("""^ads?\d+\..* """))
+        assertNull(BackupRestoreUtil.normalizeRestoredRegex("("))
+        assertNull(BackupRestoreUtil.normalizeRestoredRegex(""))
+        assertNull(BackupRestoreUtil.normalizeRestoredRegex("a".repeat(501)))
     }
 
     @Test
