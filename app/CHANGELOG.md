@@ -1,3 +1,35 @@
+# HostShield v6.9.59
+
+## Deep Engineering and Security Audit
+
+### Fixed
+- Per-app iptables firewall now applies: the apply script ran the chain-clear
+  (delete) step after creating the chains, so every rule failed and the
+  firewall never activated from boot, schedule, or automation.
+- DNS proxy mode fails closed — a transient encrypted-resolver failure no longer
+  falls back to plaintext UDP against public resolvers; proxy answer buffers
+  grew 512->4096 bytes so EDNS responses are not truncated.
+- IPv6 DNS responses now carry the mandatory UDP checksum (was zero, which made
+  receivers discard every injected IPv6 answer).
+- Offline blocklist refresh preserves the live snapshot instead of swapping in a
+  near-empty one; source download metadata is persisted via targeted column
+  updates so a concurrent user edit is no longer clobbered.
+- Threat-intel re-blocking is bypassed only for user-originated allow rules, not
+  downloaded source allowlists.
+- Content-filter, safe-search, threat-intel, and parental toggles reload live.
+- Backup/restore preserves wildcard (`*.`) and regex rules, de-duplicates
+  sources and profiles, and validates restored redirect IPs.
+- Privacy score permission dimension works (was masking with the wrong flag);
+  hosts `.bak` backup is no longer clobbered on re-apply.
+- Automation double-finish crash, scheduled-blocking proxy dispatch,
+  pause/resume re-enable, notification-channel downgrade, all-time burst alerts,
+  disabled-source health downloads, and auto-backup interval reset all fixed.
+- Adblock parser rejects unsupported modifiers instead of globalizing them;
+  multi-hostname hosts lines and `$denyallow`/`$badfilter` handling corrected.
+- UI: launcher toggle drives the real service; bottom-inset regression; light/
+  dynamic-theme contrast; scrollable log detail sheet; guarded reputation links;
+  reduced-motion support; localized widget; Play-flavor app enumeration.
+
 # HostShield v6.9.58
 
 ## Dense List Ergonomics

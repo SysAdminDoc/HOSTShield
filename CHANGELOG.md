@@ -3,7 +3,53 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
-## [Unreleased]
+## [v6.9.59] - 2026-07-22
+
+### Fixed (deep engineering + security + UX audit)
+- **Per-app firewall never applied**: `IptablesManager` split the apply script so
+  the embedded chain-clear (delete) step ran after the chains were created, so
+  every rule failed with "no chain by that name". The script now runs as one
+  ordered clear->create->populate->hook job.
+- **DNS proxy plaintext leak**: with DoH/DoT enabled, a transient encrypted
+  resolver failure fell through to plaintext UDP against public resolvers. Proxy
+  mode now returns SERVFAIL (fail-closed), and its receive buffers grew 512->4096
+  bytes so EDNS answers are no longer truncated.
+- **IPv6 DNS broken**: `wrapResponseV6` emitted a zero UDP checksum, which
+  receivers must discard — the mandatory checksum is now computed.
+- **Offline refresh emptied the blocklist**: `BlocklistSourceCoordinator` now
+  preserves the live snapshot when every enabled source fails to download, and
+  persists source metadata via targeted column updates that no longer clobber
+  concurrent user edits.
+- **Threat-intel bypass**: re-blocking is skipped only for user-originated allow
+  decisions, so a downloaded source allowlist can no longer whitelist a malware
+  domain past URLhaus/Spamhaus. TCP-DNS RST blocking now computes a valid,
+  in-window ACK.
+- **Live config reload**: content-filter, safe-search, threat-intel, and
+  parental toggles apply without restarting protection; LAN DNS rebinds when its
+  port or client policy changes; the threat-intel IOC cache is written
+  atomically.
+- **Backup/restore fidelity**: wildcard (`*.`) and regex rules survive a
+  round-trip, sources/profiles de-duplicate, restored redirect IPs are
+  validated, and the hosts `.bak` backup is no longer clobbered on re-apply.
+- **Privacy scoring**: the permission dimension was dead (masking with
+  `PackageManager.PERMISSION_GRANTED`, which is 0) — now uses
+  `REQUESTED_PERMISSION_GRANTED`.
+- **Workers/preferences**: automation double-`finish()` crash, missing
+  DNS_PROXY dispatch in scheduled blocking, pause/resume re-enabling disabled
+  protection, a maintenance channel downgrading alerts, all-time burst alerts,
+  disabled-source health downloads, auto-backup interval reset, non-atomic
+  pin/unpin, and eager Keystore reads on the caller's thread all fixed.
+- **Parser**: unsupported adblock modifiers are skipped (not globalized),
+  multi-hostname hosts lines keep every host, `$denyallow`/`$badfilter` scoping
+  corrected, bloom second-hash forced odd.
+- **UI/UX/a11y**: launcher toggle drives the real service; bottom system-bar
+  inset restored on sub-screens; light/dynamic-theme contrast on destructive
+  buttons, checkmarks, and unselected chips; scrollable log detail sheet;
+  guarded reputation links; reduced-motion support; localized Glance widget with
+  a correct block-rate bar; Play-flavor `<queries>` so app lists aren't empty.
+- Util: ASCII-only QR hostnames, non-draft update selection, ccSLD-aware domain
+  age, IPv4 octet range checks in PCAP, salted evidence-export redaction with
+  cache-dir hygiene, chunked dex scanning to avoid OOM.
 
 ### Added
 - Added LocaleConfig readiness guardrails: top Home/Settings/DNS/QR copy now

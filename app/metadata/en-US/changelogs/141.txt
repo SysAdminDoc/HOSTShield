@@ -1,0 +1,8 @@
+v6.9.59 - Deep engineering and security audit:
+- Per-app iptables firewall now applies correctly (fixes an ordering bug that prevented it from ever activating)
+- DNS proxy mode fails closed instead of leaking plaintext when encrypted DNS is enabled
+- IPv6 DNS answers now carry a valid UDP checksum so dual-stack resolution works
+- Offline blocklist refresh keeps the live snapshot instead of emptying it
+- Downloaded allowlists can no longer bypass threat-intel malware blocking
+- Backup and restore preserve wildcard and regex rules and de-duplicate sources
+- Many worker, notification, preference, theming, and accessibility fixes
