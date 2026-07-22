@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.59-blue)
+![Version](https://img.shields.io/badge/version-6.9.60-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -432,6 +432,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.60** | Roadmap drain: blocking profiles now apply their per-profile source set; auto-update, Wi-Fi-only, protection-notification, and log-retention settings are exposed in the UI; threat-intel carries forward a failed feed's cached IOCs; root DNS attribution maps are bounded and its iptables teardown serialized; `$important` block precedence and IPv6 PCAP export are implemented; the launcher toggle is gated to trusted callers. |
 | **6.9.59** | Deep engineering + security + UX audit: the per-app iptables firewall now actually applies (an apply-ordering bug meant it never did), the DNS proxy path fails closed instead of leaking plaintext, IPv6 DNS answers carry a valid UDP checksum, offline blocklist refresh no longer wipes the live snapshot, downloaded allowlists can no longer whitelist malware past threat intel, backup/restore preserves wildcard and regex rules, and dozens of worker, preference, theming, and accessibility fixes. |
 | **6.9.58** | Dense Logs, Sources, Apps, and Firewall lists now support persisted saved filters, accessible filtered empty states, and top/middle/end jump controls for large local datasets. |
 | **6.9.57** | AdGuard `$dnstype=` block and allow rules now survive source rebuilds as qtype-aware policy, with A/AAAA/negated type enforcement in VPN, proxy, root, and local DNS decisions instead of being silently dropped or globalized. |

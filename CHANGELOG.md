@@ -3,6 +3,32 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.60] - 2026-07-22
+
+### Added
+- Blocking profiles now apply their per-profile `source_ids`: activating a
+  profile narrows the active blocklist to its configured block sources
+  (allowlists always apply); deactivation rebuilds to all enabled sources.
+- Settings controls for blocklist auto-update + interval, Wi-Fi-only updates,
+  the ongoing protection notification, and DNS-log retention (previously
+  collected in state with working setters but no UI).
+- PCAP connection-log export emits IPv6 packets — v6 destinations were dropped.
+
+### Fixed
+- Threat-intel partial refresh carries forward a failed feed's last-good
+  domains/CIDRs instead of dropping them from enforcement for the outage window.
+- `RootDnsLogger` attribution maps (`hostnameUidMap`/`pendingUidLookup`) are
+  bounded via periodic eviction, and its async iptables teardown is serialized
+  against a subsequent start so a quick toggle can't delete the fresh NAT
+  redirect.
+- `$important` block rules now outrank a plain `@@` exception in the same source
+  (an `@@...$important` allow still wins).
+
+### Security
+- The exported launcher `SHORTCUT_TOGGLE` action is honored only when the launch
+  is system-delivered or comes from the app/a system launcher — a third-party
+  app can no longer toggle protection.
+
 ## [v6.9.59] - 2026-07-22
 
 ### Fixed (deep engineering + security + UX audit)

@@ -1,3 +1,29 @@
+# HostShield v6.9.60
+
+## Roadmap Drain
+
+### Added
+- Blocking profiles apply their per-profile `source_ids`: activating a profile
+  now narrows the active blocklist to its configured sources (allowlists always
+  apply), and deactivation rebuilds back to all enabled sources.
+- Settings controls for blocklist auto-update + interval, Wi-Fi-only updates,
+  the ongoing protection notification, and DNS-log retention (previously wired
+  in state but with no UI).
+- PCAP connection-log export now emits IPv6 packets (v6 rows were dropped).
+
+### Fixed
+- Threat-intel partial refresh carries forward a failed feed's last-good
+  domains/CIDRs instead of dropping them from enforcement.
+- `RootDnsLogger` attribution maps are bounded (periodic eviction) and its
+  iptables teardown is serialized against a concurrent restart.
+- `$important` block rules are no longer overridden by a plain exception in the
+  same source.
+
+### Security
+- The exported launcher `SHORTCUT_TOGGLE` action is honored only from the
+  system/launcher or the app itself, so a third-party app cannot toggle
+  protection.
+
 # HostShield v6.9.59
 
 ## Deep Engineering and Security Audit

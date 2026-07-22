@@ -1,0 +1,7 @@
+v6.9.60 - Roadmap drain:
+- Blocking profiles now apply their configured per-profile source set
+- Auto-update, update interval, Wi-Fi-only, protection notification, and log retention are now adjustable in Settings
+- Threat-intel keeps a failed feed's last-good entries instead of dropping them on a partial refresh
+- Root DNS attribution maps are bounded and iptables teardown is serialized against restart
+- $important block rules now outrank plain exceptions; PCAP export includes IPv6 rows
+- The launcher protection-toggle shortcut is restricted to trusted callers
