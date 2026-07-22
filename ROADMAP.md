@@ -489,8 +489,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
 - [ ] Adblock `$denyallow` is still approximated as a global wildcard-allow (the
       cross-source exact-allow leak was removed in v6.9.59). Attach the exception
       to the owning rule for full AdGuard-correct scoping.
-- [ ] `PcapExporter` drops IPv6 connection-log rows (only IPv4 SYN packets are
-      emitted). Emit an IPv6 header for v6 destinations.
 - [ ] `DomainAgeChecker` uses a small hard-coded multi-part-suffix table; adopt a
       full public-suffix list for complete ccSLD coverage.
 - [ ] WireGuard key-entry UI is missing even in debug builds (keys can only

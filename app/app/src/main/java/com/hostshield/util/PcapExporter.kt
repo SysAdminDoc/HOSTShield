@@ -56,6 +56,26 @@ class PcapExporter @Inject constructor(
             }
             return bytes
         }
+
+        /**
+         * Parse an IPv6 literal to its 16-byte form, rejecting anything that is
+         * not a bracket-free IPv6 literal. The ':' requirement excludes hostnames
+         * (which cannot contain a colon), so `InetAddress.getByName` never issues
+         * a DNS lookup here.
+         */
+        internal fun parseIpv6OrNull(value: String): ByteArray? {
+            val candidate = value.removeSurrounding("[", "]")
+            if (':' !in candidate) return null
+            if (!candidate.all { it == ':' || it == '.' || it.isDigit() || it in 'a'..'f' || it in 'A'..'F' }) {
+                return null
+            }
+            return try {
+                val addr = java.net.InetAddress.getByName(candidate)
+                addr.address.takeIf { it.size == 16 }
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
 
     /**
@@ -275,7 +295,12 @@ class PcapExporter @Inject constructor(
      * Build synthetic TCP SYN or UDP packet for a connection log entry.
      */
     private fun buildTcpSynPacket(dstIp: String, dstPort: Int, srcPort: Int, isTcp: Boolean): ByteArray? {
-        val dstBytes = parseIpv4OrNull(dstIp) ?: return null
+        val v4 = parseIpv4OrNull(dstIp)
+        if (v4 == null) {
+            val v6 = parseIpv6OrNull(dstIp) ?: return null
+            return buildTcpSynPacketV6(v6, dstPort, srcPort, isTcp)
+        }
+        val dstBytes = v4
 
         val transportLen = if (isTcp) 20 else 8
         val ipLen = 20 + transportLen
@@ -305,6 +330,39 @@ class PcapExporter @Inject constructor(
             buf.putShort(0.toShort())      // urgent
         } else {
             // UDP header (8 bytes)
+            buf.putShort(srcPort.toShort())
+            buf.putShort(dstPort.toShort())
+            buf.putShort(transportLen.toShort())
+            buf.putShort(0.toShort())
+        }
+
+        return buf.array()
+    }
+
+    /** Build a raw IPv6 SYN/UDP packet for an IPv6 destination (LINKTYPE_RAW). */
+    private fun buildTcpSynPacketV6(dstBytes: ByteArray, dstPort: Int, srcPort: Int, isTcp: Boolean): ByteArray {
+        val transportLen = if (isTcp) 20 else 8
+        val buf = ByteBuffer.allocate(40 + transportLen)
+
+        // IPv6 header (40 bytes)
+        buf.put(0x60.toByte())              // version 6, traffic class 0
+        buf.put(0.toByte()); buf.put(0.toByte()); buf.put(0.toByte()) // flow label 0
+        buf.putShort(transportLen.toShort())          // payload length
+        buf.put((if (isTcp) 6 else 17).toByte())       // next header: TCP=6, UDP=17
+        buf.put(64.toByte())                           // hop limit
+        buf.put(byteArrayOf(0xfd.toByte(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)) // src fd00::1
+        buf.put(dstBytes)                              // dest (16 bytes)
+
+        if (isTcp) {
+            buf.putShort(srcPort.toShort())
+            buf.putShort(dstPort.toShort())
+            buf.putInt(0)
+            buf.putInt(0)
+            buf.putShort(0x5002.toShort()) // data offset=5, SYN
+            buf.putShort(65535.toShort())
+            buf.putShort(0.toShort())
+            buf.putShort(0.toShort())
+        } else {
             buf.putShort(srcPort.toShort())
             buf.putShort(dstPort.toShort())
             buf.putShort(transportLen.toShort())

@@ -117,4 +117,15 @@ class PcapExporterTest {
         assertNull(PcapExporter.parseIpv4OrNull("+1.2.3.4"))
         assertNull(PcapExporter.parseIpv4OrNull("2001:db8::1"))
     }
+
+    @Test
+    fun `parseIpv6OrNull accepts literals and rejects non-ipv6`() {
+        // IPv6 connection-log rows are no longer silently dropped.
+        assertEquals(16, PcapExporter.parseIpv6OrNull("2001:db8::1")?.size)
+        assertEquals(16, PcapExporter.parseIpv6OrNull("[2606:4700:4700::1111]")?.size)
+        assertEquals(16, PcapExporter.parseIpv6OrNull("::1")?.size)
+        assertNull(PcapExporter.parseIpv6OrNull("8.8.8.8"))
+        assertNull(PcapExporter.parseIpv6OrNull("example.com"))
+        assertNull(PcapExporter.parseIpv6OrNull("nothex::zz"))
+    }
 }
