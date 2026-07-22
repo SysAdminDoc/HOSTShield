@@ -3,6 +3,7 @@ package com.hostshield
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.util.Log
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
@@ -108,8 +109,15 @@ class MainActivity : ComponentActivity() {
     private fun handleShortcutIntent(intent: Intent?) {
         when (intent?.action) {
             "com.hostshield.SHORTCUT_TOGGLE" -> {
-                CoroutineScope(Dispatchers.IO).launch {
-                    toggleProtectionFromShortcut()
+                // MainActivity is exported for the launcher, so any app could send
+                // this action. Only honor it from the launcher/system or ourselves
+                // so a third-party app cannot flip protection.
+                if (isTrustedShortcutCaller()) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        toggleProtectionFromShortcut()
+                    }
+                } else {
+                    Log.w("MainActivity", "Ignoring SHORTCUT_TOGGLE from untrusted caller ${referrer?.host}")
                 }
             }
             "com.hostshield.SHORTCUT_REFRESH" -> {
@@ -134,6 +142,22 @@ class MainActivity : ComponentActivity() {
                     else -> null
                 }
             }
+        }
+    }
+
+    /**
+     * True when a SHORTCUT_TOGGLE launch originated from a trusted source: no
+     * referrer (system-delivered), ourselves, or a system/launcher app. A
+     * third-party user app is rejected so it cannot toggle protection.
+     */
+    private fun isTrustedShortcutCaller(): Boolean {
+        val caller = referrer?.host ?: return true
+        if (caller == packageName) return true
+        return try {
+            val ai = packageManager.getApplicationInfo(caller, 0)
+            (ai.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
+        } catch (_: Exception) {
+            false
         }
     }
 

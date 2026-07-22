@@ -494,7 +494,3 @@ they need a device, a product decision, an external key, or an unreleased SDK.
 - [ ] WireGuard key-entry UI is missing even in debug builds (keys can only
       arrive via QR/backup import), so the experimental transport can't be
       completed from Settings.
-- [ ] `MainActivity` is exported (required for the launcher) and its
-      `SHORTCUT_TOGGLE` action flips protection from any explicit-intent caller.
-      The service dispatch is fixed (v6.9.59), but add a caller/signature gate so
-      a third-party app cannot toggle the firewall.
