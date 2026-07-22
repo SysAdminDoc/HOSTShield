@@ -13,6 +13,8 @@ import com.hostshield.util.RootShellRunner
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -71,6 +73,8 @@ class RootDnsLogger @Inject constructor(
         private const val DNS_PORT = 53
         private const val UPSTREAM_TIMEOUT_MS = 5000
         private const val DUMPSYS_POLL_MS = 3000L
+        private const val MAX_UID_MAP = 5000
+        private const val MAX_PENDING_LOOKUP = 2000
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -88,6 +92,10 @@ class RootDnsLogger @Inject constructor(
     private val uidAppCache = ConcurrentHashMap<Int, Pair<String, String>>()
     // Recent queries from proxy that need UID enrichment
     private val pendingUidLookup = ConcurrentHashMap<String, Long>() // hostname -> dbId
+
+    // Serializes iptables mutations so a stop()'s async teardown can never run
+    // after a subsequent start()'s install and delete the fresh NAT redirect.
+    private val iptablesMutex = Mutex()
 
     private var originalPrivateDnsMode: String? = null
     private var originalPrivateDnsSpecifier: String? = null
@@ -125,9 +133,12 @@ class RootDnsLogger @Inject constructor(
                 upstreamDns = resolveUpstreamDns()
                 PrivacyLog.i(TAG, "Upstream DNS: ${upstreamDns.hostAddress}")
 
-                // Step 3: Install iptables NAT redirect (with route_localnet hardening)
-                removeIptablesRules()
-                installIptablesRules()
+                // Step 3: Install iptables NAT redirect (with route_localnet hardening).
+                // Serialized against any in-flight stop() teardown.
+                iptablesMutex.withLock {
+                    removeIptablesRules()
+                    installIptablesRules()
+                }
 
                 Log.i(TAG, "Setup complete — signalling proxy to start")
             } finally {
@@ -177,15 +188,36 @@ class RootDnsLogger @Inject constructor(
             }
         }
         scope.launch {
-            removeIptablesRules()
-            // Restore route_localnet to default (0) and remove compensating INPUT rules
-            runIptables(
-                "sysctl -w net.ipv4.conf.all.route_localnet=0 2>/dev/null",
-                "sysctl -w net.ipv4.conf.default.route_localnet=0 2>/dev/null",
-                "iptables -D INPUT -d 127.0.0.0/8 ! -i lo -j DROP 2>/dev/null",
-                "ip6tables -D INPUT -d ::1/128 ! -i lo -j DROP 2>/dev/null"
-            )
+            iptablesMutex.withLock {
+                removeIptablesRules()
+                // Restore route_localnet to default (0) and remove compensating INPUT rules
+                runIptables(
+                    "sysctl -w net.ipv4.conf.all.route_localnet=0 2>/dev/null",
+                    "sysctl -w net.ipv4.conf.default.route_localnet=0 2>/dev/null",
+                    "iptables -D INPUT -d 127.0.0.0/8 ! -i lo -j DROP 2>/dev/null",
+                    "ip6tables -D INPUT -d ::1/128 ! -i lo -j DROP 2>/dev/null"
+                )
+            }
             restorePrivateDns()
+        }
+    }
+
+    /**
+     * Bound the attribution maps so a long root session cannot grow them without
+     * limit. `hostnameUidMap` evicts its oldest entries by timestamp;
+     * `pendingUidLookup` entries whose UID never resolves are dropped once the map
+     * exceeds its cap (their log rows simply go un-enriched).
+     */
+    private fun pruneAttributionMaps() {
+        if (hostnameUidMap.size > MAX_UID_MAP) {
+            hostnameUidMap.entries
+                .sortedBy { it.value.second }
+                .take(hostnameUidMap.size - MAX_UID_MAP + MAX_UID_MAP / 10)
+                .forEach { hostnameUidMap.remove(it.key) }
+        }
+        if (pendingUidLookup.size > MAX_PENDING_LOOKUP) {
+            val overflow = pendingUidLookup.size - MAX_PENDING_LOOKUP
+            pendingUidLookup.keys.take(overflow).forEach { pendingUidLookup.remove(it) }
         }
     }
 
@@ -757,6 +789,7 @@ class RootDnsLogger @Inject constructor(
                 delay(2000)
                 try {
                     flushStats()
+                    pruneAttributionMaps()
                 } catch (e: Exception) {
                     Log.e(TAG, "Stats flush cycle error: ${e.message}", e)
                 }

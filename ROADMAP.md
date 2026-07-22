@@ -475,10 +475,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
 
 ### P2 — Needs device / live verification
 
-- [ ] `RootDnsLogger`: `hostnameUidMap` / `pendingUidLookup` grow unbounded for a
-      root session, and `stop()` runs `removeIptablesRules()` async with no
-      ordering against a subsequent `start()` (quick toggle can delete the fresh
-      NAT redirect). Add eviction + serialize teardown/setup.
 - [ ] Backup schema v2 + encrypted-backup passphrase UI: the crypto backend
       exists but Settings has no passphrase prompt, and the schema omits several
       v6.x preferences on round-trip. (Pre-existing spec above.)
