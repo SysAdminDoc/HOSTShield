@@ -515,9 +515,16 @@ class SettingsViewModel @Inject constructor(
 
     private fun observeLocalDnsStatus() {
         viewModelScope.launch {
+            // Only poll while the LAN DNS server is enabled — otherwise this woke
+            // up every second for the ViewModel's whole lifetime to read a status
+            // that never changes.
             while (true) {
-                refreshLocalDnsStatus()
-                delay(1_000L)
+                if (_uiState.value.lanDnsEnabled) {
+                    refreshLocalDnsStatus()
+                    delay(1_000L)
+                } else {
+                    delay(5_000L)
+                }
             }
         }
     }

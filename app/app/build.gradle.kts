@@ -144,10 +144,10 @@ android {
         create("play") {
             dimension = "distribution"
             applicationIdSuffix = ".play"
-            // QUERY_ALL_PACKAGES removed via manifest overlay.
-            // Limited to <queries> declarations — user-installed apps still visible,
-            // some system apps may be missing from firewall/exclusion lists.
-            // This is a known tradeoff required for Play Store publication.
+            // QUERY_ALL_PACKAGES removed via manifest overlay; the play overlay
+            // adds a <queries> MAIN-intent declaration so launchable apps remain
+            // visible in firewall/exclusion lists. Some system apps without a
+            // launcher may be missing — the known tradeoff for Play publication.
         }
     }
 }
