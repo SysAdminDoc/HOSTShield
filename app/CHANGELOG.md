@@ -1,3 +1,29 @@
+# HostShield v6.9.63
+
+## Deep-audit fix drain (2026-07-28)
+
+Drains the v6.9.62 deep-audit backlog: ~65 verified fixes across correctness,
+security, reliability, UX, theming, accessibility, and tests. See the repository
+CHANGELOG for the full list. Highlights:
+
+- Correctness: DNS cache no longer resets TTL on every read (expiry, prefetch,
+  and serve-stale work again); temporary-allow overrides wildcard/regex/dnstype
+  blocks and reverts cleanly; adblock rule-shape and hosts-majority parsing
+  fixes; `$important` subdomain precedence.
+- Reliability/data-safety: blocklist rebuilds are serialized with per-source
+  last-good carry-forward; backup restore is transactional and round-trips per-app
+  DNS rules, profile Wi-Fi SSIDs, and firewall context columns; DataStore
+  corruption recovery; clamped numeric preferences; device-transfer includes the
+  settings store.
+- Security: shortcut caller verified by launched-from identity (not a spoofable
+  referrer); parental PIN fails closed on Keystore loss; source allowlists can't
+  neutralize remote DoH-bypass entries; pre-v6.5.0 encrypted backups recover.
+- UX/theming: working WebDAV backup upload, DNS-log allow feedback, functional
+  home/stats widgets, midnight-resetting stat windows, distinct Material You
+  semantic colors, and many secondary-screen fixes.
+- Removed dead code (Glance scaffolding, unused components, unwired utilities)
+  and the non-functional Include IPv6 / Protection notification toggles.
+
 # HostShield v6.9.62
 
 ## HostShield Spotify List and Source Catalog Repair

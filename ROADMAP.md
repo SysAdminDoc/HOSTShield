@@ -507,24 +507,4 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
 
 ### Docs / hygiene
 
-- [ ] P3 — CLAUDE.md working notes are stale one release behind (v6.9.61 vs shipped v6.9.62)
-  Category: docs
-  Where: `CLAUDE.md:1-4` (Overview "Current local note: v6.9.61") and `:115-116` (Version History top entry v6.9.61)
-  Problem: build.gradle.kts (6.9.62/144), README badge, CHANGELOG ([v6.9.62]), metadata/en-US/changelogs/144.txt, and the top commit all agree on 6.9.62, but CLAUDE.md's Overview and Version History have no v6.9.62 entry. CLAUDE.md is gitignored (not a shipped mismatch), but it's the canonical working-notes file the audit protocol relies on.
-  Evidence: All release artifacts read 6.9.62; CLAUDE.md lines 1-4 and 115-116 read 6.9.61.
-  Fix: Add the v6.9.62 entry (Spotify Ads fork + gallery URL re-audit + Room v20) to Version History and update the Overview line.
-  Acceptance: CLAUDE.md Version History leads with v6.9.62 matching build.gradle/README/CHANGELOG.
-  Confidence: Verified
-  Effort: S
-
 ### Unaudited — needs a pass
-
-- [ ] P3 — Instrumented (`androidTest`) suite not exercised in this audit
-  Category: testing
-  Where: `app/app/src/androidTest/**`
-  Problem: This pass was code-trace + JVM-baseline only; the Compose UI / migration / automation-receiver instrumented tests were not run (no device/emulator) and their current pass/fail state is unverified. Not a defect claim — a coverage gap to close on a device pass. (Overlaps the logged Roadmap_Blocked "Run instrumented suite in CI" item.)
-  Evidence: Baseline ran `testFullDebugUnitTest` + `lintFullDebug` only.
-  Fix: On a connected device/emulator, run `connectedFullDebugAndroidTest` and log any failures as findings.
-  Acceptance: androidTest results recorded; failures triaged.
-  Confidence: Needs-repro
-  Effort: M

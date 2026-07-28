@@ -1,0 +1,10 @@
+v6.9.63:
+- Fix DNS cache TTL so expiry, prefetch, and serve-stale work correctly
+- Temporary-allow now overrides wildcard, regex, and DNS-type source blocks
+- Verify launcher shortcut caller identity instead of a spoofable referrer
+- Parental PIN gate fails closed if the device keystore key is lost
+- Backup restore is transactional and round-trips per-app DNS rules
+- WebDAV backup upload, DNS-log allow feedback, and home widgets now work
+- Serialize blocklist rebuilds and carry forward a failed source's last data
+- Distinct Material You status colors and many secondary-screen fixes
+- Remove dead code and two non-functional settings toggles

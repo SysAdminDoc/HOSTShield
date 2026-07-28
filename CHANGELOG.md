@@ -3,7 +3,7 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
-## [Unreleased]
+## [v6.9.63] - 2026-07-28
 
 ### Changed
 - Removed dead UI/util code: the unused ShieldAnimation and AnimatedLogFeed

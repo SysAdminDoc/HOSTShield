@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.62-blue)
+![Version](https://img.shields.io/badge/version-6.9.63-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -29,7 +29,7 @@
    uninstall it. v6.9.61 and later use a new APK certificate lineage, so Android cannot
    perform an in-place update over the older certificate. Uninstalling clears
    the previous app data.
-2. Download `HostShield-v6.9.62-full-release.apk` from
+2. Download `HostShield-v6.9.63-full-release.apk` from
    [Releases](https://github.com/SysAdminDoc/HostShield/releases).
 3. Install and launch — the onboarding wizard guides you through setup.
 4. Choose **VPN mode** (no root) or **Root mode** (better battery life), then
