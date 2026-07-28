@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,10 +68,15 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     var selectedEntry by remember { mutableStateOf<DedupedLogEntry?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Multi-select state
-    var multiSelectMode by remember { mutableStateOf(false) }
-    var selectedHostnames by remember { mutableStateOf(setOf<String>()) }
-    var showClearLogsDialog by remember { mutableStateOf(false) }
+    // Multi-select state — survive rotation/process recreation.
+    var multiSelectMode by rememberSaveable { mutableStateOf(false) }
+    var selectedHostnames by rememberSaveable(
+        stateSaver = androidx.compose.runtime.saveable.listSaver<Set<String>, String>(
+            save = { it.toList() },
+            restore = { it.toSet() },
+        )
+    ) { mutableStateOf(setOf<String>()) }
+    var showClearLogsDialog by rememberSaveable { mutableStateOf(false) }
 
     val queryTypeFilter by viewModel.queryTypeFilter.collectAsStateWithLifecycle()
     val deduped by viewModel.deduped.collectAsStateWithLifecycle()

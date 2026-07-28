@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -468,7 +469,7 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                             Text("Per-App DNS Activity", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         }
                         Spacer(Modifier.height(12.dp))
-                        var show7d by remember { mutableStateOf(false) }
+                        var show7d by rememberSaveable { mutableStateOf(false) }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(selected = !show7d, onClick = { show7d = false }, label = { Text("24h", fontSize = 11.sp) })
                             FilterChip(selected = show7d, onClick = { show7d = true }, label = { Text("7d", fontSize = 11.sp) })

@@ -35,6 +35,7 @@ class BackupRestoreUtil @Inject constructor(
     private val userRuleDao: UserRuleDao,
     private val profileDao: ProfileDao,
     private val firewallRuleDao: FirewallRuleDao,
+    private val appDnsRuleDao: AppDnsRuleDao,
     private val prefs: AppPreferences
 ) {
     companion object {
@@ -188,6 +189,18 @@ class BackupRestoreUtil @Inject constructor(
             })
         }
         root.put("firewall_rules", fwArr)
+
+        // Per-app DNS rules
+        val appDnsArr = JSONArray()
+        appDnsRuleDao.getAllRulesList().forEach { rule ->
+            appDnsArr.put(JSONObject().apply {
+                put("package_name", rule.packageName)
+                put("domain", rule.domain)
+                put("action", rule.action)
+                put("enabled", rule.enabled)
+            })
+        }
+        root.put("app_dns_rules", appDnsArr)
 
         // Preferences
         val prefsObj = JSONObject()
@@ -418,6 +431,27 @@ class BackupRestoreUtil @Inject constructor(
                     lanAllowed = obj.optBoolean("lan_allowed", existing?.lanAllowed ?: true)
                 ))
                 firewallRulesCount++
+            }
+        }
+
+        // Restore per-app DNS rules
+        if (root.has("app_dns_rules")) {
+            val arr = root.getJSONArray("app_dns_rules")
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                val packageName = normalizePackageName(obj.optString("package_name", "")) ?: continue
+                val isWildcard = obj.optString("domain", "").startsWith("*.")
+                val domain = normalizeRestoredHostname(obj.optString("domain", ""), isWildcard) ?: continue
+                val action = obj.optString("action", "block").lowercase()
+                if (action != "block" && action != "allow") continue
+                appDnsRuleDao.insert(
+                    AppDnsRule(
+                        packageName = packageName,
+                        domain = domain,
+                        action = action,
+                        enabled = obj.optBoolean("enabled", true),
+                    )
+                )
             }
         }
         } // end database.withTransaction

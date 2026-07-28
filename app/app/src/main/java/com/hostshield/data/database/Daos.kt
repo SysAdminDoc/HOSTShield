@@ -677,6 +677,9 @@ interface AppDnsRuleDao {
     @Query("SELECT * FROM app_dns_rules ORDER BY package_name, domain")
     fun getAllRules(): Flow<List<AppDnsRule>>
 
+    @Query("SELECT * FROM app_dns_rules ORDER BY package_name, domain")
+    suspend fun getAllRulesList(): List<AppDnsRule>
+
     @Query("SELECT DISTINCT package_name FROM app_dns_rules WHERE enabled = 1")
     suspend fun getAppsWithRules(): List<String>
 

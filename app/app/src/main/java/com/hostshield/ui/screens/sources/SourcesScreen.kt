@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -691,9 +692,9 @@ private fun AddSourceDialog(
     onDismiss: () -> Unit,
     onAdd: (url: String, label: String, category: SourceCategory) -> Unit
 ) {
-    var url by remember { mutableStateOf("") }
-    var label by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(SourceCategory.ADS) }
+    var url by rememberSaveable { mutableStateOf("") }
+    var label by rememberSaveable { mutableStateOf("") }
+    var category by rememberSaveable { mutableStateOf(SourceCategory.ADS) }
 
     val urlValidation = remember(url) { SourceUrlPolicy.validate(url) }
     val urlValid = urlValidation.isValid

@@ -89,6 +89,9 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   engine decision instead of a re-implemented scan.
 
 ### Fixed (backup & data safety)
+- Backups now round-trip per-app DNS rules.
+- Home search, DNS-log multi-selection, and the add-source/add-rule dialogs now
+  survive rotation and process recreation.
 - Backup restore now runs inside a single database transaction, so a malformed
   backup rolls back instead of leaving half-applied state.
 - Restoring a backup with an active profile now yields exactly one active

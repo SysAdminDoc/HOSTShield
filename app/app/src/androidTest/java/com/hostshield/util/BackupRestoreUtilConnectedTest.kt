@@ -172,6 +172,7 @@ class BackupRestoreUtilConnectedTest {
             db.userRuleDao(),
             db.profileDao(),
             db.firewallRuleDao(),
+            db.appDnsRuleDao(),
             prefs,
         )
 

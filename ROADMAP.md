@@ -502,27 +502,8 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
 ### P2
 
 
-- [ ] P3 — Backup does not round-trip the `app_dns_rules` table (per-app DNS rules)
-  Category: correctness
-  Where: `util/BackupRestoreUtil.kt` (`createBackup`/`restoreBackup`); `data/database/Daos.kt` AppDnsRuleDao
-  Problem: profiles.wifi_ssids and the firewall context columns now round-trip and the firewall REPLACE clobber is fixed, but per-app DNS rules (`app_dns_rules`) are still neither exported nor restored, so app-scoped DNS allow/block rules are lost on restore.
-  Fix: Add an `app_dns_rules` array to `createBackup` and a matching restore loop (inject AppDnsRuleDao), inside the existing restore transaction.
-  Acceptance: Round-trip backup/restore preserves per-app DNS rules.
-  Confidence: Verified
-  Effort: M
-
 
 ### P3
-
-- [ ] P3 — Home search, Logs multi-select, and add-dialogs lose user input on rotation (`remember` instead of `rememberSaveable`)
-  Category: ux
-  Where: `home/HomeScreen.kt:95-96` (searchQuery/searchExpanded); `logs/LogsScreen.kt:72-74` (multiSelectMode/selectedHostnames/showClearLogsDialog); `sources/SourcesScreen.kt:75-76,694-696` (AddSourceDialog fields); `lists/RulesScreen.kt:52-55,269-274`; `settings/ProtectionSettingsSection.kt:58-62`; `stats/StatsScreen.kt:471`
-  Problem: MainActivity declares no `android:configChanges`, so rotation/fold recreates the activity. Typed search text, an in-progress multi-select of dozens of domains, half-filled Add Source/Add Rule dialogs (dialog vanishes), and evidence-export filters are all wiped because they use plain `remember`.
-  Evidence: Grep shows no `rememberSaveable` in `ui/` except OnboardingScreen.
-  Fix: Switch these to `rememberSaveable` (custom Saver for `Set<String>`/enums), or hoist search/selection into the ViewModels (LogsViewModel already holds its own search).
-  Acceptance: Rotating mid-search/mid-selection/mid-dialog preserves input and the open dialog.
-  Confidence: Verified
-  Effort: M
 
 - [ ] P3 — Partial block-source failure silently drops that source's rules from the live snapshot (no per-source content cache)
   Category: reliability

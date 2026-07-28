@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.AltRoute
 import androidx.compose.material.icons.automirrored.filled.Rule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +50,7 @@ import com.hostshield.util.BackupRestoreUtil
 @Composable
 fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
-    var showAddDialog by remember { mutableStateOf(false) }
+    var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var filterType by remember { mutableStateOf<RuleType?>(null) }
     var clipboardMessage by remember { mutableStateOf<String?>(null) }
     var pendingDeleteRule by remember { mutableStateOf<UserRule?>(null) }
@@ -264,11 +265,11 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, String, String, Boolean) -> Unit) {
-    var hostname by remember { mutableStateOf("") }
-    var type by remember { mutableStateOf(RuleType.BLOCK) }
-    var redirectIp by remember { mutableStateOf("") }
-    var comment by remember { mutableStateOf("") }
-    var isRegex by remember { mutableStateOf(false) }
+    var hostname by rememberSaveable { mutableStateOf("") }
+    var type by rememberSaveable { mutableStateOf(RuleType.BLOCK) }
+    var redirectIp by rememberSaveable { mutableStateOf("") }
+    var comment by rememberSaveable { mutableStateOf("") }
+    var isRegex by rememberSaveable { mutableStateOf(false) }
     var regexError by remember { mutableStateOf<String?>(null) }
     val redirectError = remember(type, redirectIp) {
         when {
