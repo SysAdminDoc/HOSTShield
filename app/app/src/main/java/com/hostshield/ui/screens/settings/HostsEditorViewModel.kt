@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.util.RootUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -25,7 +24,7 @@ class HostsEditorViewModel @Inject constructor(
     init { loadHostsFile() }
 
     fun loadHostsFile() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             rootUtil.readHostsFile().fold(
                 onSuccess = { content ->
@@ -96,7 +95,7 @@ class HostsEditorViewModel @Inject constructor(
             }
             return
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
             rootUtil.writeHostsFile(_state.value.content).fold(
                 onSuccess = {

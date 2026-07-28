@@ -515,26 +515,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: M-L
 
-- [ ] P3 — TLS fingerprint timeline composes up to 100 expandable cards in a non-lazy scroll column
-  Category: perf
-  Where: `TlsFingerprintScreen.kt:44-49` (Column + verticalScroll), 126 (`fingerprints.take(100).forEachIndexed`)
-  Problem: Unlike the other list screens (LazyColumn), the timeline materializes all 100 GlassCards eagerly on every recomposition — the heaviest secondary screen to open with full history; the BY_APP tab composes every group eagerly too.
-  Evidence: Whole screen is `Column(verticalScroll)`; no lazy container.
-  Fix: Convert to LazyColumn with `items(key = timestamp+ja3)`, keeping header/summary as items.
-  Acceptance: Opening with 100 captures shows no frame drops; scroll matches ConnectionLog.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — No unit tests for the hosts-editor/diff, WebDAV, tile, or widget surfaces despite their failure-path bugs
-  Category: testing
-  Where: `app/app/src/test/java/com/hostshield` (no references to HostsEditor, HostsDiff, WebDavSyncViewModel, HostShieldTileService, StatsWidgetProvider)
-  Problem: The 521-test suite covers engine/parsers/workers well, but the ViewModels where this audit found P1s (HostsEditor Result-swallowing, WebDAV dead upload, widget feed gaps) have zero coverage — which is why they survived prior passes. A thin fake-RootUtil VM test would have caught the Result-contract mismatch.
-  Evidence: Grep of test/ + androidTest/ for those names returns nothing.
-  Fix: Add JVM tests with fake RootUtil/WebDavSync: save-failure keeps isEdited + surfaces error; read-failure reaches the error state; WebDAV validation messages flagged as errors; widget updateWidget call-sites exercised via a seam.
-  Acceptance: New tests fail against current HEAD on the HostsEditor save-failure case and pass after the P1 fix.
-  Confidence: Verified
-  Effort: M
-
 ### Docs / hygiene
 
 - [ ] P3 — CLAUDE.md working notes are stale one release behind (v6.9.61 vs shipped v6.9.62)

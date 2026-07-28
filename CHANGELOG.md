@@ -31,6 +31,12 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - The hosts editor switches to a responsive read-only preview for very large
   hosts files instead of freezing in a single multi-megabyte text field.
 
+### Fixed (perf & tests)
+- The TLS fingerprint timeline uses a lazy list so it no longer composes up to
+  100 expandable cards eagerly.
+- Added ViewModel unit tests for the hosts editor (save/read failure paths) and
+  WebDAV sync (validation error state).
+
 ### Fixed (UX polish)
 - The custom upstream DNS field validates input and shows an error instead of
   silently accepting invalid servers and falling back to defaults; it saves the

@@ -2,6 +2,9 @@ package com.hostshield.ui.screens.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -41,14 +44,14 @@ fun TlsFingerprintScreen(
     var expandedIndex by remember { mutableIntStateOf(-1) }
     var showClearFingerprintsDialog by remember { mutableStateOf(false) }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Black)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .background(Black),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        item {
         HostShieldBackHeader(
             title = "TLS fingerprints",
             subtitle = "${viewModel.fingerprints.size} captures · ${viewModel.groupedByApp.size} apps",
@@ -72,8 +75,10 @@ fun TlsFingerprintScreen(
                 }
             }
         )
+        }
 
         // Summary
+        item {
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -101,7 +106,9 @@ fun TlsFingerprintScreen(
                 }
             }
         }
+        }
 
+        item {
         HostShieldSegmentedTabs(
             options = listOf(
                 HostShieldSegmentOption(TlsFingerprintViewModel.ViewMode.TIMELINE, "Timeline", Sky, Icons.Filled.Timeline),
@@ -111,19 +118,22 @@ fun TlsFingerprintScreen(
             onSelected = { viewModel.setMode(it) },
             semanticsLabel = "TLS fingerprint view",
         )
+        }
 
         if (viewModel.fingerprints.isEmpty()) {
+            item {
             HostShieldEmptyState(
                 icon = Icons.Filled.Fingerprint,
                 title = "No TLS fingerprints yet",
                 message = "Enable HostShield in VPN mode and browse normally. JA3/JA4 identities will appear here for local inspection.",
                 accent = Sky,
             )
+            }
         }
 
         when (viewModel.viewMode) {
             TlsFingerprintViewModel.ViewMode.TIMELINE -> {
-                viewModel.fingerprints.take(100).forEachIndexed { index, captured ->
+                itemsIndexed(viewModel.fingerprints.take(100)) { index, captured ->
                     val isExpanded = expandedIndex == index
                     FingerprintCard(
                         captured = captured,
@@ -133,16 +143,18 @@ fun TlsFingerprintScreen(
                     )
                 }
                 if (viewModel.fingerprints.size > 100) {
+                    item {
                     Text(
                         "${viewModel.fingerprints.size - 100} more not shown",
                         color = TextDim, fontSize = 11.sp,
                         modifier = Modifier.padding(start = 4.dp),
                     )
+                    }
                 }
             }
 
             TlsFingerprintViewModel.ViewMode.BY_APP -> {
-                viewModel.groupedByApp.entries.sortedByDescending { it.value.size }.forEach { (pkg, fps) ->
+                items(viewModel.groupedByApp.entries.sortedByDescending { it.value.size }) { (pkg, fps) ->
                     val uniqueJa3 = fps.map { it.fingerprint.ja3 }.toSet()
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(14.dp)) {
@@ -191,7 +203,7 @@ fun TlsFingerprintScreen(
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        item { Spacer(Modifier.height(24.dp)) }
     }
 
     if (showClearFingerprintsDialog) {
