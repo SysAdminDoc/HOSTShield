@@ -46,6 +46,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.HostShield.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -113,9 +114,10 @@
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
-            <meta-data
-                android:name="android.service.quicksettings.ACTIVE_TILE"
-                android:value="true" />
+            <!-- Passive tile: onStartListening fires on every QS panel open, so
+                 the tile reflects state changes made from the app/widget/worker.
+                 ACTIVE_TILE would require requestListeningState() calls on every
+                 protection-state transition, which nothing performs. -->
         </service>
 
         <!-- Tasker / MacroDroid / shell automation API -->

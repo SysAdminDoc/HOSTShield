@@ -463,7 +463,19 @@ class DnsVpnService : VpnService() {
         return START_STICKY
     }
 
-    override fun onRevoke() { stopVpn(); super.onRevoke() }
+    override fun onRevoke() {
+        // System-initiated revoke (another VPN took the slot). Unlike a
+        // user-initiated stop, nothing else updates the enabled pref or the
+        // widget here — without this they keep showing "Protected".
+        teardownScope.launch {
+            try { prefs.setEnabled(false) } catch (_: Exception) { }
+            HostShieldWidgetProvider.updateWidget(
+                applicationContext, false,
+                try { prefs.lastApplyCount.first() } catch (_: Exception) { 0 }
+            )
+        }
+        stopVpn(); super.onRevoke()
+    }
 
     override fun onTimeout(startId: Int) {
         handleForegroundServiceTimeout(startId, 0)
@@ -579,6 +591,10 @@ class DnsVpnService : VpnService() {
             threatIntelEnabled = prefs.threatIntelEnabled.first()
             dnsOnlyMode = prefs.dnsOnlyMode.first()
             safeSearchEnabled = prefs.safeSearchEnabled.first()
+            // Pre-warm and keep safe-search endpoints resolved off the packet
+            // loop — a cold cache there blocks the single TUN thread on a
+            // system-resolver lookup.
+            if (safeSearchEnabled) safeSearchEnforcer.startBackgroundRefresh()
             contentFilterCategories = prefs.contentFilterCategories.first()
                 .mapNotNull { name ->
                     try { ContentCategory.valueOf(name) } catch (_: Exception) { null }
@@ -700,6 +716,14 @@ class DnsVpnService : VpnService() {
             vpnInterface = builder.establish()
             if (vpnInterface == null) {
                 Log.e(TAG, "VPN establish() returned null -- permission revoked?")
+                // Reflect reality: without this, the enabled pref (set by the
+                // caller), the widget, and the QS tile keep claiming "Protected"
+                // while the service silently exits.
+                try { prefs.setEnabled(false) } catch (_: Exception) { }
+                HostShieldWidgetProvider.updateWidget(
+                    applicationContext, false,
+                    try { prefs.lastApplyCount.first() } catch (_: Exception) { 0 }
+                )
                 stopSelf(); return
             }
 
@@ -763,6 +787,7 @@ class DnsVpnService : VpnService() {
     }
 
     private fun stopVpn() {
+        safeSearchEnforcer.stopBackgroundRefresh()
         val wasRunning = isRunning
         if (wasRunning) {
             diagnosticEvents.recordBlocking(
@@ -1985,6 +2010,8 @@ class DnsVpnService : VpnService() {
     private suspend fun applyLiveFilterConfig() {
         threatIntelEnabled = prefs.threatIntelEnabled.first()
         safeSearchEnabled = prefs.safeSearchEnabled.first()
+        if (safeSearchEnabled) safeSearchEnforcer.startBackgroundRefresh()
+        else safeSearchEnforcer.stopBackgroundRefresh()
         contentFilterCategories = prefs.contentFilterCategories.first()
             .mapNotNull { name -> try { ContentCategory.valueOf(name) } catch (_: Exception) { null } }
             .toSet()
@@ -2615,19 +2642,19 @@ class DnsVpnService : VpnService() {
         }
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(title).setContentText(sub)
-            .setSmallIcon(android.R.drawable.ic_lock_lock).setOngoing(true)
+            .setSmallIcon(com.hostshield.R.drawable.ic_shield).setOngoing(true)
             .setContentIntent(ci)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
 
         if (isPaused) {
-            builder.addAction(android.R.drawable.ic_media_play, "Resume", makePausePendingIntent(0, 5))
+            builder.addAction(0, "Resume", makePausePendingIntent(0, 5))
         } else {
             // Max 3 actions: Pause 5m, Pause 30m, Stop
-            builder.addAction(android.R.drawable.ic_media_pause, "Pause 5m", makePausePendingIntent(5, 2))
-            builder.addAction(android.R.drawable.ic_media_pause, "Pause 30m", makePausePendingIntent(30, 3))
+            builder.addAction(0, "Pause 5m", makePausePendingIntent(5, 2))
+            builder.addAction(0, "Pause 30m", makePausePendingIntent(30, 3))
         }
-        builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", si)
+        builder.addAction(0, "Stop", si)
 
         return builder.build()
     }

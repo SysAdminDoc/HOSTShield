@@ -53,12 +53,24 @@ class SourceFailureNotifier @Inject constructor(
                 "${notice.label}: ${notice.failureSummary()} (${formatLastSuccess(notice.lastSuccessfulUpdate)})"
             } + if (notices.size > 5) "\n+${notices.size - 5} more" else ""
 
+        // Body tap opens Sources; setAutoCancel is inert without a contentIntent.
+        val sourcesIntent = android.content.Intent(context, com.hostshield.MainActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+            action = android.content.Intent.ACTION_VIEW
+            data = android.net.Uri.parse("hostshield://sources")
+        }
+        val sourcesPending = android.app.PendingIntent.getActivity(
+            context, NOTIFICATION_ID_HEALTH, sourcesIntent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = NotificationCompat.Builder(context, DnsVpnService.ALERT_CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(expanded))
             .setSmallIcon(com.hostshield.R.drawable.ic_shield)
             .setAutoCancel(true)
+            .setContentIntent(sourcesPending)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 

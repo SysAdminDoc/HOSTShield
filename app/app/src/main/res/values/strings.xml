@@ -13,6 +13,14 @@
     <string name="widget_status_protected">Protected</string>
     <string name="widget_status_inactive">Inactive</string>
     <string name="widget_toggle_enable">Enable</string>
+    <string name="widget_toggle_disable">Disable</string>
+    <string name="widget_mode_vpn">VPN</string>
+    <string name="widget_mode_root">Root</string>
+    <string name="widget_mode_proxy">Proxy</string>
+    <string name="widget_domains_count">%1$s domains</string>
+    <string name="widget_blocked_today_count">%1$s blocked today</string>
+    <string name="widget_updated_ago">Updated %1$s ago</string>
+    <string name="widget_updated_just_now">Updated just now</string>
     <string name="widget_stats_title">HostShield Stats</string>
     <string name="widget_blocked_today">blocked today</string>
     <string name="widget_queries">queries</string>
@@ -83,6 +91,7 @@
     <string name="label_check_for_updates">Check for updates</string>
     <string name="label_view_on_github">View on GitHub</string>
     <string name="settings_github_unavailable">No browser is available to open GitHub.</string>
+    <string name="settings_no_browser_available">No browser is available to open the download link.</string>
     <string name="settings_oem_detected">%1$s detected</string>
     <string name="settings_oem_whitelist_hint">Add HostShield to its whitelist for reliable protection. Visit dontkillmyapp.com for device-specific instructions.</string>
     <string name="settings_set_accent_color">Set accent color to %1$s</string>
@@ -116,7 +125,7 @@
     <string name="settings_app_privacy">App privacy report</string>
     <string name="settings_app_privacy_sub">Grade each app\'s tracking behavior</string>
     <string name="settings_automation_audit">Automation audit log</string>
-    <string name="settings_automation_audit_sub">View commands from Tasker, ADB, etc</string>
+    <string name="settings_automation_audit_sub">View commands from Tasker, ADB, and other automation tools</string>
     <string name="settings_export_firewall">Export firewall rules</string>
     <string name="settings_export_firewall_sub">Save per-app network rules as JSON</string>
     <string name="settings_import_rules">Import rules</string>

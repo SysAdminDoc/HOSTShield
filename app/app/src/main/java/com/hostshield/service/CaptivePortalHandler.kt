@@ -134,27 +134,23 @@ class CaptivePortalHandler @Inject constructor(
 
         val notification = NotificationCompat.Builder(context, DnsVpnService.ALERT_CHANNEL_ID)
             .setContentTitle("Captive Portal Detected")
-            .setContentText("VPN paused — tap to log in to Wi-Fi network")
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentText("VPN paused. Tap to log in to the Wi-Fi network.")
+            .setSmallIcon(com.hostshield.R.drawable.ic_shield)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pi)
-            .addAction(android.R.drawable.ic_menu_directions, "Login", pi)
+            .addAction(0, "Log in", pi)
             .build()
 
         context.getSystemService(NotificationManager::class.java)
             ?.notify(NOTIFICATION_ID, notification)
     }
 
-    private fun getCaptivePortalUrl(network: Network): String {
-        // On API 30+, ConnectivityManager can provide the portal URL via LinkProperties
-        // Fall back to the standard connectivity check URL
-        try {
-            val cm = context.getSystemService(ConnectivityManager::class.java) ?: return CAPTIVE_PORTAL_URL
-            val lp = cm.getLinkProperties(network)
-            // CaptivePortalData is API 30+ but its userPortalUrl may not always
-            // be populated. Fall through to default connectivity check URL.
-        } catch (_: Exception) { }
+    private fun getCaptivePortalUrl(@Suppress("UNUSED_PARAMETER") network: Network): String {
+        // The network's actual portal URL (LinkProperties.getCaptivePortalData)
+        // is @SystemApi and not readable by a normal app. Opening the standard
+        // connectivity-check URL works regardless: on a captive network it
+        // redirects the browser to the portal's login page.
         return CAPTIVE_PORTAL_URL
     }
 

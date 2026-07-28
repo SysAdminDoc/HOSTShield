@@ -75,7 +75,9 @@ class HostShieldTileService : TileService() {
                     BlockMethod.DISABLED -> { }
                 }
                 prefs.setEnabled(false)
-                HostShieldWidgetProvider.updateWidget(applicationContext, false, 0)
+                HostShieldWidgetProvider.updateWidget(
+                    applicationContext, false, prefs.lastApplyCount.first()
+                )
                 updateTile(false, method)
             } else {
                 // No protection method chosen — nothing to start. Keep the tile
@@ -84,8 +86,19 @@ class HostShieldTileService : TileService() {
                     updateTile(false, method)
                     return@launch
                 }
-                // Start
-                when (method) {
+                // VPN consent missing (tile added before first in-app enable, or
+                // another VPN app took the slot): establish() would return null
+                // and the service would stopSelf() — while the tile/widget/pref
+                // all claimed "Protected". Route through the app to request it.
+                if (method == BlockMethod.VPN &&
+                    android.net.VpnService.prepare(this@HostShieldTileService) != null
+                ) {
+                    launchAppForConsent()
+                    updateTile(false, method)
+                    return@launch
+                }
+                // Start — only mark enabled if the start was actually accepted.
+                val started = when (method) {
                     BlockMethod.VPN -> {
                         val intent = Intent(this@HostShieldTileService, DnsVpnService::class.java)
                             .apply { action = DnsVpnService.ACTION_START }
@@ -101,7 +114,11 @@ class HostShieldTileService : TileService() {
                     BlockMethod.DNS_PROXY -> {
                         DnsProxyService.start(this@HostShieldTileService, "HostShieldTileService")
                     }
-                    BlockMethod.DISABLED -> { }
+                    BlockMethod.DISABLED -> false
+                }
+                if (!started) {
+                    updateTile(false, method)
+                    return@launch
                 }
                 prefs.setEnabled(true)
                 val count = prefs.lastApplyCount.first()
@@ -113,6 +130,29 @@ class HostShieldTileService : TileService() {
         }
     }
 
+    private fun launchAppForConsent() {
+        val intent = Intent(this, com.hostshield.MainActivity::class.java).apply {
+            action = "com.hostshield.SHORTCUT_TOGGLE"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                startActivityAndCollapse(
+                    android.app.PendingIntent.getActivity(
+                        this, 0, intent,
+                        android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                            android.app.PendingIntent.FLAG_IMMUTABLE
+                    )
+                )
+            } else {
+                @Suppress("DEPRECATION", "StartActivityAndCollapseDeprecated")
+                startActivityAndCollapse(intent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("HostShieldTile", "Could not open app for VPN consent: ${e.message}")
+        }
+    }
+
     private fun updateTile(isEnabled: Boolean, method: BlockMethod) {
         val tile = qsTile ?: return
         tile.state = if (isEnabled) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
@@ -121,8 +161,10 @@ class HostShieldTileService : TileService() {
             tile.subtitle = when {
                 !isEnabled -> "Off"
                 method == BlockMethod.VPN -> {
+                    // Counter resets on VPN (re)start, not at midnight — label
+                    // it as a plain count, not "today".
                     val count = DnsVpnService.currentBlockedCount
-                    if (count > 0) "$count blocked today" else "VPN"
+                    if (count > 0) "$count blocked" else "VPN"
                 }
                 method == BlockMethod.ROOT_HOSTS -> "Root"
                 method == BlockMethod.DNS_PROXY -> "Proxy"

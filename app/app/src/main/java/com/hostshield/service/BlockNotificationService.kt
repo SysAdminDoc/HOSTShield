@@ -102,8 +102,10 @@ class BlockNotificationService @Inject constructor(
 
         // "Firewall this app" action — launches firewall screen
         val firewallIntent = android.content.Intent(context, com.hostshield.MainActivity::class.java).apply {
-            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-            putExtra("navigate_to", "firewall")
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+            action = android.content.Intent.ACTION_VIEW
+            data = android.net.Uri.parse("hostshield://firewall")
         }
         val firewallPending = android.app.PendingIntent.getActivity(
             context, notificationId + 1000, firewallIntent,
@@ -112,7 +114,8 @@ class BlockNotificationService @Inject constructor(
 
         // "View logs" action
         val logsIntent = android.content.Intent(context, com.hostshield.MainActivity::class.java).apply {
-            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
             action = "com.hostshield.SHORTCUT_LOGS"
         }
         val logsPending = android.app.PendingIntent.getActivity(
@@ -127,6 +130,7 @@ class BlockNotificationService @Inject constructor(
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setAutoCancel(true)
+            .setContentIntent(logsPending)
             .setGroup("hostshield_blocks")
             .addAction(0, "Firewall App", firewallPending)
             .addAction(0, "View Logs", logsPending)

@@ -104,11 +104,21 @@ class LogCleanupWorker @AssistedInject constructor(
             .let { nm.createNotificationChannel(it) }
 
         val text = "$deletedCount old DNS log entries removed (retention: ${retentionDays}d)"
+        // Body tap opens the app; setAutoCancel is inert without a contentIntent.
+        val openPending = android.app.PendingIntent.getActivity(
+            applicationContext, NOTIFICATION_ID_CLEANUP,
+            android.content.Intent(applicationContext, com.hostshield.MainActivity::class.java).apply {
+                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                    android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+            },
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = NotificationCompat.Builder(applicationContext, MAINTENANCE_CHANNEL_ID)
             .setContentTitle("Log cleanup complete")
             .setContentText(text)
             .setSmallIcon(com.hostshield.R.drawable.ic_shield)
             .setAutoCancel(true)
+            .setContentIntent(openPending)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
