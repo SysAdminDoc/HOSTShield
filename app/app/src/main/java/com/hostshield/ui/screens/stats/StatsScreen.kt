@@ -643,14 +643,17 @@ private fun HourlyBarChart(data: List<HourlyStat>, modifier: Modifier) {
     val labelColor = TextDim
 
     Canvas(modifier = modifier) {
-        val barWidth = size.width / 28f
+        // One slot per hour: 24 slots must fit the canvas exactly. The previous
+        // width/28 + (i+1) positioning pushed hours 22-23 past the right edge,
+        // silently hiding all evening activity.
+        val slot = size.width / 24f
+        val barWidth = slot * 0.83f
         val chartHeight = size.height - 22f
-        val gap = barWidth / 5f
 
         for (i in 0..23) {
             val frac = hourData[i] / maxVal
             val barH = frac * chartHeight * 0.9f
-            val x = (i + 1f) * (barWidth + gap)
+            val x = i * slot
             val y = chartHeight - barH
 
             // Bar with gradient
@@ -1054,14 +1057,17 @@ private fun LatencyBarChart(data: List<com.hostshield.data.database.HourlyLatenc
     val labelColor = TextDim
 
     Canvas(modifier = modifier) {
-        val barWidth = size.width / 28f
+        // One slot per hour: 24 slots must fit the canvas exactly. The previous
+        // width/28 + (i+1) positioning pushed hours 22-23 past the right edge,
+        // silently hiding all evening activity.
+        val slot = size.width / 24f
+        val barWidth = slot * 0.83f
         val chartHeight = size.height - 22f
-        val gap = barWidth / 5f
 
         for (i in 0..23) {
             val avgFrac = hourData[i] / maxVal
             val maxFrac = maxData[i] / maxVal
-            val x = (i + 1f) * (barWidth + gap)
+            val x = i * slot
 
             // Max bar (faded)
             val maxH = maxFrac * chartHeight * 0.9f

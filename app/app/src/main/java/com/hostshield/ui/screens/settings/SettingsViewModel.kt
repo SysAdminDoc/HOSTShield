@@ -655,6 +655,13 @@ class SettingsViewModel @Inject constructor(
     fun setDynamicColor(enabled: Boolean) { viewModelScope.launch { prefs.setDynamicColor(enabled) } }
     fun setThemeMode(mode: String) { viewModelScope.launch { prefs.setThemeMode(mode) } }
 
+    fun setScheduleTime(start: String?, end: String?) {
+        viewModelScope.launch {
+            start?.let { prefs.setScheduleStart(it) }
+            end?.let { prefs.setScheduleEnd(it) }
+        }
+    }
+
     fun setScheduleEnabled(v: Boolean) {
         viewModelScope.launch {
             prefs.setScheduleEnabled(v)
@@ -1311,7 +1318,10 @@ class SettingsViewModel @Inject constructor(
 
     private fun writeExportArtifactToUri(artifact: ExportArtifact, uri: Uri) {
         val resolver = getApplication<android.app.Application>().contentResolver
-        val output = resolver.openOutputStream(uri)
+        // "wt": default mode "w" does not truncate on many DocumentsProviders,
+        // so overwriting a longer existing file leaves stale tail bytes and a
+        // corrupt (unparseable) export.
+        val output = resolver.openOutputStream(uri, "wt")
             ?: error("Unable to open export destination")
         output.use { artifact.writeExportBytesTo(it) }
     }

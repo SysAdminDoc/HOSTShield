@@ -95,6 +95,24 @@ class RulesViewModelTest {
     }
 
     @Test
+    fun `addRule classifies a wildcard even with surrounding whitespace`() = runTest {
+        // Regression: the wildcard check ran on the UNtrimmed input, so a
+        // pasted " *.doubleclick.net" was stored trimmed but as an exact rule
+        // for the literal "*." string — silently matching nothing.
+        val vm = createViewModel()
+        vm.addRule(" *.doubleclick.net ", RuleType.BLOCK)
+        advanceUntilIdle()
+
+        coVerify {
+            repository.addRule(match {
+                it.hostname == "*.doubleclick.net" &&
+                    it.isWildcard &&
+                    !it.isRegex
+            })
+        }
+    }
+
+    @Test
     fun `deleteRule invokes repository delete`() = runTest {
         val rule = UserRule(id = 5, hostname = "tracker.evil.com", type = RuleType.BLOCK)
         val vm = createViewModel()

@@ -291,7 +291,10 @@ class BackupRestoreUtil @Inject constructor(
         } else {
             json.toByteArray(Charsets.UTF_8)
         }
-        context.contentResolver.openOutputStream(uri)?.use { stream ->
+        // "wt": plain "w" does not truncate on many DocumentsProviders, so a
+        // smaller backup written over a larger existing file keeps the old tail
+        // bytes and becomes unrestorable.
+        context.contentResolver.openOutputStream(uri, "wt")?.use { stream ->
             stream.write(bytes)
         } ?: throw Exception("Cannot open output stream")
     }

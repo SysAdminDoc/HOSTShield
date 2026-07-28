@@ -141,7 +141,12 @@ class HomeViewModel @Inject constructor(
         .runningFold(emptyList<DnsLogEntry>()) { acc, entry ->
             (listOf(entry) + acc).take(200) // keep last 200, newest first
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        // Eagerly, NOT WhileSubscribed: the sole consumer is trackQueryRate's
+        // periodic .value poll, which never registers a collector. Under
+        // WhileSubscribed the upstream never starts and the value stays
+        // emptyList() forever — killing the qpm/blocks pills, the latency
+        // sparkline, and query-anomaly detection.
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     init {
         checkRoot()
@@ -193,6 +198,10 @@ class HomeViewModel @Inject constructor(
     // Baseline query rate (rolling average over first 10 minutes)
     private val baselineRates = java.util.Collections.synchronizedList(mutableListOf<Int>())
     @Volatile private var baselineQpm = 0
+
+    // True once the live Room entry count has emitted; from then on the pref
+    // combine must stop re-writing totalDomainsBlocked with lastApplyCount.
+    @Volatile private var liveEntryCountSeen = false
 
     /** Track live query rate + anomaly detection from the VPN live stream. */
     private fun trackQueryRate() {
@@ -394,7 +403,12 @@ class HomeViewModel @Inject constructor(
                         isEnabled = s1.isEnabled,
                         blockMethod = s1.blockMethod,
                         lastApplyTime = s1.lastApplyTime,
-                        totalDomainsBlocked = s1.lastApplyCount,
+                        // lastApplyCount is only a pre-first-emission fallback:
+                        // once the live Room entry count has emitted, re-writing
+                        // it here on every unrelated pref change would stomp the
+                        // tile back to the stale figure from the last apply.
+                        totalDomainsBlocked =
+                            if (liveEntryCountSeen) it.totalDomainsBlocked else s1.lastApplyCount,
                         dnsTrapEnabled = s1.dnsTrapEnabled,
                         dohEnabled = s2.dohEnabled,
                         firewalledApps = s2.firewalledApps,
@@ -428,6 +442,7 @@ class HomeViewModel @Inject constructor(
                 // A previous maxOf() pinned the tile to a stale high figure so it
                 // never dropped after the user disabled a large source; only
                 // guard against the initial null/0 emission.
+                if (count != null) liveEntryCountSeen = true
                 _uiState.update { current ->
                     current.copy(totalDomainsBlocked = count ?: current.totalDomainsBlocked)
                 }

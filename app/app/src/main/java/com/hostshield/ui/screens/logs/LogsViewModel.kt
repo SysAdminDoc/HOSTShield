@@ -282,6 +282,7 @@ class LogsViewModel @Inject constructor(
 
     fun blockDomain(hostname: String) {
         val host = hostname.lowercase()
+        val wasAllowed = host in _allowedHostnames.value
         _blockedHostnames.update { it + host }
         _allowedHostnames.update { it - host }
 
@@ -294,6 +295,10 @@ class LogsViewModel @Inject constructor(
                     rootUtil.appendHostEntry(host)
                 }
             } catch (e: Exception) {
+                // Roll the optimistic UI state back (mirrors temporaryAllow) —
+                // otherwise the row keeps rendering BLOCKED with no rule behind it.
+                _blockedHostnames.update { it - host }
+                if (wasAllowed) _allowedHostnames.update { it + host }
                 PrivacyLog.e("LogsViewModel", "Failed to block domain: $host", e)
                 _error.value = "Could not block $host. Check permissions and try again."
             }
@@ -302,6 +307,7 @@ class LogsViewModel @Inject constructor(
 
     fun allowDomain(hostname: String) {
         val host = hostname.lowercase()
+        val wasBlocked = host in _blockedHostnames.value
         _blockedHostnames.update { it - host }
         _allowedHostnames.update { it + host }
 
@@ -314,6 +320,8 @@ class LogsViewModel @Inject constructor(
                     rootUtil.removeHostEntry(host)
                 }
             } catch (e: Exception) {
+                _allowedHostnames.update { it - host }
+                if (wasBlocked) _blockedHostnames.update { it + host }
                 PrivacyLog.e("LogsViewModel", "Failed to allow domain: $host", e)
                 _error.value = "Could not allow $host. Check permissions and try again."
             }
@@ -358,6 +366,7 @@ class LogsViewModel @Inject constructor(
 
     fun blockDomains(hostnames: Set<String>) {
         val hosts = hostnames.map { it.lowercase() }
+        val priorAllowed = _allowedHostnames.value.intersect(hosts.toSet())
         _blockedHostnames.update { it + hosts }
         _allowedHostnames.update { it - hosts.toSet() }
         viewModelScope.launch(Dispatchers.IO) {
@@ -371,6 +380,8 @@ class LogsViewModel @Inject constructor(
                     hosts.forEach { rootUtil.appendHostEntry(it) }
                 }
             } catch (e: Exception) {
+                _blockedHostnames.update { it - hosts.toSet() }
+                _allowedHostnames.update { it + priorAllowed }
                 Log.e("LogsViewModel", "Failed to block domains", e)
                 _error.value = "Could not block the selected domains. Try again."
             }
@@ -427,6 +438,7 @@ class LogsViewModel @Inject constructor(
 
     fun allowDomains(hostnames: Set<String>) {
         val hosts = hostnames.map { it.lowercase() }
+        val priorBlocked = _blockedHostnames.value.intersect(hosts.toSet())
         _blockedHostnames.update { it - hosts.toSet() }
         _allowedHostnames.update { it + hosts.toSet() }
         viewModelScope.launch(Dispatchers.IO) {
@@ -440,6 +452,8 @@ class LogsViewModel @Inject constructor(
                     hosts.forEach { rootUtil.removeHostEntry(it) }
                 }
             } catch (e: Exception) {
+                _allowedHostnames.update { it - hosts.toSet() }
+                _blockedHostnames.update { it + priorBlocked }
                 Log.e("LogsViewModel", "Failed to allow domains", e)
                 _error.value = "Could not allow the selected domains. Try again."
             }
