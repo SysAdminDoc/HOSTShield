@@ -37,6 +37,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.service.BlockingScheduleWorker
 import com.hostshield.service.DnsProxyService
 import com.hostshield.service.DnsVpnService
 import com.hostshield.service.HostShieldWidgetProvider
@@ -258,11 +259,16 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             SourceHealthWorker.schedule(this@MainActivity, prefs.wifiOnly.first())
+            // Covers a backup restore that landed schedule_enabled=true on an
+            // install where the periodic worker was never enqueued.
+            if (prefs.scheduleEnabled.first()) {
+                BlockingScheduleWorker.schedule(this@MainActivity)
+            }
         }
         LogCleanupWorker.schedule(this)
         ProfileScheduleWorker.schedule(this)
 
-        // Handle app shortcuts and widget toggle
+        // Handle app shortcuts, deep links, and the widget/tile consent fallback
         handleShortcutIntent(intent)
 
         setContent {

@@ -29,7 +29,8 @@ class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED &&
-            intent.action != "android.intent.action.QUICKBOOT_POWERON"
+            intent.action != "android.intent.action.QUICKBOOT_POWERON" &&
+            intent.action != "com.htc.intent.action.QUICKBOOT_POWERON"
         ) return
 
         val pendingResult = goAsync()
@@ -53,6 +54,13 @@ class BootReceiver : BroadcastReceiver() {
                 SourceHealthWorker.schedule(context, wifiOnly)
                 LogCleanupWorker.schedule(context)
                 ProfileScheduleWorker.schedule(context)
+                // Re-register the blocking schedule after a restore onto a fresh
+                // install: WorkManager persistence only covers the install that
+                // enqueued the worker, and restoreBackup() can land
+                // schedule_enabled=true without any enqueue having happened.
+                if (prefs.scheduleEnabled.first()) {
+                    BlockingScheduleWorker.schedule(context)
+                }
 
                 if (lanDnsEnabled) {
                     val port = prefs.lanDnsPort.first()

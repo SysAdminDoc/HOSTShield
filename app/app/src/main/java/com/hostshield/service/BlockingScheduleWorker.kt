@@ -82,10 +82,12 @@ class BlockingScheduleWorker @AssistedInject constructor(
             }
 
             if (shouldBeEnabled != isCurrentlyEnabled && method != BlockMethod.DISABLED) {
-                prefs.setEnabled(shouldBeEnabled)
-
                 if (shouldBeEnabled) {
-                    when (method) {
+                    // Start FIRST, flip the pref only on success. Writing the pref
+                    // before a denied foreground-service start would make every
+                    // later tick see shouldBeEnabled == isCurrentlyEnabled and
+                    // silently skip the whole window while the UI claims enabled.
+                    val started = when (method) {
                         BlockMethod.VPN -> {
                             val intent = Intent(applicationContext, DnsVpnService::class.java)
                                 .apply { action = DnsVpnService.ACTION_START }
@@ -103,23 +105,36 @@ class BlockingScheduleWorker @AssistedInject constructor(
                             applicationContext,
                             "BlockingScheduleWorker"
                         )
-                        BlockMethod.DISABLED -> { }
+                        BlockMethod.DISABLED -> false
                     }
+                    if (!started) {
+                        Log.w(TAG, "Schedule enable start denied for $method — retrying")
+                        return Result.retry()
+                    }
+                    prefs.setEnabled(true)
                 } else {
-                    when (method) {
-                        BlockMethod.VPN -> {
-                            val intent = Intent(applicationContext, DnsVpnService::class.java)
-                                .apply { action = DnsVpnService.ACTION_STOP }
-                            applicationContext.startService(intent)
+                    prefs.setEnabled(false)
+                    try {
+                        when (method) {
+                            BlockMethod.VPN -> {
+                                val intent = Intent(applicationContext, DnsVpnService::class.java)
+                                    .apply { action = DnsVpnService.ACTION_STOP }
+                                applicationContext.startService(intent)
+                            }
+                            BlockMethod.ROOT_HOSTS -> RootDnsService.stop(applicationContext)
+                            BlockMethod.DNS_PROXY -> DnsProxyService.stop(applicationContext)
+                            BlockMethod.DISABLED -> { }
                         }
-                        BlockMethod.ROOT_HOSTS -> RootDnsService.stop(applicationContext)
-                        BlockMethod.DNS_PROXY -> DnsProxyService.stop(applicationContext)
-                        BlockMethod.DISABLED -> { }
+                    } catch (e: IllegalStateException) {
+                        // Service not running and app in background — nothing to stop.
+                        Log.i(TAG, "Schedule disable: service already stopped (${e.message})")
                     }
                 }
 
                 Log.i(TAG, "Schedule: ${if (shouldBeEnabled) "enabled" else "disabled"} blocking ($mode mode, window $startStr-$endStr)")
-                HostShieldWidgetProvider.updateWidget(applicationContext, shouldBeEnabled, 0)
+                HostShieldWidgetProvider.updateWidget(
+                    applicationContext, shouldBeEnabled, prefs.lastApplyCount.first()
+                )
             }
         } catch (e: Exception) {
             Log.e(TAG, "Schedule check failed: ${e.message}", e)

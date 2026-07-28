@@ -50,7 +50,7 @@ class PauseResumeWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         return try {
             val method = prefs.blockMethod.first()
-            when (method) {
+            val started = when (method) {
                 BlockMethod.VPN -> {
                     ProtectionServiceStarter.startForegroundService(
                         appContext,
@@ -71,6 +71,14 @@ class PauseResumeWorker @AssistedInject constructor(
                     Log.i("PauseResume", "Pause expired but method is DISABLED — leaving protection off")
                     return Result.success()
                 }
+            }
+            if (!started) {
+                // Foreground-service start denied (e.g., Android 12+ background
+                // restriction without a battery exemption). Do NOT mark protection
+                // enabled — the UI would claim "Protected" with nothing running.
+                // Retry with backoff; the start succeeds once the app is foregrounded.
+                Log.w("PauseResume", "Resume start denied for $method — retrying")
+                return Result.retry()
             }
             prefs.setEnabled(true)
             prefs.setPauseEndTime(0L)
