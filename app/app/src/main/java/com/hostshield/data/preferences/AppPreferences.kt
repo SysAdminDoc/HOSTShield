@@ -231,6 +231,7 @@ class AppPreferences @Inject constructor(
 
     val parentalPinHash: Flow<String> get() = security.parentalPinHash
     suspend fun setParentalPinHash(hash: String) = security.setParentalPinHash(hash)
+    suspend fun isParentalPinUndecryptable(): Boolean = security.isParentalPinUndecryptable()
 
     val parentalPinRehashRequired: Flow<Boolean> get() = security.parentalPinRehashRequired
     suspend fun refreshParentalPinRehashRequired() = security.refreshParentalPinRehashRequired()

@@ -524,26 +524,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: M
 
-- [ ] P3 — SecureStore fails open on Keystore loss — parental PIN gate silently evaporates
-  Category: security
-  Where: `data/preferences/SecureStore.kt:38-46` (`getString` → `getOrDefault(default)`); `service/ParentalControlManager.kt:176-177,221`
-  Problem: If the Keystore master key becomes unusable (OS/vendor keymaster fault), `getString` returns `""`. `isPinSet()` then returns false and `verifyPinDetailed` returns `NoPin`, so all PIN-gated parental actions become accessible with no PIN — fail-open on a control meant to restrict another user. `contains()` still returns true for the undecryptable entry (internally inconsistent).
-  Evidence: The decrypt failure path is a blanket `runCatching{}.getOrDefault(default)`; no caller distinguishes "absent" from "present but undecryptable".
-  Fix: Expose a tri-state read (absent/value/undecryptable); ParentalControlManager treats "undecryptable while parental_enabled=true" as locked (require PIN reset), not no-PIN.
-  Acceptance: With a broken master key and parental controls enabled, PIN-gated screens show a lock/recovery state, not open access.
-  Confidence: Verified (code path; trigger is environmental)
-  Effort: M
-
-- [ ] P3 — Downloaded source allowlists can neutralize REMOTE DoH-bypass guard entries (latent until the manifest re-signs)
-  Category: security
-  Where: `domain/BlocklistHolder.kt` `decideInternal()` — hardcoded DoH checks (710-725) precede allows, but remote-list entries live in `exactBlockSet`/wildcardBlock, evaluated AFTER `sourceExactAllowDomains` (735) and wildcard-allow (776-790); `BlocklistSourceCoordinator.rebuildBlocklistHolder` merges the remote cache into ordinary block sets (197-202)
-  Problem: v6.9.59 stopped source allowlists from bypassing threat-intel, but the remote DoH-bypass list gets no such protection: a subscribed allowlist containing a remote-listed DoH endpoint returns "Source allowlist" allowed before the block is consulted, re-opening the bypass the list exists to close. Latent now (shipped manifest previously failed signature) but note the release-doc gate now PASSES — so the remote cache may become populated in production and this becomes live.
-  Evidence: `mergeCachedInto` puts remote domains/wildcards into `allDomains`/`sourceWildcardBlocks` with only an origin label; no decision-path special-casing. `ThreatIntelBypassDecisionTest` covers threat intel only.
-  Fix: Track remote DoH-bypass domains/wildcards as a dedicated snapshot field checked alongside the hardcoded sets (before allow evaluation), or exclude them from allow overrides the way threat intel is. User allows may still win.
-  Acceptance: Remote cache contains `dns.newprovider.com`; a source allowlist with the same domain → `decide()` still returns blocked/`doh_bypass`; a user allow still wins.
-  Confidence: Verified
-  Effort: M
-
 - [ ] P3 — Partial block-source failure silently drops that source's rules from the live snapshot (no per-source content cache)
   Category: reliability
   Where: `service/BlocklistSourceCoordinator.kt:79-103,144-163`

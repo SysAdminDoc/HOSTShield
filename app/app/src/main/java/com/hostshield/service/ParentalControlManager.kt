@@ -174,7 +174,13 @@ class ParentalControlManager @Inject constructor(
         if (until > now) return PinResult.LockedOut(until - now)
 
         val storedHash = prefs.parentalPinHash.first()
-        if (storedHash.isEmpty()) return PinResult.NoPin
+        if (storedHash.isEmpty()) {
+            // Fail closed: an empty read can mean either "no PIN" or "PIN exists
+            // but the Keystore key is unrecoverable". In the latter case, keep the
+            // gate locked (a wrong result) instead of granting NoPin access.
+            if (prefs.isParentalPinUndecryptable()) return PinResult.Wrong
+            return PinResult.NoPin
+        }
 
         val match = if (ParentalPinHashPolicy.isLegacySha256Record(storedHash)) {
             val legacyMatch = ParentalPinHashPolicy.verifyLegacySha256Pin(pin, storedHash)
@@ -218,7 +224,10 @@ class ParentalControlManager @Inject constructor(
     /**
      * Check if a PIN has been configured.
      */
-    suspend fun isPinSet(): Boolean = prefs.parentalPinHash.first().isNotEmpty()
+    // A PIN counts as "set" when the hash is present OR present-but-undecryptable,
+    // so a Keystore-loss doesn't silently disable the parental gate.
+    suspend fun isPinSet(): Boolean =
+        prefs.parentalPinHash.first().isNotEmpty() || prefs.isParentalPinUndecryptable()
 
     suspend fun isPinRehashRequired(): Boolean =
         prefs.parentalPinRehashRequired.first() ||

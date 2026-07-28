@@ -64,6 +64,18 @@ class SecureStore @Inject constructor(
         return prefs.contains(SecureStoreCrypto.storageKey(key))
     }
 
+    /**
+     * True when a value for [key] exists on disk but cannot be decrypted (e.g.
+     * the Keystore master key was lost/rotated). Lets security-sensitive callers
+     * distinguish "absent" (getString returns default) from "present but
+     * unrecoverable" and fail closed instead of open.
+     */
+    fun isPresentButUndecryptable(key: String): Boolean {
+        ensureLegacyMigration()
+        val envelope = prefs.getString(SecureStoreCrypto.storageKey(key), null) ?: return false
+        return runCatching { SecureStoreCrypto.decryptString(key, envelope, masterKey) }.isFailure
+    }
+
     private fun ensureLegacyMigration() {
         if (migrationChecked || prefs.getBoolean(KEY_LEGACY_MIGRATION_DONE, false)) {
             migrationChecked = true

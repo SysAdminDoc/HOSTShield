@@ -137,6 +137,11 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   passphrase still fails.
 
 ### Security
+- The parental-control PIN gate now fails closed if the Keystore master key
+  becomes unrecoverable (PIN present but undecryptable) instead of silently
+  granting no-PIN access.
+- A subscribed source allowlist can no longer neutralize a remote DoH-bypass
+  guard entry; user allow rules still take precedence.
 - The launcher "Toggle Protection" shortcut now verifies the caller with the
   authoritative launched-from identity on Android 14+ (and the resolved default
   launcher on older releases) instead of the spoofable activity referrer, so a

@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.*
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.hostshield.util.ParentalPinHashPolicy
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -144,6 +145,11 @@ class SecurityPreferences @Inject constructor(
     /** PIN hash is now served from SecureStore (Flow wrapper for API compat). */
     val parentalPinHash: Flow<String>
         get() = flow { emit(secureStore.getString(SEC_PARENTAL_PIN_HASH)) }.flowOn(Dispatchers.IO)
+
+    /** True when a parental PIN hash exists but can't be decrypted (Keystore loss). */
+    suspend fun isParentalPinUndecryptable(): Boolean = withContext(Dispatchers.IO) {
+        secureStore.isPresentButUndecryptable(SEC_PARENTAL_PIN_HASH)
+    }
     val parentalPinRehashRequired: Flow<Boolean> =
         ds.data.map { it[Keys.PARENTAL_PIN_REHASH_REQUIRED] ?: false }
     suspend fun setParentalPinHash(hash: String) {

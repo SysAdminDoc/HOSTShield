@@ -227,12 +227,19 @@ class BlocklistSourceCoordinator @Inject constructor(
             .forEach { allDomains.remove(it.hostname.lowercase()) }
         allDomains.removeAll(sourceAllowDomains)
 
-        dohBypassUpdater.mergeCachedInto(
+        val remoteDoh = dohBypassUpdater.mergeCachedInto(
             allDomains,
             sourceWildcardBlocks,
             exactBlockOrigins,
             wildcardBlockOrigins,
         )
+        // A subscribed source allowlist must not neutralize a remote DoH-bypass
+        // entry — that list exists to close newly-discovered DoH endpoints. Strip
+        // remote-DoH domains from the SOURCE allow sets so the block wins; user
+        // allow rules (userExactAllows) are intentionally left untouched and still
+        // win, matching the hardcoded-guard behavior.
+        if (remoteDoh.domains.isNotEmpty()) sourceAllowDomains.removeAll(remoteDoh.domains)
+        if (remoteDoh.wildcards.isNotEmpty()) sourceWildcardAllows.removeAll(remoteDoh.wildcards)
 
         val wildcards = repository.getEnabledWildcards()
         val regexRules = repository.getEnabledRegexRules()
