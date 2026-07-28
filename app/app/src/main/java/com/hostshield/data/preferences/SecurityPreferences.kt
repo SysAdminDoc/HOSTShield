@@ -129,6 +129,14 @@ class SecurityPreferences @Inject constructor(
         it[Keys.CONTENT_FILTER_CATEGORIES] = categories
     }
 
+    /** Atomic single-category toggle — avoids the read-modify-write race where two
+     *  quick toggles both start from the same stale StateFlow value. */
+    suspend fun toggleContentFilterCategory(name: String, enabled: Boolean) = ds.edit { prefs ->
+        val current = (prefs[Keys.CONTENT_FILTER_CATEGORIES] ?: emptySet()).toMutableSet()
+        if (enabled) current.add(name) else current.remove(name)
+        prefs[Keys.CONTENT_FILTER_CATEGORIES] = current
+    }
+
     // ── Parental controls ───────────────────────────────────────
     val parentalEnabled: Flow<Boolean> = ds.data.map { it[Keys.PARENTAL_ENABLED] ?: false }
     suspend fun setParentalEnabled(enabled: Boolean) = ds.edit { it[Keys.PARENTAL_ENABLED] = enabled }

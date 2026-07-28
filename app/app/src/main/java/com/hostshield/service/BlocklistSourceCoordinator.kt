@@ -14,6 +14,7 @@ import com.hostshield.domain.parser.HostsParser
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.max
+import kotlinx.coroutines.sync.withLock
 
 data class BlocklistSourceSnapshot(
     val blockDomains: Set<String>,
@@ -58,6 +59,13 @@ class BlocklistSourceCoordinator @Inject constructor(
     private val blocklistHolder: BlocklistHolder,
     private val dohBypassUpdater: DohBypassUpdater,
 ) {
+    // Serializes rebuilds: VPN startup, the periodic worker, the profile
+    // scheduler, and manual Home applies can all call rebuildBlocklistHolder
+    // concurrently (WorkManager only serializes within a unique work name).
+    // Overlapping runs otherwise double mobile-data usage and interleave
+    // source-health writes. A mutex coalesces them onto one pass at a time.
+    private val rebuildMutex = kotlinx.coroutines.sync.Mutex()
+
     suspend fun downloadEnabledSourcesForFullSnapshot(): BlocklistSourceSnapshot {
         // When a blocking profile is active and declares an explicit source set,
         // restrict the rebuild to those sources so profile switching actually
@@ -160,7 +168,7 @@ class BlocklistSourceCoordinator @Inject constructor(
 
     suspend fun rebuildBlocklistHolder(
         extraExactBlockOrigins: Map<String, String> = emptyMap(),
-    ): BlocklistRebuildResult {
+    ): BlocklistRebuildResult = rebuildMutex.withLock {
         val snapshot = downloadEnabledSourcesForFullSnapshot()
 
         // Fail-safe: if every enabled block source failed to download (offline
@@ -178,7 +186,7 @@ class BlocklistSourceCoordinator @Inject constructor(
             snapshot.blockDomains.isEmpty() &&
             blocklistHolder.domainCount > 0
         ) {
-            return BlocklistRebuildResult(
+            return@withLock BlocklistRebuildResult(
                 domainCount = blocklistHolder.domainCount,
                 wildcardRuleCount = blocklistHolder.wildcardRules.size,
                 regexRuleCount = repository.getEnabledRegexRules().size,
@@ -241,7 +249,7 @@ class BlocklistSourceCoordinator @Inject constructor(
             dnsTypeRules = dnsTypeRules,
         )
 
-        return BlocklistRebuildResult(
+        return@withLock BlocklistRebuildResult(
             domainCount = allDomains.size + sourceWildcardBlocks.size,
             wildcardRuleCount = wildcards.size,
             regexRuleCount = regexRules.size,

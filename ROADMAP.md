@@ -534,16 +534,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified (code path; trigger is environmental)
   Effort: M
 
-- [ ] P3 — Read-modify-write toggles against stale `stateIn` values can drop rapid changes (ContentFilter categories, AppExclusions, Firewall DNS blocks)
-  Category: correctness
-  Where: `ContentFilterViewModel.kt:34-40` (`toggle`), `AppExclusionsViewModel.kt:30-36` (`toggleApp`), `FirewallViewModel.kt:140-146` (`toggleDnsBlock`)
-  Problem: Each toggle copies the current StateFlow value (DataStore-fed, `WhileSubscribed`, initial `emptySet()`), mutates, and writes the whole set back. Two toggles before the DataStore write round-trips both start from the same stale set, so the first change is reverted; a toggle before the first emission starts from `emptySet()` and wipes previously-enabled entries.
-  Evidence: All three write `prefs.set…(current)` derived from `.value`; none uses a DataStore `updateData` transform.
-  Fix: Push the read-modify-write into the preferences layer as an atomic transform (`ds.edit { it[KEY] = transform(it[KEY]) }`), or serialize via a Mutex reading `prefs.…first()` inside the launch.
-  Acceptance: Rapidly toggling three switches leaves all three persisted after process restart.
-  Confidence: Verified (race; wipe case Needs-repro)
-  Effort: S
-
 - [ ] P3 — Custom upstream DNS field silently accepts invalid input; success/error state inferred by message-sniffing
   Category: ux
   Where: `settings/DnsSettingsSection.kt:147-171` + `SettingsViewModel.kt:670` (`setCustomUpstreamDns` persists any text); `DnsPreferences.kt:66-68` drops invalid at consumption; banner accent via `msg.contains("unreachable")` (SettingsScreen.kt)
@@ -613,16 +603,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Acceptance: Source A succeeds then fails on the next rebuild while B succeeds → snapshot still contains A's last-good domains and A is marked ERROR.
   Confidence: Verified
   Effort: M-L
-
-- [ ] P3 — No serialization/coalescing across concurrent blocklist rebuild triggers
-  Category: perf
-  Where: `service/BlocklistSourceCoordinator.kt` (no mutex); callers HostsUpdateWorker.kt:194, DnsVpnService.kt:918, ProfileScheduleWorker.kt:87/105, HomeViewModel.kt:902
-  Problem: VPN startup, the periodic worker, the profile scheduler, and manual applies can run `rebuildBlocklistHolder` concurrently (WorkManager serializes only within each unique work name). Each force-downloads every enabled source (up to 80 MiB each) — overlapping runs double mobile-data use and interleave `updateSourceDownloadMeta`/`updateSourceHealth` writes (a failure from run A landing after a success from run B leaves stale ERROR health). Snapshot swaps themselves are safe.
-  Evidence: No `Mutex`/single-flight; the boot race is real (BootReceiver VPN + expedited refresh worker).
-  Fix: Add a `Mutex` (or in-flight `Deferred` join) so concurrent callers coalesce onto one download pass sharing its result.
-  Acceptance: Two concurrent `rebuildBlocklistHolder()` calls produce exactly one `downloader.download` per source.
-  Confidence: Verified
-  Effort: S-M
 
 - [ ] P3 — WebDavSync.buildUrl form-decodes remote paths (`+`→space) and never re-encodes — encoded/special-char filenames break
   Category: correctness

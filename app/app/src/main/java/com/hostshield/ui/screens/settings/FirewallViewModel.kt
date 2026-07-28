@@ -139,9 +139,10 @@ class FirewallViewModel @Inject constructor(
 
     fun toggleDnsBlock(packageName: String) {
         viewModelScope.launch {
-            val current = blockedApps.value.toMutableSet()
-            if (packageName in current) current.remove(packageName) else current.add(packageName)
-            prefs.setBlockedApps(current)
+            // Atomic transform in the preferences layer avoids the stale
+            // read-modify-write race between two quick toggles.
+            val currentlyBlocked = packageName in blockedApps.value
+            prefs.toggleBlockedApp(packageName, !currentlyBlocked)
         }
     }
 

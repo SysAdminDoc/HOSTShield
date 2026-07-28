@@ -33,9 +33,9 @@ class ContentFilterViewModel @Inject constructor(
 
     fun toggle(category: ContentCategory, enabled: Boolean) {
         viewModelScope.launch {
-            val current = enabledCategories.value.map { it.name }.toMutableSet()
-            if (enabled) current.add(category.name) else current.remove(category.name)
-            prefs.setContentFilterCategories(current)
+            // Atomic transform in the preferences layer; a plain read of the
+            // StateFlow value could be stale between two quick toggles.
+            prefs.toggleContentFilterCategory(category.name, enabled)
         }
     }
 }

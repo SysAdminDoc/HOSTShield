@@ -109,10 +109,12 @@ class AppPreferences @Inject constructor(
     // ── VPN Excluded Apps ────────────────────────────────────
     val excludedApps: Flow<Set<String>> get() = firewall.excludedApps
     suspend fun setExcludedApps(apps: Set<String>) = firewall.setExcludedApps(apps)
+    suspend fun toggleExcludedApp(pkg: String, excluded: Boolean) = firewall.toggleExcludedApp(pkg, excluded)
 
     // ── Per-App Firewall (blocked apps) ─────────────────────
     val blockedApps: Flow<Set<String>> get() = firewall.blockedApps
     suspend fun setBlockedApps(apps: Set<String>) = firewall.setBlockedApps(apps)
+    suspend fun toggleBlockedApp(pkg: String, blocked: Boolean) = firewall.toggleBlockedApp(pkg, blocked)
 
     // ── Network Firewall (iptables) ─────────────────────────
     val networkFirewallEnabled: Flow<Boolean> get() = firewall.networkFirewallEnabled
@@ -221,6 +223,7 @@ class AppPreferences @Inject constructor(
     // ── Content Filter Categories ────────────────────────────
     val contentFilterCategories: Flow<Set<String>> get() = security.contentFilterCategories
     suspend fun setContentFilterCategories(categories: Set<String>) = security.setContentFilterCategories(categories)
+    suspend fun toggleContentFilterCategory(name: String, enabled: Boolean) = security.toggleContentFilterCategory(name, enabled)
 
     // ── Parental Controls ────────────────────────────────────
     val parentalEnabled: Flow<Boolean> get() = security.parentalEnabled

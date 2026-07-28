@@ -42,10 +42,25 @@ class FirewallPreferences @Inject constructor(
         it[Keys.EXCLUDED_APPS] = apps.joinToString(",")
     }
 
+    /** Atomic single-app toggle — avoids the read-modify-write race where two
+     *  quick toggles both start from the same stale StateFlow value. */
+    suspend fun toggleExcludedApp(pkg: String, excluded: Boolean) = ds.edit { prefs ->
+        val current = (prefs[Keys.EXCLUDED_APPS] ?: "").split(",").filter { it.isNotBlank() }.toMutableSet()
+        if (excluded) current.add(pkg) else current.remove(pkg)
+        prefs[Keys.EXCLUDED_APPS] = current.joinToString(",")
+    }
+
     val blockedApps: Flow<Set<String>> = ds.data.map {
         (it[Keys.BLOCKED_APPS] ?: "").split(",").filter { s -> s.isNotBlank() }.toSet()
     }
     suspend fun setBlockedApps(apps: Set<String>) = ds.edit {
         it[Keys.BLOCKED_APPS] = apps.joinToString(",")
+    }
+
+    /** Atomic single-app DNS-block toggle (avoids the stale read-modify-write race). */
+    suspend fun toggleBlockedApp(pkg: String, blocked: Boolean) = ds.edit { prefs ->
+        val current = (prefs[Keys.BLOCKED_APPS] ?: "").split(",").filter { it.isNotBlank() }.toMutableSet()
+        if (blocked) current.add(pkg) else current.remove(pkg)
+        prefs[Keys.BLOCKED_APPS] = current.joinToString(",")
     }
 }

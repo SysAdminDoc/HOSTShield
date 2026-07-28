@@ -29,9 +29,10 @@ class AppExclusionsViewModel @Inject constructor(
     fun toggleShowSystem() { _showSystem.update { !it } }
     fun toggleApp(packageName: String) {
         viewModelScope.launch {
-            val current = excludedApps.value.toMutableSet()
-            if (packageName in current) current.remove(packageName) else current.add(packageName)
-            prefs.setExcludedApps(current)
+            // Atomic transform; reading the StateFlow value could be stale
+            // between two quick toggles and drop one change.
+            val currentlyExcluded = packageName in excludedApps.value
+            prefs.toggleExcludedApp(packageName, !currentlyExcluded)
         }
     }
 }

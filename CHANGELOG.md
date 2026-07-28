@@ -42,6 +42,12 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - The onboarding summary now lists all four pre-enabled sources.
 
 ### Fixed (correctness & robustness)
+- Concurrent blocklist rebuilds (VPN start, periodic worker, profile scheduler,
+  manual apply) are serialized so they no longer double downloads or interleave
+  source-health writes.
+- Content-filter, app-exclusion, and per-app DNS-block toggles apply atomically
+  in the preferences layer, so two quick toggles can't drop a change or wipe the
+  set from a stale read.
 - The Spamhaus threat-intel parser now validates CIDR tokens (octets 0-255,
   prefix 8-32) so a malformed feed line can't flag benign IP ranges.
 - The GeoIP cache evicts the genuinely least-recently-used entry, and the
