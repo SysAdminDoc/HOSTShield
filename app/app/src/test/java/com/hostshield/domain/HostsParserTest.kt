@@ -231,6 +231,38 @@ class HostsParserTest {
     }
 
     @Test
+    fun `adblock typed rule in a hosts-majority file is not globalized to an exact block`() {
+        // Hosts-majority content (adblock lines under the classification
+        // threshold) must not turn an embedded typed rule into an unconditional
+        // all-qtype exact block for the apex.
+        val content = """
+            0.0.0.0 ads1.example.com
+            0.0.0.0 ads2.example.com
+            0.0.0.0 ads3.example.com
+            0.0.0.0 ads4.example.com
+            ||typed.example^${'$'}dnstype=AAAA
+        """.trimIndent()
+
+        val result = HostsParser.parseForBlocking(content)
+        assertFalse("typed rule must not become an exact block", result.blockDomains.contains("typed.example"))
+        assertTrue("plain hosts entries still block", result.blockDomains.contains("ads1.example.com"))
+    }
+
+    @Test
+    fun `adblock subdomain rule in a hosts-majority file does not become an apex-only exact block`() {
+        val content = """
+            0.0.0.0 ads1.example.com
+            0.0.0.0 ads2.example.com
+            0.0.0.0 ads3.example.com
+            0.0.0.0 ads4.example.com
+            ||wild.example^
+        """.trimIndent()
+
+        val result = HostsParser.parseForBlocking(content)
+        assertFalse("subdomain rule must not become an apex exact block", result.blockDomains.contains("wild.example"))
+    }
+
+    @Test
     fun `lowercase normalization`() {
         val content = "0.0.0.0 ADS.Example.COM"
         val results = HostsParser.parse(content)

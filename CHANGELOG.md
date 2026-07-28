@@ -5,6 +5,16 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Fixed (blocklist accuracy)
+- Adblock rules embedded in a hosts-majority source file no longer collapse into
+  incorrect exact blocks: a `$dnstype`/`$dnsrewrite` line is no longer globalized
+  to all query types, and a `||domain^` subdomain rule is no longer reduced to an
+  apex-only exact block.
+- The rule tester, DNS lookup tools, and DNS leak test now evaluate with a
+  concrete query type (A/AAAA), so `$dnstype` rules produce the same verdict as
+  the live VPN/proxy path, and the tester's match attribution comes from the
+  engine decision instead of a re-implemented scan.
+
 ### Fixed (backup & data safety)
 - Backup restore now runs inside a single database transaction, so a malformed
   backup rolls back instead of leaving half-applied state.

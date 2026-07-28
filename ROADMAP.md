@@ -502,32 +502,12 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
 ### P2
 
 
-- [ ] P2 — Adblock lines inside hosts-classified files globalize `$dnstype`/`$dnsrewrite` and lose subdomain semantics
-  Category: correctness
-  Where: `app/app/src/main/java/com/hostshield/domain/parser/HostsParser.kt` — `parseHostsFormat()` lines 266-270 (single-token adblock fallback checks only `!isException && !isRegex`); `isAdblockFormat()` 67-77 (20%/first-100-lines heuristic)
-  Problem: When a file is classified hosts-format (adblock lines ≤20% of sample, or an adblock section after the first 100 lines), each `||…` line still parses via `AdblockRuleParser` but the fallback ignores `dnsTypes` and `redirectIp`: `||example.com^$dnstype=AAAA` becomes an unconditional all-qtype exact block (the globalization class fixed for the adblock path in v6.9.57), `$dnsrewrite` becomes a plain block, `$denyallow` is dropped, and every `||domain^` loses subdomain coverage (only the apex blocks).
-  Evidence: `parseLine` returns a `DnsRule` with `dnsTypes`/`redirectIp` populated (AdblockRuleParser.kt:301-329); fallback at HostsParser.kt:268 discards them, emitting an exact all-types `ParsedHost`. No test covers adblock modifiers inside a hosts-majority file.
-  Fix: Apply the same guards as `parseAdblockAsHosts` in the fallback (skip rules with `dnsTypes!=null || redirectIp!=null || isWildcard`), or route their block/typed/wildcard semantics into `BlockingParseResult` from the hosts branch.
-  Acceptance: Hosts-majority content with `||typed.example^$dnstype=AAAA` → `typed.example` not in `blockDomains`; A queries resolve, AAAA matches the adblock path.
-  Confidence: Verified
-  Effort: S-M
-
 - [ ] P3 — Backup does not round-trip the `app_dns_rules` table (per-app DNS rules)
   Category: correctness
   Where: `util/BackupRestoreUtil.kt` (`createBackup`/`restoreBackup`); `data/database/Daos.kt` AppDnsRuleDao
   Problem: profiles.wifi_ssids and the firewall context columns now round-trip and the firewall REPLACE clobber is fixed, but per-app DNS rules (`app_dns_rules`) are still neither exported nor restored, so app-scoped DNS allow/block rules are lost on restore.
   Fix: Add an `app_dns_rules` array to `createBackup` and a matching restore loop (inject AppDnsRuleDao), inside the existing restore transaction.
   Acceptance: Round-trip backup/restore preserves per-app DNS rules.
-  Confidence: Verified
-  Effort: M
-
-- [ ] P2 — Rule tester / DNS tools / leak test call `isBlocked` without a query type, so `$dnstype` rules give verdicts that disagree with the live engine
-  Category: correctness
-  Where: `RuleTestViewModel.kt:102` (`blocklist.isBlocked(domain)`), `DnsToolsViewModel.kt:141/290`, `DnsLeakTestViewModel.kt:77`; engine `BlocklistHolder.kt:888-900` (`firstMatchingDnsTypeRule` — `queryType ?: return null`)
-  Problem: v6.9.57 made the four live paths pass numeric qtypes so `$dnstype` rules enforce correctly, but the diagnostic screens call `isBlocked(domain)` with `queryType=null`, and typed rules bail on null qtype. A domain blocked by a `$dnstype=A` source rule shows "ALLOWED" in the Rule tester (and vice versa) — exactly the tester-vs-engine drift the tool exists to catch. The "allowed by rule" attribution (RuleTestViewModel.kt:125-128) also only checks exact-match allows, so wildcard/regex allows display as plain "not blocked".
-  Evidence: `BlocklistHolder.kt:893` `queryType ?: return null`; all three diagnostic ViewModels omit the parameter.
-  Fix: Test with a concrete qtype (run `decide(domain,1)` and `decide(domain,28)` and show per-qtype results, or default to A=1) and use `decide()`'s `reason/source/matchedValue` for attribution instead of a reimplemented scan.
-  Acceptance: A `||example.com^$dnstype=A` rule shows BLOCKED (A) in the tester, matching live VPN behavior; attribution comes from the engine decision.
   Confidence: Verified
   Effort: M
 

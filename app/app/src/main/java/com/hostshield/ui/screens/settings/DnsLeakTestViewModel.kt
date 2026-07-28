@@ -74,7 +74,7 @@ class DnsLeakTestViewModel @Inject constructor(
                 var blockedCorrectly: Boolean? = null
 
                 for (domain in blockedTestDomains) {
-                    if (blocklist.isBlocked(domain)) {
+                    if (blocklist.isBlocked(domain, queryType = 1)) {
                         blockedTest = domain
                         val start = System.nanoTime()
                         try {

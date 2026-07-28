@@ -263,11 +263,24 @@ object HostsParser {
                     hostTokens.forEach { results.add(ParsedHost(it)) }
                 }
             } else {
-                // v5.0: Also try parsing as adblock-syntax single line
+                // v5.0: Also try parsing as adblock-syntax single line. Only a
+                // plain exact block maps to a hosts entry — mirror
+                // parseAdblockAsHosts and skip exception/regex/wildcard/typed/
+                // redirect rules so an embedded `||x^$dnstype=AAAA` or `||x^`
+                // (subdomain) line is NOT globalized into an unconditional
+                // all-qtype exact block for the apex only.
                 val adblockRule = AdblockRuleParser.parseLine(line)
-                if (adblockRule != null && !adblockRule.isException && !adblockRule.isRegex) {
+                if (adblockRule != null &&
+                    !adblockRule.isException &&
+                    !adblockRule.isRegex &&
+                    !adblockRule.isWildcard &&
+                    !adblockRule.matchesSubdomains &&
+                    adblockRule.dnsTypes == null &&
+                    adblockRule.redirectIp == null &&
+                    adblockRule.domain.isNotEmpty()
+                ) {
                     results.add(ParsedHost(adblockRule.domain))
-                } else {
+                } else if (adblockRule == null) {
                     val domain = line.trim().lowercase()
                     if (isValidDomain(domain) && domain !in LOCALHOST_ENTRIES) {
                         results.add(ParsedHost(domain))

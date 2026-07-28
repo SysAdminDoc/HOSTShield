@@ -2,10 +2,7 @@ package com.hostshield.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hostshield.data.model.RuleType
-import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
-import com.hostshield.domain.parser.HostsParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -17,8 +14,7 @@ private const val RULE_TEST_SCREEN_TAG = "RuleTestScreen"
 
 @HiltViewModel
 class RuleTestViewModel @Inject constructor(
-    private val blocklist: BlocklistHolder,
-    private val repository: HostShieldRepository
+    private val blocklist: BlocklistHolder
 ) : ViewModel() {
     private val _state = MutableStateFlow(RuleTestState())
     val state = _state.asStateFlow()
@@ -98,34 +94,27 @@ class RuleTestViewModel @Inject constructor(
         }
     }
 
-    private suspend fun testSingleDomain(domain: String): RuleTestResult {
-        val isBlocked = blocklist.isBlocked(domain)
+    private fun testSingleDomain(domain: String): RuleTestResult {
+        // Evaluate with a concrete query type so `$dnstype` rules (which bail out
+        // when the query type is null) produce the same verdict the live VPN/proxy
+        // paths do. Test A (1) and AAAA (28); the domain is "blocked" if either
+        // record type is blocked. Attribution comes from the engine decision so
+        // the tester never drifts from the real decision path.
+        val decisionA = blocklist.decide(domain, queryType = 1)
+        val decisionAaaa = blocklist.decide(domain, queryType = 28)
+        val decision = if (decisionA.blocked) decisionA else decisionAaaa
+        val isBlocked = decisionA.blocked || decisionAaaa.blocked
 
-        // Determine what matched
         val matchedBy = if (isBlocked) {
-            // Check user rules first
-            val blockRules = repository.getEnabledRulesByType(RuleType.BLOCK)
-            val exactMatch = blockRules.find { !it.isWildcard && !it.isRegex && it.hostname.lowercase() == domain }
-            if (exactMatch != null) return RuleTestResult(domain, true, "exact rule: ${exactMatch.hostname}")
-
-            val wildcardMatch = blockRules.filter { it.isWildcard }.find {
-                HostsParser.matchesWildcard(domain, it.hostname)
+            val src = decision.source.ifBlank { "source blocklist" }
+            if (decision.matchedValue.isNotBlank() && decision.matchedValue != domain) {
+                "$src (${decision.matchedValue})"
+            } else {
+                src
             }
-            if (wildcardMatch != null) return RuleTestResult(domain, true, "wildcard: ${wildcardMatch.hostname}")
-
-            val regexMatch = blockRules.filter { it.isRegex }.find {
-                try { Regex(it.hostname, RegexOption.IGNORE_CASE).containsMatchIn(domain) }
-                catch (_: Exception) { false }
-            }
-            if (regexMatch != null) return RuleTestResult(domain, true, "regex: ${regexMatch.hostname}")
-
-            "source blocklist"
         } else {
-            // Check if allow rule matches
-            val allowRules = repository.getEnabledRulesByType(RuleType.ALLOW)
-            val allowMatch = allowRules.find { it.hostname.lowercase() == domain }
-            if (allowMatch != null) "allowed by rule: ${allowMatch.hostname}"
-            else "not blocked"
+            val src = decisionA.source.ifBlank { decisionAaaa.source }
+            if (src.isNotBlank()) src else "not blocked"
         }
 
         return RuleTestResult(domain, isBlocked, matchedBy)

@@ -141,7 +141,7 @@ class DnsToolsViewModel @Inject constructor(
 
         viewModelScope.launch(Dispatchers.IO) {
             _state.update { it.copy(isLookingUp = true) }
-            val isBlocked = blocklist.isBlocked(domain)
+            val isBlocked = blocklist.isBlocked(domain, queryType = 1)
             val start = System.nanoTime()
             try {
                 val addrs = InetAddress.getAllByName(domain).map { it.hostAddress ?: "?" }
@@ -290,7 +290,7 @@ class DnsToolsViewModel @Inject constructor(
             val results = mutableListOf<LookupResult>()
             for ((idx, domain) in domains.withIndex()) {
                 _state.update { it.copy(batchProgress = idx + 1) }
-                val isBlocked = blocklist.isBlocked(domain)
+                val isBlocked = blocklist.isBlocked(domain, queryType = 1)
                 val start = System.nanoTime()
                 try {
                     val addrs = InetAddress.getAllByName(domain).map { it.hostAddress ?: "?" }
