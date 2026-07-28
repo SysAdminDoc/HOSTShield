@@ -564,26 +564,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: M
 
-- [ ] P3 — `AdblockRuleParser.parseLine` does no domain-shape validation — URL/port/inline-wildcard patterns become inert junk rules
-  Category: correctness
-  Where: `domain/parser/AdblockRuleParser.kt` — `parseLine()` 280-285 (only checks empty/length ≤253); `DOMAIN_PATTERN` exists (line 462) but is only used by `parseAsHostsOrDomain`
-  Problem: `||example.com/path`, `||example.com:8080^`, `||1.2.3.4^`, `||track*.example.com^` all produce `DnsRule`s with non-hostname `domain` values that land in the block/wildcard sets — inflating entry counts and the trie/bloom, and (for port/inline-wildcard) silently matching nothing, dropping the author's intent with no diagnostic (unlike the `$app`/`$removeparam` "skipped" classes).
-  Evidence: After the caret/`$` split, `domain` is lowercased but never matched against `DOMAIN_PATTERN`; no test for `||domain/path`, ports, or inline wildcards.
-  Fix: Validate `cleanDomain` against `DOMAIN_PATTERN` (allowing the stripped `*.` prefix); emit an "unsupported_pattern" diagnostic for rejects so counts/warnings stay honest.
-  Acceptance: `parseLine("||example.com:8080^")` and `parseLine("||ad*.example.com^")` return null with a bulk-parse diagnostic; counts exclude them.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — `$important` block protection doesn't extend to subdomain-scoped exceptions in the same source
-  Category: correctness
-  Where: `domain/parser/HostsParser.kt` — `importantBlockDomains` 130-133, allow filter line 174
-  Problem: The v6.9.60 fix compares `rule.domain in importantBlockDomains` by exact string. `||x.example^$important` + `@@||sub.x.example^` in the same source: the allow's domain isn't in the set, so it becomes a wildcard allow that wins (deeper allow beats shallower block), overriding the important block for `sub.x.example` — contrary to AdGuard priority. `$important` on `$dnstype` rules is also dropped (`DnsTypeRule` has no importance flag).
-  Evidence: `HostsParserTest` "important block outranks…" covers only identical domains; `decideInternal` 776-790 confirms the deeper wildcard allow wins.
-  Fix: When checking an allow rule, also test whether any `importantBlockDomains` entry is a suffix ancestor of the allow domain; add an `important` flag to `DnsTypeRule` and prefer important typed blocks over non-important typed allows.
-  Acceptance: Same-source `||x.example^$important` + `@@||sub.x.example^` → `sub.x.example` remains blocked; an `@@…$important` sub-allow still wins.
-  Confidence: Verified
-  Effort: M
-
 - [ ] P3 — Partial block-source failure silently drops that source's rules from the live snapshot (no per-source content cache)
   Category: reliability
   Where: `service/BlocklistSourceCoordinator.kt:79-103,144-163`
@@ -593,16 +573,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Acceptance: Source A succeeds then fails on the next rebuild while B succeeds → snapshot still contains A's last-good domains and A is marked ERROR.
   Confidence: Verified
   Effort: M-L
-
-- [ ] P3 — WebDavSync.buildUrl form-decodes remote paths (`+`→space) and never re-encodes — encoded/special-char filenames break
-  Category: correctness
-  Where: `util/WebDavSync.kt:339-349` (`buildUrl` runs `URLDecoder.decode(remotePath,"UTF-8")` then string-concats)
-  Problem: `URLDecoder.decode` form-decodes (`+`→space) and the decoded path is concatenated into the request URL without re-encoding. A remote file `backup+1.json`, or any percent-encoded href (spaces, `#`, non-ASCII), requests a different resource or throws (swallowed → generic "failed"). This is on the path used with server PROPFIND hrefs.
-  Evidence: Decode-once-then-concat at 341-348; `Request.Builder().url(String)` rejects spaces/fragments; real WebDAV hrefs are percent-encoded.
-  Fix: Keep the traversal check on decoded segments but build the request from the original encoded path (or `HttpUrl.Builder.addPathSegment`).
-  Acceptance: A remote file with `+`/space/UTF-8 downloads successfully; `..` (raw or encoded) still rejected.
-  Confidence: Verified
-  Effort: S
 
 - [ ] P3 — Secondary-screen `HostShieldBackHeader` titles mix Title Case and sentence case; overlap messages don't pluralize; crash-reports copy promises a missing export
   Category: ux

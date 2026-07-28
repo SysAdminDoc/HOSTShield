@@ -283,6 +283,13 @@ object AdblockRuleParser {
         val isWildcard = domain.startsWith("*.")
         val cleanDomain = if (isWildcard) domain.removePrefix("*.") else domain
         if (cleanDomain.isEmpty()) return null
+        // Reject non-hostname shapes (paths, ports, inline wildcards, whitespace).
+        // These would otherwise become inert junk rules that inflate entry counts
+        // and the trie/bloom while matching nothing (a hostname query never
+        // contains '/', ':', '*', or spaces). A leading "*." was already stripped
+        // above, so any remaining '*' is an unsupported inline wildcard. A dot is
+        // still required so bare tokens aren't treated as domains.
+        if (cleanDomain.any { it == '/' || it == ':' || it == '*' || it == '?' || it.isWhitespace() }) return null
 
         // Parse modifiers
         var isImportant = false

@@ -63,6 +63,12 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   "REGEX:" as a regex rule (the flag is passed explicitly).
 
 ### Fixed (blocklist accuracy)
+- The adblock parser rejects non-hostname rule shapes (paths, ports, inline
+  wildcards) instead of turning them into inert junk rules.
+- An `$important` block now outranks a subdomain-scoped `@@` exception in the
+  same source, matching AdGuard priority.
+- WebDAV remote paths with `+` or percent-encoding are no longer corrupted by
+  form-decoding (traversal is still validated on the decoded segments).
 - Adblock rules embedded in a hosts-majority source file no longer collapse into
   incorrect exact blocks: a `$dnstype`/`$dnsrewrite` line is no longer globalized
   to all query types, and a `||domain^` subdomain rule is no longer reduced to an

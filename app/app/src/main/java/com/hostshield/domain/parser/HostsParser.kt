@@ -170,8 +170,9 @@ object HostsParser {
                 return@forEach
             }
             // A non-important allow cannot override an $important block in the
-            // same source.
-            if (!rule.isImportant && rule.domain in importantBlockDomains) return@forEach
+            // same source — including a subdomain of an $important-blocked domain
+            // (e.g. `||x^$important` must keep blocking `sub.x` despite `@@||sub.x^`).
+            if (!rule.isImportant && isCoveredByImportantBlock(rule.domain, importantBlockDomains)) return@forEach
             allowDomains.add(rule.domain)
             if (rule.matchesSubdomains || rule.isWildcard) {
                 wildcardAllowDomains.add(rule.domain)
@@ -186,6 +187,21 @@ object HostsParser {
             dnsTypeRules = dnsTypeRules,
             parseDiagnostics = parsed.diagnostics
         )
+    }
+
+    /**
+     * True when [domain] is exactly an `$important`-blocked domain or a subdomain
+     * of one. `||x^$important` matches subdomains, so an `@@||sub.x^` exception in
+     * the same source must not override it (AdGuard priority).
+     */
+    private fun isCoveredByImportantBlock(domain: String, importantBlocks: Set<String>): Boolean {
+        if (domain in importantBlocks) return true
+        var idx = domain.indexOf('.')
+        while (idx >= 0) {
+            if (domain.substring(idx + 1) in importantBlocks) return true
+            idx = domain.indexOf('.', idx + 1)
+        }
+        return false
     }
 
     /**

@@ -263,6 +263,39 @@ class HostsParserTest {
     }
 
     @Test
+    fun `important block outranks a subdomain-scoped allow in the same source`() {
+        val content = """
+            [Adblock Plus]
+            ||x.example^${'$'}important
+            @@||sub.x.example^
+        """.trimIndent()
+
+        val result = HostsParser.parseForBlocking(content)
+
+        // The subdomain allow must not override the important block.
+        assertFalse(result.allowDomains.contains("sub.x.example"))
+        assertFalse(result.wildcardAllowDomains.contains("sub.x.example"))
+        assertTrue(result.wildcardBlockDomains.contains("x.example"))
+    }
+
+    @Test
+    fun `adblock parser rejects path port and inline-wildcard rules`() {
+        val content = """
+            [Adblock Plus]
+            ||example.com/path^
+            ||example.com:8080^
+            ||ad*.example.com^
+            ||valid.example^
+        """.trimIndent()
+
+        val result = HostsParser.parseForBlocking(content)
+
+        assertFalse(result.blockDomains.contains("example.com/path"))
+        assertFalse(result.blockDomains.contains("example.com:8080"))
+        assertTrue(result.wildcardBlockDomains.contains("valid.example") || result.blockDomains.contains("valid.example"))
+    }
+
+    @Test
     fun `lowercase normalization`() {
         val content = "0.0.0.0 ADS.Example.COM"
         val results = HostsParser.parse(content)
