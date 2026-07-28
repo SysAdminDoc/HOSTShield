@@ -354,8 +354,8 @@ object HostsParser {
         ip == "0.0.0.0" || ip == "127.0.0.1" || ip == "::" || ip == "::1"
 
     private fun isIpAddress(s: String): Boolean =
-        s.contains('.') && s.all { it.isDigit() || it == '.' } ||
-        s.contains(':') && s.all { it.isLetterOrDigit() || it == ':' }
+        (s.contains('.') && s.all { it.isDigit() || it == '.' }) ||
+        (s.contains(':') && s.all { it.isLetterOrDigit() || it == ':' })
 
     private fun isValidDomain(s: String): Boolean =
         s.length in 3..253 && s.contains('.') && DOMAIN_REGEX.matches(s)

@@ -12,9 +12,6 @@
     <string name="widget_shield_label">HS</string>
     <string name="widget_status_protected">Protected</string>
     <string name="widget_status_inactive">Inactive</string>
-    <string name="widget_label_blocked">blocked</string>
-    <string name="widget_label_allowed">allowed</string>
-    <string name="widget_percent_blocked">%1$d%% blocked</string>
     <string name="widget_toggle_enable">Enable</string>
     <string name="widget_stats_title">HostShield Stats</string>
     <string name="widget_blocked_today">blocked today</string>
@@ -96,8 +93,6 @@
     <string name="settings_disable_battery_opt_sub">Prevents Android from killing HostShield</string>
     <string name="settings_scheduled_blocking">Scheduled blocking</string>
     <string name="settings_scheduled_blocking_sub">Auto-enable/disable at set times</string>
-    <string name="settings_include_ipv6">Include IPv6</string>
-    <string name="settings_include_ipv6_sub">Block domains on IPv6 as well</string>
     <string name="settings_dns_logging">DNS logging</string>
     <string name="settings_dns_logging_sub">Record DNS queries for stats</string>
     <string name="settings_online_ip_lookup">Online IP lookup</string>
@@ -108,8 +103,6 @@
     <string name="settings_update_interval_value">Every %1$d hours</string>
     <string name="settings_wifi_only">Update on Wi-Fi only</string>
     <string name="settings_wifi_only_sub">Skip blocklist and feed downloads on mobile data</string>
-    <string name="settings_show_notification">Protection notification</string>
-    <string name="settings_show_notification_sub">Show the ongoing status notification while active</string>
     <string name="settings_log_retention">Log retention</string>
     <string name="settings_log_retention_value">Keep DNS logs for %1$d days</string>
     <string name="settings_view_hosts">View hosts file</string>

@@ -335,6 +335,11 @@ class DoqResolver @Inject constructor(
                         dataLen = end - pos
                     }
 
+                    // A server-declared length must not overrun the received
+                    // buffer; a malformed/truncated frame otherwise causes an
+                    // out-of-bounds read below or in the copyOfRange fallback.
+                    if (dataLen < 0 || pos + dataLen > end) return null
+
                     if (streamId == DNS_STREAM_ID && dataLen >= 14) {
                         // DoQ: DNS message is prefixed with 2-byte length
                         val dnsLen = ((data[pos].toInt() and 0xFF) shl 8) or
