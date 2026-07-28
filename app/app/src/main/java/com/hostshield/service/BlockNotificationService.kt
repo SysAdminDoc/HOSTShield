@@ -17,12 +17,10 @@ import javax.inject.Singleton
 /**
  * Monitors DNS logs for suspicious activity and sends notifications.
  *
- * Alerts:
- * 1. High-frequency tracker: app makes >50 blocked queries in 5 minutes
- * 2. New tracking domain: first-seen domain blocked for an app
- * 3. Burst detection: >20 queries/second from any single app
+ * Alert: high-frequency tracker — an app makes >50 blocked queries in 5 minutes.
  *
- * Notifications are rate-limited to max 1 per app per 15 minutes.
+ * Notifications are rate-limited to max 1 per app per 15 minutes. Started by the
+ * active protection service (VPN, root, or DNS proxy).
  */
 @Singleton
 class BlockNotificationService @Inject constructor(

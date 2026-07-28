@@ -58,8 +58,8 @@ interface HostSourceDao {
     )
     suspend fun setEnabled(id: Long, enabled: Boolean)
 
-    @Query("UPDATE host_sources SET entry_count = :count, last_updated = :timestamp, etag = :etag, size_bytes = :size WHERE id = :id")
-    suspend fun updateSourceMeta(id: Long, count: Int, timestamp: Long, etag: String, size: Long)
+    @Query("UPDATE host_sources SET entry_count = :count, last_updated = :timestamp, etag = :etag, last_modified_online = :lastModified, size_bytes = :size WHERE id = :id")
+    suspend fun updateSourceMeta(id: Long, count: Int, timestamp: Long, etag: String, lastModified: String, size: Long)
 
     @Query("UPDATE host_sources SET health = :health, last_error = :error, last_http_status = :httpStatus, consecutive_failures = :failures WHERE id = :id")
     suspend fun updateHealth(id: Long, health: SourceHealth, error: String, failures: Int, httpStatus: Int = 0)

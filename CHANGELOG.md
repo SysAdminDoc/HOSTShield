@@ -42,6 +42,10 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - The onboarding summary now lists all four pre-enabled sources.
 
 ### Fixed (correctness & robustness)
+- Block-alert notifications (high tracker activity) now run in VPN and DNS-proxy
+  modes, not only root mode.
+- Downloaded sources now persist their `Last-Modified` value so conditional
+  refresh requests work.
 - Concurrent blocklist rebuilds (VPN start, periodic worker, profile scheduler,
   manual apply) are serialized so they no longer double downloads or interleave
   source-health writes.

@@ -97,6 +97,7 @@ class BlocklistSourceCoordinatorTest {
                 id = 7,
                 entryCount = 3,
                 etag = "new",
+                lastModified = any(),
                 sizeBytes = 64,
                 parseWarning = "",
                 prevEntryCount = 1,
@@ -194,7 +195,7 @@ class BlocklistSourceCoordinatorTest {
         val parseWarnings = mutableListOf<String>()
         coEvery { repository.getEnabledBlockSources() } returns listOf(source)
         coEvery {
-            repository.updateSourceDownloadMeta(any(), any(), any(), any(), capture(parseWarnings), any(), any(), any())
+            repository.updateSourceDownloadMeta(any(), any(), any(), any(), any(), capture(parseWarnings), any(), any(), any())
         } just Runs
         coEvery {
             downloader.download(source, forceDownload = true)

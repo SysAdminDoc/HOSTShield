@@ -249,6 +249,7 @@ class DnsVpnService : VpnService() {
     @Inject lateinit var contentFilterManager: ContentFilterManager
     @Inject lateinit var parentalControlManager: ParentalControlManager
     @Inject lateinit var connectionTracker: ConnectionTracker
+    @Inject lateinit var blockNotificationService: BlockNotificationService
     @Inject lateinit var tlsFingerprinter: com.hostshield.util.TlsFingerprinter
     @Inject lateinit var dotResolver: DotResolver
     @Inject lateinit var doqResolver: DoqResolver
@@ -504,6 +505,7 @@ class DnsVpnService : VpnService() {
      */
     override fun onDestroy() {
         isRunning = false
+        blockNotificationService.stop()
         cancelWatchdog()
         cancelTunnelHeartbeat()
         cancelVpnRecoveryMonitor()
@@ -705,6 +707,7 @@ class DnsVpnService : VpnService() {
             vpnStartTime = System.currentTimeMillis()
             networkLost = false
             isRunning = true
+            blockNotificationService.start()
             dnsAnswerCache.clear()
             droppedQueries.set(0)
             totalQueriesCount.set(0)

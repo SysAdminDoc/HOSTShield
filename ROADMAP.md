@@ -544,16 +544,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: M
 
-- [ ] P3 — Block-alert notifications only run in root mode; documented burst/new-domain alerts are unimplemented
-  Category: correctness
-  Where: `service/BlockNotificationService.kt:20-26` (kdoc claims 3 alert types); started only from `RootDnsService.kt:76/82/95/104/128`
-  Problem: The high-tracker-activity monitor is started exclusively by RootDnsService, so VPN and DNS-proxy users (the default/majority) never get block alerts though DnsLogDao is populated identically. The kdoc also documents "New tracking domain" and ">20 queries/sec burst" alerts that don't exist (only the 50-in-5-min check is implemented).
-  Evidence: Grep for `blockNotificationService` shows only RootDnsService call sites; `checkForBursts` is the sole detector.
-  Fix: Start/stop the monitor from DnsVpnService and DnsProxyService too (it's a transport-agnostic DAO poller); trim the kdoc to the implemented alert.
-  Acceptance: With VPN protection on and a chatty tracker app, the "High tracker activity" notification fires.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P3 — DnsBenchmark accepts any UDP payload as a valid answer and cannot be cancelled from the UI
   Category: correctness
   Where: `util/DnsBenchmark.kt:131-152` (`measureDnsQuery`); `DnsBenchmarkScreen.kt` (no cancel affordance)
@@ -611,16 +601,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Evidence: Decode-once-then-concat at 341-348; `Request.Builder().url(String)` rejects spaces/fragments; real WebDAV hrefs are percent-encoded.
   Fix: Keep the traversal check on decoded segments but build the request from the original encoded path (or `HttpUrl.Builder.addPathSegment`).
   Acceptance: A remote file with `+`/space/UTF-8 downloads successfully; `..` (raw or encoded) still rejected.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — `HostSource.lastModifiedOnline` is never persisted — If-Modified-Since is permanently dead; v6.9.54 changelog claim is inaccurate
-  Category: maintainability
-  Where: `data/repository/HostShieldRepository.kt` `updateSourceDownloadMeta` 72-85 (drops `dl.lastModified`); `BlocklistSourceCoordinator.persistSuccessfulDownload` 227-244 (doesn't pass it); read at `service/SourceDownloader.kt:72-74`
-  Problem: No write path stores a downloaded `Last-Modified` (grep shows only clears), so the conditional-request branch can never send `If-Modified-Since`. Live rebuilds force-download anyway (nil runtime impact today), but the field, the header logic, and the CHANGELOG/CLAUDE.md v6.9.54 claim ("persists … Last-Modified values") are drifted, and any future consumer inherits a silently broken validator.
-  Evidence: Grep of `lastModifiedOnline`: read at SourceDownloader.kt:72, defined at Entities.kt:39, cleared twice, never set from `DownloadResult.lastModified`.
-  Fix: Persist `dl.lastModified` in `updateSourceDownloadMeta`, or delete the dead conditional branch + field and correct the changelog claim.
-  Acceptance: A successful download stores the Last-Modified value (coordinator test), or the field/branch is removed and docs updated.
   Confidence: Verified
   Effort: S
 

@@ -73,13 +73,14 @@ class HostShieldRepository @Inject constructor(
         id: Long,
         entryCount: Int,
         etag: String,
+        lastModified: String,
         sizeBytes: Long,
         parseWarning: String,
         prevEntryCount: Int,
         domainsAdded: Int,
         domainsRemoved: Int,
     ) {
-        sourceDao.updateSourceMeta(id, entryCount, System.currentTimeMillis(), etag, sizeBytes)
+        sourceDao.updateSourceMeta(id, entryCount, System.currentTimeMillis(), etag, lastModified, sizeBytes)
         sourceDao.updateHealth(id, SourceHealth.OK, parseWarning, 0, 0)
         sourceDao.updateChangelog(id, prevEntryCount, domainsAdded, domainsRemoved)
     }

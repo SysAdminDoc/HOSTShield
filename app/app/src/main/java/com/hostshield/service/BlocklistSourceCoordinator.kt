@@ -268,6 +268,7 @@ class BlocklistSourceCoordinator @Inject constructor(
             id = source.id,
             entryCount = entryCount,
             etag = dl.etag,
+            lastModified = dl.lastModified,
             sizeBytes = dl.sizeBytes,
             parseWarning = parseWarning,
             prevEntryCount = previousCount,

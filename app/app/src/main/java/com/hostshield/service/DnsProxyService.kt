@@ -101,6 +101,7 @@ class DnsProxyService : Service() {
     @Inject lateinit var blockStatsDao: BlockStatsDao
     @Inject lateinit var dohResolver: DohResolver
     @Inject lateinit var dotResolver: DotResolver
+    @Inject lateinit var blockNotificationService: BlockNotificationService
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     @Volatile private var isRunning = false
@@ -138,10 +139,12 @@ class DnsProxyService : Service() {
                         ProtectionForegroundServiceTypes.runtimeType()
                     )
                     serviceScope.launch { startProxy() }
+                    blockNotificationService.start()
                 }
             }
             ACTION_STOP -> {
                 Log.i(TAG, "Stopping DNS proxy service")
+                blockNotificationService.stop()
                 stopProxy()
             }
             else -> {
@@ -158,6 +161,7 @@ class DnsProxyService : Service() {
     }
 
     override fun onDestroy() {
+        blockNotificationService.stop()
         stopProxy()
         super.onDestroy()
     }
