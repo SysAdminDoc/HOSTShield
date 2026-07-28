@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.components.HostShieldActionIconButton
 import com.hostshield.ui.components.HostShieldBackHeader
 import com.hostshield.ui.components.HostShieldEmptyState
@@ -46,6 +47,7 @@ fun HostsEditorScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var confirmReload by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
@@ -67,10 +69,27 @@ fun HostsEditorScreen(
                     contentDescription = "Reload hosts file",
                     accent = TextDim,
                     enabled = !state.isLoading && !state.isSaving,
-                    onClick = { viewModel.loadHostsFile() },
+                    onClick = {
+                        // Reloading over unsaved edits silently discards them.
+                        if (state.isEdited) confirmReload = true
+                        else viewModel.loadHostsFile()
+                    },
                 )
             },
         )
+
+        if (confirmReload) {
+            ConfirmDestructiveDialog(
+                title = "Discard unsaved changes?",
+                body = "Reloading replaces the editor contents with the current hosts file. Your unsaved edits will be lost.",
+                confirmLabel = "Reload",
+                onConfirm = {
+                    confirmReload = false
+                    viewModel.loadHostsFile()
+                },
+                onDismiss = { confirmReload = false },
+            )
+        }
 
         // Status message
         state.message?.let { msg ->

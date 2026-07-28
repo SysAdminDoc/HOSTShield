@@ -245,7 +245,7 @@ fun ParentalControlScreen(
 
         // Message
         viewModel.message?.let { msg ->
-            val isError = msg.contains("Invalid", ignoreCase = true)
+            val isError = viewModel.messageIsError
             HostShieldStatusBanner(
                 icon = if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
                 title = if (isError) "Parental control update failed" else "Parental controls updated",

@@ -41,6 +41,16 @@ class ParentalControlViewModel @Inject constructor(
         private set
     var message by mutableStateOf<String?>(null)
         private set
+
+    // Drives the banner styling explicitly — the screen previously sniffed the
+    // text for "Invalid", which styles any new failure copy as success.
+    var messageIsError by mutableStateOf(false)
+        private set
+
+    private fun setMessage(text: String, isError: Boolean) {
+        message = text
+        messageIsError = isError
+    }
     var showPinDialog by mutableStateOf(false)
         private set
     var pinError by mutableStateOf<String?>(null)
@@ -125,17 +135,17 @@ class ParentalControlViewModel @Inject constructor(
             action == ACTION_ENABLE -> manager.enable(AgeProfile.fromName(profile.value))
             action == ACTION_CLEAR_PIN -> {
                 manager.clearPin()
-                message = "PIN removed"
+                setMessage("PIN removed", isError = false)
             }
             action == ACTION_UPGRADE_PIN -> {
-                message = "PIN upgraded successfully"
+                setMessage("PIN upgraded successfully", isError = false)
             }
             action?.startsWith(ACTION_SET_PIN_PREFIX) == true -> {
                 val newPin = action.removePrefix(ACTION_SET_PIN_PREFIX)
                 if (manager.setPin(newPin)) {
-                    message = "PIN set successfully"
+                    setMessage("PIN set successfully", isError = false)
                 } else {
-                    message = "Invalid PIN - must be 4 digits"
+                    setMessage("Invalid PIN. It must be 4 digits.", isError = true)
                 }
             }
             action?.startsWith(ACTION_PROFILE_PREFIX) == true -> {
@@ -157,15 +167,15 @@ class ParentalControlViewModel @Inject constructor(
     fun setPin(pin: String) {
         viewModelScope.launch {
             if (pin.length != 4 || !pin.all { it.isDigit() }) {
-                message = "Invalid PIN - must be 4 digits"
+                setMessage("Invalid PIN. It must be 4 digits.", isError = true)
             } else if (manager.isPinSet()) {
                 openPinDialog(ACTION_SET_PIN_PREFIX + pin)
             } else if (manager.setPin(pin)) {
                 pinRequired = true
                 pinUpgradeRequired = false
-                message = "PIN set successfully"
+                setMessage("PIN set successfully", isError = false)
             } else {
-                message = "Invalid PIN - must be 4 digits"
+                setMessage("Invalid PIN. It must be 4 digits.", isError = true)
             }
         }
     }
@@ -178,7 +188,7 @@ class ParentalControlViewModel @Inject constructor(
                 manager.clearPin()
                 pinRequired = false
                 pinUpgradeRequired = false
-                message = "PIN removed"
+                setMessage("PIN removed", isError = false)
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.hostshield.ui.screens.apps
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -88,6 +89,10 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
             },
             verticalPadding = 12.dp,
         )
+
+        // System/predictive back must match the header arrow: pop the in-screen
+        // detail view first instead of exiting the whole screen.
+        BackHandler(enabled = selectedApp != null) { viewModel.selectApp(null) }
 
         if (selectedApp == null) {
             if (apps.isNotEmpty()) {

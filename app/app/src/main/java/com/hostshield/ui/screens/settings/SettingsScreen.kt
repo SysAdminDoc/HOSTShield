@@ -343,19 +343,55 @@ fun SettingsScreen(
                     }
                 }
                 Spacer(Modifier.height(6.dp))
+                // The start/end rows were display-only: no UI anywhere could
+                // change the schedule times (only backup restore wrote them).
+                var editingScheduleStart by remember { mutableStateOf(false) }
+                var editingScheduleEnd by remember { mutableStateOf(false) }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { editingScheduleStart = true }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
                         Text(stringResource(R.string.label_start), color = TextDim, fontSize = 10.sp)
                         Text(state.scheduleStart, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = TextDim, modifier = Modifier.padding(top = 12.dp).size(16.dp))
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { editingScheduleEnd = true }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
                         Text(stringResource(R.string.label_end), color = TextDim, fontSize = 10.sp)
                         Text(state.scheduleEnd, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
+                }
+                if (editingScheduleStart) {
+                    ScheduleTimePickerDialog(
+                        title = "Start time",
+                        initial = state.scheduleStart,
+                        onConfirm = {
+                            viewModel.setScheduleTime(start = it, end = null)
+                            editingScheduleStart = false
+                        },
+                        onDismiss = { editingScheduleStart = false },
+                    )
+                }
+                if (editingScheduleEnd) {
+                    ScheduleTimePickerDialog(
+                        title = "End time",
+                        initial = state.scheduleEnd,
+                        onConfirm = {
+                            viewModel.setScheduleTime(start = null, end = it)
+                            editingScheduleEnd = false
+                        },
+                        onDismiss = { editingScheduleEnd = false },
+                    )
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -799,8 +835,16 @@ fun SettingsScreen(
                             Spacer(Modifier.height(8.dp))
                             Surface(
                                 onClick = {
-                                    val intent = Intent(Intent.ACTION_VIEW, state.updateDownloadUrl.toUri())
-                                    context.startActivity(intent)
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW, state.updateDownloadUrl.toUri())
+                                        context.startActivity(intent)
+                                    } catch (_: ActivityNotFoundException) {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.settings_no_browser_available),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 },
                                 shape = RoundedCornerShape(8.dp),
                                 color = Teal.copy(alpha = 0.15f)
@@ -1317,4 +1361,36 @@ internal fun BlockResponseSelector(current: String, onSelect: (String) -> Unit) 
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ScheduleTimePickerDialog(
+    title: String,
+    initial: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val parts = initial.split(":")
+    val pickerState = rememberTimePickerState(
+        initialHour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 22,
+        initialMinute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0,
+        is24Hour = true,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Surface1,
+        title = { Text(title, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
+        text = { TimePicker(state = pickerState) },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm(
+                    String.format(java.util.Locale.US, "%02d:%02d", pickerState.hour, pickerState.minute)
+                )
+            }) { Text("Set", color = Teal) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel), color = TextDim) }
+        },
+    )
 }

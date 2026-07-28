@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +36,7 @@ import com.hostshield.data.model.FirewallRule
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.accessibility.accessibilityToggle
+import com.hostshield.ui.components.ConfirmDestructiveDialog
 import com.hostshield.ui.components.HostShieldActionIconButton
 import com.hostshield.ui.components.HostShieldBackHeader
 import com.hostshield.ui.components.HostShieldDenseListJumpBar
@@ -158,6 +160,22 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
             Spacer(Modifier.height(8.dp))
         }
 
+        // Search — shared across all three tabs because the query filters all
+        // three lists; rendering it only on the DNS tab left Network/Context
+        // invisibly filtered with no visible control.
+        OutlinedTextField(
+            value = searchQuery, onValueChange = { viewModel.setSearchQuery(it) },
+            placeholder = { Text("Search apps...", color = TextDim) },
+            leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextDim) },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            singleLine = true, shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Teal, unfocusedBorderColor = Surface3,
+                cursorColor = Teal, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
+            )
+        )
+        Spacer(Modifier.height(8.dp))
+
         when (tab) {
             FirewallTab.DNS -> DnsFirewallTab(viewModel, allApps, blocked, excluded, searchQuery, showSystem, filter)
             FirewallTab.NETWORK -> NetworkFirewallTab(viewModel, firewallRules, searchQuery, showSystem, iptablesActive, iptablesError, isSyncing, isApplyingIptables, diagOutput, isDiagnosing)
@@ -192,21 +210,6 @@ private fun DnsFirewallTab(
             )
         }
     }
-
-    Spacer(Modifier.height(8.dp))
-
-    // Search
-    OutlinedTextField(
-        value = searchQuery, onValueChange = { viewModel.setSearchQuery(it) },
-        placeholder = { Text("Search apps...", color = TextDim) },
-        leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextDim) },
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        singleLine = true, shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Teal, unfocusedBorderColor = Surface3,
-            cursorColor = Teal, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
-        )
-    )
 
     Spacer(Modifier.height(8.dp))
 
@@ -304,6 +307,8 @@ private fun NetworkFirewallTab(
     diagOutput: String,
     isDiagnosing: Boolean
 ) {
+    var pendingBulkAction by remember { mutableStateOf<FirewallBulkAction?>(null) }
+
     // Error banner
     if (iptablesError.isNotBlank()) {
         Surface(
@@ -333,7 +338,7 @@ private fun NetworkFirewallTab(
             Spacer(Modifier.width(8.dp))
             Text(
                 if (iptablesActive)
-                    "iptables firewall active. Per-app WiFi and mobile data control enforced at kernel level."
+                    "iptables firewall active. Per-app Wi-Fi and mobile data control enforced at kernel level."
                 else
                     "Network firewall requires root. Configure rules below, then tap Apply to enforce via iptables.",
                 color = TextSecondary, fontSize = 11.sp, lineHeight = 15.sp
@@ -356,7 +361,7 @@ private fun NetworkFirewallTab(
             shape = RoundedCornerShape(10.dp)
         ) {
             if (isApplyingIptables) {
-                CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
+                CircularProgressIndicator(Modifier.size(14.dp), color = if (Teal.luminance() > 0.5f) Color.Black else Color.White, strokeWidth = 2.dp)
             } else {
                 Icon(Icons.Filled.PlayArrow, null, modifier = Modifier.size(16.dp))
             }
@@ -375,7 +380,7 @@ private fun NetworkFirewallTab(
             Text("Clear", fontSize = 12.sp)
         }
         OutlinedButton(
-            onClick = { viewModel.resetAllNetwork() },
+            onClick = { pendingBulkAction = FirewallBulkAction.RESET },
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDim)
@@ -409,21 +414,57 @@ private fun NetworkFirewallTab(
             Text("Diagnose", fontSize = 11.sp)
         }
         OutlinedButton(
-            onClick = { viewModel.blockAllWifi() },
+            onClick = { pendingBulkAction = FirewallBulkAction.BLOCK_WIFI },
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Yellow)
         ) {
-            Text("Block WiFi", fontSize = 11.sp)
+            Text("Block Wi-Fi", fontSize = 11.sp)
         }
         OutlinedButton(
-            onClick = { viewModel.blockAllMobile() },
+            onClick = { pendingBulkAction = FirewallBulkAction.BLOCK_DATA },
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Yellow)
         ) {
             Text("Block Data", fontSize = 11.sp)
         }
+    }
+
+    // Bulk actions rewrite or wipe the rule set for every app in one tap —
+    // confirm like the sibling screens do for far less destructive clears.
+    pendingBulkAction?.let { action ->
+        val (title, body, label) = when (action) {
+            FirewallBulkAction.RESET -> Triple(
+                "Reset all network rules?",
+                "This removes every per-app Wi-Fi, mobile data, and context rule. This cannot be undone.",
+                "Reset"
+            )
+            FirewallBulkAction.BLOCK_WIFI -> Triple(
+                "Block Wi-Fi for all apps?",
+                "Every non-system app will have Wi-Fi blocked on the next Apply. Existing rules are overwritten.",
+                "Block Wi-Fi"
+            )
+            FirewallBulkAction.BLOCK_DATA -> Triple(
+                "Block mobile data for all apps?",
+                "Every non-system app will have mobile data blocked on the next Apply. Existing rules are overwritten.",
+                "Block Data"
+            )
+        }
+        ConfirmDestructiveDialog(
+            title = title,
+            body = body,
+            confirmLabel = label,
+            onConfirm = {
+                when (action) {
+                    FirewallBulkAction.RESET -> viewModel.resetAllNetwork()
+                    FirewallBulkAction.BLOCK_WIFI -> viewModel.blockAllWifi()
+                    FirewallBulkAction.BLOCK_DATA -> viewModel.blockAllMobile()
+                }
+                pendingBulkAction = null
+            },
+            onDismiss = { pendingBulkAction = null },
+        )
     }
 
     // Diagnostic output
@@ -521,7 +562,7 @@ private fun NetworkFirewallTab(
                 ) {
                     Icon(
                         Icons.Filled.Wifi,
-                        if (rule.wifiAllowed) "WiFi allowed" else "WiFi blocked",
+                        if (rule.wifiAllowed) "Wi-Fi allowed" else "Wi-Fi blocked",
                         tint = if (rule.wifiAllowed) Green else Red,
                         modifier = Modifier.size(18.dp)
                     )
@@ -677,23 +718,6 @@ private fun ContextFirewallTab(
 // ---- Shared Components ------------------------------------------
 
 @Composable
-private fun TabPill(label: String, selected: Boolean, accent: Color, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(10.dp),
-        color = if (selected) accent.copy(alpha = 0.15f) else Surface2,
-        modifier = Modifier.accessibilitySelection("$label firewall tab", selected)
-    ) {
-        Text(
-            label,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-            color = if (selected) accent else TextDim,
-            fontSize = 12.sp, fontWeight = FontWeight.SemiBold
-        )
-    }
-}
-
-@Composable
 private fun FilterChipSmall(label: String, selected: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
@@ -709,3 +733,5 @@ private fun FilterChipSmall(label: String, selected: Boolean, onClick: () -> Uni
         )
     }
 }
+
+private enum class FirewallBulkAction { RESET, BLOCK_WIFI, BLOCK_DATA }
