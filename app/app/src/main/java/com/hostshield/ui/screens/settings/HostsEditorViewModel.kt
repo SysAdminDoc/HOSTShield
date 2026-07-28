@@ -13,6 +13,12 @@ import javax.inject.Inject
 class HostsEditorViewModel @Inject constructor(
     private val rootUtil: RootUtil
 ) : ViewModel() {
+    private companion object {
+        // ~2 MB. Above this, editing in a single Compose text field is unusably
+        // slow, so the editor switches to a read-only preview.
+        const val MAX_EDITABLE_CHARS = 2 * 1024 * 1024
+    }
+
     private val _state = MutableStateFlow(HostsEditorState())
     val state = _state.asStateFlow()
 
@@ -25,6 +31,11 @@ class HostsEditorViewModel @Inject constructor(
                 onSuccess = { content ->
                     val lines = content.lines()
                     val entries = lines.count { l -> l.isNotBlank() && !l.trimStart().startsWith("#") }
+                    // In root mode the active hosts file contains the applied
+                    // blocklists (often 100k-1M lines). Loading that into one text
+                    // field freezes the screen, so above a threshold present it
+                    // read-only and block editing/saving.
+                    val tooLarge = content.length > MAX_EDITABLE_CHARS
                     _state.update {
                         it.copy(
                             content = content,
@@ -33,7 +44,10 @@ class HostsEditorViewModel @Inject constructor(
                             entryCount = entries,
                             isEdited = false,
                             loadFailed = false,
-                            message = null,
+                            tooLargeToEdit = tooLarge,
+                            message = if (tooLarge) {
+                                "This hosts file is too large to edit here (${lines.size} lines). Showing a read-only preview."
+                            } else null,
                             messageIsError = false
                         )
                     }
@@ -68,6 +82,15 @@ class HostsEditorViewModel @Inject constructor(
             _state.update {
                 it.copy(
                     message = "Cannot save: hosts file could not be read. Reload first.",
+                    messageIsError = true
+                )
+            }
+            return
+        }
+        if (_state.value.tooLargeToEdit) {
+            _state.update {
+                it.copy(
+                    message = "This hosts file is read-only here because it is too large to edit safely.",
                     messageIsError = true
                 )
             }

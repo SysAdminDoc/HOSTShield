@@ -511,55 +511,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: M
 
-- [ ] P2 — Network stats screen mixes a since-boot total with 24-hour per-app rows and offers no way to grant the required usage-access permission
-  Category: correctness
-  Where: `NetworkStatsTracker.kt:69-76` (`TrafficStats.getTotalRx/TxBytes()`), 88-90 (`dayAgo..now` app window), 200-218 (`tryTrafficStats` puts all traffic in WiFi columns); `NetworkStatsScreen.kt:110-118` (empty state)
-  Problem: The metric tiles use since-boot totals while the app list aggregates the last 24h — inconsistent by orders of magnitude with no window labels. The TrafficStats fallback reports all traffic as "WiFi" (mobile always 0). When PACKAGE_USAGE_STATS isn't granted (declared in the manifest but never requested — no `ACTION_USAGE_ACCESS_SETTINGS` intent anywhere), the list is empty and the empty state says "Grant usage access" with no way to do it.
-  Evidence: Traced `refresh()`; grep `USAGE_ACCESS` shows only the manifest declaration + comments.
-  Fix: Label windows ("last 24 h") and compute header totals from the same NetworkStatsManager window; add a "Grant usage access" empty-state action firing `Settings.ACTION_USAGE_ACCESS_SETTINGS`; label the TrafficStats fallback "All networks".
-  Acceptance: Header totals equal the sum of visible rows' window; the empty-state button lands on the usage-access settings page.
-  Confidence: Verified
-  Effort: M
-
-- [ ] P2 — QrConfig error banner derives success-vs-error by substring-sniffing the message
-  Category: ux
-  Where: `QrConfigScreen`/`QrConfigViewModel` (banner `contains("invalid"|"failed")`)
-  Problem: The QrConfig banner infers error styling by substring match, which breaks on any copy change or localization. (WebDavSync and HostsEditor were converted to an explicit `messageIsError` flag; QrConfig remains.)
-  Fix: Replace substring sniffing with an explicit `messageIsError: Boolean` in `QrConfigViewModel`, mirroring the WebDavSync/HostsEditor pattern.
-  Acceptance: A QrConfig validation error shows the red error banner regardless of message wording.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P2 — QR export summary claims pre-trim rule/source counts while `encodeConfig` silently drops sources and truncates rules; oversized render fails silently
-  Category: correctness
-  Where: `QrConfigViewModel.kt:47-73` (`generateQr` summary from `config`), `QrConfigSharing.kt:79-98` (`encodeConfig` drops sourceUrls then truncates rules to fit 2048 chars), `QrConfigViewModel.kt:138-154` (`renderQr` returns null, swallowed)
-  Problem: With many rules/sources, `encodeConfig` drops all source URLs and truncates user rules to fit the QR budget, but the summary still says e.g. "412 rules, 9 sources" — the user shares a QR believing it's complete while the receiver gets a subset with zero sources. If `QRCodeWriter.encode` throws, `renderQr` returns null and `qrBitmap` stays null with no error.
-  Evidence: `configSummary` uses `config.userRules.size`/`config.sourceUrls.size` (input), not the decoded contents of `encoded`; `renderQr` catch returns null without setting a message.
-  Fix: Have `encodeConfig` return what it actually encoded (or decode `encoded` back) and summarize that, appending "N rules and sources omitted to fit the QR"; set an error message when `renderQr` returns null.
-  Acceptance: Exporting a config over budget shows truthful counts + omission notice; a render failure shows an error banner.
-  Confidence: Verified
-  Effort: M
-
-
-- [ ] P2 — HostsEditor holds the entire root hosts file in one OutlinedTextField and recounts every line per keystroke
-  Category: perf
-  Where: `HostsEditorScreen.kt:92-112` (single `OutlinedTextField` bound to full content), `HostsEditorViewModel.kt:44-50` (`setContent` runs `text.lines()` + full count on every change)
-  Problem: In root mode the active hosts file contains the applied blocklists — routinely 100k-1M lines / many MB. Loading that into one Compose TextField effectively freezes the screen (multi-MB text layout), and every keystroke re-runs O(n) `lines()`+count on the UI path. No size guard, no truncation notice, no read-only fallback.
-  Evidence: No length checks in the load/setContent/save path; `entryCount` recomputation is unconditional.
-  Fix: Gate editing above a threshold (e.g. 2 MB → read-only LazyColumn preview like HostsDiff with an explanatory banner); debounce/derive the counts off the hot path.
-  Acceptance: Opening the editor against a 500k-line hosts file stays responsive and shows the size-gate message.
-  Confidence: Verified (structure; magnitude Needs-repro)
-  Effort: M
-
-- [ ] P2 — Glance widgets are dead code (no manifest receiver, no state writer) while README/architecture docs advertise them
-  Category: maintainability
-  Where: `ui/widget/HostShieldGlanceWidget.kt` (both widgets + receivers); `AndroidManifest.xml` (only HostShieldWidgetProvider/StatsWidgetProvider registered); `README.md:371`
-  Problem: `HostShieldGlanceReceiver`/`HostShieldStatsGlanceReceiver` aren't declared in the manifest (not addable), and nothing writes their `currentState<Preferences>` keys — even if registered they'd show "Inactive / 0 / --:--" forever. README.md:371 and CLAUDE.md v6.1.0 claim Glance widgets as shipped — a release-truth drift of the kind v6.9.55/56 targeted.
-  Evidence: Manifest grep shows no Glance receiver; repo-wide grep shows zero `updateAppWidgetState` for these widgets.
-  Fix: Register the receivers and feed state via `updateAppWidgetState` from the protection services, or delete the file and correct README/architecture to describe the RemoteViews widgets that actually ship.
-  Acceptance: No doc claims Glance widgets unless one can be added and shows live state.
-  Confidence: Verified
-  Effort: M
 
 ### P3
 

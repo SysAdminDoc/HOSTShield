@@ -5,6 +5,22 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Changed
+- Removed the dead Glance widget scaffolding (never registered or fed) and
+  corrected the architecture docs; the shipped home-screen widgets are the
+  RemoteViews toggle and stats widgets.
+
+### Fixed (secondary screens)
+- Network stats header totals now match the per-app 24-hour window (were
+  since-boot totals), the window is labeled, and the empty state offers a
+  working "Grant usage access" action.
+- The QR config export now summarizes what the QR actually contains and notes
+  any rules/sources omitted to fit, and a too-large config that can't render as
+  a QR shows an error instead of a blank image. QR banner error styling is
+  driven by explicit state, not message text.
+- The hosts editor switches to a responsive read-only preview for very large
+  hosts files instead of freezing in a single multi-megabyte text field.
+
 ### Fixed (blocklist accuracy)
 - Adblock rules embedded in a hosts-majority source file no longer collapse into
   incorrect exact blocks: a `$dnstype`/`$dnsrewrite` line is no longer globalized

@@ -39,6 +39,8 @@ class QrConfigViewModel @Inject constructor(
         private set
     var importResult by mutableStateOf<String?>(null)
         private set
+    var importResultIsError by mutableStateOf(false)
+        private set
     var pendingImportPlan by mutableStateOf<QrImportPlan?>(null)
         private set
     var isApplyingImport by mutableStateOf(false)
@@ -53,19 +55,35 @@ class QrConfigViewModel @Inject constructor(
                 val encoded = qrSharing.encodeConfig(config)
                 encodedString = encoded
 
-                val ruleCount = config.userRules.size
-                val sourceCount = config.sourceUrls.size
+                // Summarize what the QR ACTUALLY contains, not the pre-trim
+                // config: encodeConfig drops source URLs and truncates rules to
+                // fit the QR byte budget, so the input counts can overstate the
+                // shared payload.
+                val actual = qrSharing.decodeConfig(encoded)
+                val ruleCount = actual?.userRules?.size ?: config.userRules.size
+                val sourceCount = actual?.sourceUrls?.size ?: config.sourceUrls.size
+                val droppedRules = (config.userRules.size - ruleCount).coerceAtLeast(0)
+                val droppedSources = (config.sourceUrls.size - sourceCount).coerceAtLeast(0)
                 configSummary = buildString {
                     append("$ruleCount rules, $sourceCount sources")
                     if (config.dohEnabled) append(", DoH: ${config.dohProvider}")
                     if (config.customDns.isNotEmpty()) append(", DNS: ${config.customDns}")
                     append(" (${encoded.length} bytes)")
+                    if (droppedRules > 0 || droppedSources > 0) {
+                        append(" — omitted $droppedRules rules / $droppedSources sources to fit the QR")
+                    }
                 }
 
-                qrBitmap = withContext(Dispatchers.Default) { renderQr(encoded) }
+                val bitmap = withContext(Dispatchers.Default) { renderQr(encoded) }
+                qrBitmap = bitmap
+                if (bitmap == null) {
+                    importResult = "Config is too large to render as a QR code. Share the text code instead."
+                    importResultIsError = true
+                }
             } catch (e: Exception) {
                 Log.e(QR_CONFIG_TAG, "QR export failed", e)
                 importResult = "QR export failed. Try again after reopening this screen."
+                importResultIsError = true
             } finally {
                 isGenerating = false
             }
@@ -80,17 +98,20 @@ class QrConfigViewModel @Inject constructor(
                 val config = qrSharing.decodeConfig(input.trim())
                 if (config == null) {
                     importResult = "Invalid QR data - must start with HS:"
+                    importResultIsError = true
                     return@launch
                 }
                 val plan = withContext(Dispatchers.IO) { importer.preview(config) }
                 pendingImportPlan = if (plan.hasChanges) plan else null
                 importResult = importPreviewMessage(plan)
+                importResultIsError = false
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(QR_CONFIG_TAG, "QR import preview failed", e)
                 pendingImportPlan = null
                 importResult = "Import preview failed. Check the code and try again."
+                importResultIsError = true
             }
         }
     }
@@ -105,9 +126,11 @@ class QrConfigViewModel @Inject constructor(
                 pendingImportPlan = null
                 importResult = "Imported ${result.rulesAdded} rules, ${result.sourcesAdded} sources, " +
                     "${result.settingsUpdated} DNS setting updates"
+                importResultIsError = false
             } catch (e: Exception) {
                 Log.e(QR_CONFIG_TAG, "QR import failed", e)
                 importResult = "Import failed. Review the preview and try again."
+                importResultIsError = true
             } finally {
                 isApplyingImport = false
             }

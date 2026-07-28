@@ -238,8 +238,7 @@ fun QrConfigScreen(
 
         // Import result
         viewModel.importResult?.let { msg ->
-            val isError = msg.contains("invalid", ignoreCase = true) ||
-                msg.contains("failed", ignoreCase = true)
+            val isError = viewModel.importResultIsError
             HostShieldStatusBanner(
                 icon = if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
                 title = if (isError) stringResource(R.string.qr_action_failed) else stringResource(R.string.qr_action_ready),

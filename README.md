@@ -368,7 +368,6 @@ app/src/main/java/com/hostshield/
 │   ├── navigation/    # Compose navigation graph
 │   ├── screens/       # 31+ screens (Home, Logs, Stats, Settings, Firewall, ...)
 │   ├── components/    # Vico charts, Lottie animations, animated log feed
-│   ├── widget/        # Glance widgets (toggle + stats)
 │   └── theme/         # Material 3 theme, high-contrast AMOLED palette, accent colors
 └── util/
     ├── GeoIpLookup.kt         # bounded ipapi.co GeoIP lookups

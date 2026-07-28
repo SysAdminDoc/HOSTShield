@@ -69,8 +69,11 @@ class NetworkStatsTracker @Inject constructor(
             ?: emptyList()
 
         _appStats.value = stats.sortedByDescending { it.totalBytes }
-        _totalRx.value = TrafficStats.getTotalRxBytes()
-        _totalTx.value = TrafficStats.getTotalTxBytes()
+        // Keep the header totals consistent with the per-app window (last 24 h)
+        // rather than TrafficStats' since-boot counters, which are orders of
+        // magnitude larger and made the tiles disagree with the list.
+        _totalRx.value = stats.sumOf { it.totalRxBytes }
+        _totalTx.value = stats.sumOf { it.totalTxBytes }
     }
 
     /**

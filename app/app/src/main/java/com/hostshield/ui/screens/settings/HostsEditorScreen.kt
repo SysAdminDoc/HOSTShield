@@ -35,7 +35,9 @@ data class HostsEditorState(
     /** True when the last read failed; the editor must not save over the file. */
     val loadFailed: Boolean = false,
     /** Whether [message] is an error (drives banner styling explicitly instead of sniffing the text). */
-    val messageIsError: Boolean = false
+    val messageIsError: Boolean = false,
+    /** True when the file is too large to edit safely in a single text field (read-only preview). */
+    val tooLargeToEdit: Boolean = false
 )
 
 @Composable
@@ -51,7 +53,7 @@ fun HostsEditorScreen(
             subtitle = "${state.lineCount} lines, ${state.entryCount} editable entries",
             onBack = onBack,
             actions = {
-                if (state.isEdited) {
+                if (state.isEdited && !state.tooLargeToEdit) {
                     HostShieldInlineAction(
                         label = if (state.isSaving) "Saving" else "Save",
                         icon = Icons.Filled.Save,
@@ -104,10 +106,11 @@ fun HostsEditorScreen(
                 )
             }
         } else {
-            // Editor
+            // Editor (read-only above the size threshold to keep the screen responsive)
             OutlinedTextField(
                 value = state.content,
-                onValueChange = { viewModel.setContent(it) },
+                onValueChange = { if (!state.tooLargeToEdit) viewModel.setContent(it) },
+                readOnly = state.tooLargeToEdit,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 12.dp, vertical = 4.dp),

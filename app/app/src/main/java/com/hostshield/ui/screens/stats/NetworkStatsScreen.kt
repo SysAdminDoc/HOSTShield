@@ -37,11 +37,12 @@ fun NetworkStatsScreen(
     val stats by viewModel.appStats.collectAsStateWithLifecycle()
     val totalRx by viewModel.totalRx.collectAsStateWithLifecycle()
     val totalTx by viewModel.totalTx.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
             title = "Network stats",
-            subtitle = "Traffic by app from Android usage counters",
+            subtitle = "Traffic by app over the last 24 hours",
             onBack = onBack,
             actions = {
                 HostShieldActionIconButton(
@@ -107,10 +108,19 @@ fun NetworkStatsScreen(
                     HostShieldEmptyState(
                         icon = Icons.Filled.DataUsage,
                         title = "No app traffic recorded",
-                        message = "Grant usage access and refresh after apps have used the network.",
+                        message = "Per-app traffic needs usage access. Grant it, then refresh after apps have used the network.",
                         accent = Teal,
-                        primaryActionLabel = "Refresh stats",
-                        onPrimaryAction = { viewModel.refresh() },
+                        primaryActionLabel = "Grant usage access",
+                        onPrimaryAction = {
+                            runCatching {
+                                context.startActivity(
+                                    android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                )
+                            }
+                        },
+                        secondaryActionLabel = "Refresh stats",
+                        onSecondaryAction = { viewModel.refresh() },
                     )
                 }
             }
