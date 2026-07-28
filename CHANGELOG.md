@@ -3,6 +3,32 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.62] - 2026-07-28
+
+### Added
+- Forked the Spotify Ads hosts list into HostShield with its upstream MIT
+  notice, then added five Spotify/Podscribe hosts confirmed through live device
+  blocking. The HostShield-maintained list contains 84 unique hosts.
+
+### Changed
+- Spotify Ads now downloads from the HostShield repository. Room migration v20
+  moves existing installations to the hosted URL, preserves the source toggle,
+  de-duplicates a manually added hosted source, and clears stale download
+  metadata.
+- Re-audited every built-in and gallery source. The 45 distinct retained
+  gallery endpoints all return parseable blocklist content.
+
+### Fixed
+- Repaired primary URLs for 1Hosts Lite, NextDNS CNAME Cloaking, Perflyst Smart
+  TV, WindowsSpyBlocker, Stamparm Blackbook, NoCoin, and HaGeZi Gambling.
+- Replaced invalid Facebook and TikTok gallery URLs with HostShield-hosted
+  lists, and removed the broken or retired 1Hosts Pro, DuckDuckGo Tracker
+  Radar, HaGeZi NRD7, Sinfool Pornhosts, and ZeroDot1 CoinBlocker entries.
+
+### Distribution
+- The v6.9.62 GitHub APK continues the v6.9.61 Android debug-certificate
+  lineage and installs in place over v6.9.61.
+
 ## [v6.9.61] - 2026-07-28
 
 ### Added

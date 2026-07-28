@@ -98,7 +98,7 @@ class BackupRestoreUtilConnectedTest {
         assertEquals(SourceCategory.MALWARE, restoredSource.category)
 
         val restoredRule = restoreDb.userRuleDao().getAllRulesList().single()
-        assertEquals("ads.example.com", restoredRule.hostname)
+        assertEquals("*.ads.example.com", restoredRule.hostname)
         assertEquals(RuleType.BLOCK, restoredRule.type)
         assertTrue(restoredRule.isWildcard)
 
@@ -187,7 +187,7 @@ class BackupRestoreUtilConnectedTest {
         )
         db.userRuleDao().insert(
             UserRule(
-                hostname = "ads.example.com",
+                hostname = "*.ads.example.com",
                 type = RuleType.BLOCK,
                 comment = "Roundtrip rule",
                 enabled = true,

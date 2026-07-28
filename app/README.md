@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.61-blue)
+![Version](https://img.shields.io/badge/version-6.9.62-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -8,15 +8,15 @@
 
 > System-wide DNS-based ad/tracker/malware blocker for Android with per-app firewall, CNAME cloaking detection, serve-stale DNS caching, fail-closed DoH certificate pinning, rate-limited GeoIP enrichment, and a professional AMOLED dark UI with an optional high-contrast mode.
 
-Current module baseline: v6.9.61, versionCode 143.
+Current module baseline: v6.9.62, versionCode 144.
 
 ## Quick Start
 
 1. If v6.9.16 or earlier is installed, export a backup if needed and uninstall
-   it. v6.9.61 uses a new Android debug-certificate lineage, so it cannot update
+   it. v6.9.61 and later use a new Android debug-certificate lineage, so they cannot update
    in place over the older HostShield certificate; uninstalling clears the
    previous app data.
-2. Download `HostShield-v6.9.61-full-release.apk` from
+2. Download `HostShield-v6.9.62-full-release.apk` from
    [Releases](https://github.com/SysAdminDoc/HostShield/releases).
 3. Install and launch — the onboarding wizard guides you through setup.
 4. Choose **VPN mode** (no root) or **Root mode** (better battery life), then
@@ -104,7 +104,7 @@ Current module baseline: v6.9.61, versionCode 143.
 ## Configuration
 
 ### Blocklist Sources
-Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Spotify Ads is an optional built-in source that remains disabled until explicitly enabled because it can affect playback or updates. Add custom URL sources via Settings → Sources in hosts, domains-only, or DNS adblock syntax.
+Ships with curated defaults (Steven Black, OISD, HaGeZi, 1Hosts). Spotify Ads uses HostShield's maintained 84-host list and remains disabled until explicitly enabled because it can affect playback or updates. Add custom URL sources via Settings → Sources in hosts, domains-only, or DNS adblock syntax.
 
 ### LAN DNS Server
 Settings exposes LAN DNS only as an explicit opt-in. It runs as a foreground service on an unprivileged UDP port, defaults to private LAN clients only, and keeps Android 17+ local-network permission readiness declared for non-:53 LAN access.

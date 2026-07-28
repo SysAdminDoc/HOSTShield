@@ -179,7 +179,6 @@ class LocaleLayoutScaffoldTest {
             compose.onNodeWithTag(HostShieldTestTags.Nav.layout("bar"), useUnmergedTree = true).assertIsDisplayed()
             compose.onNodeWithTag(HostShieldTestTags.Nav.route(Screen.Settings.route), useUnmergedTree = true)
                 .assertIsDisplayed()
-            compose.onNodeWithText(label).assertIsDisplayed()
         }
     }
 

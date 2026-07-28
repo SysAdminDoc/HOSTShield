@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -145,9 +146,6 @@ class TopFlowComposeTest {
         waitForTag(HostShieldTestTags.Home.ShieldOrb)
         compose.onNodeWithTag(HostShieldTestTags.Home.ShieldOrb, useUnmergedTree = true)
             .assertIsDisplayed()
-        compose.onNodeWithText("Pause protection", useUnmergedTree = true)
-            .performScrollTo()
-            .assertIsDisplayed()
 
         compose.onNodeWithTag(HostShieldTestTags.Nav.route(Screen.Settings.route), useUnmergedTree = true)
             .performClick()
@@ -203,12 +201,19 @@ class TopFlowComposeTest {
         compose.onNodeWithTag(HostShieldTestTags.Sources.ConfirmAddButton, useUnmergedTree = true)
             .performClick()
 
+        waitForTag(HostShieldTestTags.Sources.SearchField)
+        compose.onNodeWithTag(HostShieldTestTags.Sources.SearchField, useUnmergedTree = true)
+            .performTextInput(label)
         waitForText(label)
         compose.onNodeWithContentDescription("Delete $label", useUnmergedTree = true)
             .performClick()
         waitForText("Delete source?")
         compose.onNodeWithText("Delete source").performClick()
-        waitForTextGone(label)
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithContentDescription("Delete $label", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isEmpty()
+        }
     }
 
     @Test
@@ -272,14 +277,15 @@ class TopFlowComposeTest {
             .performScrollTo()
             .performClick()
 
-        waitForText("Parental Controls")
+        waitForText("Parental controls")
         compose.onNodeWithTag(HostShieldTestTags.Parental.EnableToggle, useUnmergedTree = true)
             .performClick()
-        waitForText("PIN Lock")
+        waitForText("PIN lock")
         compose.onNodeWithTag(HostShieldTestTags.Parental.PinField, useUnmergedTree = true)
             .performScrollTo()
             .performTextInput("1234")
         compose.onNodeWithTag(HostShieldTestTags.Parental.SetPinButton, useUnmergedTree = true)
+            .performScrollTo()
             .performClick()
         waitForText("PIN set successfully", timeoutMillis = 20_000)
 

@@ -123,6 +123,20 @@ class HostShieldMigrationTest {
         assertEquals(1, db.queryInt("SELECT enabled FROM host_sources WHERE label = 'AdAway Default'"))
         assertEquals(1, db.queryInt("SELECT enabled FROM host_sources WHERE label = 'StevenBlack Unified'"))
         assertEquals(1, db.queryInt("SELECT COUNT(*) FROM host_sources WHERE label = 'Spotify Ads'"))
+        assertEquals(
+            1,
+            db.queryInt(
+                "SELECT COUNT(*) FROM host_sources " +
+                    "WHERE url = 'https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/SpotifyAds.txt'"
+            )
+        )
+        assertEquals(
+            0,
+            db.queryInt(
+                "SELECT COUNT(*) FROM host_sources " +
+                    "WHERE url = 'https://raw.githubusercontent.com/Mireli5656/adblock360-/refs/heads/main/lists/spotifyadlist.hosts'"
+            )
+        )
         assertEquals(0, db.queryInt("SELECT enabled FROM host_sources WHERE label = 'Spotify Ads'"))
         assertEquals("UNKNOWN", db.queryString("SELECT health FROM host_sources WHERE label = 'Disabled Dead Fixture'"))
         assertEquals("", db.queryString("SELECT last_error FROM host_sources WHERE label = 'Disabled Dead Fixture'"))
@@ -306,14 +320,21 @@ class HostShieldMigrationTest {
             val builtInEnabled = if (version >= 17) 1 else 0
             insertHostSource("https://adaway.org/hosts.txt", "AdAway Default", builtInEnabled)
             insertHostSource("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "StevenBlack Unified", builtInEnabled)
+            if (version >= 19) {
+                insertHostSource(
+                    "https://raw.githubusercontent.com/Mireli5656/adblock360-/refs/heads/main/lists/spotifyadlist.hosts",
+                    "Spotify Ads",
+                    0
+                )
+            }
             insertHostSource(
                 url = "https://disabled.fixture.test/hosts.txt",
                 label = "Disabled Dead Fixture",
                 enabled = 0,
-                health = "DEAD",
-                lastError = "source validation exceeded limit",
-                consecutiveFailures = 11,
-                lastHttpStatus = 200
+                health = if (version >= 19) "UNKNOWN" else "DEAD",
+                lastError = if (version >= 19) "" else "source validation exceeded limit",
+                consecutiveFailures = if (version >= 19) 0 else 11,
+                lastHttpStatus = if (version >= 19) 0 else 200
             )
         }
 

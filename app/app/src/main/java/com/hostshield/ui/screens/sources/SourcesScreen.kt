@@ -233,7 +233,9 @@ fun SourcesScreen(
                     onValueChange = { viewModel.setSearchQuery(it) },
                     placeholder = { Text("Search source name or URL", color = TextDim) },
                     leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextDim) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(HostShieldTestTags.Sources.SearchField),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(

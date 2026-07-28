@@ -23,7 +23,6 @@ class CuratedBlocklistsCatalogTest {
             "HaGeZi Threat Intelligence" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/tif.txt",
             "HaGeZi TIF Mini" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.mini.txt",
             "HaGeZi DynDNS" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/dyndns.txt",
-            "HaGeZi Newly Registered Domains (7d)" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/nrd7.txt",
             "HaGeZi Most Abused TLDs" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/spam-tlds.txt"
         )
 
@@ -37,6 +36,40 @@ class CuratedBlocklistsCatalogTest {
         assertTrue(byLabel.getValue("HaGeZi Light (Multi-Light)").warning.contains("Lowest breakage"))
         assertTrue(byLabel.getValue("HaGeZi Multi Ultimate").warning.contains("High breakage"))
         assertTrue(byLabel.getValue("HaGeZi Most Abused TLDs").warning.contains("whole TLD"))
+    }
+
+    @Test
+    fun `repaired gallery sources use verified primary or HostShield URLs`() {
+        val byLabel = readCatalog().associateBy { it.label }
+        val expected = mapOf(
+            "1Hosts Lite" to "https://raw.githubusercontent.com/badmojr/1Hosts/master/Lite/hosts.txt",
+            "NextDNS CNAME Cloaking" to "https://raw.githubusercontent.com/nextdns/cname-cloaking-blocklist/master/domains",
+            "Perflyst Smart TV Tracking" to "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt",
+            "Windows Spy Blocker" to "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt",
+            "Stamparm Malware" to "https://raw.githubusercontent.com/stamparm/blackbook/master/blackbook.txt",
+            "NoCoin Cryptojacking" to "https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/hosts.txt",
+            "HaGeZi Gambling" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/gambling.txt",
+            "HostShield Facebook Domains" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/Facebook.txt",
+            "HostShield TikTok Domains" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/Tiktok.txt"
+        )
+
+        expected.forEach { (label, url) ->
+            assertEquals(url, byLabel.getValue(label).url)
+        }
+    }
+
+    @Test
+    fun `retired or invalid gallery sources are absent`() {
+        val labels = readCatalog().map { it.label }.toSet()
+        setOf(
+            "1Hosts Pro",
+            "DuckDuckGo Tracker Radar",
+            "HaGeZi Newly Registered Domains (7d)",
+            "Sinfool Pornhosts",
+            "ZeroDot1 CoinBlocker"
+        ).forEach { removed ->
+            assertFalse("$removed should not be offered", removed in labels)
+        }
     }
 
     @Test

@@ -18,6 +18,7 @@ object HostShieldTestTags {
 
     object Sources {
         const val AddButton = "sources:add_button"
+        const val SearchField = "sources:search_field"
         const val NameField = "sources:name_field"
         const val UrlField = "sources:url_field"
         const val ConfirmAddButton = "sources:confirm_add"

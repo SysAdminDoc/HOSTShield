@@ -1,3 +1,31 @@
+# HostShield v6.9.62
+
+## HostShield Spotify List and Source Catalog Repair
+
+### Added
+- HostShield now maintains its own 84-host Spotify Ads list, derived from the
+  MIT-licensed AdBlock360 list and extended with five hosts confirmed through
+  live blocking on an attached Android device.
+
+### Changed
+- Spotify Ads uses the HostShield raw GitHub URL. Migration v20 updates existing
+  source rows without changing their enabled state, merges a duplicate hosted
+  row, and clears metadata that belonged to the old URL.
+- All default and addable sources were checked for a successful response,
+  supported content, and the app's 80 MiB size limit. All 45 distinct retained
+  gallery endpoints passed.
+
+### Fixed
+- Repaired nine stale or indirect source URLs, including 1Hosts Lite, NextDNS,
+  Perflyst, WindowsSpyBlocker, Stamparm, NoCoin, HaGeZi Gambling, and
+  HostShield's Facebook/TikTok lists.
+- Removed five unavailable or retired gallery choices: 1Hosts Pro, DuckDuckGo
+  Tracker Radar, HaGeZi NRD7, Sinfool Pornhosts, and ZeroDot1 CoinBlocker.
+
+### GitHub APK installation
+- v6.9.62 continues the v6.9.61 standard Android debug-certificate lineage, so
+  it installs in place over v6.9.61.
+
 # HostShield v6.9.61
 
 ## Source Health Repair and Spotify Ads

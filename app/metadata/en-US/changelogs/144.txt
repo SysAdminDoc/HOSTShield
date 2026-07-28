@@ -1,0 +1,8 @@
+v6.9.62:
+- Host the Spotify Ads list in the HostShield repository
+- Add five Spotify/Podscribe hosts confirmed through live blocking
+- Migrate existing Spotify Ads subscriptions without changing their toggle
+- Audit every built-in and gallery blocklist endpoint
+- Repair nine stale or indirect source URLs
+- Remove five unavailable or retired gallery sources
+- Continue the v6.9.61 APK certificate lineage for in-place updates

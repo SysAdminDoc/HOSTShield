@@ -8,10 +8,17 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+internal const val SPOTIFY_ADS_SOURCE_URL =
+    "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/SpotifyAds.txt"
+internal const val LEGACY_SPOTIFY_ADS_SOURCE_URL =
+    "https://raw.githubusercontent.com/Mireli5656/adblock360-/refs/heads/main/lists/spotifyadlist.hosts"
+private const val SPOTIFY_ADS_DESCRIPTION =
+    "Aggressive Spotify ad and telemetry list maintained by HostShield. May interrupt playback or app updates. ~84 entries."
+
 internal fun spotifyAdsDefaultSource() = HostSource(
-    url = "https://raw.githubusercontent.com/Mireli5656/adblock360-/refs/heads/main/lists/spotifyadlist.hosts",
+    url = SPOTIFY_ADS_SOURCE_URL,
     label = "Spotify Ads",
-    description = "Aggressive Spotify ad and telemetry list. May interrupt playback or app updates. ~79 entries.",
+    description = SPOTIFY_ADS_DESCRIPTION,
     category = SourceCategory.ADS,
     isBuiltin = true,
     enabled = false
@@ -130,26 +137,52 @@ class SourceRepository @Inject constructor(
     }
 
     private suspend fun repairKnownSourceUrls(existing: List<HostSource>) {
-        val replacements = mapOf(
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist.txt" to
-                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt",
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist-referral.txt" to
-                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt"
-        )
+        val alreadyHasHostedSpotify = existing.any { it.url == SPOTIFY_ADS_SOURCE_URL }
         existing.forEach { source ->
-            val replacement = replacements[source.url] ?: return@forEach
-            sourceDao.update(
-                source.copy(
-                    url = replacement,
-                    label = "HaGeZi Referral Allowlist",
-                    description = "Adblock-syntax referral and native tracker unbreak list for aggressive HaGeZi packs. ~1.6k entries.",
-                    category = SourceCategory.ALLOWLIST,
-                    health = SourceHealth.UNKNOWN,
-                    lastError = "",
-                    lastHttpStatus = 0,
-                    consecutiveFailures = 0
-                )
-            )
+            when (source.url) {
+                LEGACY_SPOTIFY_ADS_SOURCE_URL -> {
+                    if (alreadyHasHostedSpotify) {
+                        sourceDao.delete(source)
+                    } else {
+                        sourceDao.update(
+                            source.copy(
+                                url = SPOTIFY_ADS_SOURCE_URL,
+                                label = "Spotify Ads",
+                                description = SPOTIFY_ADS_DESCRIPTION,
+                                category = SourceCategory.ADS,
+                                isBuiltin = true,
+                                entryCount = 0,
+                                lastUpdated = 0L,
+                                lastModifiedOnline = "",
+                                etag = "",
+                                sizeBytes = 0L,
+                                health = SourceHealth.UNKNOWN,
+                                lastError = "",
+                                lastHttpStatus = 0,
+                                consecutiveFailures = 0,
+                                prevEntryCount = 0,
+                                domainsAdded = 0,
+                                domainsRemoved = 0
+                            )
+                        )
+                    }
+                }
+
+                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist.txt",
+                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist-referral.txt" ->
+                    sourceDao.update(
+                        source.copy(
+                            url = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt",
+                            label = "HaGeZi Referral Allowlist",
+                            description = "Adblock-syntax referral and native tracker unbreak list for aggressive HaGeZi packs. ~1.6k entries.",
+                            category = SourceCategory.ALLOWLIST,
+                            health = SourceHealth.UNKNOWN,
+                            lastError = "",
+                            lastHttpStatus = 0,
+                            consecutiveFailures = 0
+                        )
+                    )
+            }
         }
     }
 }

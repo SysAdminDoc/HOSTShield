@@ -24,6 +24,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - v17: Enable default AdAway and StevenBlack Unified built-in sources
  * - v18: Added dns_logs(app_package, hostname) index for app-domain aggregation
  * - v19: Add Spotify Ads built-in source and clear disabled-source health errors
+ * - v20: Move Spotify Ads to the HostShield-maintained blocklist
  */
 object Migrations {
 
@@ -357,6 +358,79 @@ object Migrations {
         }
     }
 
+    val MIGRATION_19_20 = object : Migration(19, 20) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            val legacyUrl =
+                "https://raw.githubusercontent.com/Mireli5656/adblock360-/refs/heads/main/lists/spotifyadlist.hosts"
+            val hostedUrl =
+                "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/SpotifyAds.txt"
+            val description =
+                "Aggressive Spotify ad and telemetry list maintained by HostShield. May interrupt playback or app updates. ~84 entries."
+
+            // If the user already added the hosted URL manually, keep that row
+            // and remove the now-redundant legacy built-in row.
+            db.execSQL(
+                """
+                UPDATE host_sources
+                SET label = 'Spotify Ads',
+                    description = ?,
+                    category = 'ADS',
+                    is_builtin = 1,
+                    entry_count = 0,
+                    last_updated = 0,
+                    last_modified_online = '',
+                    etag = '',
+                    size_bytes = 0,
+                    health = 'UNKNOWN',
+                    last_error = '',
+                    last_http_status = 0,
+                    consecutive_failures = 0,
+                    prev_entry_count = 0,
+                    domains_added = 0,
+                    domains_removed = 0
+                WHERE url = ?
+                """.trimIndent(),
+                arrayOf(description, hostedUrl)
+            )
+            db.execSQL(
+                """
+                DELETE FROM host_sources
+                WHERE url = ?
+                  AND EXISTS (
+                    SELECT 1
+                    FROM host_sources
+                    WHERE url = ?
+                  )
+                """.trimIndent(),
+                arrayOf(legacyUrl, hostedUrl)
+            )
+            db.execSQL(
+                """
+                UPDATE host_sources
+                SET url = ?,
+                    label = 'Spotify Ads',
+                    description = ?,
+                    category = 'ADS',
+                    is_builtin = 1,
+                    entry_count = 0,
+                    last_updated = 0,
+                    last_modified_online = '',
+                    etag = '',
+                    size_bytes = 0,
+                    health = 'UNKNOWN',
+                    last_error = '',
+                    last_http_status = 0,
+                    consecutive_failures = 0,
+                    prev_entry_count = 0,
+                    domains_added = 0,
+                    domains_removed = 0
+                WHERE url = ?
+                """.trimIndent(),
+                arrayOf(hostedUrl, description, legacyUrl)
+            )
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
     val ALL = arrayOf(
         MIGRATION_1_2,
@@ -376,6 +450,7 @@ object Migrations {
         MIGRATION_15_16,
         MIGRATION_16_17,
         MIGRATION_17_18,
-        MIGRATION_18_19
+        MIGRATION_18_19,
+        MIGRATION_19_20
     )
 }
