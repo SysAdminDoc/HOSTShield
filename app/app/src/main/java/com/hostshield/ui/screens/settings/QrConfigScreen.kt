@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -83,11 +84,11 @@ fun QrConfigScreen(
                     onClick = { viewModel.generateQr() },
                     enabled = !viewModel.isGenerating,
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
+                    colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = if (Teal.luminance() > 0.5f) Color.Black else Color.White),
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 ) {
                     if (viewModel.isGenerating) {
-                        CircularProgressIndicator(Modifier.size(16.dp), color = Color.Black, strokeWidth = 2.dp)
+                        CircularProgressIndicator(Modifier.size(16.dp), color = if (Teal.luminance() > 0.5f) Color.Black else Color.White, strokeWidth = 2.dp)
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.qr_generating), fontWeight = FontWeight.SemiBold)
                     } else {
@@ -219,11 +220,11 @@ fun QrConfigScreen(
                         onClick = { viewModel.applyPendingImport() },
                         enabled = !viewModel.isApplyingImport,
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color.Black),
+                        colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = if (Blue.luminance() > 0.5f) Color.Black else Color.White),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                     ) {
                         if (viewModel.isApplyingImport) {
-                            CircularProgressIndicator(Modifier.size(14.dp), color = Color.Black, strokeWidth = 2.dp)
+                            CircularProgressIndicator(Modifier.size(14.dp), color = if (Blue.luminance() > 0.5f) Color.Black else Color.White, strokeWidth = 2.dp)
                             Spacer(Modifier.width(6.dp))
                             Text(stringResource(R.string.qr_importing), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         } else {

@@ -228,7 +228,7 @@ private fun WelcomePage(onNext: () -> Unit) {
 
         Button(
             onClick = onNext,
-            colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
+            colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = if (Teal.luminance() > 0.5f) Color.Black else Color.White),
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)
         ) {
@@ -279,7 +279,7 @@ private fun MethodPage(
 
         Button(
             onClick = onNext,
-            colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
+            colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = if (Teal.luminance() > 0.5f) Color.Black else Color.White),
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)
         ) {
@@ -442,7 +442,7 @@ private fun PrivateDnsWarningPage(
 
         Button(
             onClick = onNext,
-            colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = Color.Black),
+            colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = if (Yellow.luminance() > 0.5f) Color.Black else Color.White),
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)
         ) {
@@ -561,7 +561,7 @@ private fun FeaturesOverviewPage(onNext: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = Teal),
             shape = RoundedCornerShape(8.dp)
         ) {
-            Text("Continue", color = Color.Black, fontWeight = FontWeight.Bold)
+            Text("Continue", color = if (Teal.luminance() > 0.5f) Color.Black else Color.White, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -695,7 +695,7 @@ private fun DnsConfigPage(
             colors = ButtonDefaults.buttonColors(containerColor = Teal),
             shape = RoundedCornerShape(8.dp)
         ) {
-            Text("Continue", color = Color.Black, fontWeight = FontWeight.Bold)
+            Text("Continue", color = if (Teal.luminance() > 0.5f) Color.Black else Color.White, fontWeight = FontWeight.Bold)
         }
     }
 }

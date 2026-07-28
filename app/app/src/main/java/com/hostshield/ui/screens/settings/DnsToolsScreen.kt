@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -458,7 +459,7 @@ private fun DiagTab(state: DnsToolsState, viewModel: DnsToolsViewModel) {
                         if (state.isBatchRunning) {
                             CircularProgressIndicator(
                                 Modifier.size(14.dp).accessibilityLiveRegion("Running batch DNS test"),
-                                color = Color.Black,
+                                color = if (Teal.luminance() > 0.5f) Color.Black else Color.White,
                                 strokeWidth = 2.dp
                             )
                             Spacer(Modifier.width(6.dp))

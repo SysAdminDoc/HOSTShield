@@ -264,14 +264,14 @@ private fun formatCompactCount(n: Int): String = when {
 
 /** Map raw interface names to human-readable labels. */
 private fun interfaceLabel(iface: String): String = when {
-    iface.startsWith("wlan") -> "WiFi"
+    iface.startsWith("wlan") -> "Wi-Fi"
     iface.startsWith("rmnet") || iface.startsWith("ccmni") -> "Mobile"
     iface.startsWith("tun") || iface.startsWith("vpn") -> "VPN"
     iface.startsWith("bt-") || iface.startsWith("bnep") -> "Bluetooth"
     iface.startsWith("eth") || iface.startsWith("usb") -> "Ethernet"
     iface.startsWith("lo") -> "Loopback"
     iface.startsWith("dummy") -> "Dummy"
-    iface.startsWith("p2p") -> "WiFi Direct"
-    iface.startsWith("swlan") -> "WiFi Hotspot"
+    iface.startsWith("p2p") -> "Wi-Fi Direct"
+    iface.startsWith("swlan") -> "Wi-Fi Hotspot"
     else -> iface
 }

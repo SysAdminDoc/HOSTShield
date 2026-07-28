@@ -1,5 +1,12 @@
 package com.hostshield.service
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
@@ -128,7 +135,12 @@ class SafeSearchEnforcer @Inject constructor() {
         resolvedTargets[target.canonicalHost]?.let { cached ->
             if (cached.expiresAtMillis > now) return cached
         }
+        return forceResolve(target)
+    }
 
+    /** Always performs the (blocking) system-resolver lookup and caches it. */
+    private fun forceResolve(target: SafeTarget): ResolvedTarget {
+        val now = nowMillis()
         val resolved = try {
             addressResolver(target.canonicalHost)
         } catch (_: Exception) {
@@ -141,6 +153,33 @@ class SafeSearchEnforcer @Inject constructor() {
         )
         resolvedTargets[target.canonicalHost] = fresh
         return fresh
+    }
+
+    private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var refreshJob: Job? = null
+
+    /**
+     * Keep every safe-search endpoint resolved OFF the packet path.
+     * `buildSafeResponse` runs inline in the single VPN packet-loop thread, and
+     * a cold or expired cache there means a blocking system-resolver lookup
+     * that stalls ALL device DNS for up to the resolver timeout. Refreshing
+     * shortly before expiry keeps the inline path a pure cache hit.
+     */
+    fun startBackgroundRefresh() {
+        if (refreshJob?.isActive == true) return
+        refreshJob = refreshScope.launch {
+            while (isActive) {
+                safeTargets.forEach { target ->
+                    try { forceResolve(target) } catch (_: Exception) { }
+                }
+                delay(RESOLUTION_CACHE_TTL_MS - REFRESH_MARGIN_MS)
+            }
+        }
+    }
+
+    fun stopBackgroundRefresh() {
+        refreshJob?.cancel()
+        refreshJob = null
     }
 
     private fun buildAddressResponse(dns: ByteArray, qtype: Int, ip: String): ByteArray? {
@@ -246,6 +285,7 @@ class SafeSearchEnforcer @Inject constructor() {
         private const val TYPE_A = 1
         private const val TYPE_AAAA = 28
         private const val RESOLUTION_CACHE_TTL_MS = 6 * 60 * 60 * 1000L
+        private const val REFRESH_MARGIN_MS = 5 * 60 * 1000L
         private val GOOGLE_COUNTRY_DOMAIN = Regex("""^(?:www\.)?google\.(?:[a-z]{2}|com)(?:\.[a-z]{2})?$""")
     }
 }

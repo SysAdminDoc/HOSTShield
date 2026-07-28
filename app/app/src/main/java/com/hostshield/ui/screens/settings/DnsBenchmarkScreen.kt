@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,11 +55,11 @@ fun DnsBenchmarkScreen(
             onClick = { viewModel.runBenchmark() },
             enabled = !viewModel.isRunning,
             shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
+            colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = if (Teal.luminance() > 0.5f) Color.Black else Color.White),
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (viewModel.isRunning) {
-                CircularProgressIndicator(Modifier.size(16.dp), color = Color.Black, strokeWidth = 2.dp)
+                CircularProgressIndicator(Modifier.size(16.dp), color = if (Teal.luminance() > 0.5f) Color.Black else Color.White, strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
                 Text("Testing... ${(viewModel.progress * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
             } else {

@@ -85,7 +85,7 @@ fun NetworkStatsScreen(
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Text("#", modifier = Modifier.width(24.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold)
             Text("App", modifier = Modifier.weight(1f), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-            Text("WiFi", modifier = Modifier.width(60.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            Text("Wi-Fi", modifier = Modifier.width(60.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
                 textAlign = androidx.compose.ui.text.style.TextAlign.End)
             Text("Mobile", modifier = Modifier.width(60.dp), color = TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold,
                 textAlign = androidx.compose.ui.text.style.TextAlign.End)

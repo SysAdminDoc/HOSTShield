@@ -81,10 +81,7 @@ class NflogReader @Inject constructor(
             logTarget = "NFLOG"
             // NFLOG may not write to dmesg on all kernels. Add a supplementary
             // LOG rule so we can tail dmesg reliably as well.
-            Shell.cmd(
-                "iptables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true",
-                "ip6tables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true"
-            ).exec()
+            installSupplementalLogRules()
             Log.i(TAG, "Log target: NFLOG (with LOG supplement for dmesg tailing)")
         } else {
             // Probe: is LOG available?
@@ -96,10 +93,7 @@ class NflogReader @Inject constructor(
             if (logProbe.isSuccess) {
                 logTarget = "LOG"
                 // Ensure LOG rule is in hs-reject (IptablesManager may have already added it)
-                Shell.cmd(
-                    "iptables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true",
-                    "ip6tables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true"
-                ).exec()
+                installSupplementalLogRules()
                 Log.i(TAG, "Log target: LOG (NFLOG unavailable — Samsung kernel?)")
             } else {
                 logTarget = "NONE"
@@ -131,6 +125,29 @@ class NflogReader @Inject constructor(
         dmesgJob?.cancel(); dmesgJob = null
         dmesgProcess?.destroy(); dmesgProcess = null
         recentHashes.clear()
+        // Remove the supplemental LOG rules -- previously they persisted until
+        // the whole chain was flushed, stacking one per start/stop cycle.
+        scope.launch { removeSupplementalLogRules() }
+    }
+
+    /** Delete-before-insert so repeated starts never stack duplicate rules. */
+    private fun installSupplementalLogRules() {
+        removeSupplementalLogRules()
+        Shell.cmd(
+            "iptables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true",
+            "ip6tables -I hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null || true"
+        ).exec()
+    }
+
+    private fun removeSupplementalLogRules() {
+        // Bounded loop clears any historically stacked duplicates too.
+        for (i in 0..4) {
+            val r = Shell.cmd(
+                "iptables -D hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null",
+                "ip6tables -D hs-reject -j LOG --log-prefix \"$NFLOG_PREFIX \" --log-uid 2>/dev/null"
+            ).exec()
+            if (!r.isSuccess) break
+        }
     }
 
     /**
@@ -138,8 +155,10 @@ class NflogReader @Inject constructor(
      * `dmesg -w` streams new kernel messages in real-time.
      */
     private suspend fun tailDmesg() {
-        // Clear old dmesg to avoid replaying stale entries
-        Shell.cmd("dmesg -C 2>/dev/null || true").exec()
+        // dmesg -w replays the existing ring buffer before following. Discard
+        // that replay with a settle window instead of running `dmesg -C`, which
+        // destroyed the device-wide kernel log on every logging start.
+        val settleUntil = System.currentTimeMillis() + 1000L
 
         val proc = Runtime.getRuntime().exec(arrayOf("su", "-c", "dmesg -w 2>/dev/null"))
         dmesgProcess = proc
@@ -158,6 +177,7 @@ class NflogReader @Inject constructor(
         try {
             while (currentCoroutineContext().isActive) {
                 val line = withContext(Dispatchers.IO) { reader.readLine() } ?: break
+                if (System.currentTimeMillis() < settleUntil) continue // backlog replay
                 if (!logPattern.containsMatchIn(line)) continue
 
                 try {

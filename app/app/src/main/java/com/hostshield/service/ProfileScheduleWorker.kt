@@ -56,22 +56,32 @@ class ProfileScheduleWorker @AssistedInject constructor(
                 if (profile.scheduleStart.isBlank() || profile.scheduleEnd.isBlank()) continue
 
                 val days = profile.daysOfWeek.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
-                if (currentDay !in days) continue
 
                 val start = parseTime(profile.scheduleStart) ?: continue
                 val end = parseTime(profile.scheduleEnd) ?: continue
 
-                val inWindow = if (start <= end) {
+                val overnight = start > end
+                val inWindow = if (!overnight) {
                     currentTime in start..end
                 } else {
                     // Overnight: e.g. 22:00 to 06:00
                     currentTime >= start || currentTime <= end
                 }
+                if (!inWindow) continue
 
-                if (inWindow) {
-                    targetProfile = profile
-                    break
+                // The scheduled day is the day the window STARTED. For the
+                // after-midnight tail of an overnight window that's yesterday —
+                // gating on the current day tore "Fri 22:00-06:00, days=Fri"
+                // down at midnight, six hours early.
+                val windowStartDay = if (overnight && currentTime <= end) {
+                    (currentDay + 6) % 7
+                } else {
+                    currentDay
                 }
+                if (windowStartDay !in days) continue
+
+                targetProfile = profile
+                break
             }
 
             val activeProfile = profileDao.getActiveProfile()
