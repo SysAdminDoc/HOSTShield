@@ -6,11 +6,21 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 ## [Unreleased]
 
 ### Changed
+- Removed dead UI/util code: the unused ShieldAnimation and AnimatedLogFeed
+  components (the last hardcoded palette colors in the UI layer), the unwired
+  firewall script-export path, and the unwired RDAP `DomainAgeChecker`.
+- Maintenance and source-failure notifications now use the HostShield shield
+  icon instead of generic Android system icons.
 - Removed the dead Glance widget scaffolding (never registered or fed) and
   corrected the architecture docs; the shipped home-screen widgets are the
   RemoteViews toggle and stats widgets.
 
 ### Fixed (secondary screens)
+- Enabling or resuming protection from Home now respects DNS-proxy mode instead
+  of silently switching the user's method to root hosts (which failed on
+  unrooted devices).
+- Corrected a corrupted entry in the bundled Spotify Ads list so
+  `adplexmedia.adk2x.com` is blocked.
 - Network stats header totals now match the per-app 24-hour window (were
   since-boot totals), the window is labeled, and the empty state offers a
   working "Grant usage access" action.

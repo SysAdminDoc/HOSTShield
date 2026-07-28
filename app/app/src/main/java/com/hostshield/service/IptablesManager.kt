@@ -547,24 +547,6 @@ class IptablesManager @Inject constructor(
         return parts.joinToString("\n")
     }
 
-    /**
-     * Export firewall rules as a shell script that can be applied standalone.
-     */
-    suspend fun exportAsScript(): String {
-        val rules = firewallRuleDao.getAllRulesList()
-        val script = buildScript(rules, FirewallMode.BLACKLIST)
-        val sb = StringBuilder()
-        sb.appendLine("#!/system/bin/sh")
-        sb.appendLine("# HostShield Firewall Rules Export")
-        sb.appendLine("# Generated: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())}")
-        sb.appendLine("# Rules: ${rules.size}")
-        sb.appendLine("")
-        for (cmd in script) {
-            sb.appendLine(cmd)
-        }
-        return sb.toString()
-    }
-
     /** Alias for DiagnosticExporter compatibility. */
     suspend fun getDiagnosticDump(): String = dumpFullDiagnostic()
 }

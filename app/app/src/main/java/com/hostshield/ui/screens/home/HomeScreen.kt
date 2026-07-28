@@ -119,6 +119,9 @@ fun HomeScreen(
                     viewModel.disableBlocking()
                 } else if (state.blockMethod == com.hostshield.data.model.BlockMethod.VPN) {
                     requestVpnThenApply()
+                } else if (state.blockMethod == com.hostshield.data.model.BlockMethod.DNS_PROXY) {
+                    viewModel.applyProxyMode()
+                    onRequestNotificationPermission()
                 } else {
                     viewModel.applyRootMode()
                     onRequestNotificationPermission()

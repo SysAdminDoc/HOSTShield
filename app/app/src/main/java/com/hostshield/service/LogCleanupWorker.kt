@@ -107,7 +107,7 @@ class LogCleanupWorker @AssistedInject constructor(
         val notification = NotificationCompat.Builder(applicationContext, MAINTENANCE_CHANNEL_ID)
             .setContentTitle("Log cleanup complete")
             .setContentText(text)
-            .setSmallIcon(android.R.drawable.ic_menu_delete)
+            .setSmallIcon(com.hostshield.R.drawable.ic_shield)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()

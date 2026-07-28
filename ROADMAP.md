@@ -514,26 +514,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
 
 ### P3
 
-- [ ] P3 — Curated SpotifyAds.txt line 13 is a corrupted concatenated entry — intended host never blocked
-  Category: correctness
-  Where: `blocklists/SpotifyAds.txt` line 13: `0.0.0.0 adnxs.comadplexmedia.adk2x.com`
-  Problem: Two entries merged during the v6.9.61 snapshot (lost line break). The bogus token passes `isValidDomain` as a junk exact block; the intended `adplexmedia.adk2x.com` is never blocked for hosted-list subscribers. Fetched at runtime from `raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/SpotifyAds.txt`, so fixing the repo file fixes all installs on next refresh.
-  Evidence: Confirmed in file (line 12 already has `adnxs.com` separately). All other `blocklists/*.txt` long tokens scanned — only this line is corrupt.
-  Fix: Split into `0.0.0.0 adnxs.com` (dedupe) and `0.0.0.0 adplexmedia.adk2x.com`; add a repo-side lint validating each line as `<sinkhole-ip> <valid-domain>`.
-  Acceptance: `grep adk2x blocklists/SpotifyAds.txt` shows `adplexmedia.adk2x.com` as its own entry; a list-integrity check covers the curated files.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — Home protection controls overwrite DNS_PROXY mode with ROOT_HOSTS
-  Category: correctness
-  Where: `home/HomeViewModel.kt:606-617` (`resumeFromPause`), `home/HomeScreen.kt:117-126` (ShieldOrb onToggle), 504-513 (PauseTimerSection onResume); `applyRootMode()` ~line 542 does `prefs.setBlockMethod(ROOT_HOSTS)`
-  Problem: For DNS_PROXY users (settable via automation API/QR; workers dispatch it since v6.9.59), Home resume/toggle branch only on `== VPN` else `applyRootMode()`, which unconditionally rewrites the method to ROOT_HOSTS and attempts a root apply — on unrooted devices this fails AND permanently changes the user's configured method. `resumeBlockingIfNeeded` (833-855) already handles DNS_PROXY correctly; the Home UI paths don't.
-  Evidence: `resumeFromPause`: `if (blockMethod==VPN){} else applyRootMode()`; grep shows no Home path handling DNS_PROXY.
-  Fix: Branch exhaustively on BlockMethod in Home toggle/resume (start DnsProxyService for DNS_PROXY), mirroring resumeBlockingIfNeeded.
-  Acceptance: A DNS_PROXY device pausing/resuming from Home resumes the proxy and keeps `blockMethod=DNS_PROXY`.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P3 — "REGEX:" sentinel prefix in the rule comment field flips user comments into regex rules
   Category: correctness
   Where: `lists/RulesScreen.kt:173-176` (onAdd unwrap `isRegex = comment.startsWith("REGEX:")`) and `:374` (AddRuleDialog packs `"REGEX:$comment"`)
@@ -744,16 +724,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: S
 
-- [ ] P3 — Maintenance/source-failure notifications use generic Android system icons instead of the app shield
-  Category: visual
-  Where: `SourceFailureNotifier.kt:60` (`android.R.drawable.ic_dialog_alert`); `LogCleanupWorker.kt:110` (`android.R.drawable.ic_menu_delete`)
-  Problem: Both user-facing notifications ship platform drawables as small icons while every other HostShield notification uses `R.drawable.ic_shield`. System menu/dialog icons aren't designed for the status bar (render as a white blob on many OEM skins) and break brand consistency; `ic_menu_delete` on "Log cleanup complete" is also semantically wrong.
-  Evidence: Compared with BlockNotificationService.kt:126 (`R.drawable.ic_shield`).
-  Fix: Use `R.drawable.ic_shield` (or a dedicated maintenance glyph) for both.
-  Acceptance: All HostShield notifications show the shield glyph in the status bar.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P3 — Onboarding "Ready" page claims 3 pre-enabled sources; 4 are enabled
   Category: ux
   Where: `onboarding/OnboardingScreen.kt:748-760`; `data/repository/SourceRepository.kt:43-110`
@@ -781,36 +751,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Evidence: Whole screen is `Column(verticalScroll)`; no lazy container.
   Fix: Convert to LazyColumn with `items(key = timestamp+ja3)`, keeping header/summary as items.
   Acceptance: Opening with 100 captures shows no frame drops; scroll matches ConnectionLog.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — Dead premium components ShieldAnimation.kt and AnimatedLogFeed.kt (~20 KB; the only remaining hardcoded hex colors in ui/)
-  Category: maintainability
-  Where: `components/ShieldAnimation.kt` (whole file), `components/AnimatedLogFeed.kt` (whole file)
-  Problem: `ShieldAnimation`/`ShieldStatusIndicator`/`AnimatedShieldToggle` and `AnimatedLogFeed`/`AnimatedLogRow`/`LiveActivityIndicator`/`QueryRateSparkline` have zero call sites outside their own files (Home uses ShieldOrb + LiveLogRow). ShieldAnimation.kt:41-44 carries the only hardcoded palette literals in the UI layer (`Color(0xFF94E2D5)` etc.) that ignore accent/dynamic/light theming — a trap if re-wired. `AnimatedShieldToggle` also has no semantics/contentDescription.
-  Evidence: Repo-wide grep for each exported composable returns only the defining file (+ previews).
-  Fix: Delete both files (git preserves history). If ShieldStatusIndicator is wanted for a future widget, move its colors to LocalHostShieldPalette first.
-  Acceptance: Files removed; `grep "Color(0x"` in ui/ (excluding theme/ and widget/) returns nothing.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — FirewallViewModel.exportScript is dead code
-  Category: maintainability
-  Where: `FirewallViewModel.kt:273-285`
-  Problem: `exportScript(callback)` (iptables script export with its own error copy) has no call site in any screen — the "firewall export" feature lost its UI. Unreachable branch with an unseeable error message.
-  Evidence: Grep `exportScript` → only the definition and IptablesManager's `exportAsScript`.
-  Fix: Add the export action back to the Network tab (share via FileProvider) or delete the function and its IptablesManager counterpart if unused.
-  Acceptance: No unreachable public VM functions on the Firewall surface.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — DomainAgeChecker is fully unwired dead code (no production caller)
-  Category: maintainability
-  Where: `util/DomainAgeChecker.kt` (whole file)
-  Problem: The RDAP domain-age feature has no runtime caller — only the class and its test reference it. It ships ~4.8 KB plus an outbound rdap.org dependency never exercised, giving a false impression of an available feature. (Related to the logged "DomainAgeChecker PSL" Roadmap_Blocked item, which is about its suffix table, not its deadness.)
-  Evidence: `grep -rln DomainAgeChecker app/app/src` → only the class + its test.
-  Fix: Either wire it into the DNS-log detail flow behind an explicit user-initiated action (it leaks the queried domain to a third party) or delete it and its test until built.
-  Acceptance: DomainAgeChecker has a real production call path with privacy-consented trigger, or is removed.
   Confidence: Verified
   Effort: S
 

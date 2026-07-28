@@ -57,7 +57,7 @@ class SourceFailureNotifier @Inject constructor(
             .setContentTitle(title)
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(expanded))
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setSmallIcon(com.hostshield.R.drawable.ic_shield)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()

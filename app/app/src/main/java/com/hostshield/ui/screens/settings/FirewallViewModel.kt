@@ -270,20 +270,6 @@ class FirewallViewModel @Inject constructor(
         }
     }
 
-    fun exportScript(callback: (String) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val script = iptablesManager.exportAsScript()
-                callback(script)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                android.util.Log.e("FirewallViewModel", "Firewall script export failed", e)
-                _error.value = "Firewall script export failed. Try again after refreshing rules."
-            }
-        }
-    }
-
     // Bulk operations
     fun blockAllWifi() {
         viewModelScope.launch(Dispatchers.IO) {

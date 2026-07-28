@@ -643,10 +643,47 @@ class HomeViewModel @Inject constructor(
             prefs.setPauseEndTime(0L)
             _uiState.update { it.copy(pauseEndTimeMs = 0L) }
         }
-        if (_uiState.value.blockMethod == BlockMethod.VPN) {
-            // Caller must handle VPN permission; re-enable needs onVpnPermissionResult path
-        } else {
-            applyRootMode()
+        when (_uiState.value.blockMethod) {
+            BlockMethod.VPN -> {
+                // Caller must handle VPN permission; re-enable needs onVpnPermissionResult path
+            }
+            BlockMethod.DNS_PROXY -> applyProxyMode()
+            else -> applyRootMode()
+        }
+    }
+
+    /** Apply/resume DNS-proxy protection without rewriting the user's block method. */
+    fun applyProxyMode() {
+        if (_uiState.value.isApplying) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isApplying = true, errorMessage = null, progressMessage = "Rebuilding blocklist...") }
+            try {
+                buildBlocklistHolder()
+                _uiState.update { it.copy(progressMessage = "Starting DNS proxy...") }
+                if (!DnsProxyService.start(getApplication(), "HomeViewModel.resumeProxyMode")) {
+                    prefs.setEnabled(false)
+                    _uiState.update {
+                        it.copy(
+                            isEnabled = false, isApplying = false, progressMessage = "",
+                            errorMessage = "Android blocked DNS proxy restart. Open HostShield and enable protection again."
+                        )
+                    }
+                    return@launch
+                }
+                prefs.setEnabled(true)
+                _uiState.update {
+                    it.copy(
+                        isEnabled = true, isApplying = false, progressMessage = "",
+                        activeMethod = BlockMethod.DNS_PROXY
+                    )
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("HomeViewModel", "DNS proxy resume failed", e)
+                _uiState.update {
+                    it.copy(isApplying = false, progressMessage = "",
+                        errorMessage = "Could not resume DNS proxy protection. Try again.")
+                }
+            }
         }
     }
 
