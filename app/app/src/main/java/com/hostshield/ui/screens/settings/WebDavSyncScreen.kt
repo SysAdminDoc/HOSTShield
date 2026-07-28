@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -85,7 +86,7 @@ fun WebDavSyncScreen(
                     singleLine = true,
                     isError = url.isNotBlank() && !urlIsValid,
                     supportingText = if (url.isNotBlank() && !urlIsValid) {
-                        { Text("Use a complete https:// WebDAV URL.", color = Red, fontSize = 11.sp) }
+                        { Text("Use a complete HTTPS WebDAV URL.", color = Red, fontSize = 11.sp) }
                     } else null,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Uri,
@@ -168,11 +169,11 @@ fun WebDavSyncScreen(
                 }
                 Spacer(Modifier.height(8.dp))
                 Button(
-                    onClick = { viewModel.uploadBackupNow() },
+                    onClick = { viewModel.uploadBackupNow(url, user, pass) },
                     enabled = urlIsValid && user.isNotBlank() && hasUsablePassword && !viewModel.isSyncing,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color.Black),
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = if (Blue.luminance() > 0.5f) Color.Black else Color.White),
                 ) {
                     Icon(Icons.Filled.CloudUpload, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
@@ -192,7 +193,8 @@ fun WebDavSyncScreen(
                         accent = Blue,
                     )
                     Spacer(Modifier.height(10.dp))
-                    viewModel.remoteFiles.take(20).forEach { file ->
+                    val shownFiles = viewModel.remoteFiles.take(20)
+                    shownFiles.forEach { file ->
                         Row(
                             modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -219,12 +221,19 @@ fun WebDavSyncScreen(
                             }
                         }
                     }
+                    if (viewModel.remoteFiles.size > shownFiles.size) {
+                        Text(
+                            "…and ${viewModel.remoteFiles.size - shownFiles.size} more not shown",
+                            color = TextDim, fontSize = 10.sp,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
                 }
             }
         } else if (viewModel.hasListedRemoteFiles && !viewModel.isSyncing) {
             HostShieldEmptyState(
                 icon = Icons.Filled.CloudDone,
-                title = "Connected, no remote files found",
+                title = "Connected. No remote files found.",
                 message = "The server accepted the credentials. HostShield backups will appear here after the first upload.",
                 accent = Blue,
             )

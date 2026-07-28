@@ -363,7 +363,7 @@ class WebDavSync @Inject constructor(
      * Parse a PROPFIND multi-status XML response into [RemoteFile] entries.
      * Skips the collection entry that matches [parentPath] itself.
      */
-    private fun parsePropfindResponse(xml: String, parentPath: String): List<RemoteFile> {
+    internal fun parsePropfindResponse(xml: String, parentPath: String): List<RemoteFile> {
         val files = mutableListOf<RemoteFile>()
         try {
             val factory = XmlPullParserFactory.newInstance()
@@ -414,10 +414,17 @@ class WebDavSync @Inject constructor(
                             val normalizedParent = parentPath.trimEnd('/')
                             val normalizedHref = path.trimEnd('/')
 
-                            // Skip the parent collection itself and reject path traversal
+                            // Skip the parent collection itself and reject path traversal.
+                            // Guard the empty-parent case: for parentPath "/" the
+                            // normalized parent is "" and every string endsWith("") —
+                            // the old check silently dropped EVERY entry, so root
+                            // listings (test connection, post-upload refresh) always
+                            // showed "no remote files".
                             val hasTraversal = normalizedHref.split('/').any { it == ".." || it == "." }
+                            val isParentEntry = normalizedParent.isNotEmpty() &&
+                                normalizedHref.endsWith(normalizedParent)
                             if (normalizedHref.isNotEmpty() &&
-                                !normalizedHref.endsWith(normalizedParent) &&
+                                !isParentEntry &&
                                 !hasTraversal
                             ) {
                                 val name = normalizedHref.substringAfterLast('/')

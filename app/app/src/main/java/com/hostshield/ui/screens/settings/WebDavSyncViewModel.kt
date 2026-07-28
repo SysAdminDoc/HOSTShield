@@ -90,9 +90,9 @@ class WebDavSyncViewModel @Inject constructor(
                     remoteFiles = files
                     hasListedRemoteFiles = true
                     if (files.isEmpty()) {
-                        setMessage("Connected - no remote files found", isError = false)
+                        setMessage("Connected. No remote files found.", isError = false)
                     } else {
-                        setMessage("Connected - ${files.size} items found", isError = false)
+                        setMessage("Connected. ${files.size} items found.", isError = false)
                     }
                 } else {
                     setMessage("Connection failed - check URL and credentials", isError = true)
@@ -111,23 +111,27 @@ class WebDavSyncViewModel @Inject constructor(
      * directory via [WebDavSync.syncBackup]. Uses the saved server settings so
      * the screen can offer a one-tap "Upload backup now" action.
      */
-    fun uploadBackupNow() {
+    fun uploadBackupNow(url: String, user: String, pass: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val normalizedUrl = WebDavSync.normalizedServerUrlOrNull(serverUrl.value)
+            // Use the TYPED field values, like testConnection: the button is
+            // enabled from what's on screen, so executing with the saved
+            // settings either failed ("enter a URL" with a valid URL visible)
+            // or silently uploaded to the previously-saved server.
+            val normalizedUrl = WebDavSync.normalizedServerUrlOrNull(url)
             if (normalizedUrl == null) {
                 setMessage("Use a complete HTTPS WebDAV URL.", isError = true)
                 return@launch
             }
-            val password = resolvePassword("")
+            val password = resolvePassword(pass)
             if (password.isBlank()) {
-                setMessage("Enter a WebDAV password or app token", isError = true)
+                setMessage("Enter a WebDAV password or app token.", isError = true)
                 return@launch
             }
             isSyncing = true
             message = null
             try {
                 val data = backupRestoreUtil.createBackup().toByteArray(Charsets.UTF_8)
-                val creds = WebDavSync.Credentials(username.value.trim(), password)
+                val creds = WebDavSync.Credentials(user.trim(), password)
                 when (val result = webDavSync.syncBackup(normalizedUrl, creds, data)) {
                     is WebDavSync.SyncResult.Success -> {
                         setMessage("Backup uploaded to /HostShield/backups", isError = false)
