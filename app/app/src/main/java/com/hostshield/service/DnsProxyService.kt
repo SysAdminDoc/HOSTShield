@@ -103,7 +103,18 @@ class DnsProxyService : Service() {
     @Inject lateinit var dotResolver: DotResolver
     @Inject lateinit var blockNotificationService: BlockNotificationService
 
-    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    // var + ensureScope(): stopProxy() cancels the scope, but START_STICKY (or a
+    // queued start intent) can deliver a later start to the SAME instance — a
+    // launch on the cancelled scope would silently never run, leaving the
+    // service foregrounded on "Initializing..." with no listener bound.
+    private var serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private fun ensureScope(): CoroutineScope {
+        if (!serviceScope.isActive) {
+            serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        }
+        return serviceScope
+    }
     @Volatile private var isRunning = false
     private var serverSocket: DatagramSocket? = null
 
@@ -138,7 +149,7 @@ class DnsProxyService : Service() {
                         this, NOTIFICATION_ID, buildNotification("Initializing..."),
                         ProtectionForegroundServiceTypes.runtimeType()
                     )
-                    serviceScope.launch { startProxy() }
+                    ensureScope().launch { startProxy() }
                     blockNotificationService.start()
                 }
             }
@@ -154,7 +165,7 @@ class DnsProxyService : Service() {
                     this, NOTIFICATION_ID, buildNotification("Resuming..."),
                     ProtectionForegroundServiceTypes.runtimeType()
                 )
-                serviceScope.launch { startProxy() }
+                ensureScope().launch { startProxy() }
             }
         }
         return START_STICKY
@@ -447,12 +458,14 @@ class DnsProxyService : Service() {
         try { serverSocket?.close() } catch (_: Exception) {}
         serverSocket = null
 
-        // Final log flush
-        serviceScope.launch {
-            flushLogs()
-        }
-
         serviceScope.cancel()
+
+        // Final log flush on a detached scope: launching on serviceScope right
+        // before cancel() meant the coroutine was cancelled before it ever
+        // dispatched, dropping up to 5000 buffered log rows on every stop.
+        CoroutineScope(Dispatchers.IO).launch {
+            withTimeoutOrNull(5000L) { flushLogs() }
+        }
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }

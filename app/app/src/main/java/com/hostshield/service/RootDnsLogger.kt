@@ -97,6 +97,14 @@ class RootDnsLogger @Inject constructor(
     // after a subsequent start()'s install and delete the fresh NAT redirect.
     private val iptablesMutex = Mutex()
 
+    // Each start()/stop() bumps this; the install and teardown critical sections
+    // re-check ownership inside the mutex before touching kernel state. Without
+    // it, a stop() arriving during the multi-second setup phase lets the still-
+    // running setup coroutine install the NAT redirect AFTER teardown ran —
+    // every UDP/53 packet then DNATs to a dead loopback port until reboot.
+    private val sessionGeneration = java.util.concurrent.atomic.AtomicLong(0)
+    private var setupJob: Job? = null
+
     private var originalPrivateDnsMode: String? = null
     private var originalPrivateDnsSpecifier: String? = null
     private var upstreamDns: InetAddress = InetAddress.getByName("8.8.8.8")
@@ -114,11 +122,12 @@ class RootDnsLogger @Inject constructor(
 
     fun start() {
         if (proxyJob?.isActive == true) return
+        val gen = sessionGeneration.incrementAndGet()
 
         // Gate so the proxy waits until iptables is fully installed.
         val setupDone = CompletableDeferred<Unit>()
 
-        scope.launch {
+        setupJob = scope.launch {
             try {
                 // Read logging preference
                 loggingEnabled = try { prefs.dnsLogging.first() } catch (_: Exception) { true }
@@ -126,16 +135,20 @@ class RootDnsLogger @Inject constructor(
                 edeEnabled = try { prefs.edeEnabled.first() } catch (_: Exception) { false }
                 Log.i(TAG, "Root DNS starting (logging=$loggingEnabled, blockResponse=$blockResponseType, ede=$edeEnabled)")
 
-                // Step 1: Disable Private DNS so netd uses plain port 53
-                disablePrivateDns()
-
-                // Step 2: Resolve upstream DNS
+                // Resolve upstream DNS (read-only, safe outside the lock)
                 upstreamDns = resolveUpstreamDns()
                 PrivacyLog.i(TAG, "Upstream DNS: ${upstreamDns.hostAddress}")
 
-                // Step 3: Install iptables NAT redirect (with route_localnet hardening).
-                // Serialized against any in-flight stop() teardown.
+                // Disable Private DNS and install the NAT redirect as ONE atomic
+                // unit, and only while this start still owns the session. A stop()
+                // (or newer start) bumps the generation, making a stale setup
+                // coroutine a no-op instead of installing rules with no proxy.
                 iptablesMutex.withLock {
+                    if (sessionGeneration.get() != gen) {
+                        Log.i(TAG, "Setup superseded before install — skipping")
+                        return@withLock
+                    }
+                    disablePrivateDns()
                     removeIptablesRules()
                     installIptablesRules()
                 }
@@ -168,6 +181,8 @@ class RootDnsLogger @Inject constructor(
     }
 
     fun stop() {
+        val gen = sessionGeneration.incrementAndGet()
+        setupJob?.cancel(); setupJob = null
         dumpsysJob?.cancel(); dumpsysJob = null
         proxyJob?.cancel(); proxyJob = null
         logFlushJob?.cancel(); logFlushJob = null
@@ -189,6 +204,13 @@ class RootDnsLogger @Inject constructor(
         }
         scope.launch {
             iptablesMutex.withLock {
+                if (sessionGeneration.get() != gen) {
+                    // A newer start() owns the kernel state now — its setup does
+                    // its own remove+install, and tearing down here would delete
+                    // the fresh redirect and re-enable Private DNS under it.
+                    Log.i(TAG, "Teardown superseded by a newer session — skipping")
+                    return@withLock
+                }
                 removeIptablesRules()
                 // Restore route_localnet to default (0) and remove compensating INPUT rules
                 runIptables(
@@ -197,8 +219,8 @@ class RootDnsLogger @Inject constructor(
                     "iptables -D INPUT -d 127.0.0.0/8 ! -i lo -j DROP 2>/dev/null",
                     "ip6tables -D INPUT -d ::1/128 ! -i lo -j DROP 2>/dev/null"
                 )
+                restorePrivateDns()
             }
-            restorePrivateDns()
         }
     }
 
@@ -225,13 +247,19 @@ class RootDnsLogger @Inject constructor(
 
     private suspend fun disablePrivateDns() {
         try {
-            originalPrivateDnsMode = Shell.cmd("settings get global private_dns_mode").exec()
+            val currentMode = Shell.cmd("settings get global private_dns_mode").exec()
                 .out.firstOrNull()?.trim()
-            originalPrivateDnsSpecifier = Shell.cmd("settings get global private_dns_specifier").exec()
-                .out.firstOrNull()?.trim()
-            if (originalPrivateDnsMode != "off") {
+            // Capture the user's original mode only once per restore cycle. A
+            // quick stop→start otherwise re-reads "off" (our own write, not yet
+            // restored) and permanently destroys the saved "hostname" value.
+            if (originalPrivateDnsMode == null) {
+                originalPrivateDnsMode = currentMode
+                originalPrivateDnsSpecifier = Shell.cmd("settings get global private_dns_specifier").exec()
+                    .out.firstOrNull()?.trim()
+            }
+            if (currentMode != "off") {
                 Shell.cmd("settings put global private_dns_mode off").exec()
-                Log.i(TAG, "Private DNS disabled (was: $originalPrivateDnsMode)")
+                Log.i(TAG, "Private DNS disabled (was: $currentMode)")
                 delay(1500) // allow system to switch DNS mode
             }
         } catch (e: Exception) { Log.w(TAG, "Failed to disable Private DNS: ${e.message}") }
@@ -311,8 +339,13 @@ class RootDnsLogger @Inject constructor(
             runIptables("iptables -I OUTPUT -p udp -d $ip --dport 443 -m owner ! --uid-owner $myUid -j REJECT --reject-with icmp-port-unreachable 2>/dev/null || true")
         }
 
-        // 4. Also redirect TCP DNS (port 53) — some apps use TCP for large responses
-        runIptables("iptables -t nat -I OUTPUT -p tcp --dport 53 -m owner ! --uid-owner $myUid -j DNAT --to-destination 127.0.0.1:$PROXY_PORT 2>/dev/null || true")
+        // NOTE: TCP/53 is intentionally NOT redirected. The local proxy is
+        // UDP-only, so a TCP DNAT would blackhole every TCP DNS connection
+        // (ECONNREFUSED on 127.0.0.1:$PROXY_PORT) — including the RFC 7766
+        // TCP-retry a client performs after a truncated UDP answer. TCP DNS
+        // flows directly to the upstream resolver instead (unfiltered but
+        // functional, the AdAway model). removeIptablesRules still deletes a
+        // TCP redirect left behind by older versions.
 
         Log.i(TAG, "iptables rules installed (NAT redirect + DoT block + DoH block)")
     }
@@ -513,7 +546,7 @@ class RootDnsLogger @Inject constructor(
     private suspend fun proxyReceiveLoop(socket: DatagramSocket) {
         while (currentCoroutineContext().isActive) {
             try {
-                val buf = ByteArray(1500)
+                val buf = ByteArray(4096) // EDNS0 payloads up to 4096; 1500 silently truncated large answers mid-RR
                 val pkt = DatagramPacket(buf, buf.size)
                 withContext(Dispatchers.IO) { socket.receive(pkt) }
                 val data = pkt.data.copyOf(pkt.length)
@@ -596,7 +629,7 @@ class RootDnsLogger @Inject constructor(
                 upstream = DatagramSocket()
                 upstream.soTimeout = UPSTREAM_TIMEOUT_MS
                 upstream.send(DatagramPacket(query, query.size, upstreamDns, DNS_PORT))
-                val buf = ByteArray(1500)
+                val buf = ByteArray(4096) // EDNS0 payloads up to 4096; 1500 silently truncated large answers mid-RR
                 val resp = DatagramPacket(buf, buf.size)
                 upstream.receive(resp)
                 synchronized(proxy) {
