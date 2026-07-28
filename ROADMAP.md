@@ -501,26 +501,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
 
 ### P2
 
-- [ ] P2 — DNS cache re-inserts the response on every read, resetting TTL and defeating expiry, prefetch, and serve-stale
-  Category: correctness
-  Where: `app/app/src/main/java/com/hostshield/service/DnsVpnService.kt` — `postForwardChecks()` line 1749 (`dnsCache.put(...)`), reached from the cache-hit branch (lines 1205-1213), the serve-stale branch (lines 1229-1250), `serveStale()` (~line 1855), and `failClosedEncrypted()` (~line 1901); `DnsCache.put` (DnsCache.kt ~224-268) recomputes `expiresAt = now + fullTtl` from the un-decremented stored bytes
-  Problem: `postForwardChecks` runs CNAME/threat re-checks on cache hits, but its step 3 unconditionally re-`put`s the served bytes. Because `put` derives TTL from the response's own (never-decremented) TTL fields, every hit re-inserts with a full-length TTL. Consequences: (1) any hot domain never expires — HostShield serves the same cached IPs indefinitely, breaking CDN/failover/DDNS; (2) `remainingFraction()` stays ~1.0 so `needsPrefetch` (<10% TTL) never fires — the prefetch path is dead for the exact hot domains it targets; (3) serve-stale/`failClosedEncrypted` pass an EXPIRED response through the same re-put, resurrecting it as FRESH for another full TTL when the background refresh fails (the very condition that triggered serve-stale). `put` also resets `queryCount` to 1.
-  Evidence: Read confirms the cache-hit branch calls `postForwardChecks(..., upstreamServer = "DNS cache", ...)` with no guard, and `postForwardChecks` line 1749 always calls `dnsCache.put`. No `DnsCacheTest.kt` case asserts a read leaves `expiresAt` unchanged.
-  Fix: Split the security re-check from caching — add `isFromCache: Boolean` (or detect the `"DNS cache"`/`"DNS stale cache"` labels) and skip the `cacheDnsAnswerIps`/`dnsCache.put` in step 3 for cache-origin responses; only genuine live-upstream answers (`sendResolvedResponse.Success`, `refreshDnsCacheOnly`) should repopulate the cache.
-  Acceptance: A domain served from a fresh cache hit N times within its TTL keeps its original `expiresAt`; a hot domain crossing <10% remaining TTL yields `needsPrefetch=true`; serve-stale on a persistently-failing upstream does not promote the expired entry to a fresh TTL.
-  Confidence: Verified
-  Effort: M
-
-- [ ] P2 — Pre-v6.5.0 encrypted backups are permanently undecryptable (PBKDF2 100k→600k without a version/param field)
-  Category: correctness
-  Where: `app/app/src/main/java/com/hostshield/util/EncryptedBackup.kt:100-111` (`deriveLegacyPbkdf2Key`); `app/app/src/main/java/com/hostshield/util/PasswordKdf.kt:36` (`BACKUP_PBKDF2_ITERATIONS = 600_000`)
-  Problem: v1 backup formats (HSBACKUP, HSBK version byte 1) do not encode the iteration count. v6.5.0 (commit d1dc77b) raised iterations 100,000→600,000 without bumping the version byte, so every encrypted backup made on v6.3.0–v6.4.0 now derives the wrong key and fails with `AEADBadTagException`, surfaced as "Incorrect passphrase or corrupted backup" (SettingsViewModel.kt:870-882). The correct passphrase can never recover the data.
-  Evidence: `git show` of the v6.5.0 commit confirms the constant change with no compat handling; version-1 decrypt uses the current 600k constant only. `BackupCryptoTest.kt:187-207` synthesizes its "legacy" fixture with the CURRENT constant, so tests can't catch this.
-  Fix: For version-1 payloads, on `AEADBadTagException` retry key derivation at 100,000 iterations before surfacing "wrong passphrase". Add a checked-in binary fixture generated at 100k to lock the compat path.
-  Acceptance: A backup produced by v6.4.0 with a known passphrase decrypts; wrong passphrase still fails at both iteration counts.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P2 — DNS Logs "Allow" action produces no visible state change — row stays BLOCKED
   Category: correctness
   Where: `app/app/src/main/java/com/hostshield/ui/screens/logs/LogsViewModel.kt:132-166` (dedup, line 137 `isBlocked = hostname in blockedSet || entries.any { it.blocked }`), 294-311 (`allowDomain`)
@@ -528,26 +508,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Evidence: Read confirms `allowDomain` does `_blockedHostnames.update { it - host }` while line 137 re-asserts blocked from immutable Room history; adding an ALLOW rule doesn't change the `logs` flow.
   Fix: Track an `_allowedHostnames` override set updated in allowDomain/allowDomains/temporaryAllow, seed it from enabled ALLOW rules in loadBlockedState, and compute `blocked = host !in allowedSet && (host in blockedSet || entries.any { it.blocked })`.
   Acceptance: Tapping Allow immediately flips the row to allowed and the action to Block; survives reload.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P2 — Temporary-allow is a no-op for wildcard/regex/dnstype-blocked domains and mislabels the domain as a user block on expiry
-  Category: correctness
-  Where: `LogsViewModel.kt:372-394` (`temporaryAllow`); `domain/BlocklistHolder.kt` `removeDomain()` lines 595-632 (early-returns when not in `exactBlockSet`) and `addDomain()` (~line 585, origin "User block rule"); `service/TemporaryAllowWorker.kt:65-80`
-  Problem: `temporaryAllow` only calls `removeDomain`, which touches `exactBlockSet` alone. If the entry was blocked by a source wildcard (`||domain^`→trie), a regex rule, or a `$dnstype` rule, `removeDomain` is a no-op — the domain stays blocked while the UI reports success and schedules the worker. On expiry the worker calls `addDomain(host)` unconditionally, inserting an exact block stamped origin "User block rule" — so a source-list domain is thereafter misattributed as a user rule. Any blocklist rebuild during the window re-adds the domain from sources, silently ending the allow early.
-  Evidence: `decideInternal` wildcard-block path is unaffected by `exactBlockSet` removal; LogsScreen offers "Temporarily allow" on every blocked entry with no reason gating. CHANGELOG v6.9.18 only moved the timer to WorkManager.
-  Fix: Implement temp-allow as a time-boxed entry in `userExactAllowDomains` (which overrides wildcard/typed/exact blocks in `decideInternal`) instead of removal; on expiry remove the allow entry; merge the temp-allow set in `rebuildBlocklistHolder` so it survives rebuilds.
-  Acceptance: Holder with `sourceWildcardBlocks={"tracker.example"}`; temp-allow `ads.tracker.example` → `decide(...).blocked==false` during the window, re-blocked with the original wildcard origin after expiry; rebuild during the window preserves the allow.
-  Confidence: Verified
-  Effort: M
-
-- [ ] P2 — `temporaryAllow` runs a full snapshot copy + Bloom rebuild on the main thread
-  Category: perf
-  Where: `LogsViewModel.kt:376` (`blocklist.removeDomain(host)` executes BEFORE the `viewModelScope.launch(Dispatchers.IO)` at line 378); `BlocklistHolder.removeDomain()` 595-632, `buildStructuralBloom()` 902-934
-  Problem: `removeDomain` copies the entire `exactBlockSet` and (since the bloom-precheck commit) rebuilds the structural Bloom over every exact/wildcard/allow/dnstype entry (k FNV-1a hashes each). With OISD/StevenBlack (~200K+) that is a multi-hundred-ms main-thread burst from a Compose click. Every other add/remove call site is inside `Dispatchers.IO`; only this one is on the caller (main) thread.
-  Evidence: Read confirms line 376 precedes the IO launch at 378 (UI already updates optimistically at 375).
-  Fix: Move line 376 inside the IO launch. Longer term make single-domain mutations incremental (Bloom insert-only; keep stale bits on remove — false positives are safe by design) instead of full rebuilds.
-  Acceptance: No `removeDomain` on the main thread (StrictMode/Robolectric assertion); a single temp-allow on a 200K-entry holder runs off-main.
   Confidence: Verified
   Effort: S
 
@@ -1039,16 +999,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Evidence: `grep -rln DomainAgeChecker app/app/src` → only the class + its test.
   Fix: Either wire it into the DNS-log detail flow behind an explicit user-initiated action (it leaks the queried domain to a third party) or delete it and its test until built.
   Acceptance: DomainAgeChecker has a real production call path with privacy-consented trigger, or is removed.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — Legacy-backup crypto test derives its "old" fixture from the current iteration constant — compat regressions are invisible
-  Category: testing
-  Where: `app/app/src/test/java/com/hostshield/util/BackupCryptoTest.kt:187-207` (`encryptLegacyPbkdf2` uses `PasswordKdf.BACKUP_PBKDF2_ITERATIONS`)
-  Problem: The "legacy PBKDF2 backups still decrypt" test synthesizes v1 payloads with the current constant, so it passed straight through the v6.5.0 100k→600k change that actually broke real legacy files. It would hide any future KDF-param drift; no byte-exact fixture exists for the HSBACKUP format.
-  Evidence: Line 193 references the live constant; no binary fixture files under test resources.
-  Fix: Commit fixed ciphertext fixtures (HSBACKUP@100k, HSBK v1@100k and @600k, HSBK v2) with known passphrases and assert decryption of the exact bytes.
-  Acceptance: Changing `BACKUP_PBKDF2_ITERATIONS` breaks a test.
   Confidence: Verified
   Effort: S
 

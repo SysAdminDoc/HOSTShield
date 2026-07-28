@@ -5,6 +5,22 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Fixed (correctness)
+- DNS cache entries are no longer re-inserted on every read. Serving a cached
+  answer previously reset its TTL, so hot domains never expired (breaking
+  CDN/failover/DDNS), prefetch never triggered, and an expired serve-stale
+  answer could be promoted back to a full fresh TTL. Only genuine upstream
+  answers now repopulate the cache.
+- "Temporarily allow" from the DNS log now works for domains blocked by a
+  source wildcard, regex, or `$dnstype` rule (previously a silent no-op for
+  anything but an exact block). On expiry the domain reverts to its
+  source-defined status instead of being stamped as a permanent user block, and
+  the holder mutation runs off the main thread.
+- Encrypted backups created on v6.3.0–v6.4.0 (PBKDF2 at 100k iterations) decrypt
+  again: version-1 payloads now fall back to the legacy iteration count when the
+  current one fails, so the correct passphrase recovers the data. A wrong
+  passphrase still fails.
+
 ### Security
 - The launcher "Toggle Protection" shortcut now verifies the caller with the
   authoritative launched-from identity on Android 14+ (and the resolved default

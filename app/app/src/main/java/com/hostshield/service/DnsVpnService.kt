@@ -1209,7 +1209,8 @@ class DnsVpnService : VpnService() {
                         app,
                         latencyMs = 0,
                         upstreamServer = "DNS cache",
-                        skipThreatIntelChecks = skipThreatIntelChecks
+                        skipThreatIntelChecks = skipThreatIntelChecks,
+                        isFromCache = true
                     )
                     if (pfResult.blocked) {
                         if (pfResult.blockResponse != null) wrapAndSend(packet, headerOffset, isV6, pfResult.blockResponse)
@@ -1234,7 +1235,8 @@ class DnsVpnService : VpnService() {
                         app,
                         latencyMs = 0,
                         upstreamServer = "DNS stale cache",
-                        skipThreatIntelChecks = skipThreatIntelChecks
+                        skipThreatIntelChecks = skipThreatIntelChecks,
+                        isFromCache = true
                     )
                     if (pfResult.blocked) {
                         if (pfResult.blockResponse != null) wrapAndSend(packet, headerOffset, isV6, pfResult.blockResponse)
@@ -1681,7 +1683,17 @@ class DnsVpnService : VpnService() {
         app: Pair<String, String>,
         latencyMs: Int,
         upstreamServer: String,
-        skipThreatIntelChecks: Boolean = false
+        skipThreatIntelChecks: Boolean = false,
+        /**
+         * True when [respBytes] was served from the DNS cache (fresh hit,
+         * serve-stale, or fail-closed stale). Cache-origin responses must NOT be
+         * re-inserted: `dnsCache.put` recomputes the TTL from the stored (never
+         * decremented) TTL bytes, so re-putting on every read resets expiry,
+         * defeats prefetch (`needsPrefetch` never trips), and promotes an expired
+         * stale answer back to a full-length fresh TTL. Only genuine live-upstream
+         * answers should (re)populate the cache.
+         */
+        isFromCache: Boolean = false
     ): PostForwardResult {
         val qtype = parseDnsQueryType(dns)
 
@@ -1746,7 +1758,9 @@ class DnsVpnService : VpnService() {
             ))
 
         cacheDnsAnswerIps(domain, respBytes)
-        dnsCache.put(domain, DnsPacketBuilder.parseQueryType(dns), respBytes)
+        if (!isFromCache) {
+            dnsCache.put(domain, DnsPacketBuilder.parseQueryType(dns), respBytes)
+        }
 
         return PostForwardResult(blocked = false)
     }
@@ -1859,7 +1873,8 @@ class DnsVpnService : VpnService() {
                 app,
                 latencyMs = 0,
                 upstreamServer = "DNS stale cache",
-                skipThreatIntelChecks = skipThreatIntelChecks
+                skipThreatIntelChecks = skipThreatIntelChecks,
+                isFromCache = true
             )
             if (pfResult.blocked) {
                 if (pfResult.blockResponse != null) wrapAndSend(orig, headerOffset, isV6, pfResult.blockResponse)
@@ -1905,7 +1920,8 @@ class DnsVpnService : VpnService() {
                 app,
                 latencyMs = 0,
                 upstreamServer = "$transport stale cache",
-                skipThreatIntelChecks = skipThreatIntelChecks
+                skipThreatIntelChecks = skipThreatIntelChecks,
+                isFromCache = true
             )
             if (pfResult.blocked) {
                 if (pfResult.blockResponse != null) wrapAndSend(orig, headerOffset, wrapV6, pfResult.blockResponse)

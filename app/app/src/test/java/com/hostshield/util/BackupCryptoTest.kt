@@ -116,6 +116,39 @@ class BackupCryptoTest {
     }
 
     @Test
+    fun `pre-v6_5_0 100k-iteration PBKDF2 backups still decrypt via fallback`() {
+        // v6.3.0-v6.4.0 wrote version-1 payloads at 100k iterations with no
+        // iteration field. Decrypt must fall back to 100k when the current 600k
+        // count fails the GCM tag; otherwise these backups are unrecoverable.
+        val plaintext = """{"legacy":"100k"}""".toByteArray(Charsets.UTF_8)
+        val encrypted = encryptLegacyPbkdf2(
+            plaintext,
+            "old-passphrase",
+            iterations = PasswordKdf.BACKUP_PBKDF2_ITERATIONS_LEGACY
+        )
+
+        assertTrue(BackupCrypto.isEncrypted(encrypted))
+        assertEquals(VERSION_PBKDF2, encrypted[VERSION_OFFSET])
+        assertArrayEquals(plaintext, BackupCrypto.decrypt(encrypted, "old-passphrase"))
+    }
+
+    @Test
+    fun `wrong passphrase still fails after the legacy iteration fallback`() {
+        val plaintext = """{"legacy":"100k"}""".toByteArray(Charsets.UTF_8)
+        val encrypted = encryptLegacyPbkdf2(
+            plaintext,
+            "old-passphrase",
+            iterations = PasswordKdf.BACKUP_PBKDF2_ITERATIONS_LEGACY
+        )
+        try {
+            BackupCrypto.decrypt(encrypted, "wrong-passphrase")
+            org.junit.Assert.fail("Expected AEADBadTagException")
+        } catch (_: AEADBadTagException) {
+            // Expected — both 600k and 100k derivations fail the tag.
+        }
+    }
+
+    @Test
     fun `salt and iv are unique across backup exports`() {
         val outputs = (0 until 4).map {
             BackupCrypto.encrypt("same plaintext".toByteArray(), "same passphrase")
@@ -184,13 +217,17 @@ class BackupCryptoTest {
 
     private fun ByteArray.b64(): String = Base64.getEncoder().encodeToString(this)
 
-    private fun encryptLegacyPbkdf2(plaintext: ByteArray, passphrase: String): ByteArray {
+    private fun encryptLegacyPbkdf2(
+        plaintext: ByteArray,
+        passphrase: String,
+        iterations: Int = PasswordKdf.BACKUP_PBKDF2_ITERATIONS
+    ): ByteArray {
         val salt = ByteArray(SALT_BYTES) { (it + 1).toByte() }
         val iv = ByteArray(IV_BYTES) { (it + 17).toByte() }
         val keyBytes = PasswordKdf.derivePbkdf2HmacSha256(
             passphrase,
             salt,
-            PasswordKdf.BACKUP_PBKDF2_ITERATIONS,
+            iterations,
             PasswordKdf.KEY_LENGTH_BITS
         )
         val key = SecretKeySpec(keyBytes, "AES")

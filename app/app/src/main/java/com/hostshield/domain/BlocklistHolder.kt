@@ -667,6 +667,49 @@ class BlocklistHolder @Inject constructor() {
     }
 
     /**
+     * Remove a domain from the in-memory user-exact-allow set WITHOUT adding an
+     * exact block. Used to end a temporary allow: the domain reverts to whatever
+     * the sources/rules dictate (source wildcard/exact/regex/dnstype block) on
+     * the next decision, instead of being stamped as a "User block rule" the way
+     * [addDomain] would. No-op if the domain is not currently temp-allowed.
+     */
+    fun clearTemporaryAllow(hostname: String) {
+        val h = hostname.lowercase()
+        val current = snapshot
+        if (h !in current.userExactAllowDomains) {
+            decisionCache.remove(h)
+            return
+        }
+        val newUserAllows = current.userExactAllowDomains - h
+        snapshot = Snapshot(
+            root = current.root,
+            exactBlockSet = current.exactBlockSet,
+            structuralBloom = buildStructuralBloom(
+                exactBlockSet = current.exactBlockSet,
+                wildcardRules = current.wildcardRules,
+                sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
+                sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
+                userExactAllowDomains = newUserAllows,
+                sourceExactAllowDomains = current.sourceExactAllowDomains,
+                dnsTypeRules = current.dnsTypeRules,
+            ),
+            wildcardRules = current.wildcardRules,
+            regexBlockRules = current.regexBlockRules,
+            regexAllowRules = current.regexAllowRules,
+            blockedIps = current.blockedIps,
+            domainCount = current.domainCount,
+            sourceWildcardBlockDomains = current.sourceWildcardBlockDomains,
+            exactBlockOrigins = current.exactBlockOrigins,
+            sourceWildcardBlockOrigins = current.sourceWildcardBlockOrigins,
+            userExactAllowDomains = newUserAllows,
+            sourceExactAllowDomains = current.sourceExactAllowDomains,
+            sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
+            dnsTypeRules = current.dnsTypeRules,
+        )
+        decisionCache.remove(h)
+    }
+
+    /**
      * Single trie walk + hash set check → regex fallback.
      *
      * v6.2: Unified check path — one trie traversal gathers all signals

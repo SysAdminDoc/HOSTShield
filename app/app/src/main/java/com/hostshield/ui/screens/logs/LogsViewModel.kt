@@ -372,17 +372,22 @@ class LogsViewModel @Inject constructor(
     /** Temporarily allow a domain for N minutes, then re-block. */
     fun temporaryAllow(hostname: String, minutes: Int) {
         val host = hostname.lowercase()
+        // Optimistic UI update; the holder mutation runs off the main thread
+        // because it rebuilds the structural Bloom over the full rule set.
         _blockedHostnames.update { it - host }
-        blocklist.removeDomain(host)
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                // A temporary allow must override wildcard/regex/dnstype source
+                // blocks too, so use the user-exact-allow set (which wins in the
+                // decision path) instead of only removing an exact block.
+                blocklist.allowDomain(host)
                 val method = prefs.blockMethod.first()
                 if (method == BlockMethod.ROOT_HOSTS) rootUtil.removeHostEntry(host)
                 TemporaryAllowWorker.schedule(appContext, host, minutes)
             } catch (e: Exception) {
                 _blockedHostnames.update { it + host }
-                blocklist.addDomain(host)
+                blocklist.clearTemporaryAllow(host)
                 runCatching {
                     if (prefs.blockMethod.first() == BlockMethod.ROOT_HOSTS) {
                         rootUtil.appendHostEntry(host)

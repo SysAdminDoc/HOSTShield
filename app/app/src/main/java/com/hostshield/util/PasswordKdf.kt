@@ -35,6 +35,15 @@ object PasswordKdf {
     const val PIN_PBKDF2_ITERATIONS = 210_000
     const val BACKUP_PBKDF2_ITERATIONS = 600_000
 
+    /**
+     * Iteration count used by version-1 (PBKDF2) encrypted backups created on
+     * HostShield v6.3.0–v6.4.0, before [BACKUP_PBKDF2_ITERATIONS] was raised to
+     * 600k in v6.5.0 without a format-version bump. Version-1 decrypt paths
+     * retry with this count when the current count fails the GCM tag, so those
+     * older backups remain recoverable.
+     */
+    const val BACKUP_PBKDF2_ITERATIONS_LEGACY = 100_000
+
     const val ARGON2_DEFAULT_MEMORY_KIB = 9 * 1024
     const val ARGON2_DEFAULT_ITERATIONS = 4
     const val ARGON2_DEFAULT_PARALLELISM = 1

@@ -118,11 +118,31 @@ class BackupCrypto private constructor() {
             val ciphertext = ByteArray(buf.remaining())
             buf.get(ciphertext)
 
-            val key = deriveLegacyPbkdf2Key(passphrase, salt)
+            // Try the current (600k) iteration count first, then fall back to the
+            // legacy 100k count used before v6.5.0. Version-1 payloads do not
+            // encode the iteration count, so a backup made on v6.3.0–v6.4.0 would
+            // otherwise be permanently undecryptable with the correct passphrase.
+            return try {
+                decryptV1WithIterations(salt, iv, ciphertext, passphrase, PasswordKdf.BACKUP_PBKDF2_ITERATIONS)
+            } catch (e: javax.crypto.AEADBadTagException) {
+                decryptV1WithIterations(salt, iv, ciphertext, passphrase, PasswordKdf.BACKUP_PBKDF2_ITERATIONS_LEGACY)
+            }
+        }
 
+        private fun decryptV1WithIterations(
+            salt: ByteArray,
+            iv: ByteArray,
+            ciphertext: ByteArray,
+            passphrase: String,
+            iterations: Int
+        ): ByteArray {
+            val keyBytes = PasswordKdf.derivePbkdf2HmacSha256(
+                passphrase, salt, iterations, PasswordKdf.KEY_LENGTH_BITS
+            )
+            val key = SecretKeySpec(keyBytes, "AES")
+            Arrays.fill(keyBytes, 0)
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_BITS, iv))
-
             return cipher.doFinal(ciphertext)
         }
 
@@ -174,16 +194,5 @@ class BackupCrypto private constructor() {
             return keySpec
         }
 
-        private fun deriveLegacyPbkdf2Key(passphrase: String, salt: ByteArray): SecretKeySpec {
-            val keyBytes = PasswordKdf.derivePbkdf2HmacSha256(
-                passphrase,
-                salt,
-                PasswordKdf.BACKUP_PBKDF2_ITERATIONS,
-                PasswordKdf.KEY_LENGTH_BITS
-            )
-            val keySpec = SecretKeySpec(keyBytes, "AES")
-            Arrays.fill(keyBytes, 0)
-            return keySpec
-        }
     }
 }

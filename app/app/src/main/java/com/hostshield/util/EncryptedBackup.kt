@@ -86,27 +86,38 @@ class EncryptedBackup @Inject constructor() {
         val ciphertext = ByteArray(buf.remaining())
         buf.get(ciphertext)
 
-        val key = deriveLegacyPbkdf2Key(password, salt)
-
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_BITS, iv))
-
-        val plaintext = cipher.doFinal(ciphertext)
-        return String(plaintext, Charsets.UTF_8)
+        // Try the current (600k) iteration count, then fall back to the legacy
+        // 100k count used before v6.5.0 — the HSBACKUP format does not encode the
+        // iteration count, so pre-v6.5.0 backups would otherwise be permanently
+        // undecryptable with the correct password.
+        return try {
+            decryptWithIterations(salt, iv, ciphertext, password, PasswordKdf.BACKUP_PBKDF2_ITERATIONS)
+        } catch (e: javax.crypto.AEADBadTagException) {
+            decryptWithIterations(salt, iv, ciphertext, password, PasswordKdf.BACKUP_PBKDF2_ITERATIONS_LEGACY)
+        }
     }
 
     // ── Internal ────────────────────────────────────────────────
 
-    private fun deriveLegacyPbkdf2Key(password: String, salt: ByteArray): SecretKeySpec {
+    private fun decryptWithIterations(
+        salt: ByteArray,
+        iv: ByteArray,
+        ciphertext: ByteArray,
+        password: String,
+        iterations: Int
+    ): String {
         val keyBytes = PasswordKdf.derivePbkdf2HmacSha256(
             password,
             salt,
-            PasswordKdf.BACKUP_PBKDF2_ITERATIONS,
+            iterations,
             PasswordKdf.KEY_LENGTH_BITS
         )
-        val keySpec = SecretKeySpec(keyBytes, "AES")
+        val key = SecretKeySpec(keyBytes, "AES")
         // Wipe the raw byte array; SecretKeySpec retains its own copy.
         Arrays.fill(keyBytes, 0)
-        return keySpec
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_BITS, iv))
+        val plaintext = cipher.doFinal(ciphertext)
+        return String(plaintext, Charsets.UTF_8)
     }
 }

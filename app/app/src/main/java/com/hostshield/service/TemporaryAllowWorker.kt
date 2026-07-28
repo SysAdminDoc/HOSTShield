@@ -67,8 +67,14 @@ class TemporaryAllowWorker @AssistedInject constructor(
         if (host.isBlank()) return Result.failure()
 
         return try {
-            blocklist.addDomain(host)
+            // End the temporary allow: drop it from the user-allow set so the
+            // domain reverts to whatever the sources/rules dictate, rather than
+            // stamping a permanent "User block rule" via addDomain.
+            blocklist.clearTemporaryAllow(host)
             if (prefs.blockMethod.first() == BlockMethod.ROOT_HOSTS) {
+                // Root mode blocks via the hosts file; re-add the sinkhole entry
+                // removed when the allow started. A later full rebuild reconciles
+                // it back to source-managed state.
                 rootUtil.appendHostEntry(host)
             }
             Log.i("TemporaryAllowWorker", "Temporary allow expired for $host")
