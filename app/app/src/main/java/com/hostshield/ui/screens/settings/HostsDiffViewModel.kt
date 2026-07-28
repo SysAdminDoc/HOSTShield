@@ -20,28 +20,45 @@ class HostsDiffViewModel @Inject constructor(private val rootUtil: RootUtil) : V
 
     private fun loadCurrentHosts() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                val content = rootUtil.readHostsFile()
-                val lines = content.lines()
-                val diffLines = lines.map { line ->
-                    val trimmed = line.trim()
-                    val type = when {
-                        trimmed.startsWith("#") -> DiffLineType.COMMENT
-                        trimmed.startsWith("0.0.0.0") || trimmed.startsWith("::") -> DiffLineType.ADDED
-                        trimmed.startsWith("127.0.0.1") -> DiffLineType.CONTEXT
-                        else -> DiffLineType.CONTEXT
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            rootUtil.readHostsFile().fold(
+                onSuccess = { content ->
+                    val lines = content.lines()
+                    val diffLines = lines.map { line ->
+                        val type = when {
+                            line.trim().startsWith("#") -> DiffLineType.COMMENT
+                            isSinkholeLine(line) -> DiffLineType.ADDED
+                            else -> DiffLineType.CONTEXT
+                        }
+                        DiffLine(line, type)
                     }
-                    DiffLine(line, type)
+                    val blockCount = lines.count { isSinkholeLine(it) }
+                    _uiState.update {
+                        it.copy(isLoading = false, currentLineCount = lines.size, diffLines = diffLines, addedCount = blockCount)
+                    }
+                },
+                onFailure = { e ->
+                    android.util.Log.e("HostsDiff", "Failed to read hosts file", e)
+                    _uiState.update {
+                        it.copy(isLoading = false, error = "Could not read the hosts file. Check root access and try again.")
+                    }
                 }
-                val blockCount = lines.count { it.trim().startsWith("0.0.0.0") || it.trim().startsWith("::") }
-                _uiState.update { it.copy(isLoading = false, currentLineCount = lines.size, diffLines = diffLines, addedCount = blockCount) }
-            } catch (e: Exception) {
-                android.util.Log.e("HostsDiff", "Failed to read hosts file", e)
-                _uiState.update { it.copy(isLoading = false, error = "Could not read the hosts file. Check root access and try again.") }
-            }
+            )
         }
     }
 
     fun refresh() = loadCurrentHosts()
+
+    private companion object {
+        /**
+         * A blocked (sinkholed) hosts line maps a domain to the unspecified
+         * address `0.0.0.0` or `::`. The IPv6 loopback `::1 localhost` is stock
+         * boilerplate, not a block, so match the sink token exactly rather than
+         * by prefix (which would count `::1` as blocked).
+         */
+        fun isSinkholeLine(line: String): Boolean {
+            val firstField = line.trim().substringBefore(' ').substringBefore('\t')
+            return firstField == "0.0.0.0" || firstField == "::"
+        }
+    }
 }

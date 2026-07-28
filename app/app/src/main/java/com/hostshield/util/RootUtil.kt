@@ -64,11 +64,25 @@ class RootUtil @Inject constructor(
         getSystemlessHostsPath() != null
     }
 
-    /** Read current hosts file content. */
-    suspend fun readHostsFile(): String = withContext(Dispatchers.IO) {
+    /**
+     * Read current hosts file content. Returns [Result.failure] when the root
+     * shell read fails (root denied, path unreadable) so callers can surface an
+     * error state instead of silently presenting an empty document — which, in
+     * the editor, could be saved back over the real hosts file.
+     */
+    suspend fun readHostsFile(): Result<String> = withContext(Dispatchers.IO) {
         val path = getActiveHostsPath()
         val result = Shell.cmd("cat \"$path\"").exec()
-        if (result.isSuccess) result.out.joinToString("\n") else ""
+        if (result.isSuccess) {
+            Result.success(result.out.joinToString("\n"))
+        } else {
+            diagnosticEvents.recordBlocking(
+                DiagnosticEventType.ROOT_COMMAND_FAILED,
+                "Root hosts read failed",
+                mapOf("path" to path, "stderr" to result.err.joinToString().take(500))
+            )
+            Result.failure(Exception("Failed to read hosts: ${result.err.joinToString()}"))
+        }
     }
 
     /** Write new hosts file content atomically. */
@@ -265,10 +279,11 @@ class RootUtil @Inject constructor(
     }
 
     private suspend fun flushDnsCache() = withContext(Dispatchers.IO) {
-        Shell.cmd(
-            "ndc resolver clearnetdns || true",
-            "settings put global captive_portal_mode 0 || true"
-        ).exec()
+        // Only flush the OS DNS resolver cache. We intentionally do NOT touch
+        // `captive_portal_mode`: it is a device-wide global that disables the OS
+        // "Sign in to Wi-Fi" probe, was never restored (persisting after the app
+        // is disabled or uninstalled), and contradicts CaptivePortalHandler.
+        Shell.cmd("ndc resolver clearnetdns || true").exec()
     }
 
     private suspend fun getActiveHostsPath(): String {

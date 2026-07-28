@@ -338,13 +338,17 @@ class WebDavSync @Inject constructor(
 
     private fun buildUrl(serverUrl: String, remotePath: String): String {
         val base = normalizeServerUrl(serverUrl)
-        val decoded = try {
+        // Validate traversal on the DECODED segments (so `%2e%2e` can't sneak a
+        // `..` past the check), but build the request from the ORIGINAL path so
+        // percent-encoded or `+`-bearing filenames from server PROPFIND hrefs are
+        // not corrupted by form-decoding.
+        val decodedPath = try {
             java.net.URLDecoder.decode(remotePath, "UTF-8")
-        } catch (_: Exception) { remotePath }
-        val path = decoded.trimStart('/')
-        require(!path.split('/').any { it == ".." || it == "." }) {
-            "Path traversal segments rejected: $path"
+        } catch (_: Exception) { remotePath }.trimStart('/')
+        require(!decodedPath.split('/').any { it == ".." || it == "." }) {
+            "Path traversal segments rejected: $decodedPath"
         }
+        val path = remotePath.trimStart('/')
         return "$base/$path"
     }
 

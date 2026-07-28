@@ -60,7 +60,7 @@ fun WebDavSyncScreen(
     ) {
         HostShieldBackHeader(
             title = "WebDAV sync",
-            subtitle = "Keep encrypted backups on your own WebDAV storage",
+            subtitle = "Keep backups on your own WebDAV storage",
             onBack = onBack,
             horizontalPadding = 0.dp,
             verticalPadding = 0.dp,
@@ -166,6 +166,18 @@ fun WebDavSyncScreen(
                         Text("Test connection", fontSize = 12.sp)
                     }
                 }
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = { viewModel.uploadBackupNow() },
+                    enabled = urlIsValid && user.isNotBlank() && hasUsablePassword && !viewModel.isSyncing,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color.Black),
+                ) {
+                    Icon(Icons.Filled.CloudUpload, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Upload backup now", fontSize = 12.sp)
+                }
             }
         }
 
@@ -220,7 +232,7 @@ fun WebDavSyncScreen(
 
         // Message
         viewModel.message?.let { msg ->
-            val isError = msg.contains("fail", ignoreCase = true)
+            val isError = viewModel.messageIsError
             HostShieldStatusBanner(
                 icon = if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
                 title = if (isError) "WebDAV action failed" else "WebDAV action complete",

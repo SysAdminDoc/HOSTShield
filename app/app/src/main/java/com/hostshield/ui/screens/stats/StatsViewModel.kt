@@ -17,9 +17,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -157,54 +160,77 @@ class StatsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(StatsUiState())
     val uiState: StateFlow<StatsUiState> = _uiState.asStateFlow()
 
-    private val todayStart = java.time.LocalDate.now()
-        .atStartOfDay(java.time.ZoneId.systemDefault())
-        .toInstant().toEpochMilli()
+    private data class StatWindows(val todayStart: Long, val weekStart: Long, val last24hStart: Long)
 
-    private val weekStart = todayStart - (7 * 24 * 60 * 60 * 1000L)
-    private val last24hStart = System.currentTimeMillis() - (24 * 60 * 60 * 1000L)
+    /**
+     * Emits the current stat windows, then re-emits at each midnight so
+     * "today"/week/24h flows reset at the day boundary instead of staying
+     * anchored to the day the ViewModel was created.
+     */
+    private fun statWindows(): kotlinx.coroutines.flow.Flow<StatWindows> = kotlinx.coroutines.flow.flow {
+        while (true) {
+            val zone = java.time.ZoneId.systemDefault()
+            val today = java.time.LocalDate.now(zone)
+            val todayStart = today.atStartOfDay(zone).toInstant().toEpochMilli()
+            emit(
+                StatWindows(
+                    todayStart = todayStart,
+                    weekStart = todayStart - (7 * 24 * 60 * 60 * 1000L),
+                    last24hStart = System.currentTimeMillis() - (24 * 60 * 60 * 1000L),
+                )
+            )
+            val nextMidnight = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            delay((nextMidnight - System.currentTimeMillis()).coerceIn(60_000L, 24L * 60 * 60 * 1000))
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private fun <T> windowedCollect(
+        selector: (StatWindows) -> kotlinx.coroutines.flow.Flow<T>,
+        onEach: (T) -> Unit,
+    ) {
+        viewModelScope.launch {
+            statWindows().flatMapLatest { selector(it) }.collect { onEach(it) }
+        }
+    }
 
     init {
         viewModelScope.launch { repository.getTotalBlocked().collect { t -> _uiState.update { it.copy(totalBlocked = t ?: 0) } } }
-        viewModelScope.launch { repository.getBlockedCountSince(todayStart).collect { c -> _uiState.update { it.copy(blockedToday = c) } } }
-        viewModelScope.launch {
-            repository.getTotalCountSince(todayStart).collect { c ->
-                _uiState.update {
-                    val rate = if (c > 0) it.blockedToday.toFloat() / c else 0f
-                    it.copy(queriesToday = c, blockRate = rate)
-                }
+        windowedCollect({ repository.getBlockedCountSince(it.todayStart) }) { c -> _uiState.update { it.copy(blockedToday = c) } }
+        windowedCollect({ repository.getTotalCountSince(it.todayStart) }) { c ->
+            _uiState.update {
+                val rate = if (c > 0) it.blockedToday.toFloat() / c else 0f
+                it.copy(queriesToday = c, blockRate = rate)
             }
         }
         viewModelScope.launch { repository.getRecentStats(14).collect { s -> _uiState.update { it.copy(dailyStats = s) } } }
         viewModelScope.launch { repository.getTopBlocked(15).collect { t -> _uiState.update { it.copy(topDomains = t) } } }
         viewModelScope.launch { repository.getTopBlockedApps(10).collect { a -> _uiState.update { it.copy(topApps = a) } } }
-        viewModelScope.launch { repository.getHourlyBlocked(todayStart).collect { h -> _uiState.update { it.copy(hourlyBlocked = h) } } }
-        viewModelScope.launch { repository.getMostQueriedDomains(weekStart, 15).collect { m -> _uiState.update { it.copy(mostQueried = m) } } }
-        viewModelScope.launch { repository.getDailyBreakdown(weekStart).collect { d -> _uiState.update { it.copy(dailyTrend = d) } } }
-        viewModelScope.launch { repository.getHourlyLatency(todayStart).collect { l -> _uiState.update { it.copy(hourlyLatency = l) } } }
-        viewModelScope.launch {
-            repository.getLatencyValues(weekStart).collect { rows ->
-                if (rows.isNotEmpty()) {
-                    val values = rows.map { it.value }
-                    _uiState.update {
-                        it.copy(
-                            latencyP50 = percentile(values, 50),
-                            latencyP95 = percentile(values, 95),
-                            latencyP99 = percentile(values, 99)
-                        )
-                    }
+        windowedCollect({ repository.getHourlyBlocked(it.todayStart) }) { h -> _uiState.update { it.copy(hourlyBlocked = h) } }
+        windowedCollect({ repository.getMostQueriedDomains(it.weekStart, 15) }) { m -> _uiState.update { it.copy(mostQueried = m) } }
+        windowedCollect({ repository.getDailyBreakdown(it.weekStart) }) { d -> _uiState.update { it.copy(dailyTrend = d) } }
+        windowedCollect({ repository.getHourlyLatency(it.todayStart) }) { l -> _uiState.update { it.copy(hourlyLatency = l) } }
+        windowedCollect({ repository.getLatencyValues(it.weekStart) }) { rows ->
+            if (rows.isNotEmpty()) {
+                val values = rows.map { it.value }
+                _uiState.update {
+                    it.copy(
+                        latencyP50 = percentile(values, 50),
+                        latencyP95 = percentile(values, 95),
+                        latencyP99 = percentile(values, 99)
+                    )
                 }
             }
         }
-        viewModelScope.launch { repository.getQueryTypeDistribution(weekStart).collect { d -> _uiState.update { it.copy(queryTypeDistribution = d) } } }
-        viewModelScope.launch { repository.getThreatIntelFeedImpact(last24hStart, weekStart).collect { impact -> _uiState.update { it.copy(threatIntelFeedImpact = impact) } } }
-        viewModelScope.launch { repository.getThreatIntelTopDomains(weekStart).collect { domains -> _uiState.update { it.copy(threatIntelTopDomains = domains) } } }
-        viewModelScope.launch { repository.getThreatIntelTopApps(weekStart).collect { apps -> _uiState.update { it.copy(threatIntelTopApps = apps) } } }
-        viewModelScope.launch { repository.getThreatIntelDailyImpact(weekStart).collect { trend -> _uiState.update { it.copy(threatIntelDailyImpact = trend) } } }
-        viewModelScope.launch { repository.getTopAppsSince(last24hStart).collect { apps -> _uiState.update { it.copy(topApps24h = apps) } } }
-        viewModelScope.launch { repository.getTopAppsSince(weekStart).collect { apps -> _uiState.update { it.copy(topApps7d = apps) } } }
-        viewModelScope.launch { repository.getTopAllowed(weekStart).collect { d -> _uiState.update { it.copy(topAllowed = d) } } }
-        viewModelScope.launch { repository.getTopTrackerOwners(weekStart).collect { owners -> _uiState.update { it.copy(topTrackerOwners = owners) } } }
+        windowedCollect({ repository.getQueryTypeDistribution(it.weekStart) }) { d -> _uiState.update { it.copy(queryTypeDistribution = d) } }
+        windowedCollect({ repository.getThreatIntelFeedImpact(it.last24hStart, it.weekStart) }) { impact -> _uiState.update { it.copy(threatIntelFeedImpact = impact) } }
+        windowedCollect({ repository.getThreatIntelTopDomains(it.weekStart) }) { domains -> _uiState.update { it.copy(threatIntelTopDomains = domains) } }
+        windowedCollect({ repository.getThreatIntelTopApps(it.weekStart) }) { apps -> _uiState.update { it.copy(threatIntelTopApps = apps) } }
+        windowedCollect({ repository.getThreatIntelDailyImpact(it.weekStart) }) { trend -> _uiState.update { it.copy(threatIntelDailyImpact = trend) } }
+        windowedCollect({ repository.getTopAppsSince(it.last24hStart) }) { apps -> _uiState.update { it.copy(topApps24h = apps) } }
+        windowedCollect({ repository.getTopAppsSince(it.weekStart) }) { apps -> _uiState.update { it.copy(topApps7d = apps) } }
+        windowedCollect({ repository.getTopAllowed(it.weekStart) }) { d -> _uiState.update { it.copy(topAllowed = d) } }
+        windowedCollect({ repository.getTopTrackerOwners(it.weekStart) }) { owners -> _uiState.update { it.copy(topTrackerOwners = owners) } }
         pollCacheStats()
         loadVpnStability()
         loadThreatIntelHealth()

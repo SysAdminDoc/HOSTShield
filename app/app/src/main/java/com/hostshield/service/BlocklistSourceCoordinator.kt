@@ -26,6 +26,15 @@ data class BlocklistSourceSnapshot(
     val failedSources: List<SourceFailureNotice>,
     val downloadedSourceCount: Int,
     val enabledSourceCount: Int,
+    /**
+     * Number of enabled block (non-allowlist) sources. The offline-preservation
+     * fail-safe keys off block sources specifically: an allowlist source only
+     * subtracts from the blocklist, so its success must not mask a total
+     * block-source download failure.
+     */
+    val blockSourceCount: Int = 0,
+    /** Block (non-allowlist) sources that downloaded fresh content this pass. */
+    val downloadedBlockSourceCount: Int = 0,
 )
 
 data class BlocklistRebuildResult(
@@ -75,12 +84,14 @@ class BlocklistSourceCoordinator @Inject constructor(
         val wildcardBlockOrigins = mutableMapOf<String, String>()
         val failedSources = mutableListOf<SourceFailureNotice>()
         var downloadedSourceCount = 0
+        var downloadedBlockSourceCount = 0
 
         for (source in blockSources) {
             val result = downloader.download(source, forceDownload = true)
             val dl = result.getOrNull()
             if (dl != null && !dl.notModified) {
                 downloadedSourceCount++
+                downloadedBlockSourceCount++
                 val parsed = HostsParser.parseForBlocking(dl.content)
                 blockDomains.addAll(parsed.blockDomains)
                 parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
@@ -133,6 +144,8 @@ class BlocklistSourceCoordinator @Inject constructor(
             failedSources = failedSources,
             downloadedSourceCount = downloadedSourceCount,
             enabledSourceCount = enabledSourceCount,
+            blockSourceCount = blockSources.size,
+            downloadedBlockSourceCount = downloadedBlockSourceCount,
         )
     }
 
@@ -141,15 +154,18 @@ class BlocklistSourceCoordinator @Inject constructor(
     ): BlocklistRebuildResult {
         val snapshot = downloadEnabledSourcesForFullSnapshot()
 
-        // Fail-safe: if every enabled source failed to download (offline refresh,
-        // upstream outage) and a populated blocklist is already live, keep it
-        // rather than swapping in a near-empty snapshot. Source content is
+        // Fail-safe: if every enabled block source failed to download (offline
+        // refresh, upstream outage) and a populated blocklist is already live,
+        // keep it rather than swapping in a near-empty snapshot. Source content is
         // network-only with no disk cache, so an unconditional swap here would
         // silently drop the user to ~zero blocked domains until the next
-        // successful refresh. A fresh (empty) holder still swaps so first-run and
-        // legitimately-empty configurations behave normally.
-        if (snapshot.enabledSourceCount > 0 &&
-            snapshot.downloadedSourceCount == 0 &&
+        // successful refresh. The decision keys off BLOCK sources only: a lone
+        // allowlist source succeeding must not defeat preservation, because an
+        // allowlist only subtracts and cannot repopulate the blocklist. A fresh
+        // (empty) holder still swaps so first-run and legitimately-empty
+        // configurations behave normally.
+        if (snapshot.blockSourceCount > 0 &&
+            snapshot.downloadedBlockSourceCount == 0 &&
             snapshot.blockDomains.isEmpty() &&
             blocklistHolder.domainCount > 0
         ) {

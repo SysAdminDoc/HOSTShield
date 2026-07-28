@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.preferences.AppPreferences
+import com.hostshield.util.BackupRestoreUtil
 import com.hostshield.util.WebDavSync
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +19,7 @@ import javax.inject.Inject
 class WebDavSyncViewModel @Inject constructor(
     private val prefs: AppPreferences,
     private val webDavSync: WebDavSync,
+    private val backupRestoreUtil: BackupRestoreUtil,
 ) : ViewModel() {
 
     val serverUrl = prefs.webdavUrl.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -26,6 +28,8 @@ class WebDavSyncViewModel @Inject constructor(
     var isSyncing by mutableStateOf(false)
         private set
     var message by mutableStateOf<String?>(null)
+        private set
+    var messageIsError by mutableStateOf(false)
         private set
     var remoteFiles by mutableStateOf<List<WebDavSync.RemoteFile>>(emptyList())
         private set
@@ -44,7 +48,7 @@ class WebDavSyncViewModel @Inject constructor(
         viewModelScope.launch {
             val normalizedUrl = WebDavSync.normalizedServerUrlOrNull(url)
             if (normalizedUrl == null) {
-                message = "Use a complete HTTPS WebDAV URL."
+                setMessage("Use a complete HTTPS WebDAV URL.", isError = true)
                 return@launch
             }
             prefs.setWebdavUrl(normalizedUrl)
@@ -52,12 +56,12 @@ class WebDavSyncViewModel @Inject constructor(
             if (pass.isNotBlank()) {
                 prefs.setWebdavPassword(pass)
                 hasSavedPassword = true
-                message = "Credentials saved"
+                setMessage("Credentials saved", isError = false)
             } else {
-                message = if (hasSavedPassword) {
-                    "Settings saved. Existing password kept."
+                if (hasSavedPassword) {
+                    setMessage("Settings saved. Existing password kept.", isError = false)
                 } else {
-                    "Server settings saved. Add a password before syncing."
+                    setMessage("Server settings saved. Add a password before syncing.", isError = false)
                 }
             }
         }
@@ -67,12 +71,12 @@ class WebDavSyncViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             val normalizedUrl = WebDavSync.normalizedServerUrlOrNull(url)
             if (normalizedUrl == null) {
-                message = "Use a complete HTTPS WebDAV URL."
+                setMessage("Use a complete HTTPS WebDAV URL.", isError = true)
                 return@launch
             }
             val password = resolvePassword(pass)
             if (password.isBlank()) {
-                message = "Enter a WebDAV password or app token"
+                setMessage("Enter a WebDAV password or app token", isError = true)
                 return@launch
             }
             isSyncing = true
@@ -85,46 +89,66 @@ class WebDavSyncViewModel @Inject constructor(
                 if (files != null) {
                     remoteFiles = files
                     hasListedRemoteFiles = true
-                    message = if (files.isEmpty()) {
-                        "Connected - no remote files found"
+                    if (files.isEmpty()) {
+                        setMessage("Connected - no remote files found", isError = false)
                     } else {
-                        "Connected - ${files.size} items found"
+                        setMessage("Connected - ${files.size} items found", isError = false)
                     }
                 } else {
-                    message = "Connection failed - check URL and credentials"
+                    setMessage("Connection failed - check URL and credentials", isError = true)
                 }
             } catch (e: Exception) {
                 android.util.Log.w("WebDavSync", "Connection test failed", e)
-                message = "Connection failed - check URL and credentials"
+                setMessage("Connection failed - check URL and credentials", isError = true)
             } finally {
                 isSyncing = false
             }
         }
     }
 
-    fun syncBackup(url: String, user: String, pass: String, data: ByteArray) {
+    /**
+     * Build a backup and upload it to the canonical `/HostShield/backups`
+     * directory via [WebDavSync.syncBackup]. Uses the saved server settings so
+     * the screen can offer a one-tap "Upload backup now" action.
+     */
+    fun uploadBackupNow() {
         viewModelScope.launch(Dispatchers.IO) {
-            val normalizedUrl = WebDavSync.normalizedServerUrlOrNull(url)
+            val normalizedUrl = WebDavSync.normalizedServerUrlOrNull(serverUrl.value)
             if (normalizedUrl == null) {
-                message = "Use a complete HTTPS WebDAV URL."
+                setMessage("Use a complete HTTPS WebDAV URL.", isError = true)
                 return@launch
             }
-            val password = resolvePassword(pass)
+            val password = resolvePassword("")
             if (password.isBlank()) {
-                message = "Enter a WebDAV password or app token"
+                setMessage("Enter a WebDAV password or app token", isError = true)
                 return@launch
             }
             isSyncing = true
             message = null
             try {
-                val creds = WebDavSync.Credentials(user.trim(), password)
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-                val remotePath = "/hostshield_backup_$ts.json"
-                val success = webDavSync.upload(normalizedUrl, creds, remotePath, data)
-                message = if (success) "Backup uploaded to $remotePath" else "Upload failed"
+                val data = backupRestoreUtil.createBackup().toByteArray(Charsets.UTF_8)
+                val creds = WebDavSync.Credentials(username.value.trim(), password)
+                when (val result = webDavSync.syncBackup(normalizedUrl, creds, data)) {
+                    is WebDavSync.SyncResult.Success -> {
+                        setMessage("Backup uploaded to /HostShield/backups", isError = false)
+                        // Refresh the listing so the new backup shows.
+                        webDavSync.listFiles(normalizedUrl, creds, "/")?.let {
+                            remoteFiles = it
+                            hasListedRemoteFiles = true
+                        }
+                    }
+                    is WebDavSync.SyncResult.AuthError ->
+                        setMessage("Upload failed - authentication rejected", isError = true)
+                    is WebDavSync.SyncResult.ServerError ->
+                        setMessage("Upload failed - server error ${result.code}", isError = true)
+                    is WebDavSync.SyncResult.NetworkError ->
+                        setMessage("Upload failed - ${result.message}", isError = true)
+                    is WebDavSync.SyncResult.ParseError ->
+                        setMessage("Upload failed - unexpected server response", isError = true)
+                }
             } catch (e: Exception) {
                 android.util.Log.w("WebDavSync", "Backup upload failed", e)
-                message = "Upload failed - check server settings and retry"
+                setMessage("Upload failed - check server settings and retry", isError = true)
             } finally {
                 isSyncing = false
             }
@@ -132,6 +156,11 @@ class WebDavSyncViewModel @Inject constructor(
     }
 
     fun clearMessage() { message = null }
+
+    private fun setMessage(text: String, isError: Boolean) {
+        message = text
+        messageIsError = isError
+    }
 
     private suspend fun resolvePassword(input: String): String =
         input.ifBlank { prefs.webdavPassword.first() }

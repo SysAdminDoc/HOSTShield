@@ -22,6 +22,7 @@ import com.hostshield.service.NflogReader
 import com.hostshield.service.DnsProxyService
 import com.hostshield.service.ProtectionServiceStarter
 import com.hostshield.service.RootDnsService
+import com.hostshield.service.StatsWidgetProvider
 import com.hostshield.service.BlocklistSourceCoordinator
 import com.hostshield.service.PauseResumeWorker
 import com.hostshield.service.VpnRecoveryAdvisory
@@ -419,32 +420,65 @@ class HomeViewModel @Inject constructor(
         val pauseEndMs: Long
     )
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observeStats() {
-        val todayStart = java.time.LocalDate.now()
-            .atStartOfDay(java.time.ZoneId.systemDefault())
-            .toInstant().toEpochMilli()
-
         viewModelScope.launch {
             repository.getTotalEnabledEntries().collect { count ->
-                val current = _uiState.value
-                val displayCount = maxOf(count ?: 0, current.totalDomainsBlocked)
-                _uiState.update { it.copy(totalDomainsBlocked = displayCount) }
+                // Trust the live entry count once it has emitted a real value.
+                // A previous maxOf() pinned the tile to a stale high figure so it
+                // never dropped after the user disabled a large source; only
+                // guard against the initial null/0 emission.
+                _uiState.update { current ->
+                    current.copy(totalDomainsBlocked = count ?: current.totalDomainsBlocked)
+                }
             }
         }
+        // Re-derive the "today" window whenever the day rolls over so counters
+        // reset at midnight instead of counting from the app-launch day forever.
         viewModelScope.launch {
-            repository.getBlockedCountSince(todayStart).collect { count ->
-                _uiState.update { it.copy(blockedToday = count) }
-            }
+            dayStartFlow()
+                .flatMapLatest { todayStart -> repository.getBlockedCountSince(todayStart) }
+                .collect { count ->
+                    _uiState.update { it.copy(blockedToday = count) }
+                    StatsWidgetProvider.updateWidget(
+                        getApplication(),
+                        blockedToday = count,
+                        queriesToday = _uiState.value.totalQueriesToday,
+                    )
+                }
         }
         viewModelScope.launch {
-            repository.getTotalCountSince(todayStart).collect { count ->
-                _uiState.update { it.copy(totalQueriesToday = count) }
-            }
+            dayStartFlow()
+                .flatMapLatest { todayStart -> repository.getTotalCountSince(todayStart) }
+                .collect { count ->
+                    _uiState.update { it.copy(totalQueriesToday = count) }
+                    StatsWidgetProvider.updateWidget(
+                        getApplication(),
+                        blockedToday = _uiState.value.blockedToday,
+                        queriesToday = count,
+                    )
+                }
         }
         viewModelScope.launch {
             repository.getAllSources().collect { sources ->
                 _uiState.update { it.copy(enabledSources = sources.count { s -> s.enabled }) }
             }
+        }
+    }
+
+    /**
+     * Emits the current local day-start epoch, then re-emits at each midnight,
+     * so long-lived "today" stat flows reset at the day boundary instead of
+     * staying anchored to the day the ViewModel was created.
+     */
+    private fun dayStartFlow(): Flow<Long> = flow {
+        while (true) {
+            val zone = java.time.ZoneId.systemDefault()
+            val today = java.time.LocalDate.now(zone)
+            emit(today.atStartOfDay(zone).toInstant().toEpochMilli())
+            val nextMidnight = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val waitMs = (nextMidnight - System.currentTimeMillis()).coerceIn(60_000L, 24L * 60 * 60 * 1000)
+            kotlinx.coroutines.delay(waitMs)
         }
     }
 

@@ -17,6 +17,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hostshield.ui.components.HostShieldActionIconButton
 import com.hostshield.ui.components.HostShieldBackHeader
+import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldInlineAction
 import com.hostshield.ui.components.HostShieldLoadingState
 import com.hostshield.ui.components.HostShieldStatusBanner
@@ -30,7 +31,11 @@ data class HostsEditorState(
     val message: String? = null,
     val lineCount: Int = 0,
     val entryCount: Int = 0,
-    val isEdited: Boolean = false
+    val isEdited: Boolean = false,
+    /** True when the last read failed; the editor must not save over the file. */
+    val loadFailed: Boolean = false,
+    /** Whether [message] is an error (drives banner styling explicitly instead of sniffing the text). */
+    val messageIsError: Boolean = false
 )
 
 @Composable
@@ -67,7 +72,7 @@ fun HostsEditorScreen(
 
         // Status message
         state.message?.let { msg ->
-            val isError = msg.contains("fail", ignoreCase = true)
+            val isError = state.messageIsError
             HostShieldStatusBanner(
                 icon = if (isError) Icons.Filled.Error else Icons.Filled.CheckCircle,
                 title = if (isError) "Hosts update failed" else "Hosts file updated",
@@ -85,6 +90,17 @@ fun HostsEditorScreen(
                     title = "Loading hosts file",
                     message = "Reading the current system hosts file with root access.",
                     accent = Teal,
+                )
+            }
+        } else if (state.loadFailed) {
+            Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.TopCenter) {
+                HostShieldEmptyState(
+                    icon = Icons.Filled.Error,
+                    title = "Couldn't read the hosts file",
+                    message = "Root access is required to read the system hosts file. Grant root and retry — editing is disabled until the file loads.",
+                    accent = Red,
+                    primaryActionLabel = "Retry",
+                    onPrimaryAction = { viewModel.loadHostsFile() },
                 )
             }
         } else {

@@ -3,6 +3,31 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [Unreleased]
+
+### Fixed
+- Blocklist preservation now keys off block sources specifically: a lone
+  allowlist source downloading successfully while every block source fails no
+  longer swaps in an empty blocklist. The live snapshot is preserved.
+- The hosts editor now honors the write result — a failed root write shows the
+  error banner and keeps the Save action instead of falsely reporting "saved",
+  and a failed read shows a retry surface instead of a blank editor that could
+  overwrite the real hosts file on save.
+- The hosts file view no longer counts the stock `::1 localhost` line as a
+  blocked entry; only `0.0.0.0`/`::` sinkhole lines are counted.
+- Root hosts mode no longer disables the OS captive-portal ("Sign in to Wi-Fi")
+  probe device-wide. The unrelated, never-restored `captive_portal_mode` write
+  was removed from the DNS-cache flush.
+- WebDAV sync now has a working "Upload backup now" action that stores a backup
+  in the canonical `/HostShield/backups` directory; remote paths with `+` or
+  percent-encoding are no longer corrupted. Error banners on the WebDAV and
+  hosts-editor screens are driven by explicit state, not message text matching.
+- The home stats widget now updates with today's blocked/queries counts.
+- "Today" and rolling stat windows on Home and Stats reset at midnight instead
+  of staying anchored to the day the screen was first opened.
+- The home "Domains Blocked" tile now follows the live source count down when a
+  source is disabled instead of sticking at the previous maximum.
+
 ## [v6.9.62] - 2026-07-28
 
 ### Added

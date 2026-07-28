@@ -21,23 +21,35 @@ class HostsEditorViewModel @Inject constructor(
     fun loadHostsFile() {
         viewModelScope.launch(Dispatchers.IO) {
             _state.update { it.copy(isLoading = true) }
-            try {
-                val content = rootUtil.readHostsFile()
-                val lines = content.lines()
-                val entries = lines.count { l -> l.isNotBlank() && !l.trimStart().startsWith("#") }
-                _state.update {
-                    it.copy(
-                        content = content,
-                        isLoading = false,
-                        lineCount = lines.size,
-                        entryCount = entries,
-                        isEdited = false
-                    )
+            rootUtil.readHostsFile().fold(
+                onSuccess = { content ->
+                    val lines = content.lines()
+                    val entries = lines.count { l -> l.isNotBlank() && !l.trimStart().startsWith("#") }
+                    _state.update {
+                        it.copy(
+                            content = content,
+                            isLoading = false,
+                            lineCount = lines.size,
+                            entryCount = entries,
+                            isEdited = false,
+                            loadFailed = false,
+                            message = null,
+                            messageIsError = false
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    android.util.Log.e("HostsEditor", "Failed to read hosts file", e)
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            loadFailed = true,
+                            message = "Read failed. Check root access and try again.",
+                            messageIsError = true
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("HostsEditor", "Failed to read hosts file", e)
-                _state.update { it.copy(isLoading = false, message = "Read failed. Check root access and try again.") }
-            }
+            )
         }
     }
 
@@ -50,15 +62,36 @@ class HostsEditorViewModel @Inject constructor(
     }
 
     fun save() {
+        // Refuse to save when the initial read failed: the editor content would
+        // be empty/partial and writing it would clobber the real hosts file.
+        if (_state.value.loadFailed) {
+            _state.update {
+                it.copy(
+                    message = "Cannot save: hosts file could not be read. Reload first.",
+                    messageIsError = true
+                )
+            }
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             _state.update { it.copy(isSaving = true) }
-            try {
-                rootUtil.writeHostsFile(_state.value.content)
-                _state.update { it.copy(isSaving = false, isEdited = false, message = "Hosts file saved") }
-            } catch (e: Exception) {
-                android.util.Log.e("HostsEditor", "Failed to save hosts file", e)
-                _state.update { it.copy(isSaving = false, message = "Save failed. Check root access and try again.") }
-            }
+            rootUtil.writeHostsFile(_state.value.content).fold(
+                onSuccess = {
+                    _state.update {
+                        it.copy(isSaving = false, isEdited = false, message = "Hosts file saved", messageIsError = false)
+                    }
+                },
+                onFailure = { e ->
+                    android.util.Log.e("HostsEditor", "Failed to save hosts file", e)
+                    _state.update {
+                        it.copy(
+                            isSaving = false,
+                            message = "Save failed. Check root access and try again.",
+                            messageIsError = true
+                        )
+                    }
+                }
+            )
         }
     }
 

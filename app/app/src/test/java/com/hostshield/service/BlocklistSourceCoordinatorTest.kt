@@ -298,6 +298,37 @@ class BlocklistSourceCoordinatorTest {
     }
 
     @Test
+    fun `allowlist success does not defeat block-source total-failure preservation`() = runTest {
+        // Seed the holder with a populated snapshot (simulating a prior good build).
+        blocklistHolder.update(setOf("ads.example.com", "tracker.example.com"), emptyList(), emptyList())
+        val before = blocklistHolder.domainCount
+        assertTrue(before > 0)
+
+        val blockSource = HostSource(id = 31, url = "https://example.com/block.txt", label = "Block")
+        val allowSource = HostSource(
+            id = 32,
+            url = "https://example.com/allow.txt",
+            label = "Allow",
+            category = SourceCategory.ALLOWLIST,
+        )
+        coEvery { repository.getEnabledBlockSources() } returns listOf(blockSource)
+        coEvery { repository.getEnabledAllowlistSources() } returns listOf(allowSource)
+        coEvery {
+            downloader.download(blockSource, forceDownload = true)
+        } returns Result.failure(SourceDownloadException("offline", 0))
+        coEvery {
+            downloader.download(allowSource, forceDownload = true)
+        } returns Result.success(DownloadResult(content = "allowed.example.com"))
+
+        val result = coordinator.rebuildBlocklistHolder()
+
+        // Every block source failed; the lone allowlist success must not swap in
+        // an empty blocklist.
+        assertTrue(result.preservedOnTotalFailure)
+        assertEquals(before, blocklistHolder.domainCount)
+    }
+
+    @Test
     fun `rebuild holder merges sources user rules sync extras and doh bypasses`() = runTest {
         val blockSource = HostSource(
             id = 12,
