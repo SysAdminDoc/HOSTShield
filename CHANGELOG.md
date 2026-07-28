@@ -58,6 +58,9 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - The onboarding summary now lists all four pre-enabled sources.
 
 ### Fixed (correctness & robustness)
+- A single source failing a blocklist rebuild now carries forward its last
+  successfully-parsed domains instead of silently dropping its rules from the
+  live snapshot.
 - Block-alert notifications (high tracker activity) now run in VPN and DNS-proxy
   modes, not only root mode.
 - Downloaded sources now persist their `Last-Modified` value so conditional

@@ -66,6 +66,19 @@ class BlocklistSourceCoordinator @Inject constructor(
     // source-health writes. A mutex coalesces them onto one pass at a time.
     private val rebuildMutex = kotlinx.coroutines.sync.Mutex()
 
+    /** Last successfully-parsed output per block source (id → parsed sets). */
+    private data class CachedBlockSource(
+        val blockDomains: Set<String>,
+        val allowDomains: Set<String>,
+        val wildcardBlocks: Set<String>,
+        val wildcardAllows: Set<String>,
+        val dnsTypeRules: List<DnsTypeRule>,
+    )
+    // In-memory carry-forward so a single source failing a rebuild doesn't drop
+    // its rules from the live snapshot (mirrors ThreatIntelManager's last-good
+    // IOC carry-forward). Survives the process, not restarts.
+    private val lastGoodBlockSources = java.util.concurrent.ConcurrentHashMap<Long, CachedBlockSource>()
+
     suspend fun downloadEnabledSourcesForFullSnapshot(): BlocklistSourceSnapshot {
         // When a blocking profile is active and declares an explicit source set,
         // restrict the rebuild to those sources so profile switching actually
@@ -110,6 +123,7 @@ class BlocklistSourceCoordinator @Inject constructor(
                 downloadedSourceCount++
                 downloadedBlockSourceCount++
                 val parsed = HostsParser.parseForBlocking(dl.content)
+                val normalizedDnsTypes = parsed.dnsTypeRules.map { it.normalized(source.label) }
                 blockDomains.addAll(parsed.blockDomains)
                 parsed.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
                 sourceExactAllows.addAll(parsed.allowDomains)
@@ -118,9 +132,28 @@ class BlocklistSourceCoordinator @Inject constructor(
                     wildcardBlockOrigins.putIfAbsent(it, source.label)
                 }
                 sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
-                dnsTypeRules.addAll(parsed.dnsTypeRules.map { it.normalized(source.label) })
+                dnsTypeRules.addAll(normalizedDnsTypes)
+                // Remember this good parse so a later failure can carry it forward.
+                lastGoodBlockSources[source.id] = CachedBlockSource(
+                    blockDomains = parsed.blockDomains,
+                    allowDomains = parsed.allowDomains,
+                    wildcardBlocks = parsed.wildcardBlockDomains,
+                    wildcardAllows = parsed.wildcardAllowDomains,
+                    dnsTypeRules = normalizedDnsTypes,
+                )
                 persistSuccessfulDownload(source, dl, parsed.entryCount, parsed.parseWarning)
             } else {
+                // Carry forward this source's last good parse so one failed
+                // download doesn't silently drop its rules from the live snapshot.
+                lastGoodBlockSources[source.id]?.let { cached ->
+                    blockDomains.addAll(cached.blockDomains)
+                    cached.blockDomains.forEach { exactBlockOrigins.putIfAbsent(it, source.label) }
+                    sourceExactAllows.addAll(cached.allowDomains)
+                    sourceWildcardBlocks.addAll(cached.wildcardBlocks)
+                    cached.wildcardBlocks.forEach { wildcardBlockOrigins.putIfAbsent(it, source.label) }
+                    sourceWildcardAllows.addAll(cached.wildcardAllows)
+                    dnsTypeRules.addAll(cached.dnsTypeRules)
+                }
                 val err = result.exceptionOrNull()
                     ?: SourceDownloadException(
                         "Full blocklist snapshot returned HTTP 304 without content",

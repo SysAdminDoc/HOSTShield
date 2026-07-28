@@ -330,6 +330,28 @@ class BlocklistSourceCoordinatorTest {
     }
 
     @Test
+    fun `a source failing a later rebuild carries forward its last good domains`() = runTest {
+        val source = HostSource(id = 41, url = "https://example.com/list.txt", label = "List")
+        coEvery { repository.getEnabledBlockSources() } returns listOf(source)
+
+        // First rebuild succeeds and populates the holder.
+        coEvery {
+            downloader.download(source, forceDownload = true)
+        } returns Result.success(DownloadResult(content = "ads.example.com\ntracker.example.com"))
+        coordinator.rebuildBlocklistHolder()
+        assertTrue(blocklistHolder.decide("ads.example.com").blocked)
+
+        // Second rebuild: the same source now fails. Its domains must persist.
+        coEvery {
+            downloader.download(source, forceDownload = true)
+        } returns Result.failure(SourceDownloadException("offline", 0))
+        coordinator.rebuildBlocklistHolder()
+
+        assertTrue("failed source keeps its last-good block", blocklistHolder.decide("ads.example.com").blocked)
+        assertTrue(blocklistHolder.decide("tracker.example.com").blocked)
+    }
+
+    @Test
     fun `rebuild holder merges sources user rules sync extras and doh bypasses`() = runTest {
         val blockSource = HostSource(
             id = 12,

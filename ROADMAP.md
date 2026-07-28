@@ -505,16 +505,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
 
 ### P3
 
-- [ ] P3 — Partial block-source failure silently drops that source's rules from the live snapshot (no per-source content cache)
-  Category: reliability
-  Where: `service/BlocklistSourceCoordinator.kt:79-103,144-163`
-  Problem: If 1 of N block sources fails during a rebuild, the swap proceeds and that source's domains vanish until the next successful refresh — e.g. losing OISD Big (200K) while keeping a 400-entry list. The user is notified and health recorded, but blocking silently degrades. The code comment acknowledges the no-disk-cache constraint but only guards total failure.
-  Evidence: Failed source contributes nothing; no per-source parsed-content cache exists (only the DoH-bypass list has `getCached`).
-  Fix: Persist each source's last-good parsed output (compact domain list keyed by source id) and merge it for sources that fail, mirroring ThreatIntelManager's v6.9.60 last-good IOC carry-forward.
-  Acceptance: Source A succeeds then fails on the next rebuild while B succeeds → snapshot still contains A's last-good domains and A is marked ERROR.
-  Confidence: Verified
-  Effort: M-L
-
 ### Docs / hygiene
 
 - [ ] P3 — CLAUDE.md working notes are stale one release behind (v6.9.61 vs shipped v6.9.62)
