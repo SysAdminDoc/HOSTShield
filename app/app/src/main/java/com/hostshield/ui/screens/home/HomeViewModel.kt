@@ -703,7 +703,11 @@ class HomeViewModel @Inject constructor(
             prefs.setEnabled(true)
             prefs.setLastApplyTime(System.currentTimeMillis())
             prefs.setLastApplyCount(count)
-            HostShieldWidgetProvider.updateWidget(getApplication(), true, count)
+            HostShieldWidgetProvider.updateWidget(
+                getApplication(), true, count,
+                mode = BlockMethod.ROOT_HOSTS.name,
+                blockedToday = _uiState.value.blockedToday,
+            )
             showSnackbar("$count domains blocked via root DNS proxy")
             _uiState.update {
                 it.copy(
@@ -763,7 +767,11 @@ class HomeViewModel @Inject constructor(
             prefs.setBlockMethod(BlockMethod.VPN)
             prefs.setLastApplyTime(System.currentTimeMillis())
             prefs.setLastApplyCount(count)
-            HostShieldWidgetProvider.updateWidget(getApplication(), true, count)
+            HostShieldWidgetProvider.updateWidget(
+                getApplication(), true, count,
+                mode = BlockMethod.VPN.name,
+                blockedToday = _uiState.value.blockedToday,
+            )
             showSnackbar("VPN active \u2014 $count domains blocked")
 
             _uiState.update {

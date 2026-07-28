@@ -98,6 +98,7 @@ class DnsLeakTestViewModel @Inject constructor(
                 // Test 3: Resolve a known-good domain to verify DNS works at all
                 _state.update { it.copy(progress = "Testing connectivity...") }
                 val start = System.nanoTime()
+                var connectivityFailed = false
                 try {
                     val addrs = InetAddress.getAllByName("connectivitycheck.gstatic.com").map { it.hostAddress ?: "?" }
                     val latency = (System.nanoTime() - start) / 1_000_000L
@@ -105,7 +106,11 @@ class DnsLeakTestViewModel @Inject constructor(
                 } catch (e: Exception) {
                     val latency = (System.nanoTime() - start) / 1_000_000L
                     android.util.Log.w("DnsLeakTest", "Connectivity DNS check failed", e)
-                    results.add(LeakTestResult("connectivitycheck.gstatic.com", listOf("Connectivity check failed"), isLeaking = true, latencyMs = latency))
+                    // Being offline is not a leak. Record it as a non-leaking
+                    // failure and mark the whole run inconclusive rather than
+                    // showing the alarming "Potential DNS leak" verdict.
+                    connectivityFailed = true
+                    results.add(LeakTestResult("connectivitycheck.gstatic.com", listOf("No response — network may be offline"), isLeaking = false, latencyMs = latency))
                 }
 
                 val leaking = results.any { it.isLeaking }
@@ -114,13 +119,15 @@ class DnsLeakTestViewModel @Inject constructor(
                         isRunning = false,
                         progress = "",
                         results = results,
-                        overallPass = !leaking,
+                        overallPass = if (connectivityFailed) null else !leaking,
                         blockedTestDomain = blockedTest,
                         blockedCorrectly = blockedCorrectly,
-                        message = if (blockedTest == null) {
-                            "No loaded blocked-domain sample matched. Update blocklists before relying on this test alone."
-                        } else {
-                            null
+                        message = when {
+                            connectivityFailed ->
+                                "Network unreachable — the DNS leak test is inconclusive. Reconnect and try again."
+                            blockedTest == null ->
+                                "No loaded blocked-domain sample matched. Update blocklists before relying on this test alone."
+                            else -> null
                         },
                         messageIsError = false
                     )

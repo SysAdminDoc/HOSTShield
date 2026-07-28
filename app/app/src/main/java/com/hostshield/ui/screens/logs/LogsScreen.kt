@@ -60,7 +60,6 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val blockedFilter by viewModel.showBlocked.collectAsStateWithLifecycle()
     val threatIntelOnly by viewModel.threatIntelOnly.collectAsStateWithLifecycle()
-    val blockedSet by viewModel.blockedHostnames.collectAsStateWithLifecycle()
     val pinnedSet by viewModel.pinnedDomains.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()

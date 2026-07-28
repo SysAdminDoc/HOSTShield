@@ -9,9 +9,12 @@ import com.hostshield.service.DohResolver
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.net.InetAddress
 import javax.inject.Inject
 
@@ -313,14 +316,11 @@ class DnsToolsViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             _state.update { it.copy(isPinging = true, pingResult = "") }
             try {
-                val result = withContext(Dispatchers.IO) {
-                    val proc = Runtime.getRuntime().exec(arrayOf("ping", "-c", "4", "-W", "3", safeTarget))
-                    val output = proc.inputStream.bufferedReader().readText()
-                    if (!proc.waitFor(15, java.util.concurrent.TimeUnit.SECONDS)) {
-                        proc.destroyForcibly()
-                        output + "\n[Timed out after 15s]"
-                    } else output
-                }
+                val result = runProcessWithTimeout(
+                    arrayOf("ping", "-c", "4", "-W", "3", safeTarget),
+                    timeoutMs = 15_000,
+                    timeoutLabel = "[Timed out after 15s]",
+                )
                 _state.update { it.copy(isPinging = false, pingResult = result) }
             } catch (e: Exception) {
                 android.util.Log.w("DnsTools", "Ping failed for $safeTarget", e)
@@ -339,25 +339,58 @@ class DnsToolsViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             _state.update { it.copy(isPinging = true, pingResult = "") }
             try {
-                val result = withContext(Dispatchers.IO) {
-                    val proc = try {
-                        Runtime.getRuntime().exec(arrayOf("tracepath", "-m", "15", safeTarget))
-                    } catch (_: Exception) {
-                        Runtime.getRuntime().exec(arrayOf("su", "-c", "traceroute -m 15 -w 2 $safeTarget"))
-                    }
-                    val output = proc.inputStream.bufferedReader().readText()
-                    if (!proc.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)) {
-                        proc.destroyForcibly()
-                        output + "\n[Timed out after 30s]"
-                    } else {
-                        output.ifBlank { proc.errorStream.bufferedReader().readText() }
-                    }
-                }
+                val result = runProcessWithTimeout(
+                    command = null,
+                    timeoutMs = 30_000,
+                    timeoutLabel = "[Timed out after 30s]",
+                    spawn = {
+                        try {
+                            Runtime.getRuntime().exec(arrayOf("tracepath", "-m", "15", safeTarget))
+                        } catch (_: Exception) {
+                            Runtime.getRuntime().exec(arrayOf("su", "-c", "traceroute -m 15 -w 2 $safeTarget"))
+                        }
+                    },
+                    readErrOnBlank = true,
+                )
                 _state.update { it.copy(isPinging = false, pingResult = result) }
             } catch (e: Exception) {
                 android.util.Log.w("DnsTools", "Traceroute failed for $safeTarget", e)
                 _state.update { it.copy(isPinging = false, pingResult = "Traceroute could not complete. Check the target and network connection.") }
             }
+        }
+    }
+
+    /**
+     * Run an external process and read its output under a real timeout. The
+     * stdout read runs in a cancellable child job raced against the timeout, so a
+     * process that hangs without closing stdout no longer blocks forever — on
+     * timeout the process is force-destroyed (which unblocks the read) and the
+     * partial output is returned with [timeoutLabel] appended.
+     */
+    private suspend fun runProcessWithTimeout(
+        command: Array<String>?,
+        timeoutMs: Long,
+        timeoutLabel: String,
+        spawn: (() -> Process)? = null,
+        readErrOnBlank: Boolean = false,
+    ): String = withContext(Dispatchers.IO) {
+        val proc = spawn?.invoke() ?: Runtime.getRuntime().exec(command)
+        try {
+            coroutineScope {
+                val reader = async { proc.inputStream.bufferedReader().readText() }
+                val output = withTimeoutOrNull(timeoutMs) { reader.await() }
+                if (output == null) {
+                    proc.destroyForcibly()
+                    reader.cancel()
+                    "[partial output]\n$timeoutLabel"
+                } else if (readErrOnBlank && output.isBlank()) {
+                    output.ifBlank { proc.errorStream.bufferedReader().readText() }
+                } else {
+                    output
+                }
+            }
+        } finally {
+            runCatching { proc.destroyForcibly() }
         }
     }
 }

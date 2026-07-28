@@ -78,6 +78,12 @@ class HostShieldTileService : TileService() {
                 HostShieldWidgetProvider.updateWidget(applicationContext, false, 0)
                 updateTile(false, method)
             } else {
+                // No protection method chosen — nothing to start. Keep the tile
+                // inactive instead of flipping it ACTIVE with no running service.
+                if (method == BlockMethod.DISABLED) {
+                    updateTile(false, method)
+                    return@launch
+                }
                 // Start
                 when (method) {
                     BlockMethod.VPN -> {
@@ -99,7 +105,9 @@ class HostShieldTileService : TileService() {
                 }
                 prefs.setEnabled(true)
                 val count = prefs.lastApplyCount.first()
-                HostShieldWidgetProvider.updateWidget(applicationContext, true, count)
+                HostShieldWidgetProvider.updateWidget(
+                    applicationContext, true, count, mode = method.name,
+                )
                 updateTile(true, method)
             }
         }
@@ -117,6 +125,7 @@ class HostShieldTileService : TileService() {
                     if (count > 0) "$count blocked today" else "VPN"
                 }
                 method == BlockMethod.ROOT_HOSTS -> "Root"
+                method == BlockMethod.DNS_PROXY -> "Proxy"
                 else -> "Off"
             }
         }

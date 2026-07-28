@@ -121,6 +121,12 @@ class LogsViewModel @Inject constructor(
     private val _blockedHostnames = MutableStateFlow<Set<String>>(emptySet())
     val blockedHostnames = _blockedHostnames.asStateFlow()
 
+    // Hostnames the user has allowed (allow rule or active temporary allow).
+    // Overrides historical "blocked" log rows so an Allow action gives instant,
+    // persistent feedback even for source-list-blocked domains whose past log
+    // entries are immutably marked blocked.
+    private val _allowedHostnames = MutableStateFlow<Set<String>>(emptySet())
+
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
@@ -130,11 +136,12 @@ class LogsViewModel @Inject constructor(
         }
 
     val deduped: StateFlow<List<DedupedLogEntry>> =
-        combine(logs, _blockedHostnames, filters) { logList, blockedSet, filterState ->
+        combine(logs, _blockedHostnames, _allowedHostnames, filters) { logList, blockedSet, allowedSet, filterState ->
             logList
                 .groupBy { it.hostname.lowercase() }
                 .map { (hostname, entries) ->
-                    val isBlocked = hostname in blockedSet || entries.any { it.blocked }
+                    val isBlocked = hostname !in allowedSet &&
+                        (hostname in blockedSet || entries.any { it.blocked })
                     val latest = entries.maxByOrNull { it.timestamp }
                     DedupedLogEntry(
                         hostname = hostname,
@@ -214,6 +221,7 @@ class LogsViewModel @Inject constructor(
                 all.removeAll(allowed)
 
                 _blockedHostnames.value = all
+                _allowedHostnames.value = allowed
             } catch (e: Exception) {
                 Log.e("LogsViewModel", "Failed to load blocked state", e)
                 _error.value = "Could not load DNS log state. Try again."
@@ -275,6 +283,7 @@ class LogsViewModel @Inject constructor(
     fun blockDomain(hostname: String) {
         val host = hostname.lowercase()
         _blockedHostnames.update { it + host }
+        _allowedHostnames.update { it - host }
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -294,6 +303,7 @@ class LogsViewModel @Inject constructor(
     fun allowDomain(hostname: String) {
         val host = hostname.lowercase()
         _blockedHostnames.update { it - host }
+        _allowedHostnames.update { it + host }
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -349,6 +359,7 @@ class LogsViewModel @Inject constructor(
     fun blockDomains(hostnames: Set<String>) {
         val hosts = hostnames.map { it.lowercase() }
         _blockedHostnames.update { it + hosts }
+        _allowedHostnames.update { it - hosts.toSet() }
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 hosts.forEach { host ->
@@ -375,6 +386,7 @@ class LogsViewModel @Inject constructor(
         // Optimistic UI update; the holder mutation runs off the main thread
         // because it rebuilds the structural Bloom over the full rule set.
         _blockedHostnames.update { it - host }
+        _allowedHostnames.update { it + host }
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -387,6 +399,7 @@ class LogsViewModel @Inject constructor(
                 TemporaryAllowWorker.schedule(appContext, host, minutes)
             } catch (e: Exception) {
                 _blockedHostnames.update { it + host }
+                _allowedHostnames.update { it - host }
                 blocklist.clearTemporaryAllow(host)
                 runCatching {
                     if (prefs.blockMethod.first() == BlockMethod.ROOT_HOSTS) {
@@ -415,6 +428,7 @@ class LogsViewModel @Inject constructor(
     fun allowDomains(hostnames: Set<String>) {
         val hosts = hostnames.map { it.lowercase() }
         _blockedHostnames.update { it - hosts.toSet() }
+        _allowedHostnames.update { it + hosts.toSet() }
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 hosts.forEach { host ->

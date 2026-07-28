@@ -5,6 +5,21 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Fixed (UI)
+- The DNS log "Allow" action now gives instant, persistent feedback: an allowed
+  row flips to unblocked even when it was blocked by a source list, and the
+  action switches to "Block".
+- The Quick Settings tile shows "Proxy" in DNS-proxy mode (was "Off") and no
+  longer flips to an active state when no protection method is configured.
+- The home-screen toggle widget now shows the active mode, today's blocked
+  count, and a relative "Updated …" time.
+- The Firewall screen loads the installed-app list off the main thread, so the
+  screen no longer janks on first open.
+- Ping and traceroute in DNS Tools now enforce a real timeout: a hung target no
+  longer pins the spinner or leaks the worker thread.
+- The DNS leak test reports "inconclusive" when the device is offline instead of
+  a false "Potential DNS leak" verdict.
+
 ### Fixed (correctness)
 - DNS cache entries are no longer re-inserted on every read. Serving a cached
   answer previously reset its TTL, so hot domains never expired (breaking

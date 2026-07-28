@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.hostshield.data.model.FirewallRule
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilitySelection
@@ -66,19 +68,23 @@ fun FirewallScreen(viewModel: FirewallViewModel = hiltViewModel(), onBack: () ->
     val error by viewModel.error.collectAsStateWithLifecycle()
     val savedFilters by viewModel.savedFilters.collectAsStateWithLifecycle()
 
-    // Installed apps for DNS tab
-    val allApps = remember {
-        pm.getInstalledApplications(PackageManager.GET_META_DATA)
-            .filter { it.packageName != context.packageName }
-            .map {
-                AppInfo(
-                    it.packageName,
-                    it.loadLabel(pm).toString(),
-                    (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-                )
-            }
-            .sortedBy { it.label.lowercase() }
+    // Installed apps for DNS tab — loaded off the main thread; labeling every
+    // installed package on the composition thread blocks the first frame.
+    val loadedApps by produceState<List<AppInfo>?>(initialValue = null, pm, context.packageName) {
+        value = withContext(Dispatchers.IO) {
+            pm.getInstalledApplications(PackageManager.GET_META_DATA)
+                .filter { it.packageName != context.packageName }
+                .map {
+                    AppInfo(
+                        it.packageName,
+                        it.loadLabel(pm).toString(),
+                        (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                    )
+                }
+                .sortedBy { it.label.lowercase() }
+        }
     }
+    val allApps = loadedApps.orEmpty()
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(

@@ -26,16 +26,24 @@ class HostShieldWidgetProvider : AppWidgetProvider() {
             context: Context,
             isEnabled: Boolean,
             blockedCount: Int,
-            mode: String = "",
-            blockedToday: Int = 0,
+            mode: String? = null,
+            blockedToday: Int? = null,
             lastUpdateTime: Long = 0L
         ) {
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+            val store = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            // Preserve the previously-stored mode/blockedToday when a caller does
+            // not supply them, so the lightweight (enabled, count) callers don't
+            // wipe fields that the stats/apply callers populate. Always stamp the
+            // update time so the "Updated …" line reflects the latest refresh.
+            val resolvedMode = mode ?: store.getString(KEY_MODE, "") ?: ""
+            val resolvedBlockedToday = blockedToday ?: store.getInt(KEY_BLOCKED_TODAY, 0)
+            val resolvedTime = if (lastUpdateTime > 0) lastUpdateTime else System.currentTimeMillis()
+            store.edit()
                 .putBoolean(KEY_ENABLED, isEnabled)
                 .putInt(KEY_COUNT, blockedCount)
-                .putString(KEY_MODE, mode)
-                .putInt(KEY_BLOCKED_TODAY, blockedToday)
-                .putLong(KEY_LAST_UPDATE, lastUpdateTime)
+                .putString(KEY_MODE, resolvedMode)
+                .putInt(KEY_BLOCKED_TODAY, resolvedBlockedToday)
+                .putLong(KEY_LAST_UPDATE, resolvedTime)
                 .apply()
 
             val manager = AppWidgetManager.getInstance(context)

@@ -501,15 +501,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
 
 ### P2
 
-- [ ] P2 — DNS Logs "Allow" action produces no visible state change — row stays BLOCKED
-  Category: correctness
-  Where: `app/app/src/main/java/com/hostshield/ui/screens/logs/LogsViewModel.kt:132-166` (dedup, line 137 `isBlocked = hostname in blockedSet || entries.any { it.blocked }`), 294-311 (`allowDomain`)
-  Problem: For a source-list-blocked domain, historical log rows have `blocked=true`, so the OR keeps the deduped row BLOCKED after the user taps Allow (which only removes from `_blockedHostnames`, a set the domain was never in). Badge stays "BLOCKED", strikethrough stays, the action keeps offering "Allow" — zero feedback; users tap repeatedly. Block direction works; allow direction never does. The `blockedSet` collected in LogsScreen.kt:63 is also unused.
-  Evidence: Read confirms `allowDomain` does `_blockedHostnames.update { it - host }` while line 137 re-asserts blocked from immutable Room history; adding an ALLOW rule doesn't change the `logs` flow.
-  Fix: Track an `_allowedHostnames` override set updated in allowDomain/allowDomains/temporaryAllow, seed it from enabled ALLOW rules in loadBlockedState, and compute `blocked = host !in allowedSet && (host in blockedSet || entries.any { it.blocked })`.
-  Acceptance: Tapping Allow immediately flips the row to allowed and the action to Block; survives reload.
-  Confidence: Verified
-  Effort: S
 
 - [ ] P2 — Adblock lines inside hosts-classified files globalize `$dnstype`/`$dnsrewrite` and lose subdomain semantics
   Category: correctness
@@ -571,26 +562,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: M
 
-- [ ] P2 — Quick Settings tile shows "Off" in DNS-proxy mode and flips state optimistically without service confirmation
-  Category: correctness
-  Where: `service/HostShieldTileService.kt:108-121` (`updateTile`), 55-105 (`onClick`)
-  Problem: `updateTile` subtitle is `VPN→…; ROOT_HOSTS→"Root"; else→"Off"` — an enabled DNS_PROXY tile reads "Off". `onClick` sets `prefs.setEnabled(true)` and paints the tile ACTIVE immediately even if the VPN can't establish (consent revoked / another VPN owns the slot), and the `BlockMethod.DISABLED` branch starts no service yet still flips pref/tile/widget to enabled. Tile/widget desync from actual protection.
-  Evidence: Read confirms the subtitle `when`, the unconditional `setEnabled(true)`+widget update, and `DISABLED -> { }` before the shared enable path.
-  Fix: Add a `DNS_PROXY -> "Proxy"` subtitle case; skip `setEnabled(true)`/widget update for DISABLED; derive tile state from actual service liveness in `onStartListening`.
-  Acceptance: Enabled proxy-mode tile shows "Proxy"; tapping with VPN consent revoked leaves tile/widget Off; DISABLED never produces an ACTIVE tile.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P2 — Toggle widget's mode badge, "blocked today", and "Updated…" fields are dead — every caller uses the 3-arg overload
-  Category: ux
-  Where: `HostShieldWidgetProvider.kt:25-46` (optional params); callers MainActivity.kt:184/202, HomeViewModel.kt:581/600/672/732, BlockingScheduleWorker.kt:122, HostShieldTileService.kt:78/102
-  Problem: `updateWidget` accepts `mode`/`blockedToday`/`lastUpdateTime` and the layout renders a mode badge, "N blocked today", and "Updated Xm ago" — but all seven call sites pass only `(context, enabled, count)`, so those three fields are permanently empty; a third of the widget's designed info never shows.
-  Evidence: Grep of all callers — none supplies args 4-6; defaults `"",0,0L` are hidden by the render code.
-  Fix: Pass the active BlockMethod name, today's blocked count (DnsLogDao daily count), and `System.currentTimeMillis()` from the service/HomeViewModel update points, or delete the dead fields.
-  Acceptance: A placed toggle widget shows mode, today's blocked count, and a relative updated time.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P2 — Network stats screen mixes a since-boot total with 24-hour per-app rows and offers no way to grant the required usage-access permission
   Category: correctness
   Where: `NetworkStatsTracker.kt:69-76` (`TrafficStats.getTotalRx/TxBytes()`), 88-90 (`dayAgo..now` app window), 200-218 (`tryTrafficStats` puts all traffic in WiFi columns); `NetworkStatsScreen.kt:110-118` (empty state)
@@ -620,35 +591,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: M
 
-- [ ] P2 — DnsTools ping/traceroute read stdout before `waitFor`, so the timeout is dead and a hung process pins the spinner forever
-  Category: reliability
-  Where: `DnsToolsViewModel.kt:307-330` (`runPing`), 333-362 (`runTraceroute`)
-  Problem: Both do `proc.inputStream.bufferedReader().readText()` then `proc.waitFor(15/30, SECONDS)`. `readText()` blocks until the process closes stdout, so a `ping`/`tracepath` that hangs without closing stdout blocks the coroutine indefinitely: `isPinging` stays true (spinner forever, buttons disabled) and the IO thread leaks past ViewModel clearing. The "[Timed out]" branches are unreachable.
-  Evidence: Line order 318→319 and 348→349 (readText before waitFor); `destroyForcibly` can only run after readText returns.
-  Fix: `waitFor` with timeout first (destroy on expiry), then read available output; or read on a separate `async` under `withTimeout` with `destroyForcibly()` in finally.
-  Acceptance: A ping to a blackholed target returns control within the advertised timeout and shows the timeout note.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P2 — FirewallScreen loads and labels every installed app synchronously during composition (the exact main-thread issue v6.9.45 fixed for AppExclusions)
-  Category: perf
-  Where: `FirewallScreen.kt:70-81` (`val allApps = remember { pm.getInstalledApplications(...).map { it.loadLabel(pm)... } }`)
-  Problem: On first composition, `getInstalledApplications` + `loadLabel` over every app (hundreds; full flavor has QUERY_ALL_PACKAGES) runs on the main thread inside `remember`, blocking the first frame — jank/possible ANR on slow devices. v6.9.45 moved the identical work off-thread in AppExclusionsScreen (produceState + Dispatchers.IO) but FirewallScreen wasn't converted.
-  Evidence: Direct comparison of the two screens; no Dispatchers/produceState in the Firewall variant.
-  Fix: Copy the AppExclusions pattern: `produceState<List<AppInfo>?>(null) { value = withContext(Dispatchers.IO){…} }` with `HostShieldLoadingState` while null.
-  Acceptance: Firewall first frame renders header/loading instantly; app list appears after async load.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P2 — DNS leak test brands a plain offline condition as "Potential DNS leak"
-  Category: correctness
-  Where: `DnsLeakTestViewModel.kt:100-109` (`isLeaking=true` on exception), `DnsLeakTestScreen.kt:119-129` (red "Potential DNS leak" verdict)
-  Problem: Test 3 resolves `connectivitycheck.gstatic.com`; on failure (airplane mode, captive portal, no network) the result is recorded `isLeaking=true`, making `overallPass=false` and showing the red "Potential DNS leak / Some queries may be bypassing HostShield filtering" card. Being offline is the opposite of leaking — a scary false security verdict. The failed row also renders "Connectivity check failed" styled as a resolved address.
-  Evidence: `results.add(LeakTestResult(..., isLeaking=true))` at :108; `overallPass = !results.any { it.isLeaking }`.
-  Fix: Track connectivity failure as a distinct "inconclusive" state (`overallPass=null` + "Network unreachable — leak test inconclusive") instead of marking it leaking.
-  Acceptance: Running in airplane mode shows an inconclusive banner, not the red leak verdict.
-  Confidence: Verified
-  Effort: S
 
 - [ ] P2 — HostsEditor holds the entire root hosts file in one OutlinedTextField and recounts every line per keystroke
   Category: perf
