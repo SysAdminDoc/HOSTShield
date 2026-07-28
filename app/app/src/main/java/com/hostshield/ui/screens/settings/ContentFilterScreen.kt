@@ -47,7 +47,7 @@ fun ContentFilterScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         HostShieldBackHeader(
-            title = "Content Filtering",
+            title = "Content filtering",
             subtitle = "${enabled.size} active categories · ${viewModel.totalDomainCount} indexed domains",
             onBack = onBack,
             horizontalPadding = 0.dp,

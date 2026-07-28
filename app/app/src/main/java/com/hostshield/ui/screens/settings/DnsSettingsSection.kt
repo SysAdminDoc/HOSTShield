@@ -146,6 +146,13 @@ fun DnsSettingsSection(
         // Custom upstream DNS
         var customDns by remember { mutableStateOf(customUpstreamDns) }
         LaunchedEffect(customUpstreamDns) { customDns = customUpstreamDns }
+        // Validate before allowing save so an invalid entry surfaces an error
+        // instead of silently being dropped at consumption time.
+        val parsedServers = remember(customDns) {
+            com.hostshield.util.DnsServerInputPolicy.parseServerList(customDns)
+        }
+        val dnsIsBlank = customDns.isBlank()
+        val dnsIsValid = dnsIsBlank || parsedServers.isNotEmpty()
         Text(stringResource(R.string.dns_custom_upstream), color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Text(stringResource(R.string.dns_custom_upstream_hint), color = TextDim, fontSize = 10.sp)
         Spacer(Modifier.height(4.dp))
@@ -155,15 +162,26 @@ fun DnsSettingsSection(
             placeholder = { Text(stringResource(R.string.dns_custom_upstream_example), color = TextDim, fontSize = 12.sp) },
             modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 52.dp),
             singleLine = true,
+            isError = !dnsIsValid,
+            supportingText = if (!dnsIsValid) {
+                { Text("Enter up to 4 valid IPv4/IPv6 addresses, comma-separated.", color = Red, fontSize = 11.sp) }
+            } else null,
             textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
             shape = RoundedCornerShape(10.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Blue, unfocusedBorderColor = Surface3,
+                errorBorderColor = Red, errorCursorColor = Red,
                 cursorColor = Blue, focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
             ),
             trailingIcon = {
-                if (customDns != customUpstreamDns) {
-                    IconButton(onClick = { onCustomUpstreamDnsChange(customDns) }) {
+                if (customDns != customUpstreamDns && dnsIsValid) {
+                    IconButton(onClick = {
+                        // Persist the normalized form so consumption matches what
+                        // the user sees.
+                        onCustomUpstreamDnsChange(
+                            if (dnsIsBlank) "" else parsedServers.joinToString(",")
+                        )
+                    }) {
                         Icon(Icons.Filled.Check, stringResource(R.string.dns_save_custom_upstream), tint = Green, modifier = Modifier.size(18.dp))
                     }
                 }

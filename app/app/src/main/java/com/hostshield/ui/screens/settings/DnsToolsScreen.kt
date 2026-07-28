@@ -44,7 +44,7 @@ fun DnsToolsScreen(
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
-            title = "DNS Tools",
+            title = "DNS tools",
             subtitle = "${state.blocklistSize} domains loaded · ${state.resolverHealth.size} resolvers tracked",
             onBack = onBack,
             actions = {

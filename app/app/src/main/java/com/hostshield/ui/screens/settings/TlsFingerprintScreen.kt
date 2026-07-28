@@ -50,7 +50,7 @@ fun TlsFingerprintScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         HostShieldBackHeader(
-            title = "TLS Fingerprints",
+            title = "TLS fingerprints",
             subtitle = "${viewModel.fingerprints.size} captures · ${viewModel.groupedByApp.size} apps",
             onBack = onBack,
             horizontalPadding = 0.dp,

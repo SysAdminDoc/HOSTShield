@@ -56,7 +56,7 @@ fun ConnectionLogScreen(
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
-            title = "Connection Log",
+            title = "Connection log",
             subtitle = if (isReading) "$liveCount live blocks · $blockedCount total" else "NFLOG reader inactive",
             onBack = onBack,
             actions = {

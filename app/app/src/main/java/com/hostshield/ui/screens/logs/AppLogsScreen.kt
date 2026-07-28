@@ -48,7 +48,7 @@ fun AppLogsScreen(
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
-            title = "App DNS Log",
+            title = "App DNS log",
             subtitle = "$packageName · ${logs.size} queries",
             onBack = onBack,
         )

@@ -534,26 +534,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified (code path; trigger is environmental)
   Effort: M
 
-- [ ] P3 — Custom upstream DNS field silently accepts invalid input; success/error state inferred by message-sniffing
-  Category: ux
-  Where: `settings/DnsSettingsSection.kt:147-171` + `SettingsViewModel.kt:670` (`setCustomUpstreamDns` persists any text); `DnsPreferences.kt:66-68` drops invalid at consumption; banner accent via `msg.contains("unreachable")` (SettingsScreen.kt)
-  Problem: Invalid servers ("one.one.one.one", a typo'd IP) get a green check and no error, then silently fall back to defaults at consumption — unlike the LAN DNS port field which validates and surfaces an error. `DnsServerInputPolicy.parseServerList` already exists and could validate at input time.
-  Evidence: Setter has no validation; SettingsScreen error styling uses substring matches.
-  Fix: Run `DnsServerInputPolicy.parseServerList` on the field, show per-entry error/supportingText before save; replace message-sniffing with explicit success/error state.
-  Acceptance: An invalid server shows inline error and disables the check button; banners no longer depend on substrings.
-  Confidence: Verified
-  Effort: M
-
-- [ ] P3 — DnsBenchmark accepts any UDP payload as a valid answer and cannot be cancelled from the UI
-  Category: correctness
-  Where: `util/DnsBenchmark.kt:131-152` (`measureDnsQuery`); `DnsBenchmarkScreen.kt` (no cancel affordance)
-  Problem: `measureDnsQuery` never validates the response — transaction ID, source address, RCODE unchecked — so a SERVFAIL/REFUSED or stray datagram counts as a fast success, skewing resolver rankings users act on. The blocking loops ignore cancellation, so leaving the screen leaves up to 10 coroutines running ~27s each (bounded, not a leak). No stop button.
-  Evidence: Only `socket.receive` success is measured; sockets are unconnected `DatagramSocket()`.
-  Fix: `socket.connect(addr,53)` to filter sources, compare returned txn ID with sent, treat RCODE!=0 as failure; check `isActive` between queries and add a Cancel action.
-  Acceptance: A resolver returning REFUSED ranks as unreachable; leaving the screen stops network activity promptly.
-  Confidence: Verified
-  Effort: M
-
 - [ ] P3 — Downloaded source allowlists can neutralize REMOTE DoH-bypass guard entries (latent until the manifest re-signs)
   Category: security
   Where: `domain/BlocklistHolder.kt` `decideInternal()` — hardcoded DoH checks (710-725) precede allows, but remote-list entries live in `exactBlockSet`/wildcardBlock, evaluated AFTER `sourceExactAllowDomains` (735) and wildcard-allow (776-790); `BlocklistSourceCoordinator.rebuildBlocklistHolder` merges the remote cache into ordinary block sets (197-202)
@@ -573,16 +553,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Acceptance: Source A succeeds then fails on the next rebuild while B succeeds → snapshot still contains A's last-good domains and A is marked ERROR.
   Confidence: Verified
   Effort: M-L
-
-- [ ] P3 — Secondary-screen `HostShieldBackHeader` titles mix Title Case and sentence case; overlap messages don't pluralize; crash-reports copy promises a missing export
-  Category: ux
-  Where: Title Case — CrashReporterScreen.kt:50 "Crash Reports", TlsFingerprintScreen.kt:53 "TLS Fingerprints", AppPrivacyScreen.kt:52 "App Privacy", ContentFilterScreen.kt:50 "Content Filtering", ConnectionLogScreen.kt:58 "Connection Log", AppExclusionsScreen.kt:60, DnsToolsScreen.kt:47, AppLogsScreen.kt:51; sentence case — "Hosts editor", "Rule tester", "DNS leak test", "Network stats", "Parental controls", "WebDAV sync"; also OverlapViewModel.kt:85/135 ("Only 2 source could be analyzed"), CrashReporterScreen.kt:75 ("until you export" with no export action)
-  Problem: Half the secondary screens use Title Case and half sentence case in the same shared header — reads as unfinished after three polish passes. Overlap messages don't pluralize; crash-reports loading copy promises an export the screen lacks.
-  Evidence: Direct title reads across the audited screens.
-  Fix: Normalize to sentence case (matches the majority and the v6.9.26 component copy); pluralize the overlap messages; drop "export" from the crash-reports copy or add the action.
-  Acceptance: All back-header titles follow one casing rule; overlap messages read grammatically for 1 vs N.
-  Confidence: Verified
-  Effort: S
 
 - [ ] P3 — TLS fingerprint timeline composes up to 100 expandable cards in a non-lazy scroll column
   Category: perf

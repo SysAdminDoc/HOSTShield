@@ -31,6 +31,16 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - The hosts editor switches to a responsive read-only preview for very large
   hosts files instead of freezing in a single multi-megabyte text field.
 
+### Fixed (UX polish)
+- The custom upstream DNS field validates input and shows an error instead of
+  silently accepting invalid servers and falling back to defaults; it saves the
+  normalized form.
+- The DNS benchmark connects its probe socket and validates the reply
+  (transaction ID + RCODE), so a resolver returning SERVFAIL/REFUSED ranks as
+  unreachable instead of scoring a fast false success.
+- Normalized secondary-screen header titles to sentence case and fixed
+  singular/plural grammar in the overlap-analysis messages.
+
 ### Fixed (theming & onboarding)
 - Under Material You (dynamic color), semantic status colors stay distinct
   (allowed vs accent, warning vs peach) by harmonizing fixed semantic seeds to

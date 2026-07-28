@@ -57,7 +57,7 @@ fun AppExclusionsScreen(viewModel: AppExclusionsViewModel = hiltViewModel(), onB
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
-            title = "App Exclusions",
+            title = "App exclusions",
             subtitle = if (allApps == null) "Loading installed apps" else "${excluded.size} excluded · ${filteredApps.size} visible",
             onBack = onBack,
             actions = {

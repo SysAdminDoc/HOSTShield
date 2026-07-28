@@ -49,7 +49,7 @@ fun AppPrivacyScreen(
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
         HostShieldBackHeader(
-            title = "App Privacy",
+            title = "App privacy",
             subtitle = "Tracker SDKs and DNS behavior by app",
             onBack = onBack,
             actions = {

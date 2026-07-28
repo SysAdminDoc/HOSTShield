@@ -47,7 +47,7 @@ fun CrashReporterScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         HostShieldBackHeader(
-            title = "Crash Reports",
+            title = "Crash reports",
             subtitle = if (viewModel.reports.isEmpty()) "No local crashes recorded" else "${viewModel.reports.size} local reports",
             onBack = onBack,
             horizontalPadding = 0.dp,

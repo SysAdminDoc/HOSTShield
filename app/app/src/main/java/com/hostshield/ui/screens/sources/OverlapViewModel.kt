@@ -82,7 +82,7 @@ class OverlapViewModel @Inject constructor(
                             message = if (failedSources.isEmpty()) {
                                 "At least two enabled sources need parseable domains for overlap analysis."
                             } else {
-                                "Only ${sourceDomains.size} source could be analyzed. ${failedSources.size} source downloads failed."
+                                "Only ${sourceDomains.size} ${if (sourceDomains.size == 1) "source" else "sources"} could be analyzed. ${failedSources.size} source ${if (failedSources.size == 1) "download" else "downloads"} failed."
                             },
                             messageIsError = false
                         )
@@ -132,7 +132,7 @@ class OverlapViewModel @Inject constructor(
                         totalWithDupes = totalWithDupes,
                         wastedEntries = totalWithDupes - allDomains.size,
                         message = if (failedSources.isNotEmpty()) {
-                            "Analyzed ${sourceDomains.size} sources. ${failedSources.size} source failed and was skipped."
+                            "Analyzed ${sourceDomains.size} sources. ${failedSources.size} ${if (failedSources.size == 1) "source" else "sources"} failed and ${if (failedSources.size == 1) "was" else "were"} skipped."
                         } else {
                             null
                         },

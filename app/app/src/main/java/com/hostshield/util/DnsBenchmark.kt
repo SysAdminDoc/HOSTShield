@@ -127,11 +127,21 @@ class DnsBenchmark @Inject constructor() {
             val recvPacket = DatagramPacket(recvBuffer, recvBuffer.size)
 
             DatagramSocket().use { socket ->
+                // Connect so the OS drops datagrams from any other source, then
+                // validate the reply: it must echo the query's transaction ID and
+                // carry RCODE 0. Otherwise a SERVFAIL/REFUSED or stray datagram
+                // would score as a fast "success" and skew the ranking.
+                socket.connect(address, DNS_PORT)
                 socket.soTimeout = TIMEOUT_MS
                 val start = System.nanoTime()
                 socket.send(sendPacket)
                 socket.receive(recvPacket)
                 val elapsed = (System.nanoTime() - start) / 1_000_000
+                val len = recvPacket.length
+                if (len < 12) return -1L
+                val idMatches = recvBuffer[0] == packet[0] && recvBuffer[1] == packet[1]
+                val rcode = recvBuffer[3].toInt() and 0x0F
+                if (!idMatches || rcode != 0) return -1L
                 elapsed
             }
         } catch (_: Exception) {
