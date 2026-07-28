@@ -1,0 +1,10 @@
+v6.9.65:
+- Widget toggle button now actually toggles protection
+- Scheduled blocking and pause resume no longer claim protection is on
+  when Android denied the background start
+- Fix a root-mode race that could black-hole all device DNS until reboot
+- Root mode no longer breaks TCP DNS or large DNS answers
+- WebDAV listings show your files; upload uses the values on screen
+- Live query rate, latency sparkline, and anomaly alerts work again
+- Editable schedule times, firewall bulk-action confirmations, and many
+  widget, tile, notification, and theming fixes

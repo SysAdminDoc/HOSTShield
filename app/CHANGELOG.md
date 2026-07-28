@@ -1,3 +1,31 @@
+# HostShield v6.9.65
+
+## Deep audit wave 3 (2026-07-28)
+
+~35 verified fixes in the surfaces earlier passes skipped. Highlights:
+
+- Protection-state truth: pause resume, scheduled blocking, the widget toggle
+  (which never worked — its intent extra was read by nothing), and the QS tile
+  no longer claim "Protected" when a start was denied or VPN consent is
+  missing; `establish()` failure and VPN revocation reset the pref and widget;
+  the passive tile now refreshes on every Quick Settings open.
+- Root mode: a stop during setup could install the DNS NAT redirect after
+  teardown, blackholing all device DNS until reboot (generation-counter fix);
+  quick stop/start no longer destroys the saved Private DNS setting; the
+  TCP/53 redirect to a UDP-only proxy is gone; 4096-byte relay buffers;
+  proxy-mode stop no longer drops its final log flush; connection logging no
+  longer stacks iptables LOG rules or wipes the kernel ring buffer.
+- Data integrity: live query pills/sparkline/anomaly detection revived (dead
+  StateFlow), stale-count stomps on the Home tile fixed, hourly charts no
+  longer clip hours 22-23, SAF overwrites truncate, wildcard rules classify
+  after trimming, overnight profile schedules survive midnight.
+- WebDAV: root listings always parsed empty (every entry skipped by an
+  `endsWith("")` check) and upload used saved instead of typed settings.
+- UX/theming: Safe Search resolution off the packet loop, firewall bulk
+  destructive confirms + shared search field, editable schedule times, hosts
+  editor reload confirm, singleTop notification delivery, branded VPN
+  notification icon, luminance-correct button contrast in dynamic light mode.
+
 # HostShield v6.9.64
 
 ## Audit follow-up (2026-07-28)

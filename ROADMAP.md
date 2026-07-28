@@ -501,3 +501,70 @@ STREAM-frame bounds guard, HostsParser IP-classification parenthesization). No
 new actionable correctness/security findings surfaced — the codebase is
 consistently well-hardened. Remaining open work lives in the feature specs above
 and in `Roadmap_Blocked.md` (device-gated / product-decision items).
+
+## Audit Findings — 2026-07-28 (v6.9.65 pass, verified-unfixed)
+
+The v6.9.65 pass fixed ~35 issues across workers, root-mode lifecycle, widgets/
+tile/notifications, and secondary screens (see CHANGELOG). The items below were
+verified real but need a device, a product decision, or a design choice.
+
+- [ ] P2 — Wire or delete the WHITELIST firewall mode
+      Why: `IptablesManager.applyRules(mode)` defaults to BLACKLIST at every call
+      site; nothing reads `prefs.firewallMode` into an apply, yet the pref is
+      persisted, backed up, restored, and reported in diagnostics — all cosmetic.
+      If whitelist is ever wired, `toggleApp()` appends with `-A` after the
+      default-reject and would never match.
+      Where: IptablesManager.kt, FirewallPreferences.kt, BackupRestoreUtil.kt
+- [ ] P2 — `hs-lan` chain is created and populated but never jumped to
+      Why: the documented always-allow-LAN design is unwired — no
+      `-A hs-main -d <LAN range> -j hs-lan` rule exists, so firewall-blocked apps
+      also lose Chromecast/printer/local-server access. Wiring it RELAXES the
+      firewall, so it needs an explicit product decision (+ IPv6 ULA ranges).
+      Where: IptablesManager.kt buildScript
+- [ ] P2 — Documented `adb shell am broadcast` automation commands are dropped by
+      the signature-level receiver permission
+      Why: shell (uid 2000) cannot hold HostShield's signature permission, so
+      every README automation example silently no-ops for non-root users; the
+      in-code uid-2000 trust path is unreachable. Decide: document root-only
+      (`su -c`), add `development` to protectionLevel + `pm grant` docs, or drop
+      the manifest permission in favor of the receiver's own uid check.
+      Where: AndroidManifest.xml, AutomationReceiver.kt, README.md
+- [ ] P3 — IPv6 DNS DNAT to `[::1]:5454` may be dropped as a martian
+      Why: IPv6 has no `route_localnet`; many kernels refuse non-loopback-sourced
+      packets DNAT'd to ::1, likely breaking DNS-over-IPv6 in root mode on
+      IPv6-only networks. Needs on-device verification; `-j REDIRECT` is the
+      portable form.
+      Where: RootDnsLogger.kt natRule6
+- [ ] P3 — Wi-Fi SSID profile matching can never match
+      Why: reading the SSID requires a location permission (absent app-wide) and
+      a foreground context on API 29+ — a background worker always gets
+      `<unknown ssid>`. Either remove the SSID path or capture the SSID in the
+      foreground service via NetworkCallback with FLAG_INCLUDE_LOCATION_INFO.
+      Where: ProfileScheduleWorker.kt, AndroidManifest.xml
+- [ ] P3 — Blocking profiles have no creation/editor UI
+      Why: profiles enter the DB only via backup restore or automation
+      SET_PROFILE; `SchedulePresets.applyPreset` has zero callers, yet
+      ProfileScheduleWorker polls DB+WifiManager every 15 minutes on every
+      install. Ship the editor (wiring presets in) or gate the worker on a
+      non-empty profile table.
+      Where: SchedulePresets.kt, ProfileScheduleWorker.kt, ui/
+- [ ] P3 — VPN watchdog alarm cannot revive the service after process death
+      Why: an inexact alarm + `PendingIntent.getService` performs a background
+      service start, blocked since API 26 — the stated OEM-kill recovery case is
+      a no-op; recovery rests on START_STICKY alone. Use
+      `setExactAndAllowWhileIdle` + `getForegroundService`, or a periodic
+      WorkManager health check through ProtectionServiceStarter. Needs device
+      verification.
+      Where: DnsVpnService.kt scheduleWatchdog
+- [ ] P3 — Stats widget data goes stale until the app is opened
+      Why: only HomeViewModel feeds the stats widget; no background component
+      pushes counts, so "blocked today" survives midnight and idle days
+      unchanged. Push from the protection services' log-flush path or query the
+      DAO in onUpdate.
+      Where: StatsWidgetProvider.kt, HomeViewModel.kt
+- [ ] P3 — AutomationReceiver audit rows record HostShield's own uid below API 34
+      Why: `Binder.getCallingUid()` outside a binder transaction returns the
+      app's uid, so pre-34 audit rows misattribute every caller and the
+      rate-limit key collapses to one bucket. Record "unknown (<API34)" and key
+      the rate limit on action only.
+      Where: AutomationReceiver.kt resolveCallerUid

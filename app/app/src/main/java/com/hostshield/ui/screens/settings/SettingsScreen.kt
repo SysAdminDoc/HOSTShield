@@ -99,6 +99,7 @@ fun SettingsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val githubUnavailableMessage = stringResource(R.string.settings_github_unavailable)
+    val noBrowserMessage = stringResource(R.string.settings_no_browser_available)
 
     // Re-check battery status when returning from system settings
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -841,7 +842,7 @@ fun SettingsScreen(
                                     } catch (_: ActivityNotFoundException) {
                                         Toast.makeText(
                                             context,
-                                            context.getString(R.string.settings_no_browser_available),
+                                            noBrowserMessage,
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     }

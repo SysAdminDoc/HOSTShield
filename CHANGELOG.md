@@ -3,6 +3,93 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.65] - 2026-07-28
+
+Deep audit wave 3 — ~35 verified fixes in the surfaces earlier passes skipped:
+background workers, root-mode lifecycle, widget/tile/notification wiring, and
+secondary screens.
+
+### Fixed — protection-state truth
+- Pause auto-resume and scheduled blocking no longer mark protection enabled
+  when the foreground-service start was denied (Android 12+ background
+  restriction): the pref flips only after a successful start and the worker
+  retries with backoff. Previously the UI, tile, and widget claimed "Protected"
+  with nothing running — and the schedule worker then skipped the whole window.
+- The blocking-schedule worker is re-registered at boot and app start when the
+  schedule pref is enabled, covering backups restored onto fresh installs.
+- The widget's Enable/Disable button now actually toggles protection (its
+  intent extra was never read by anything — the button just opened the app).
+  It handles VPN-consent absence and start denial by opening the in-app flow.
+- The Quick Settings tile checks for VPN consent before claiming ACTIVE, only
+  persists the enabled pref on a successful start, and (as a passive tile) now
+  refreshes whenever the QS panel opens instead of showing stale state forever.
+- `establish()` failure and system VPN revocation reset the enabled pref and
+  widget instead of leaving every surface claiming protection.
+
+### Fixed — root mode
+- A stop during root-mode setup could install the iptables NAT redirect AFTER
+  teardown ran, blackholing all device DNS to a dead loopback port until
+  reboot. Sessions now carry a generation counter enforced inside the iptables
+  mutex by both install and teardown.
+- A quick root-mode stop/start no longer permanently destroys the user's saved
+  Private DNS (DoT) setting.
+- Removed the TCP/53 DNAT redirect: the local proxy is UDP-only, so it
+  blackholed every TCP DNS connection — including the standard TCP retry after
+  a truncated UDP answer. UDP relay buffers grew from 1500 to 4096 bytes so
+  large EDNS answers are no longer silently corrupted.
+- Proxy-mode stop dropped up to 5000 buffered log rows (the final flush was
+  cancelled before it ran) and a quick stop/start left a zombie foreground
+  service on a cancelled scope; both fixed.
+- Connection logging no longer stacks a duplicate iptables LOG rule per start
+  or destroys the device-wide kernel ring buffer (`dmesg -C`) — the replay is
+  discarded with a settle window and rules are removed on stop.
+
+### Fixed — data and stats integrity
+- Live query-rate pills, the latency sparkline, and query-anomaly detection
+  were permanently dead: the backing flow was shared `WhileSubscribed` but only
+  ever polled, so it never started. Now shared eagerly.
+- The Home "domains blocked" tile no longer snaps back to a stale count every
+  time any unrelated setting changes.
+- Hourly activity and latency charts drew hours 22-23 past the clipped canvas
+  edge — evening activity was invisible.
+- SAF exports and backups truncate on overwrite ("wt"), so writing a smaller
+  file over a larger one can no longer leave a corrupt, unrestorable document.
+- Add-rule classifies wildcards after trimming; a pasted leading space
+  previously stored an inert exact rule for the literal `*.` string.
+- DNS-log block/allow actions roll back their optimistic row state if
+  persistence fails.
+- Overnight blocking profiles ("Fri 22:00-06:00") no longer tear down at
+  midnight when the following day isn't scheduled.
+
+### Fixed — WebDAV
+- Root directory listings always parsed as empty (an `endsWith("")` check ate
+  every entry), so "Test connection" always reported no remote files and
+  uploads seemed to vanish. Covered by new Robolectric regression tests.
+- "Upload backup now" executed with the saved server settings while enabling
+  itself from the typed fields — a fresh setup errored with a valid URL on
+  screen, and an edited URL silently uploaded to the previously-saved server.
+
+### Fixed — UX, performance, theming
+- Safe Search no longer performs a blocking system-resolver lookup on the VPN
+  packet-loop thread (which stalled all device DNS on slow networks); endpoints
+  are pre-warmed and refreshed in the background.
+- Firewall Reset / Block Wi-Fi / Block Data now confirm before rewriting or
+  wiping every app's rules; the firewall search field appears on all three tabs
+  (Network/Context were silently filtered by an invisible query).
+- Scheduled Blocking start/end times are finally editable (Material 3 time
+  pickers) — previously only a backup restore could change the 22:00-07:00
+  defaults.
+- Hosts editor confirms before Reload discards unsaved edits; the Apps screen
+  handles system back like its header arrow; block-alert notifications open the
+  Firewall/Logs screens they name (dead intent extras) and body taps work.
+- Notification taps are no longer discarded when the app's task already exists
+  (MainActivity is now singleTop); the persistent VPN notification uses the
+  branded shield instead of the OS padlock.
+- Remaining black-on-palette buttons and spinners (benchmark, QR, DNS tools,
+  WebDAV, onboarding) use luminance-based contrast for dynamic-color light
+  mode; widget text comes from string resources with human mode labels instead
+  of raw `ROOT_HOSTS` enum constants; "WiFi" unified to "Wi-Fi".
+
 ## [v6.9.64] - 2026-07-28
 
 ### Added
