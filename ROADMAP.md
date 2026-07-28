@@ -521,36 +521,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: S
 
-- [ ] P2 — SHORTCUT_TOGGLE trust gate is spoofable via EXTRA_REFERRER (and silently fails on third-party launchers)
-  Category: security
-  Where: `app/app/src/main/java/com/hostshield/MainActivity.kt:153-162` (`isTrustedShortcutCaller`), 109-121 (`handleShortcutIntent`)
-  Problem: The v6.9.60 gate relies on `Activity.referrer`, which Android documents as caller-controlled: any app can start MainActivity with `Intent.EXTRA_REFERRER = "android-app://com.android.settings"` (or any FLAG_SYSTEM package) and pass the `flags and FLAG_SYSTEM` check, then trigger `toggleProtectionFromShortcut()` to silently disable ad/tracker/malware blocking. `referrer?.host ?: return true` also trusts a null referrer. Conversely, a pinned shortcut from a third-party launcher (Nova, Niagara, Lawnchair — not FLAG_SYSTEM) is rejected, so the "Toggle Protection" shortcut opens the app but never toggles, with only a logcat warning.
-  Evidence: Read confirms `val caller = referrer?.host ?: return true` and the FLAG_SYSTEM check on the spoofable package name. `Activity.getReferrer()` javadoc: "you can not trust that the referrer is accurate."
-  Fix: Drop referrer-based trust. Route the toggle through a verified identity — `getLaunchedFromUid()`/`getLaunchedFromPackage()` (API 34) via ActivityCaller, or a PendingIntent-derived identity, or a non-exported activity-alias reachable only by ShortcutManager. Treat the `RoleManager.ROLE_HOME` holder as trusted for launcher shortcuts, and show a visible toast when a toggle is rejected instead of failing silently.
-  Acceptance: An attacker APK sending `com.hostshield.SHORTCUT_TOGGLE` with a forged EXTRA_REFERRER does not change protection state; a legitimate launcher shortcut (incl. third-party launchers) still toggles or gives visible feedback.
-  Confidence: Verified
-  Effort: M
-
-- [ ] P2 — "Protection notification" settings toggle is dead — the pref is read by nothing
-  Category: ux
-  Where: `SettingsScreen.kt:381-383`; `data/preferences/UiPreferences.kt:50-51`; setter `SettingsViewModel.kt:646`
-  Problem: The Configuration toggle "Protection notification — Show the ongoing status notification while active" (exposed v6.9.60) writes `show_notification`, but no service or notification builder reads it — DnsVpnService/RootDnsService/DnsProxyService post their FGS notification unconditionally. Turning it off changes nothing.
-  Evidence: Whole-source grep for `showNotification|show_notification`: only UiPreferences (def), AppPreferences (facade), Settings UI (state+setter), BackupRestoreUtil (export/import). Zero reads in `service/`.
-  Fix: Either wire it (minimized notification + IMPORTANCE_MIN channel when off, since FGS notifications can't be fully suppressed) or replace the toggle with a row that deep-links to the system notification-channel settings.
-  Acceptance: Toggling the setting visibly changes notification behavior, or the toggle no longer exists.
-  Confidence: Verified
-  Effort: M
-
-- [ ] P2 — "Include IPv6" settings toggle has no functional consumer but still moves the privacy score
-  Category: ux
-  Where: `SettingsScreen.kt:369-371`; `data/preferences/BlockingPreferences.kt:52-53`; dead reader `data/repository/HostShieldRepository.kt` `applyBlocking(...)`; live reader `util/PrivacyScorer.kt:48`
-  Problem: "Include IPv6 — Block domains on IPv6 as well" writes `include_ipv6`, but the only blocking path that would consume it (`HostShieldRepository.applyBlocking`) has zero callers (dead). IPv6 blocking actually always happens (dual-stack VPN, AAAA decisions) regardless of the pref. The only live reader is `PrivacyScorer`, so flipping the toggle changes the user's privacy score while changing no behavior — actively misleading.
-  Evidence: Grep `applyBlocking(` → only the definition; grep `includeIpv6` → BlockingPreferences, facade, dead repo fn, HostsParser param (only reachable from the dead fn), BackupRestoreUtil, PrivacyScorer, Settings UI.
-  Fix: Remove the toggle + the privacy-score dimension keyed on it (IPv6 blocking is unconditional), or genuinely wire it into the AAAA/dual-stack decision path. Also remove dead `applyBlocking` and the `setLocalWebserver` setter (SettingsViewModel.kt:608) whose pref has no functional reader.
-  Acceptance: The toggle changes AAAA blocking verifiably, or toggle + score dimension are gone.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P2 — DNS Logs "Allow" action produces no visible state change — row stays BLOCKED
   Category: correctness
   Where: `app/app/src/main/java/com/hostshield/ui/screens/logs/LogsViewModel.kt:132-166` (dedup, line 137 `isBlocked = hostname in blockedSet || entries.any { it.blocked }`), 294-311 (`allowDomain`)
@@ -1002,16 +972,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: S
 
-- [ ] P3 — Dead `HostShieldRepository.applyBlocking` treats ALLOWLIST-category sources as blocklists — latent footgun
-  Category: maintainability
-  Where: `data/repository/HostShieldRepository.kt:150-222` (uses `sourceDao.getEnabledSources()` — no category filter — and `HostsParser.parse`)
-  Problem: `applyBlocking` has zero production callers (root apply goes through `HomeViewModel.applyRootBlocking` → coordinator). If re-wired it would download enabled ALLOWLIST sources (e.g. an ~191-domain whitelist) and write them into the root hosts file as `0.0.0.0` blocks — inverting the user's allowlist — and it ignores source `@@` allow and `$dnstype` rules. It's also the only consumer of `buildHostsFile`.
-  Evidence: Grep `applyBlocking(` → only the definition; `getEnabledSources()` is `WHERE enabled=1` with no category clause, vs the coordinator's split `getEnabledBlockSources`/`getEnabledAllowlistSources`.
-  Fix: Delete `applyBlocking` (and `buildHostsFile` if otherwise unused), or fix it to use the category-split DAOs with allow subtraction before it can be resurrected.
-  Acceptance: `applyBlocking` removed (grep clean incl. tests) or uses the split DAOs with a test proving allowlist sources never enter the hosts file as blocks.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P3 — Maintenance/source-failure notifications use generic Android system icons instead of the app shield
   Category: visual
   Where: `SourceFailureNotifier.kt:60` (`android.R.drawable.ic_dialog_alert`); `LogCleanupWorker.kt:110` (`android.R.drawable.ic_menu_delete`)
@@ -1029,16 +989,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Evidence: SourceRepository defaults — StevenBlack/AdAway/Peter Lowe/URLHaus have no `enabled=false`; OISD/GoodbyeAds/Spotify/adult/allowlists do.
   Fix: Render the ReadyPage list from the actual seed list (filter `enabled`), or correct the copy to four and drop the counts.
   Acceptance: Onboarding copy matches the seeded enabled set exactly.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — "Online IP lookup" settings subtitle references removed offline GeoIP
-  Category: ux
-  Where: `res/values/strings.xml:104` (`settings_online_ip_lookup_sub` = "Use ipapi.co when offline GeoIP is unavailable")
-  Problem: Offline MaxMind GeoIP was removed (v6.9.11 scrubbed offline-GeoIP claims). The subtitle still implies an offline tier exists and that ipapi.co is a fallback — it's actually the only lookup, and privacy-relevant (users may believe lookups stay offline).
-  Evidence: GeoIpLookup is HTTPS ipapi.co only; the release-doc scrub missed this string.
-  Fix: Change to e.g. "Look up IP location/ASN via ipapi.co (sends resolved IPs to a third party)".
-  Acceptance: The subtitle accurately describes online-only behavior and its privacy implication.
   Confidence: Verified
   Effort: S
 

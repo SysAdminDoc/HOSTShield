@@ -366,20 +366,12 @@ fun SettingsScreen(
 
         // Hosts Configuration
         SettingsSection(stringResource(R.string.section_configuration), Icons.Filled.Tune, Yellow) {
-            SettingsToggle(stringResource(R.string.settings_include_ipv6), stringResource(R.string.settings_include_ipv6_sub), Icons.Filled.Language, state.includeIpv6) {
-                viewModel.setIncludeIpv6(it)
-            }
-            Spacer(Modifier.height(4.dp))
             SettingsToggle(stringResource(R.string.settings_dns_logging), stringResource(R.string.settings_dns_logging_sub), Icons.Filled.Analytics, state.dnsLogging) {
                 viewModel.setDnsLogging(it)
             }
             Spacer(Modifier.height(4.dp))
             SettingsToggle(stringResource(R.string.settings_online_ip_lookup), stringResource(R.string.settings_online_ip_lookup_sub), Icons.Filled.Public, state.onlineGeoIpEnabled) {
                 viewModel.setOnlineGeoIpEnabled(it)
-            }
-            Spacer(Modifier.height(4.dp))
-            SettingsToggle(stringResource(R.string.settings_show_notification), stringResource(R.string.settings_show_notification_sub), Icons.Filled.Notifications, state.showNotification) {
-                viewModel.setShowNotification(it)
             }
             Spacer(Modifier.height(4.dp))
             SettingsToggle(stringResource(R.string.settings_auto_update), stringResource(R.string.settings_auto_update_sub), Icons.Filled.Update, state.autoUpdate) {

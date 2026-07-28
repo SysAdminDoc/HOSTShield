@@ -5,6 +5,24 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Security
+- The launcher "Toggle Protection" shortcut now verifies the caller with the
+  authoritative launched-from identity on Android 14+ (and the resolved default
+  launcher on older releases) instead of the spoofable activity referrer, so a
+  third-party app can no longer forge a referrer to disable protection. Toggles
+  from third-party launchers now work, and rejected attempts show a toast.
+
+### Changed
+- Removed the non-functional "Include IPv6" and "Protection notification"
+  Configuration toggles. IPv6 blocking is always active, and the ongoing-status
+  notification is a mandatory foreground-service notification; neither pref was
+  ever read. The privacy score folds the former IPv6 weight into "Blocking
+  enabled" so it still totals 100.
+- Corrected the "Online IP lookup" description to state that resolved IPs are
+  sent to ipapi.co (there is no offline GeoIP tier).
+- Removed the dead `applyBlocking`/`buildHostsFile` code path, which would have
+  written allowlist sources into the hosts file as blocks if ever re-wired.
+
 ### Fixed
 - Blocklist preservation now keys off block sources specifically: a lone
   allowlist source downloading successfully while every block source fails no

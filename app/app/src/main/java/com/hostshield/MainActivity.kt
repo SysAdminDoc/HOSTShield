@@ -117,7 +117,12 @@ class MainActivity : ComponentActivity() {
                         toggleProtectionFromShortcut()
                     }
                 } else {
-                    Log.w("MainActivity", "Ignoring SHORTCUT_TOGGLE from untrusted caller ${referrer?.host}")
+                    Log.w("MainActivity", "Ignoring SHORTCUT_TOGGLE from untrusted caller")
+                    android.widget.Toast.makeText(
+                        this,
+                        "Toggle Protection can only be triggered from your launcher.",
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
                 }
             }
             "com.hostshield.SHORTCUT_REFRESH" -> {
@@ -146,19 +151,36 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * True when a SHORTCUT_TOGGLE launch originated from a trusted source: no
-     * referrer (system-delivered), ourselves, or a system/launcher app. A
-     * third-party user app is rejected so it cannot toggle protection.
+     * True when a SHORTCUT_TOGGLE launch originated from a trusted source:
+     * ourselves, the OS, or the actual default launcher.
+     *
+     * On API 34+ the launched-from identity is authoritative and cannot be
+     * spoofed via `EXTRA_REFERRER`. On older releases only the referrer is
+     * available (spoofable), so we narrow trust to the resolved home/launcher
+     * package instead of any `FLAG_SYSTEM` app — closing the "claim to be
+     * com.android.settings" bypass while still honoring third-party launchers.
      */
     private fun isTrustedShortcutCaller(): Boolean {
+        val homePackage = resolveHomePackage()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val callerUid = try { launchedFromUid } catch (_: Exception) { return false }
+            if (callerUid == android.os.Process.myUid()) return true
+            if (callerUid == android.os.Process.SYSTEM_UID) return true
+            val callerPackage = try { launchedFromPackage } catch (_: Exception) { null }
+            return callerPackage != null && callerPackage == homePackage
+        }
+        // Pre-34 fallback: referrer is the only signal (spoofable). Trust
+        // system-delivered (null), ourselves, or the default launcher only.
         val caller = referrer?.host ?: return true
         if (caller == packageName) return true
-        return try {
-            val ai = packageManager.getApplicationInfo(caller, 0)
-            (ai.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
-        } catch (_: Exception) {
-            false
-        }
+        return homePackage != null && caller == homePackage
+    }
+
+    /** The current default launcher (home) package, or null if unresolved. */
+    private fun resolveHomePackage(): String? {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        return packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            ?.activityInfo?.packageName
     }
 
     /**

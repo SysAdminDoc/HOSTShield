@@ -101,7 +101,7 @@
     <string name="settings_dns_logging">DNS logging</string>
     <string name="settings_dns_logging_sub">Record DNS queries for stats</string>
     <string name="settings_online_ip_lookup">Online IP lookup</string>
-    <string name="settings_online_ip_lookup_sub">Use ipapi.co when offline GeoIP is unavailable</string>
+    <string name="settings_online_ip_lookup_sub">Look up IP location and ASN via ipapi.co (sends resolved IPs to a third party)</string>
     <string name="settings_auto_update">Auto-update blocklists</string>
     <string name="settings_auto_update_sub">Refresh enabled sources on a schedule</string>
     <string name="settings_update_interval">Update interval</string>

@@ -29,9 +29,11 @@ class PrivacyScorer @Inject constructor(
     suspend fun calculate(): ScoreBreakdown {
         val items = mutableListOf<ScoreItem>()
 
-        // Blocking enabled (20 pts)
+        // Blocking enabled (25 pts). IPv6 blocking is unconditional when
+        // blocking is on (dual-stack VPN + AAAA decisions), so its weight is
+        // folded in here rather than a separate always-on dimension.
         val enabled = prefs.isEnabled.first()
-        items.add(ScoreItem("Blocking enabled", if (enabled) 20 else 0, 20, enabled,
+        items.add(ScoreItem("Blocking enabled", if (enabled) 25 else 0, 25, enabled,
             if (!enabled) "Enable blocking for protection" else ""))
 
         // DNS-over-HTTPS (15 pts)
@@ -43,11 +45,6 @@ class PrivacyScorer @Inject constructor(
         val trap = prefs.dnsTrapEnabled.first()
         items.add(ScoreItem("DNS Trap", if (trap) 10 else 0, 10, trap,
             if (!trap) "Catches hardcoded DNS bypasses" else ""))
-
-        // IPv6 blocking (5 pts)
-        val ipv6 = prefs.includeIpv6.first()
-        items.add(ScoreItem("IPv6 blocking", if (ipv6) 5 else 0, 5, ipv6,
-            if (!ipv6) "Block ads on IPv6 too" else ""))
 
         // Auto-update enabled (10 pts)
         val autoUpdate = prefs.autoUpdate.first()

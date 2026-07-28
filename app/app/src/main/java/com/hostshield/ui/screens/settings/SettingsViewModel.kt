@@ -604,9 +604,6 @@ class SettingsViewModel @Inject constructor(
 
     fun setDnsTrapEnabled(v: Boolean) { viewModelScope.launch { prefs.setDnsTrapEnabled(v) } }
 
-    fun setIncludeIpv6(v: Boolean) { viewModelScope.launch { prefs.setIncludeIpv6(v) } }
-    fun setLocalWebserver(v: Boolean) { viewModelScope.launch { prefs.setLocalWebserver(v) } }
-
     fun setAutoUpdate(v: Boolean) {
         viewModelScope.launch {
             prefs.setAutoUpdate(v)
@@ -643,7 +640,6 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setDnsLogging(v: Boolean) { viewModelScope.launch { prefs.setDnsLogging(v) } }
-    fun setShowNotification(v: Boolean) { viewModelScope.launch { prefs.setShowNotification(v) } }
     fun setDohEnabled(v: Boolean) { viewModelScope.launch { prefs.setDohEnabled(v) } }
     fun setOnlineGeoIpEnabled(v: Boolean) { viewModelScope.launch { prefs.setOnlineGeoIpEnabled(v) } }
 
