@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -746,7 +747,7 @@ private fun ReadyPage(
 
         val methodName = if (method == BlockMethod.ROOT_HOSTS) "Root" else "VPN"
         Text(
-            "HostShield will use $methodName mode with 3 pre-enabled sources. " +
+            "HostShield will use $methodName mode with 4 pre-enabled sources. " +
             "Tap Activate to start blocking ads and trackers immediately.",
             color = TextSecondary, textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium, lineHeight = 22.sp
@@ -757,7 +758,8 @@ private fun ReadyPage(
         listOf(
             "StevenBlack Unified" to "~79K domains",
             "AdAway Default" to "~400 domains",
-            "Peter Lowe's List" to "~3K domains"
+            "Peter Lowe's List" to "~3K domains",
+            "URLHaus Malware" to "malware hosts"
         ).forEach { (name, count) ->
             Row(
                 modifier = Modifier
@@ -822,14 +824,17 @@ private fun ReadyPage(
                 }
             },
             enabled = !isActivating,
-            colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color.Black),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Teal,
+                contentColor = if (Teal.luminance() > 0.5f) Color.Black else Color.White,
+            ),
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)
         ) {
             if (isActivating) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    color = Color.Black,
+                    color = if (Teal.luminance() > 0.5f) Color.Black else Color.White,
                     strokeWidth = 2.dp
                 )
                 Spacer(Modifier.width(10.dp))

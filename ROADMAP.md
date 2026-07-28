@@ -514,36 +514,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
 
 ### P3
 
-- [ ] P3 — Dynamic-color mode collapses semantic colors — "Allowed"/"All" chips and ADS/ALLOWLIST accents become identical to primary
-  Category: visual
-  Where: `theme/Theme.kt:264-287` `paletteFromDynamicScheme` (teal=`scheme.primary`, green=`scheme.primary`, yellow/peach both `scheme.tertiary`)
-  Problem: With Material You on, `Green` (success/allowed) == `Teal` (accent) as the same Color, and `Yellow`==`Peach`. LogsScreen filter chips "All"(Teal) and "Allowed"(Green) render identical; allowed/blocked strips and Sources ADS(Teal)/ALLOWLIST(Green) merge. Status semantics degrade to two hues.
-  Evidence: `teal = scheme.primary` and `green = scheme.primary` are the same Color object; chips at LogsScreen.kt:223-225 use these accents.
-  Fix: Keep harmonized-but-distinct semantic tones — derive green/yellow from fixed semantic seeds harmonized to primary (e.g. `MaterialColors.harmonize(0xFF388E3C, primary)`, `harmonize(0xFFF9A825, primary)`).
-  Acceptance: In dynamic mode "All" vs "Allowed" chips are distinguishable; success/warn/error remain three distinct hues.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — High-contrast AMOLED toggle is silently inert while dynamic color is on
-  Category: ux
-  Where: `theme/Theme.kt:440-456`; `settings/SettingsScreen.kt:620-640`
-  Problem: When `dynamicColor` is on, `HostShieldTheme` builds scheme+palette exclusively from `dynamicDark/LightColorScheme`, ignoring `highContrastAmoled` (it only feeds `LocalHighContrastAmoled`, consumed solely by three VicoCharts `key()` calls). Settings shows both toggles enabled with no hint, so enabling "High-contrast AMOLED" under "System colors" does nothing.
-  Evidence: Theme.kt:441-443 dynamic branch never consults `highContrastAmoled`.
-  Fix: Disable (with explanatory subtitle) the high-contrast toggle while dynamic color is on, or apply a high-contrast transform atop the dynamic palette (Android 14+ contrast variants).
-  Acceptance: The two toggles can't silently cancel; high contrast always has a visible effect or is visibly unavailable.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — Hardcoded `Color.Black` content on accent-colored controls breaks contrast in light/dynamic-light theme
-  Category: visual
-  Where: `settings/SettingsScreen.kt:678` (accent-swatch check icon `tint = Color.Black`); `onboarding/OnboardingScreen.kt:825,832` (Activate button `contentColor = Color.Black`, spinner `color = Color.Black`)
-  Problem: In light mode the accent getters resolve to dark saturated colors (Teal 0xFF00897B, Blue 0xFF1976D2, Mauve 0xFF7E57C2), giving black-on-dark check marks at ~2-5:1 — the selected-accent check is nearly invisible on purple/blue swatches. The accent picker is fully reachable in light mode.
-  Evidence: Swatch colors at SettingsScreen.kt:646-653 are the palette getters (dark-in-dark, saturated-in-light); check icon at :678 is literal `Color.Black`.
-  Fix: Use `MaterialTheme.colorScheme.onPrimary` (black in dark, white in light) or a luminance-based on-color; onboarding button should use `colorScheme.onPrimary`.
-  Acceptance: In light theme the selected accent check is clearly visible on all six accents.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P3 — Home search, Logs multi-select, and add-dialogs lose user input on rotation (`remember` instead of `rememberSaveable`)
   Category: ux
   Where: `home/HomeScreen.kt:95-96` (searchQuery/searchExpanded); `logs/LogsScreen.kt:72-74` (multiSelectMode/selectedHostnames/showClearLogsDialog); `sources/SourcesScreen.kt:75-76,694-696` (AddSourceDialog fields); `lists/RulesScreen.kt:52-55,269-274`; `settings/ProtectionSettingsSection.kt:58-62`; `stats/StatsScreen.kt:471`
@@ -671,16 +641,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Evidence: Grep of `lastModifiedOnline`: read at SourceDownloader.kt:72, defined at Entities.kt:39, cleared twice, never set from `DownloadResult.lastModified`.
   Fix: Persist `dl.lastModified` in `updateSourceDownloadMeta`, or delete the dead conditional branch + field and correct the changelog claim.
   Acceptance: A successful download stores the Last-Modified value (coordinator test), or the field/branch is removed and docs updated.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — Onboarding "Ready" page claims 3 pre-enabled sources; 4 are enabled
-  Category: ux
-  Where: `onboarding/OnboardingScreen.kt:748-760`; `data/repository/SourceRepository.kt:43-110`
-  Problem: ReadyPage says "3 pre-enabled sources" and lists StevenBlack/AdAway/Peter Lowe with hardcoded counts, but the seed also enables URLHaus Malware Filter (`enabled=true` default, no override) — four total. The copy understates what's enabled and duplicates drift-prone counts already in the source descriptions.
-  Evidence: SourceRepository defaults — StevenBlack/AdAway/Peter Lowe/URLHaus have no `enabled=false`; OISD/GoodbyeAds/Spotify/adult/allowlists do.
-  Fix: Render the ReadyPage list from the actual seed list (filter `enabled`), or correct the copy to four and drop the counts.
-  Acceptance: Onboarding copy matches the seeded enabled set exactly.
   Confidence: Verified
   Effort: S
 

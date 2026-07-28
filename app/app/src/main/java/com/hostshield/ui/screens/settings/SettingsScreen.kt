@@ -25,8 +25,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -610,11 +612,18 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
 
             if (state.themeMode != "light") {
+                // High contrast has no effect while dynamic (Material You) color is
+                // active — the palette comes entirely from the wallpaper scheme —
+                // so disable it with an explanatory subtitle instead of letting
+                // the two toggles silently cancel each other.
+                val highContrastActive = !state.dynamicColor
                 SettingsToggle(
                     stringResource(R.string.settings_high_contrast),
-                    stringResource(R.string.settings_high_contrast_sub),
+                    if (highContrastActive) stringResource(R.string.settings_high_contrast_sub)
+                    else "Unavailable while system colors are on",
                     Icons.Filled.Visibility,
-                    state.highContrastAmoled
+                    state.highContrastAmoled && highContrastActive,
+                    enabled = highContrastActive
                 ) {
                     viewModel.setHighContrastAmoled(it)
                 }
@@ -667,7 +676,11 @@ fun SettingsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             if (isSelected) {
-                                Icon(Icons.Filled.Check, "Selected accent color", tint = Color.Black, modifier = Modifier.size(14.dp))
+                                // Contrast the check against the swatch: accent
+                                // colors are pastel in dark mode but dark/saturated
+                                // in light mode, where a black check would vanish.
+                                val checkTint = if (color.luminance() > 0.5f) Color.Black else Color.White
+                                Icon(Icons.Filled.Check, "Selected accent color", tint = checkTint, modifier = Modifier.size(14.dp))
                             }
                         }
                     }
@@ -1057,6 +1070,7 @@ internal fun SettingsToggle(
     subtitle: String,
     icon: ImageVector,
     checked: Boolean,
+    enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
     val rowShape = RoundedCornerShape(10.dp)
@@ -1065,19 +1079,27 @@ internal fun SettingsToggle(
             .fillMaxWidth()
             .heightIn(min = 58.dp)
             .clip(rowShape)
-            .background(if (checked) Teal.copy(alpha = 0.055f) else Surface2.copy(alpha = 0.32f))
+            .background(if (checked && enabled) Teal.copy(alpha = 0.055f) else Surface2.copy(alpha = 0.32f))
             .border(
                 width = 1.dp,
-                color = if (checked) Teal.copy(alpha = 0.22f) else Surface3.copy(alpha = 0.32f),
+                color = if (checked && enabled) Teal.copy(alpha = 0.22f) else Surface3.copy(alpha = 0.32f),
                 shape = rowShape,
             )
             .testTag(HostShieldTestTags.Settings.toggle(title))
             .semantics(mergeDescendants = true) {
                 role = Role.Switch
                 contentDescription = "$title. $subtitle"
-                stateDescription = if (checked) "On" else "Off"
+                stateDescription = when {
+                    !enabled -> "Disabled"
+                    checked -> "On"
+                    else -> "Off"
+                }
             }
-            .clickable(role = Role.Switch) { onCheckedChange(!checked) }
+            .then(
+                if (enabled) Modifier.clickable(role = Role.Switch) { onCheckedChange(!checked) }
+                else Modifier
+            )
+            .alpha(if (enabled) 1f else 0.5f)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1110,7 +1132,7 @@ internal fun SettingsToggle(
             )
         }
         Switch(
-            checked = checked, onCheckedChange = null,
+            checked = checked, onCheckedChange = null, enabled = enabled,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Teal, checkedTrackColor = Teal.copy(alpha = 0.25f),
                 uncheckedThumbColor = TextDim, uncheckedTrackColor = Surface3

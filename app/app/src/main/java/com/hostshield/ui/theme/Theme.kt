@@ -10,6 +10,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -274,12 +275,17 @@ internal fun paletteFromDynamicScheme(scheme: ColorScheme): HostShieldPalette = 
     tealGlow = scheme.primary,
     mauve = scheme.secondary,
     mauveDim = scheme.secondary.copy(alpha = 0.6f),
-    green = scheme.primary,
+    // Semantic colors must stay visually distinct even under Material You:
+    // mapping green→primary and yellow/peach→tertiary made "Allowed" identical
+    // to the accent and yellow identical to peach. Derive them from fixed
+    // semantic seeds harmonized toward the wallpaper primary so status meaning
+    // survives while still matching the dynamic theme.
+    green = lerp(Color(0xFF43A047), scheme.primary, 0.25f),
     red = scheme.error,
-    yellow = scheme.tertiary,
+    yellow = lerp(Color(0xFFF9A825), scheme.primary, 0.20f),
     blue = scheme.secondary,
-    peach = scheme.tertiary,
-    flamingo = scheme.tertiary.copy(alpha = 0.8f),
+    peach = lerp(Color(0xFFFF8A65), scheme.primary, 0.20f),
+    flamingo = lerp(Color(0xFFEC407A), scheme.primary, 0.20f),
     sky = scheme.secondary.copy(alpha = 0.8f),
     textPrimary = scheme.onBackground,
     textSecondary = scheme.onSurfaceVariant,

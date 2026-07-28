@@ -31,6 +31,16 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - The hosts editor switches to a responsive read-only preview for very large
   hosts files instead of freezing in a single multi-megabyte text field.
 
+### Fixed (theming & onboarding)
+- Under Material You (dynamic color), semantic status colors stay distinct
+  (allowed vs accent, warning vs peach) by harmonizing fixed semantic seeds to
+  the wallpaper palette instead of collapsing onto primary/tertiary.
+- The high-contrast AMOLED toggle is disabled with an explanation while system
+  colors are on (where it has no effect) instead of silently doing nothing.
+- The selected accent-color check and the onboarding activate button pick their
+  content color by luminance, so they stay visible in light/dynamic-light themes.
+- The onboarding summary now lists all four pre-enabled sources.
+
 ### Fixed (correctness & robustness)
 - The Spamhaus threat-intel parser now validates CIDR tokens (octets 0-255,
   prefix 8-32) so a malformed feed line can't flag benign IP ranges.

@@ -119,7 +119,7 @@ fun ProtectionSettingsSection(
             stringResource(R.string.lan_dns_enable_sub),
             Icons.Filled.Router,
             lanDnsEnabled,
-            onLanDnsEnabledChange
+            onCheckedChange = onLanDnsEnabledChange
         )
         Spacer(Modifier.height(6.dp))
         Text(
@@ -179,7 +179,7 @@ fun ProtectionSettingsSection(
             stringResource(R.string.lan_dns_allow_external_sub),
             Icons.Filled.Public,
             lanDnsAllowExternalClients,
-            onLanDnsAllowExternalClientsChange
+            onCheckedChange = onLanDnsAllowExternalClientsChange
         )
         Spacer(Modifier.height(6.dp))
         Text(
