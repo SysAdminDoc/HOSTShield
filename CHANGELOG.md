@@ -3,6 +3,34 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.61] - 2026-07-28
+
+### Added
+- Added Spotify Ads as an optional built-in ADS source. It is disabled by
+  default because the upstream list includes Spotify playback and update hosts.
+- Database migration v19 adds the source to existing installations without
+  duplicating a matching custom URL.
+
+### Fixed
+- Source health validation now reads a bounded response sample instead of
+  rejecting every valid list larger than the old 5 MiB validation cap. This
+  fixes false HTTP-200 `DEAD` states for GoodbyeAds and OISD Big.
+- Disabled sources no longer contribute stale ERROR/DEAD badges, filters,
+  unhealthy totals, repository alerts, or failure details. Disabling a source
+  clears its health failure, and migration v19 repairs errors left by older
+  builds.
+- WorkManager constraint cancellations now propagate normally instead of being
+  logged and diagnosed as blocklist-update failures.
+- The AdGuard CNAME-cloak updater follows the current original-tracker list
+  under the upstream `data/` path instead of requesting the retired 404 URL.
+
+### Distribution
+- The v6.9.61 GitHub APK starts a new certificate lineage. Android requires an
+  APK certificate even when no production signing key is used, so this release
+  uses the standard Android debug certificate. Export a HostShield backup if
+  needed, uninstall v6.9.16 or earlier, then install v6.9.61. The uninstall
+  clears the previous app data.
+
 ## [v6.9.60] - 2026-07-22
 
 ### Added

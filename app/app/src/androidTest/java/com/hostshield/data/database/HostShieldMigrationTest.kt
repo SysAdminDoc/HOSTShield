@@ -122,6 +122,12 @@ class HostShieldMigrationTest {
         assertEquals(1, db.queryInt("SELECT COUNT(*) FROM host_sources WHERE url = 'https://fixture.hostshield.test/hosts.txt'"))
         assertEquals(1, db.queryInt("SELECT enabled FROM host_sources WHERE label = 'AdAway Default'"))
         assertEquals(1, db.queryInt("SELECT enabled FROM host_sources WHERE label = 'StevenBlack Unified'"))
+        assertEquals(1, db.queryInt("SELECT COUNT(*) FROM host_sources WHERE label = 'Spotify Ads'"))
+        assertEquals(0, db.queryInt("SELECT enabled FROM host_sources WHERE label = 'Spotify Ads'"))
+        assertEquals("UNKNOWN", db.queryString("SELECT health FROM host_sources WHERE label = 'Disabled Dead Fixture'"))
+        assertEquals("", db.queryString("SELECT last_error FROM host_sources WHERE label = 'Disabled Dead Fixture'"))
+        assertEquals(0, db.queryInt("SELECT consecutive_failures FROM host_sources WHERE label = 'Disabled Dead Fixture'"))
+        assertEquals(0, db.queryInt("SELECT last_http_status FROM host_sources WHERE label = 'Disabled Dead Fixture'"))
         assertEquals(1, db.queryInt("SELECT COUNT(*) FROM user_rules WHERE hostname = 'ads.fixture.test'"))
         assertEquals(1, db.queryInt("SELECT COUNT(*) FROM dns_logs WHERE hostname = 'ads.fixture.test'"))
         assertEquals(
@@ -262,7 +268,15 @@ class HostShieldMigrationTest {
                 insertColumns += "last_http_status"
             }
 
-            fun insertHostSource(url: String, label: String, enabled: Int) {
+            fun insertHostSource(
+                url: String,
+                label: String,
+                enabled: Int,
+                health: String = "OK",
+                lastError: String = "",
+                consecutiveFailures: Int = 0,
+                lastHttpStatus: Int = 0
+            ) {
                 val values = mutableListOf(
                     "'$url'",
                     "'$label'",
@@ -275,15 +289,15 @@ class HostShieldMigrationTest {
                     "'fixture-etag'",
                     "1",
                     "2048",
-                    "'OK'",
-                    "''",
-                    "0"
+                    "'$health'",
+                    "'$lastError'",
+                    consecutiveFailures.toString()
                 )
                 if (version >= 7) {
                     values += listOf("40", "2", "0")
                 }
                 if (version >= 15) {
-                    values += "0"
+                    values += lastHttpStatus.toString()
                 }
                 db.execSQL("INSERT INTO host_sources (${insertColumns.joinToString(", ")}) VALUES (${values.joinToString(", ")})")
             }
@@ -292,6 +306,15 @@ class HostShieldMigrationTest {
             val builtInEnabled = if (version >= 17) 1 else 0
             insertHostSource("https://adaway.org/hosts.txt", "AdAway Default", builtInEnabled)
             insertHostSource("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "StevenBlack Unified", builtInEnabled)
+            insertHostSource(
+                url = "https://disabled.fixture.test/hosts.txt",
+                label = "Disabled Dead Fixture",
+                enabled = 0,
+                health = "DEAD",
+                lastError = "source validation exceeded limit",
+                consecutiveFailures = 11,
+                lastHttpStatus = 200
+            )
         }
 
         private fun createUserRules(db: SupportSQLiteDatabase, version: Int) {

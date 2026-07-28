@@ -2,6 +2,7 @@ package com.hostshield.service
 
 import android.util.Log
 import com.hostshield.data.preferences.AppPreferences
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -15,8 +16,8 @@ import javax.inject.Singleton
  * v5.0: Fetches known CNAME cloaking domains from two community-maintained sources:
  *
  * 1. AdGuard cname-trackers (github.com/AdguardTeam/cname-trackers)
- *    - Auto-updated list of CNAME-cloaked tracker domains discovered at scale
- *    - Format: one domain per line (disguised tracker targets)
+ *    - Auto-updated list of original tracker destinations seen behind CNAMEs
+ *    - Format: one domain per line
  *
  * 2. NextDNS cname-cloaking-blocklist (github.com/nextdns/cname-cloaking-blocklist)
  *    - Known CNAME cloaking destinations
@@ -40,9 +41,9 @@ class CnameCloakUpdater @Inject constructor(
     companion object {
         private const val TAG = "CnameCloakUpdater"
 
-        // AdGuard: combined list of known CNAME cloak tracker targets
+        // AdGuard: tracker destinations for software that inspects CNAME chains.
         private const val ADGUARD_URL =
-            "https://raw.githubusercontent.com/AdguardTeam/cname-trackers/master/combined_disguised_trackers.txt"
+            "https://raw.githubusercontent.com/AdguardTeam/cname-trackers/master/data/combined_original_trackers_justdomains.txt"
 
         // NextDNS: known CNAME cloaking destinations
         private const val NEXTDNS_URL =
@@ -149,6 +150,8 @@ class CnameCloakUpdater @Inject constructor(
 
             Log.i(TAG, "$source: parsed ${domains.size} CNAME cloak domains")
             domains
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "$source fetch failed: ${e.message}")
             null

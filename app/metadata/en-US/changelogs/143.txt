@@ -1,0 +1,8 @@
+v6.9.61:
+- Fix false failures for HTTP-200 blocklists larger than 5 MiB
+- Clear and hide disabled-source health errors
+- Repair legacy source state during database migration
+- Stop reporting normal worker cancellation as an update error
+- Repair the obsolete AdGuard CNAME feed URL
+- Add optional, disabled-by-default Spotify Ads source
+- GitHub APK: export if needed, uninstall v6.9.16 or earlier, then install; the certificate changed

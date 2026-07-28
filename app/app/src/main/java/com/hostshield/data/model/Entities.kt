@@ -49,6 +49,18 @@ data class HostSource(
     @ColumnInfo(name = "domains_removed") val domainsRemoved: Int = 0  // removed domains in last update
 )
 
+fun HostSource.hasActiveHealthWarning(): Boolean =
+    enabled && when (health) {
+        SourceHealth.STALE, SourceHealth.ERROR, SourceHealth.DEAD -> true
+        SourceHealth.UNKNOWN, SourceHealth.OK -> false
+    }
+
+fun HostSource.hasActiveHealthFailure(): Boolean =
+    enabled && when (health) {
+        SourceHealth.ERROR, SourceHealth.DEAD -> true
+        SourceHealth.UNKNOWN, SourceHealth.OK, SourceHealth.STALE -> false
+    }
+
 @Entity(
     tableName = "user_rules",
     indices = [

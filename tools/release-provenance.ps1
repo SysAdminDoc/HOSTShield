@@ -136,23 +136,23 @@ $outputRoot = if ([System.IO.Path]::IsPathRooted($OutputDir)) {
 New-Item -ItemType Directory -Force -Path $outputRoot | Out-Null
 
 $appBuild = Read-RepoFile "app/app/build.gradle.kts"
-$rootBuild = Read-RepoFile "app/build.gradle.kts"
+$versionsCatalog = Read-RepoFile "app/gradle/libs.versions.toml"
 $wrapperProperties = Read-RepoFile "app/gradle/wrapper/gradle-wrapper.properties"
 
 $versionName = Get-GradleSetting $appBuild 'versionName\s*=\s*"([^"]+)"' "versionName"
 $versionCode = Get-GradleSetting $appBuild 'versionCode\s*=\s*(\d+)' "versionCode"
 $compileSdk = Get-GradleSetting $appBuild 'compileSdk\s*=\s*(\d+)' "compileSdk"
 $minSdk = Get-GradleSetting $appBuild 'minSdk\s*=\s*(\d+)' "minSdk"
-$agpVersion = Get-GradleSetting $rootBuild 'com\.android\.application"\)\s+version\s+"([^"]+)"' "AGP version"
-$kotlinVersion = Get-GradleSetting $rootBuild 'org\.jetbrains\.kotlin\.(?:android|plugin\.compose)"\)\s+version\s+"([^"]+)"' "Kotlin version"
+$agpVersion = Get-GradleSetting $versionsCatalog '(?m)^agp\s*=\s*"([^"]+)"' "AGP version"
+$kotlinVersion = Get-GradleSetting $versionsCatalog '(?m)^kotlin\s*=\s*"([^"]+)"' "Kotlin version"
 $gradleVersion = Get-GradleSetting $wrapperProperties 'gradle-([0-9][^-]+)-bin\.zip' "Gradle version"
 $cronetEmbeddedVersion = Get-GradleDependencyVersion $appBuild 'org.chromium.net:cronet-embedded'
 if ($cronetEmbeddedVersion -eq "unknown") {
     $cronetEmbeddedVersion = "not bundled (embedded DoH3 disabled; pinned OkHttp DoH active)"
 }
 
-$commit = (& git -C $repoRoot rev-parse HEAD).Trim()
-$status = (& git -C $repoRoot status --short).Trim()
+$commit = ((& git -C $repoRoot rev-parse HEAD) -join "`n").Trim()
+$status = ((& git -C $repoRoot status --short) -join "`n").Trim()
 $dirtyState = if ([string]::IsNullOrWhiteSpace($status)) { "clean" } else { "dirty" }
 
 $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $apk).Hash.ToLowerInvariant()
@@ -189,7 +189,10 @@ if ($apkSigner) {
         throw "apksigner verification failed for $apkName.`n$apkSignerStatus"
     }
 
-    $fingerprintMatch = [regex]::Match($apkSignerStatus, 'Signer #1 certificate SHA-256 digest:\s*([A-Fa-f0-9:]+)')
+    $fingerprintMatch = [regex]::Match(
+        $apkSignerStatus,
+        '(?:Signer #1 certificate|V\d(?:\.\d+)? Signer: certificate) SHA-256 digest:\s*([A-Fa-f0-9:]+)'
+    )
     if ($fingerprintMatch.Success) {
         $signerFingerprint = $fingerprintMatch.Groups[1].Value.ToLowerInvariant()
     }

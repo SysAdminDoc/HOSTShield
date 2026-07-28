@@ -137,7 +137,17 @@ if (-not (Test-RepoFile $dohBypassManifest)) {
 
     $manifest = $null
     try {
-        $manifest = $manifestRaw | ConvertFrom-Json -ErrorAction Stop
+        $convertFromJsonParams = @{
+            ErrorAction = "Stop"
+        }
+        # PowerShell 7.6 converts ISO-8601 strings to DateTime by default,
+        # which changes the signed canonical payload when cast back to text.
+        # Preserve JSON strings when the runtime exposes the DateKind switch;
+        # older supported PowerShell versions already leave them as strings.
+        if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey("DateKind")) {
+            $convertFromJsonParams.DateKind = "String"
+        }
+        $manifest = $manifestRaw | ConvertFrom-Json @convertFromJsonParams
     } catch {
         $failures.Add("$dohBypassManifest is not valid JSON: $($_.Exception.Message)")
     }

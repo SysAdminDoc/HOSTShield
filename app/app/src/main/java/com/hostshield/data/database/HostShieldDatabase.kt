@@ -5,7 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.hostshield.data.model.*
 
-const val HOST_SHIELD_DATABASE_VERSION = 18
+const val HOST_SHIELD_DATABASE_VERSION = 19
 
 @Database(
     entities = [

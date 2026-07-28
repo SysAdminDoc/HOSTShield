@@ -23,6 +23,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - v16: Added dns_logs decision provenance columns
  * - v17: Enable default AdAway and StevenBlack Unified built-in sources
  * - v18: Added dns_logs(app_package, hostname) index for app-domain aggregation
+ * - v19: Add Spotify Ads built-in source and clear disabled-source health errors
  */
 object Migrations {
 
@@ -290,6 +291,72 @@ object Migrations {
         }
     }
 
+    val MIGRATION_18_19 = object : Migration(18, 19) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Disabled lists are not actionable health failures. Older builds
+            // probed every source and left large, disabled lists permanently
+            // marked DEAD after their 5 MiB validation read was exhausted.
+            db.execSQL(
+                """
+                UPDATE host_sources
+                SET health = 'UNKNOWN',
+                    last_error = '',
+                    last_http_status = 0,
+                    consecutive_failures = 0
+                WHERE enabled = 0
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                INSERT INTO host_sources (
+                    url,
+                    label,
+                    description,
+                    enabled,
+                    category,
+                    entry_count,
+                    last_updated,
+                    last_modified_online,
+                    etag,
+                    is_builtin,
+                    size_bytes,
+                    health,
+                    last_error,
+                    last_http_status,
+                    consecutive_failures,
+                    prev_entry_count,
+                    domains_added,
+                    domains_removed
+                )
+                SELECT
+                    'https://raw.githubusercontent.com/Mireli5656/adblock360-/refs/heads/main/lists/spotifyadlist.hosts',
+                    'Spotify Ads',
+                    'Aggressive Spotify ad and telemetry list. May interrupt playback or app updates. ~79 entries.',
+                    0,
+                    'ADS',
+                    0,
+                    0,
+                    '',
+                    '',
+                    1,
+                    0,
+                    'UNKNOWN',
+                    '',
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM host_sources
+                    WHERE url = 'https://raw.githubusercontent.com/Mireli5656/adblock360-/refs/heads/main/lists/spotifyadlist.hosts'
+                )
+                """.trimIndent()
+            )
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
     val ALL = arrayOf(
         MIGRATION_1_2,
@@ -308,6 +375,7 @@ object Migrations {
         MIGRATION_14_15,
         MIGRATION_15_16,
         MIGRATION_16_17,
-        MIGRATION_17_18
+        MIGRATION_17_18,
+        MIGRATION_18_19
     )
 }

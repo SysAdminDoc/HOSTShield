@@ -5,6 +5,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
+import okio.Buffer
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -42,7 +44,7 @@ class SourceDownloader @Inject constructor() {
 
     companion object {
         const val MAX_SOURCE_DOWNLOAD_BYTES = 80L * 1024L * 1024L
-        const val MAX_SOURCE_VALIDATION_BYTES = 5L * 1024L * 1024L
+        const val MAX_SOURCE_VALIDATION_SAMPLE_BYTES = 256L * 1024L
     }
 
     private val client = OkHttpClient.Builder()
@@ -106,27 +108,56 @@ class SourceDownloader @Inject constructor() {
             val request = Request.Builder()
                 .url(SourceUrlPolicy.requireDownloadable(url))
                 .build()
-            val body = client.newCall(request).execute().use { response ->
+            val lineCount = client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     throw SourceDownloadException(
                         "HTTP ${response.code}: ${response.message}",
                         response.code
                     )
                 }
-                BoundedResponseReader.readUtf8(
+                SourceValidationSampler.countCandidateLines(
                     response,
-                    MAX_SOURCE_VALIDATION_BYTES,
-                    "source validation"
-                ).content
+                    MAX_SOURCE_VALIDATION_SAMPLE_BYTES
+                )
             }
 
-            val lineCount = body.lines().count { line ->
-                val trimmed = line.trim()
-                trimmed.isNotEmpty() && !trimmed.startsWith("#")
-            }
             Result.success(lineCount)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+}
+
+/**
+ * Reads only the beginning of a source when checking reachability.
+ *
+ * Health validation only needs proof that a successful response contains
+ * candidate list entries. Materializing the whole response made every valid
+ * source larger than the validation cap look like an HTTP-200 download failure.
+ */
+internal object SourceValidationSampler {
+    private const val BUFFER_BYTES = 8L * 1024L
+
+    fun countCandidateLines(response: Response, maxBytes: Long): Int {
+        require(maxBytes > 0) { "maxBytes must be positive" }
+
+        val sample = Buffer()
+        val source = response.body.source()
+        var sampledBytes = 0L
+        while (sampledBytes < maxBytes) {
+            val read = source.read(
+                sample,
+                minOf(BUFFER_BYTES, maxBytes - sampledBytes)
+            )
+            if (read == -1L) break
+            sampledBytes += read
+        }
+
+        return sample.readString(Charsets.UTF_8)
+            .lineSequence()
+            .count { line ->
+                val trimmed = line.trim()
+                trimmed.isNotEmpty() && !trimmed.startsWith("#")
+            }
     }
 }

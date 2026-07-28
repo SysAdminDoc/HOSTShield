@@ -8,6 +8,15 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+internal fun spotifyAdsDefaultSource() = HostSource(
+    url = "https://raw.githubusercontent.com/Mireli5656/adblock360-/refs/heads/main/lists/spotifyadlist.hosts",
+    label = "Spotify Ads",
+    description = "Aggressive Spotify ad and telemetry list. May interrupt playback or app updates. ~79 entries.",
+    category = SourceCategory.ADS,
+    isBuiltin = true,
+    enabled = false
+)
+
 @Singleton
 class SourceRepository @Inject constructor(
     private val sourceDao: HostSourceDao
@@ -75,6 +84,7 @@ class SourceRepository @Inject constructor(
                 isBuiltin = true,
                 enabled = false
             ),
+            spotifyAdsDefaultSource(),
             HostSource(
                 url = "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts",
                 label = "StevenBlack + Fakenews/Gambling/Porn",

@@ -13,6 +13,7 @@ import com.hostshield.util.DiagnosticEventStore
 import com.hostshield.util.DiagnosticEventType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import android.util.Log
 import com.hostshield.util.PrivacyLog
@@ -96,9 +97,21 @@ class HostsUpdateWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         return try {
             // Refresh remote DoH bypass list on every periodic run
-            try { dohBypassUpdater.fetchAndStore() } catch (e: Exception) { Log.w(TAG, "DoH bypass list refresh failed: ${e.message}") }
+            try {
+                dohBypassUpdater.fetchAndStore()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "DoH bypass list refresh failed: ${e.message}")
+            }
             // v5.0: Refresh CNAME cloak databases (AdGuard + NextDNS)
-            try { cnameCloakUpdater.fetchAndUpdate() } catch (e: Exception) { Log.w(TAG, "CNAME cloak database refresh failed: ${e.message}") }
+            try {
+                cnameCloakUpdater.fetchAndUpdate()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "CNAME cloak database refresh failed: ${e.message}")
+            }
 
             val isEnabled = prefs.isEnabled.first()
             if (!isEnabled) return Result.success()
@@ -150,6 +163,8 @@ class HostsUpdateWorker @AssistedInject constructor(
                                     )
                                 }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             val httpStatus = e.sourceHttpStatus()
                             syncFailures += SourceFailureNotice(
@@ -221,6 +236,8 @@ class HostsUpdateWorker @AssistedInject constructor(
             }
 
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Blocklist update failed (attempt $runAttemptCount): ${e.message}", e)
             diagnosticEvents.record(

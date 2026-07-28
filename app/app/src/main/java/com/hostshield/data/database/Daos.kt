@@ -45,7 +45,17 @@ interface HostSourceDao {
     @Query("DELETE FROM host_sources WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    @Query("UPDATE host_sources SET enabled = :enabled WHERE id = :id")
+    @Query(
+        """
+        UPDATE host_sources
+        SET enabled = :enabled,
+            health = CASE WHEN :enabled = 0 THEN 'UNKNOWN' ELSE health END,
+            last_error = CASE WHEN :enabled = 0 THEN '' ELSE last_error END,
+            last_http_status = CASE WHEN :enabled = 0 THEN 0 ELSE last_http_status END,
+            consecutive_failures = CASE WHEN :enabled = 0 THEN 0 ELSE consecutive_failures END
+        WHERE id = :id
+        """
+    )
     suspend fun setEnabled(id: Long, enabled: Boolean)
 
     @Query("UPDATE host_sources SET entry_count = :count, last_updated = :timestamp, etag = :etag, size_bytes = :size WHERE id = :id")
@@ -57,7 +67,7 @@ interface HostSourceDao {
     @Query("UPDATE host_sources SET prev_entry_count = :prevCount, domains_added = :added, domains_removed = :removed WHERE id = :id")
     suspend fun updateChangelog(id: Long, prevCount: Int, added: Int, removed: Int)
 
-    @Query("SELECT * FROM host_sources WHERE health = 'ERROR' OR health = 'DEAD'")
+    @Query("SELECT * FROM host_sources WHERE enabled = 1 AND (health = 'ERROR' OR health = 'DEAD')")
     fun getUnhealthySources(): Flow<List<HostSource>>
 
     @Query("SELECT * FROM host_sources WHERE enabled = 1 AND category = 'ALLOWLIST'")

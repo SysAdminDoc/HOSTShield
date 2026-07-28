@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.60-blue)
+![Version](https://img.shields.io/badge/version-6.9.61-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -25,9 +25,15 @@
 
 ## Quick Start
 
-1. Download the latest APK from [Releases](https://github.com/SysAdminDoc/HostShield/releases)
-2. Install and launch — the onboarding wizard guides you through setup
-3. Choose **VPN mode** (no root) or **Root mode** (better battery life)
+1. If v6.9.16 or earlier is installed, export a HostShield backup if needed and
+   uninstall it. v6.9.61 starts a new APK certificate lineage, so Android cannot
+   perform an in-place update over the older certificate. Uninstalling clears
+   the previous app data.
+2. Download `HostShield-v6.9.61-full-release.apk` from
+   [Releases](https://github.com/SysAdminDoc/HostShield/releases).
+3. Install and launch — the onboarding wizard guides you through setup.
+4. Choose **VPN mode** (no root) or **Root mode** (better battery life), then
+   enable blocking.
 
 ### Obtainium (auto-update from GitHub)
 
@@ -36,7 +42,6 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 - **App Source URL**: `https://github.com/SysAdminDoc/HostShield`
 - **Release asset filter**: `full-release.apk`
 - **Version detection**: from GitHub release tag
-4. Enable blocking — ads and trackers are filtered immediately
 
 ---
 
@@ -239,7 +244,11 @@ powershell -ExecutionPolicy Bypass -File .\tools\run-protection-resilience-matri
 powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 ```
 
-**Signing**: Release artifacts require `KEYSTORE_FILE`, `STORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`. For local non-distribution release verification only, set `HOSTSHIELD_ALLOW_DEBUG_RELEASE_SIGNING=true` to use the Android debug keystore.
+**Signing**: Production-signed release artifacts require `KEYSTORE_FILE`,
+`STORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`. The v6.9.61 GitHub APK does
+not use a production signing key; Android's required APK certificate is the
+standard Android debug certificate. This certificate transition requires the
+one-time uninstall described above.
 
 **Release flow**: Builds, tests, release-doc checks, protection-resilience matrix capture, provenance generation, and GitHub Release uploads run locally on this workstation. The repository intentionally ships without GitHub Actions workflows.
 
@@ -249,7 +258,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 
 ### Blocklist Sources
 
-Ships with curated defaults. AdAway Default and StevenBlack Unified are enabled out of the box; OISD, HaGeZi, 1Hosts, and other sources remain available from the gallery for stricter filtering. Add custom URL sources via Settings > Sources in hosts, domains-only, or DNS adblock syntax.
+Ships with curated defaults. AdAway Default and StevenBlack Unified are enabled out of the box; OISD, HaGeZi, 1Hosts, and other sources remain available from the gallery for stricter filtering. Spotify Ads is included as an optional built-in but stays disabled until explicitly enabled because its upstream list includes playback and update hosts. Add custom URL sources via Settings > Sources in hosts, domains-only, or DNS adblock syntax.
 
 **Source categories**: ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM. Allowlist sources override block entries during updates, including adblock `@@||` exception lists.
 
@@ -432,6 +441,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.61** | Source-health repair: successful large lists are sampled instead of falsely marked dead at 5 MiB, disabled sources no longer inflate health errors, migration v19 clears legacy failure state, worker cancellations no longer look like update failures, the AdGuard CNAME feed URL is repaired, and Spotify Ads is available as an optional disabled-by-default built-in source. |
 | **6.9.60** | Roadmap drain: blocking profiles now apply their per-profile source set; auto-update, Wi-Fi-only, protection-notification, and log-retention settings are exposed in the UI; threat-intel carries forward a failed feed's cached IOCs; root DNS attribution maps are bounded and its iptables teardown serialized; `$important` block precedence and IPv6 PCAP export are implemented; the launcher toggle is gated to trusted callers. |
 | **6.9.59** | Deep engineering + security + UX audit: the per-app iptables firewall now actually applies (an apply-ordering bug meant it never did), the DNS proxy path fails closed instead of leaking plaintext, IPv6 DNS answers carry a valid UDP checksum, offline blocklist refresh no longer wipes the live snapshot, downloaded allowlists can no longer whitelist malware past threat intel, backup/restore preserves wildcard and regex rules, and dozens of worker, preference, theming, and accessibility fixes. |
 | **6.9.58** | Dense Logs, Sources, Apps, and Firewall lists now support persisted saved filters, accessible filtered empty states, and top/middle/end jump controls for large local datasets. |

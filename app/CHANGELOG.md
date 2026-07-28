@@ -1,3 +1,31 @@
+# HostShield v6.9.61
+
+## Source Health Repair and Spotify Ads
+
+### Added
+- Spotify Ads is available as an optional built-in ADS source on fresh and
+  upgraded installs. It remains disabled until explicitly selected because its
+  upstream entries include playback and update endpoints.
+- Room migration v19 seeds the source for existing databases without
+  duplicating an already-configured matching URL.
+
+### Fixed
+- Large lists are health-checked from a bounded sample instead of being marked
+  dead when a successful HTTP 200 response exceeds 5 MiB.
+- Disabled sources are excluded from actionable health counts and presentation;
+  disabling one clears stale failure metadata, and v19 repairs legacy rows.
+- WorkManager constraint cancellations no longer appear as blocklist-update
+  failures, and nested refresh steps preserve cancellation.
+- The AdGuard CNAME-cloak feed now uses the current original-tracker
+  just-domains URL instead of the retired path that returned HTTP 404.
+
+### GitHub APK installation
+- v6.9.61 starts a new APK certificate lineage using the standard Android debug
+  certificate because no production signing key is used. Export a backup if
+  needed, uninstall v6.9.16 or earlier, then install v6.9.61. Android cannot
+  install it in place over the older HostShield certificate, and uninstalling
+  clears the previous app data.
+
 # HostShield v6.9.60
 
 ## Roadmap Drain

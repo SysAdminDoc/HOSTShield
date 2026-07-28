@@ -31,6 +31,8 @@ import com.hostshield.R
 import com.hostshield.data.model.HostSource
 import com.hostshield.data.model.SourceCategory
 import com.hostshield.data.model.SourceHealth
+import com.hostshield.data.model.hasActiveHealthFailure
+import com.hostshield.data.model.hasActiveHealthWarning
 import com.hostshield.data.source.SourceUrlPolicy
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilityToggle
@@ -82,7 +84,7 @@ fun SourcesScreen(
                     SourceListFilter.ALL -> true
                     SourceListFilter.ENABLED -> source.enabled
                     SourceListFilter.DISABLED -> !source.enabled
-                    SourceListFilter.UNHEALTHY -> source.health in setOf(SourceHealth.STALE, SourceHealth.ERROR, SourceHealth.DEAD)
+                    SourceListFilter.UNHEALTHY -> source.hasActiveHealthWarning()
                     SourceListFilter.ALLOWLIST -> source.category == SourceCategory.ALLOWLIST
                 }
         }
@@ -196,7 +198,7 @@ fun SourcesScreen(
                 // Summary stats
                 val totalDomains = sources.filter { it.enabled }.sumOf { it.entryCount }
                 val totalSize = sources.filter { it.enabled }.sumOf { it.sizeBytes }
-                val unhealthy = sources.count { it.health == SourceHealth.ERROR || it.health == SourceHealth.DEAD }
+                val unhealthy = sources.count { it.hasActiveHealthFailure() }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -522,12 +524,14 @@ private fun SourceItem(
                             )
                         }
                     }
-                    val healthBadge = when (source.health) {
-                        SourceHealth.ERROR -> "ERROR" to Red
-                        SourceHealth.DEAD -> "DEAD" to Red
-                        SourceHealth.STALE -> "STALE" to Yellow
-                        else -> null
-                    }
+                    val healthBadge = if (source.hasActiveHealthWarning()) {
+                        when (source.health) {
+                            SourceHealth.ERROR -> "ERROR" to Red
+                            SourceHealth.DEAD -> "DEAD" to Red
+                            SourceHealth.STALE -> "STALE" to Yellow
+                            SourceHealth.UNKNOWN, SourceHealth.OK -> null
+                        }
+                    } else null
                     healthBadge?.let { (text, color) ->
                         Spacer(Modifier.width(6.dp))
                         Box(
@@ -601,7 +605,7 @@ private fun SourceItem(
                         }
                     }
                 }
-                if (source.health == SourceHealth.ERROR || source.health == SourceHealth.DEAD) {
+                if (source.hasActiveHealthFailure()) {
                     Spacer(Modifier.height(7.dp))
                     Row(verticalAlignment = Alignment.Top) {
                         Icon(
