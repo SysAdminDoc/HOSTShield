@@ -45,7 +45,7 @@ class SyncPreferences @Inject constructor(
     suspend fun setAutoUpdate(enabled: Boolean) = ds.edit { it[Keys.AUTO_UPDATE] = enabled }
 
     val updateIntervalHours: Flow<Int> = ds.data.map { it[Keys.UPDATE_INTERVAL_HOURS] ?: 24 }
-    suspend fun setUpdateIntervalHours(hours: Int) = ds.edit { it[Keys.UPDATE_INTERVAL_HOURS] = hours }
+    suspend fun setUpdateIntervalHours(hours: Int) = ds.edit { it[Keys.UPDATE_INTERVAL_HOURS] = hours.coerceIn(1, 24 * 30) }
 
     val wifiOnly: Flow<Boolean> = ds.data.map { it[Keys.WIFI_ONLY] ?: true }
     suspend fun setWifiOnly(wifiOnly: Boolean) = ds.edit { it[Keys.WIFI_ONLY] = wifiOnly }
@@ -55,7 +55,7 @@ class SyncPreferences @Inject constructor(
     suspend fun setAutoBackupEnabled(enabled: Boolean) = ds.edit { it[Keys.AUTO_BACKUP_ENABLED] = enabled }
 
     val autoBackupIntervalDays: Flow<Int> = ds.data.map { it[Keys.AUTO_BACKUP_INTERVAL_DAYS] ?: 7 }
-    suspend fun setAutoBackupIntervalDays(days: Int) = ds.edit { it[Keys.AUTO_BACKUP_INTERVAL_DAYS] = days }
+    suspend fun setAutoBackupIntervalDays(days: Int) = ds.edit { it[Keys.AUTO_BACKUP_INTERVAL_DAYS] = days.coerceIn(1, 365) }
 
     /**
      * Migrate plaintext WebDAV password from DataStore into SecureStore.

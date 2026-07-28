@@ -17,6 +17,11 @@
     <device-transfer>
         <include domain="sharedpref" path="." />
         <include domain="database" path="." />
+        <!-- App settings live in Preferences DataStore (domain "file"). Once any
+             include is present only listed files transfer, so this must be
+             included explicitly or every preference resets to default after a
+             device transfer. -->
+        <include domain="file" path="datastore/hostshield_prefs.preferences_pb" />
         <exclude domain="sharedpref" path="hostshield_secure_prefs.xml" />
         <exclude domain="sharedpref" path="hostshield_secure_prefs" />
         <exclude domain="sharedpref" path="hostshield_secure_store_v2.xml" />

@@ -512,43 +512,12 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: S-M
 
-- [ ] P2 — Restored profile `source_ids` reference dead/foreign row IDs — active profile can silently disable all block sources after restore
+- [ ] P3 — Backup does not round-trip the `app_dns_rules` table (per-app DNS rules)
   Category: correctness
-  Where: `util/BackupRestoreUtil.kt:159` (export), `:358` (restore verbatim); consumed at `service/BlocklistSourceCoordinator.kt:56-63`
-  Problem: `source_ids` is a CSV of `host_sources` autoincrement IDs. Export writes raw IDs; restore inserts them verbatim, but restored/seeded sources get fresh IDs on the target device. Since v6.9.60 made profiles apply `source_ids`, a restored active profile filters `getEnabledBlockSources()` by IDs that match nothing (→ zero block sources; protection blocks only user rules) or the wrong sources. The coordinator has no fallback when the filter yields empty.
-  Evidence: Restore inserts `HostSource` without preserving IDs (BackupRestoreUtil.kt:300-309) and profiles with unmapped IDs (line 358). Not covered by the logged "backup schema v2" item (that's about missing preferences).
-  Fix: Export profile source references by URL (stable key); on restore remap URL→new ID. Alternatively, in the coordinator treat "explicit set matches zero sources" as "all enabled" with a diagnostic event.
-  Acceptance: Backup on device A (profile bound to 2 sources), restore on fresh install of device B → the active profile applies the same 2 sources; snapshot non-empty.
-  Confidence: Verified
-  Effort: M
-
-- [ ] P2 — `restoreBackup` is non-transactional — a malformed backup leaves half-applied DB + preference state
-  Category: reliability
-  Where: `util/BackupRestoreUtil.kt:281-499` (`restoreBackup`), caller `SettingsViewModel.kt:854-890`
-  Problem: Restore runs dozens of independent DAO inserts and `prefs.set*` calls with no Room transaction and no rollback. Any `JSONException` mid-stream (e.g. a non-object element in `rules`, a wrong-typed `getJSONArray`) aborts after sources are already inserted; the UI reports "Backup restore failed" but the DB is permanently mutated, and retries compound partial state.
-  Evidence: No `withTransaction`/`@Transaction` in the restore path; exceptions bubble to the generic catch at SettingsViewModel.kt:883; each JSON accessor throws on type mismatch.
-  Fix: Parse+validate the whole JSON into in-memory entities first, then apply DB writes inside `RoomDatabase.withTransaction`; apply preferences last.
-  Acceptance: Restoring a backup with a corrupt `rules` array leaves the DB byte-identical to pre-restore and shows the failure message.
-  Confidence: Verified
-  Effort: M
-
-- [ ] P2 — Device-transfer rules omit the DataStore file — all settings silently lost on device-to-device transfer
-  Category: correctness
-  Where: `app/app/src/main/res/xml/data_extraction_rules.xml:17-24`
-  Problem: `<device-transfer>` includes only `domain="sharedpref"` and `domain="database"`. Once any `<include>` is present, only included files transfer. All settings live in Preferences DataStore at `files/datastore/hostshield_prefs.preferences_pb` (domain `file`), which is not included — contradicting the file's own comment ("include DataStore prefs, Room DB"). After transfer the Room DB arrives but every preference (block method, enabled state, DoH/DoT config, firewall mode, schedules, theme) resets to defaults.
-  Evidence: No `<include domain="file" .../>` exists; all six preference managers share `hostshield_prefs`. CHANGELOG only records the v6.5.0 secure-prefs exclusion.
-  Fix: Add `<include domain="file" path="datastore/hostshield_prefs.preferences_pb" />` and keep the secure-store exclusions.
-  Acceptance: On a device-transfer (or `bmgr`-simulated) restore, block method/enabled flags/DoH settings survive alongside the DB.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P2 — Backup omits entity data (profiles.wifi_ssids, firewall context columns, entire app_dns_rules table) and firewall restore REPLACE wipes existing context settings
-  Category: correctness
-  Where: `util/BackupRestoreUtil.kt:155-163` (profiles export), `:168-182` (firewall export), `:377-387` (firewall restore); `data/database/Daos.kt:506-507` (`@Insert(onConflict = REPLACE)` on unique `uid`)
-  Problem: Profile export drops `wifi_ssids` (network-aware auto-activation lost); firewall export drops `block_screen_off`/`block_background`/`block_metered`/`blocked_countries`/`lan_allowed`; `app_dns_rules` (per-app DNS rules) are not backed up at all. Worse, firewall restore uses REPLACE against the unique `uid` index, so restoring onto an existing device deletes the current row and re-inserts one with default context values — destroying locally-configured context settings. The logged "backup schema v2" item covers missing preferences only, not this entity-column loss and REPLACE clobber.
-  Evidence: Export JSON at the cited lines lists only 8 firewall / 6 profile fields; restore constructs `FirewallRule(...)` with entity defaults for context columns.
-  Fix: Include the missing columns/table in the schema; on restore merge into existing rows (fetch by uid, copy known fields) instead of blind REPLACE.
-  Acceptance: Round-trip preserves wifi_ssids, all five firewall context columns, and app DNS rules; restoring over an existing rule set does not reset context toggles.
+  Where: `util/BackupRestoreUtil.kt` (`createBackup`/`restoreBackup`); `data/database/Daos.kt` AppDnsRuleDao
+  Problem: profiles.wifi_ssids and the firewall context columns now round-trip and the firewall REPLACE clobber is fixed, but per-app DNS rules (`app_dns_rules`) are still neither exported nor restored, so app-scoped DNS allow/block rules are lost on restore.
+  Fix: Add an `app_dns_rules` array to `createBackup` and a matching restore loop (inject AppDnsRuleDao), inside the existing restore transaction.
+  Acceptance: Round-trip backup/restore preserves per-app DNS rules.
   Confidence: Verified
   Effort: M
 
@@ -684,26 +653,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: M
 
-- [ ] P3 — Restore can produce multiple `is_active=1` profiles — `getActiveProfile()` becomes nondeterministic
-  Category: correctness
-  Where: `util/BackupRestoreUtil.kt:357`; `data/database/Daos.kt:435-436` (`WHERE is_active=1 LIMIT 1`, no ORDER BY)
-  Problem: Restore honors the backup's `is_active` without deactivating existing profiles. If the local DB already has an active profile and the backup has a differently-named active one, both carry `is_active=1`; which wins is undefined and (with the source_ids finding) decides which blocklists apply.
-  Evidence: Name-dedup (line 354) only skips same-name collisions; no `deactivateAll()` in the restore path.
-  Fix: During restore, if a restored profile is active, run `profileDao.deactivateAll()` first (or force restored profiles inactive).
-  Acceptance: After restoring a backup with an active profile onto a device that already had one, exactly one row has `is_active=1`.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — No DataStore corruption handler — a corrupted preferences_pb crash-loops every preference consumer
-  Category: reliability
-  Where: `data/preferences/HostShieldDataStore.kt:14` (`preferencesDataStore(name = "hostshield_prefs")`, no `corruptionHandler`)
-  Problem: If the protobuf is corrupted (interrupted write, storage fault), `ds.data` throws `CorruptionException` on every collection; all six managers, workers, and ViewModels collect it — the app crash-loops until the user clears app data (losing everything).
-  Evidence: Grep for `ReplaceFileCorruptionHandler|corruptionHandler` → zero matches.
-  Fix: `preferencesDataStore(name=..., corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() })` plus a diagnostic event.
-  Acceptance: A deliberately truncated preferences_pb opens as empty preferences instead of crashing.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P3 — SecureStore fails open on Keystore loss — parental PIN gate silently evaporates
   Category: security
   Where: `data/preferences/SecureStore.kt:38-46` (`getString` → `getOrDefault(default)`); `service/ParentalControlManager.kt:176-177,221`
@@ -713,16 +662,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Acceptance: With a broken master key and parental controls enabled, PIN-gated screens show a lock/recovery state, not open access.
   Confidence: Verified (code path; trigger is environmental)
   Effort: M
-
-- [ ] P3 — Restored numeric preferences are unclamped — `log_retention_days <= 0` makes LogCleanupWorker continuously delete all DNS logs
-  Category: correctness
-  Where: `util/BackupRestoreUtil.kt:411,414,484`; `data/preferences/DnsPreferences.kt:89`; `service/LogCleanupWorker.kt:65-66`
-  Problem: Restore writes `update_interval`/`log_retention_days`/`auto_backup_interval_days` from backup JSON with no range validation, and the setters don't clamp. A corrupt/hand-edited backup with `"log_retention_days": 0` yields `dnsCutoff >= now`, so the 6-hourly worker wipes the entire dns_logs table every run with a "cleanup complete" notification — Stats/Logs permanently empty, unrepresentable in the fixed-step Settings UI.
-  Evidence: `setLogRetentionDays(days)` stores raw; worker computes `now - retentionDays*86_400_000` with no floor.
-  Fix: Clamp in the setters (`coerceIn(1,365)` etc.) — validating at the storage boundary also covers future callers.
-  Acceptance: Restoring retention 0 stores >=1 day; only logs older than the clamped window are removed.
-  Confidence: Verified
-  Effort: S
 
 - [ ] P3 — Read-modify-write toggles against stale `stateIn` values can drop rapid changes (ContentFilter categories, AppExclusions, Firewall DNS blocks)
   Category: correctness

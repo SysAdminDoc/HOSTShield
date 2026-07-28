@@ -86,7 +86,10 @@ class DnsPreferences @Inject constructor(
     suspend fun setDnsLogging(enabled: Boolean) = ds.edit { it[Keys.DNS_LOGGING] = enabled }
 
     val logRetentionDays: Flow<Int> = ds.data.map { it[Keys.LOG_RETENTION_DAYS] ?: 7 }
-    suspend fun setLogRetentionDays(days: Int) = ds.edit { it[Keys.LOG_RETENTION_DAYS] = days }
+    // Clamp at the storage boundary: a restored/hand-edited 0 or negative value
+    // makes LogCleanupWorker's cutoff >= now and wipes the entire log table on
+    // every run.
+    suspend fun setLogRetentionDays(days: Int) = ds.edit { it[Keys.LOG_RETENTION_DAYS] = days.coerceIn(1, 365) }
 
     // DNS-only mode
     val dnsOnlyMode: Flow<Boolean> = ds.data.map { it[Keys.DNS_ONLY_MODE] ?: false }

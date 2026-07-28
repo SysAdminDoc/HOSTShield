@@ -167,6 +167,7 @@ class BackupRestoreUtilConnectedTest {
 
     private fun backupUtil(db: HostShieldDatabase): BackupRestoreUtil =
         BackupRestoreUtil(
+            db,
             db.hostSourceDao(),
             db.userRuleDao(),
             db.profileDao(),

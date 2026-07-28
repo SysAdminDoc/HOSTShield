@@ -68,8 +68,17 @@ class BlocklistSourceCoordinator @Inject constructor(
             ?.mapNotNull { it.trim().toLongOrNull() }
             ?.toSet()
             ?.takeIf { it.isNotEmpty() }
-        val blockSources = repository.getEnabledBlockSources()
-            .let { list -> if (profileSourceIds != null) list.filter { it.id in profileSourceIds } else list }
+        val allEnabledBlockSources = repository.getEnabledBlockSources()
+        val blockSources = if (profileSourceIds != null) {
+            allEnabledBlockSources.filter { it.id in profileSourceIds }
+                // A restored/stale profile can reference source row IDs that no
+                // longer exist (IDs are device-local). If the explicit set matches
+                // nothing, fall back to all enabled block sources rather than
+                // silently disabling every blocklist.
+                .ifEmpty { allEnabledBlockSources }
+        } else {
+            allEnabledBlockSources
+        }
         // Allowlist sources are always applied: they only subtract from the
         // blocklist, so narrowing a profile must never accidentally re-block a
         // domain the user allowlisted.

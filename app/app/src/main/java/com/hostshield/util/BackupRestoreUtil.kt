@@ -2,6 +2,7 @@ package com.hostshield.util
 
 import android.content.Context
 import android.net.Uri
+import androidx.room.withTransaction
 import com.hostshield.data.database.*
 import com.hostshield.data.model.*
 import com.hostshield.data.preferences.AppPreferences
@@ -29,6 +30,7 @@ data class BackupResult(
 
 @Singleton
 class BackupRestoreUtil @Inject constructor(
+    private val database: com.hostshield.data.database.HostShieldDatabase,
     private val hostSourceDao: HostSourceDao,
     private val userRuleDao: UserRuleDao,
     private val profileDao: ProfileDao,
@@ -160,6 +162,7 @@ class BackupRestoreUtil @Inject constructor(
                 put("schedule_start", profile.scheduleStart)
                 put("schedule_end", profile.scheduleEnd)
                 put("days_of_week", profile.daysOfWeek)
+                put("wifi_ssids", profile.wifiSsids)
             })
         }
         root.put("profiles", profilesArr)
@@ -177,6 +180,11 @@ class BackupRestoreUtil @Inject constructor(
                 put("vpn_allowed", fw.vpnAllowed)
                 put("is_system", fw.isSystem)
                 put("enabled", fw.enabled)
+                put("block_screen_off", fw.blockScreenOff)
+                put("block_background", fw.blockBackground)
+                put("block_metered", fw.blockMetered)
+                put("blocked_countries", fw.blockedCountries)
+                put("lan_allowed", fw.lanAllowed)
             })
         }
         root.put("firewall_rules", fwArr)
@@ -279,11 +287,16 @@ class BackupRestoreUtil @Inject constructor(
      * Restore from a backup JSON string.
      */
     suspend fun restoreBackup(json: String): BackupResult = withContext(Dispatchers.IO) {
+        // Parse the whole document up front so a JSON error aborts before any
+        // write, and run every entity insert inside a single Room transaction so
+        // a mid-restore failure rolls back rather than leaving half-applied state.
         val root = JSONObject(json)
         var sourcesCount = 0
         var rulesCount = 0
         var profilesCount = 0
+        var firewallRulesCount = 0
 
+        database.withTransaction {
         // Restore sources — dedupe by URL: host_sources has no unique index on
         // url, so blind inserts would duplicate seeded/built-in sources on every
         // restore (each duplicate then downloads twice per rebuild).
@@ -347,25 +360,39 @@ class BackupRestoreUtil @Inject constructor(
         val existingProfileNames = profileDao.getAllProfilesList().map { it.name }.toMutableSet()
         if (root.has("profiles")) {
             val arr = root.getJSONArray("profiles")
+            // If the backup activates a profile, clear existing active flags first
+            // so exactly one profile ends up active after restore.
+            val backupActivates = (0 until arr.length()).any {
+                arr.getJSONObject(it).optBoolean("is_active", false)
+            }
+            if (backupActivates) profileDao.deactivateAll()
+            var activeAssigned = false
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
                 val name = boundedText(obj.optString("name", ""), 80)
                 if (name.isBlank()) continue
                 if (!existingProfileNames.add(name)) continue
+                // Only the first active profile in the backup keeps the flag.
+                val wantsActive = obj.optBoolean("is_active", false) && !activeAssigned
+                if (wantsActive) activeAssigned = true
                 profileDao.insert(BlockingProfile(
                     name = name,
-                    isActive = obj.optBoolean("is_active", false),
+                    isActive = wantsActive,
                     sourceIds = boundedText(obj.optString("source_ids", ""), 500),
                     scheduleStart = boundedText(obj.optString("schedule_start", ""), 16),
                     scheduleEnd = boundedText(obj.optString("schedule_end", ""), 16),
-                    daysOfWeek = boundedText(obj.optString("days_of_week", "0,1,2,3,4,5,6"), 32)
+                    daysOfWeek = boundedText(obj.optString("days_of_week", "0,1,2,3,4,5,6"), 32),
+                    wifiSsids = boundedText(obj.optString("wifi_ssids", ""), 500)
                 ))
                 profilesCount++
             }
         }
 
-        // Restore firewall rules
-        var firewallRulesCount = 0
+        // Restore firewall rules. The unique uid index means a plain REPLACE
+        // insert would delete an existing row and drop its context columns
+        // (screen-off/background/metered/countries/LAN), so merge onto the
+        // existing row when present and round-trip the context columns from the
+        // backup.
         if (root.has("firewall_rules")) {
             val arr = root.getJSONArray("firewall_rules")
             for (i in 0 until arr.length()) {
@@ -374,6 +401,7 @@ class BackupRestoreUtil @Inject constructor(
                 val packageName = normalizePackageName(obj.optString("package_name", ""))
                     ?: continue
                 if (uid < 0) continue
+                val existing = firewallRuleDao.getByUid(uid)
                 firewallRuleDao.insert(FirewallRule(
                     uid = uid,
                     packageName = packageName,
@@ -382,11 +410,17 @@ class BackupRestoreUtil @Inject constructor(
                     mobileAllowed = obj.optBoolean("mobile_allowed", true),
                     vpnAllowed = obj.optBoolean("vpn_allowed", true),
                     isSystem = obj.optBoolean("is_system", false),
-                    enabled = obj.optBoolean("enabled", true)
+                    enabled = obj.optBoolean("enabled", true),
+                    blockScreenOff = obj.optBoolean("block_screen_off", existing?.blockScreenOff ?: false),
+                    blockBackground = obj.optBoolean("block_background", existing?.blockBackground ?: false),
+                    blockMetered = obj.optBoolean("block_metered", existing?.blockMetered ?: false),
+                    blockedCountries = boundedText(obj.optString("blocked_countries", existing?.blockedCountries ?: ""), 500),
+                    lanAllowed = obj.optBoolean("lan_allowed", existing?.lanAllowed ?: true)
                 ))
                 firewallRulesCount++
             }
         }
+        } // end database.withTransaction
 
         // Restore preferences
         if (root.has("preferences")) {

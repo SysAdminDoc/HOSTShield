@@ -5,6 +5,23 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Fixed (backup & data safety)
+- Backup restore now runs inside a single database transaction, so a malformed
+  backup rolls back instead of leaving half-applied state.
+- Restoring a backup with an active profile now yields exactly one active
+  profile, and a restored profile whose source set no longer matches any source
+  falls back to all enabled sources instead of silently disabling all blocking.
+- Backups now round-trip Wi-Fi-SSID profile activation and the firewall context
+  columns (screen-off/background/metered/countries/LAN), and restoring firewall
+  rules merges onto existing rows instead of wiping their context settings.
+- Device-to-device transfer now includes the settings DataStore, so preferences
+  survive a transfer alongside the database.
+- The preferences store now recovers from corruption by resetting to defaults
+  instead of crash-looping the app.
+- Log-retention, update-interval, and auto-backup-interval values are clamped to
+  safe ranges, so a corrupt backup can no longer set retention to 0 and wipe all
+  DNS logs on the next cleanup.
+
 ### Fixed (UI)
 - The DNS log "Allow" action now gives instant, persistent feedback: an allowed
   row flips to unblocked even when it was blocked by a source list, and the
