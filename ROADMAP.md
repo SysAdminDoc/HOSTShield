@@ -514,16 +514,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
 
 ### P3
 
-- [ ] P3 — "REGEX:" sentinel prefix in the rule comment field flips user comments into regex rules
-  Category: correctness
-  Where: `lists/RulesScreen.kt:173-176` (onAdd unwrap `isRegex = comment.startsWith("REGEX:")`) and `:374` (AddRuleDialog packs `"REGEX:$comment"`)
-  Problem: The isRegex flag is smuggled through the comment string. A normal rule whose comment legitimately starts with "REGEX:" (e.g. "REGEX: migrate later") is silently converted to a regex rule (hostname reinterpreted as a pattern) and the comment mangled.
-  Evidence: `onAdd(..., if (isRegex) "REGEX:$comment" else comment)` → `val isRegex = comment.startsWith("REGEX:")`; the boolean never travels as a boolean.
-  Fix: Add `isRegex: Boolean` to `AddRuleDialog`'s onAdd signature (private composable, one-line change) and delete the prefix protocol.
-  Acceptance: A block rule with comment "REGEX: todo" stays non-regex with the comment intact.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P3 — Dynamic-color mode collapses semantic colors — "Allowed"/"All" chips and ADS/ALLOWLIST accents become identical to primary
   Category: visual
   Where: `theme/Theme.kt:264-287` `paletteFromDynamicScheme` (teal=`scheme.primary`, green=`scheme.primary`, yellow/peach both `scheme.tertiary`)
@@ -604,16 +594,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Confidence: Verified
   Effort: S
 
-- [ ] P3 — ConnectionLog "today" metric is computed from the 500-row capped list, undercounting busy devices
-  Category: correctness
-  Where: `ConnectionLogScreen.kt:84-93` (today tile counts within `logs`); `ConnectionLogViewModel.kt:22` (`getRecentLogs(500)`)
-  Problem: The "today" tile counts 24h entries inside the 500-most-recent window, so a device with >500 firewall blocks/day caps at 500 while the adjacent "total blocked" tile is an accurate DAO aggregate — inconsistent numbers side by side.
-  Evidence: `logs.count { it.timestamp > now - 86_400_000 }` over the capped flow.
-  Fix: Add a `ConnectionLogDao` count query with a `since` bound (the DAO already has `getTopBlockedApps(since=…)`) exposed as a StateFlow.
-  Acceptance: "today" exceeds 500 on a busy day and matches a direct DB count.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P3 — DnsBenchmark accepts any UDP payload as a valid answer and cannot be cancelled from the UI
   Category: correctness
   Where: `util/DnsBenchmark.kt:131-152` (`measureDnsQuery`); `DnsBenchmarkScreen.kt` (no cancel affordance)
@@ -633,16 +613,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Acceptance: Remote cache contains `dns.newprovider.com`; a source allowlist with the same domain → `decide()` still returns blocked/`doh_bypass`; a user allow still wins.
   Confidence: Verified
   Effort: M
-
-- [ ] P3 — Spamhaus DROP parser accepts malformed CIDR tokens; radix-trie maps bad octets onto the 0.0.0.0 bit path
-  Category: correctness
-  Where: `service/ThreatIntelManager.kt` — `parseSpamhausDrop()` 382-394 (only checks `contains("/")` + 4 dot-segments); `IpRadixTrie.insert`/`ipToInt` 140-177
-  Problem: Unlike the Emerging Threats path (validated via `normalizeThreatIpToken`, octets 0-255/prefix 8-32), Spamhaus tokens are added unvalidated. `ipToInt` returns 0 for out-of-range/non-numeric octets, so `999.1.2.3/24` inserts along the all-zero bit path — after which `lookup` can flag real queries in `0.0.0.0/24`-style ranges (the `ip==0` guard covers only exactly 0.0.0.0). The junk also persists into the cache and carried-forward CIDRs.
-  Evidence: Both parsers traced; `ThreatIntelParsersTest.kt` covers the ET tokenizer, not Spamhaus malformed lines. Trigger requires upstream (HTTPS) format corruption — low likelihood, hence P3.
-  Fix: Run Spamhaus tokens through `normalizeThreatIpToken` before adding; make `IpRadixTrie.insert` reject tokens whose IP fails to parse instead of treating them as 0.
-  Acceptance: `parseSpamhausDrop("999.1.2.3/24 ; SBL1")` yields no CIDRs; `lookup("0.0.0.77")` stays null after such input.
-  Confidence: Verified
-  Effort: S
 
 - [ ] P3 — `AdblockRuleParser.parseLine` does no domain-shape validation — URL/port/inline-wildcard patterns become inert junk rules
   Category: correctness
@@ -683,26 +653,6 @@ Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebu
   Acceptance: Two concurrent `rebuildBlocklistHolder()` calls produce exactly one `downloader.download` per source.
   Confidence: Verified
   Effort: S-M
-
-- [ ] P3 — `dnsAnswerCache` (heuristic UID correlation) can grow unbounded under a DNS burst
-  Category: reliability
-  Where: `service/DnsVpnService.kt` — `cacheDnsAnswerIps()` 2278-2281; field at line 312 (TTL 30s)
-  Problem: Eviction is `if (size > 500) removeAll { now - it.value.second > TTL }` — only TTL-expired entries. A burst resolving >500 distinct IPs within any 30s window (CDN fan-out, a scanning app) deletes nothing and the map grows with no hard cap.
-  Evidence: `ConcurrentHashMap` populated once per resolved IP; only the TTL-conditional trim exists (no LRU/size-cap fallback).
-  Fix: After the TTL purge, if size still exceeds a hard cap (e.g. 2000), drop the oldest by timestamp (as `RootDnsLogger.pruneAttributionMaps` does).
-  Acceptance: Inserting >cap distinct fresh IPs leaves `dnsAnswerCache.size <= cap`.
-  Confidence: Verified
-  Effort: S
-
-- [ ] P3 — GeoIpLookup cache eviction is not oldest-first (arbitrary key dropped)
-  Category: perf
-  Where: `util/GeoIpLookup.kt:128-132` (`cache.keys.firstOrNull()` on a `ConcurrentHashMap`)
-  Problem: At MAX_CACHE_SIZE (4096), eviction picks `cache.keys.firstOrNull()`. ConcurrentHashMap has no insertion/access ordering, so the evicted entry is effectively random; under load this thrashes frequently-viewed IPs out while cold entries survive, adding rate-limited network round-trips.
-  Evidence: `cache` is `ConcurrentHashMap<String, GeoInfo>`; eviction relies on unspecified key iteration order.
-  Fix: Track recency (bounded LinkedHashMap under a lock, or store timestamps in GeoInfo and evict by min timestamp like RootDnsLogger).
-  Acceptance: Eviction removes by a defined recency policy; hot IPs are retained under load.
-  Confidence: Verified
-  Effort: S
 
 - [ ] P3 — WebDavSync.buildUrl form-decodes remote paths (`+`→space) and never re-encodes — encoded/special-char filenames break
   Category: correctness

@@ -46,6 +46,7 @@ fun ConnectionLogScreen(
 ) {
     val logs by viewModel.recentLogs.collectAsStateWithLifecycle()
     val blockedCount by viewModel.blockedCount.collectAsStateWithLifecycle()
+    val blockedTodayCount by viewModel.blockedTodayCount.collectAsStateWithLifecycle()
     val topApps by viewModel.topBlockedApps.collectAsStateWithLifecycle()
     val isReading by viewModel.isReading.collectAsStateWithLifecycle()
     val liveCount by viewModel.liveCount.collectAsStateWithLifecycle()
@@ -82,11 +83,7 @@ fun ConnectionLogScreen(
                 modifier = Modifier.weight(1f),
             )
             HostShieldMetricTile(
-                value = formatCompactCount(
-                    logs.count {
-                    it.timestamp > System.currentTimeMillis() - 86_400_000L
-                    }
-                ),
+                value = formatCompactCount(blockedTodayCount),
                 label = "today",
                 accent = Teal,
                 modifier = Modifier.weight(1f),

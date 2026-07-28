@@ -31,6 +31,17 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - The hosts editor switches to a responsive read-only preview for very large
   hosts files instead of freezing in a single multi-megabyte text field.
 
+### Fixed (correctness & robustness)
+- The Spamhaus threat-intel parser now validates CIDR tokens (octets 0-255,
+  prefix 8-32) so a malformed feed line can't flag benign IP ranges.
+- The GeoIP cache evicts the genuinely least-recently-used entry, and the
+  DNS-answer attribution cache is hard-capped so a high-cardinality burst can't
+  grow it without bound.
+- The connection log "today" tile counts from the database rather than the
+  capped recent-logs window, so it stays accurate on busy devices.
+- Adding a rule no longer misinterprets a user comment that begins with
+  "REGEX:" as a regex rule (the flag is passed explicitly).
+
 ### Fixed (blocklist accuracy)
 - Adblock rules embedded in a hosts-majority source file no longer collapse into
   incorrect exact blocks: a `$dnstype`/`$dnsrewrite` line is no longer globalized

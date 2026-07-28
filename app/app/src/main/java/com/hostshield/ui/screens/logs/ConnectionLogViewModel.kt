@@ -24,6 +24,12 @@ class ConnectionLogViewModel @Inject constructor(
     val blockedCount: StateFlow<Int> = connectionLogDao.getTotalBlockedCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    // Accurate 24-hour count straight from the DAO, not derived from the
+    // 500-row recent-logs window (which capped the "today" tile on busy devices).
+    val blockedTodayCount: StateFlow<Int> =
+        connectionLogDao.getBlockedCountSince(System.currentTimeMillis() - 86_400_000L)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     val topBlockedApps: StateFlow<List<FirewallTopApp>> =
         connectionLogDao.getTopBlockedApps(
             since = System.currentTimeMillis() - 86_400_000L,

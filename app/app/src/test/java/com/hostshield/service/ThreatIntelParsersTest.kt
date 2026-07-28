@@ -52,6 +52,15 @@ class ThreatIntelParsersTest {
     }
 
     @Test
+    fun `threat ip token normalizer rejects malformed Spamhaus-shaped tokens`() {
+        // The Spamhaus DROP parser now validates every token through this helper,
+        // so an out-of-range octet cannot be mapped onto the 0.0.0.0 bit path.
+        assertEquals(null, normalizeThreatIpToken("999.1.2.3/24"))
+        assertEquals(null, normalizeThreatIpToken("1.2.3/24"))
+        assertEquals("1.10.16.0/20", normalizeThreatIpToken("1.10.16.0/20"))
+    }
+
+    @Test
     fun `domain normalizer rejects URLs wildcards whitespace and malformed labels`() {
         assertEquals("malware.example.com", normalizeThreatDomainToken(" Malware.Example.Com. "))
         assertEquals(null, normalizeThreatDomainToken("https://malware.example.com"))

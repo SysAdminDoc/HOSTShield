@@ -311,6 +311,7 @@ class DnsVpnService : VpnService() {
     // Key: IP address string, Value: (hostname, timestamp_ms)
     private val dnsAnswerCache = java.util.concurrent.ConcurrentHashMap<String, Pair<String, Long>>()
     private val DNS_ANSWER_CACHE_TTL_MS = 30_000L  // 30s — enough for TCP connect after DNS
+    private val DNS_ANSWER_CACHE_MAX = 2000  // hard cap; bounds high-cardinality bursts
 
     // Network change debounce — prevents infinite VPN restart loop.
     // When VPN establishes, Android fires onAvailable() for the VPN's own
@@ -2291,9 +2292,19 @@ class DnsVpnService : VpnService() {
                 off += rdLen
             }
 
-            // Periodic eviction (every 100 cache inserts, remove stale entries)
+            // Periodic eviction: first drop stale entries, then enforce a hard
+            // size cap by oldest timestamp so a high-cardinality burst (many
+            // distinct fresh IPs within the TTL window) can't grow the map
+            // without bound when nothing is stale enough to purge.
             if (cached > 0 && dnsAnswerCache.size > 500) {
                 dnsAnswerCache.entries.removeAll { now - it.value.second > DNS_ANSWER_CACHE_TTL_MS }
+                if (dnsAnswerCache.size > DNS_ANSWER_CACHE_MAX) {
+                    val excess = dnsAnswerCache.size - DNS_ANSWER_CACHE_MAX
+                    dnsAnswerCache.entries
+                        .sortedBy { it.value.second }
+                        .take(excess)
+                        .forEach { dnsAnswerCache.remove(it.key) }
+                }
             }
         } catch (_: Exception) { }
     }

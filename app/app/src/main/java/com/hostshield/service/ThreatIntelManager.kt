@@ -29,7 +29,7 @@ internal fun parseThreatIpCidrs(body: String, source: String): List<Pair<String,
     return cidrs.toList()
 }
 
-private fun normalizeThreatIpToken(token: String): String? {
+internal fun normalizeThreatIpToken(token: String): String? {
     val parts = token.split("/", limit = 2)
     val octets = parts[0].split(".").map { it.toIntOrNull() ?: return null }
     if (octets.size != 4 || octets.any { it !in 0..255 }) return null
@@ -384,11 +384,12 @@ class ThreatIntelManager @Inject constructor(
         for (line in body.lineSequence()) {
             val trimmed = line.trim()
             if (trimmed.isEmpty() || trimmed.startsWith(";")) continue
-            // Format: "1.10.16.0/20 ; SBxxx"
+            // Format: "1.10.16.0/20 ; SBxxx". Validate octets (0-255) and prefix
+            // (8-32) like the Emerging Threats path so a malformed token can't be
+            // mapped onto the 0.0.0.0 bit path in the radix trie and flag benign
+            // ranges.
             val cidr = trimmed.split(";", " ").first().trim()
-            if (cidr.contains("/") && cidr.split(".").size == 4) {
-                cidrs.add(cidr to source)
-            }
+            normalizeThreatIpToken(cidr)?.let { cidrs.add(it to source) }
         }
         return ParseResult(cidrs = cidrs)
     }

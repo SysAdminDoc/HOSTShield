@@ -7,7 +7,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
@@ -40,8 +39,16 @@ class GeoIpLookup @Inject constructor() {
         val flag: String = "" // emoji flag
     )
 
-    private val cache = ConcurrentHashMap<String, GeoInfo>(128)
     private val MAX_CACHE_SIZE = 4096
+
+    // Access-ordered LRU: eviction removes the genuinely least-recently-used
+    // entry. A plain ConcurrentHashMap has no ordering, so `keys.first()` evicted
+    // an arbitrary entry and could thrash hot IPs out under load. Guarded by its
+    // own monitor since LinkedHashMap is not thread-safe.
+    private val cache = object : LinkedHashMap<String, GeoInfo>(128, 0.75f, true) {
+        override fun removeEldestEntry(eldest: Map.Entry<String, GeoInfo>): Boolean =
+            size > MAX_CACHE_SIZE
+    }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(3, TimeUnit.SECONDS)
@@ -86,7 +93,7 @@ class GeoIpLookup @Inject constructor() {
             return GeoInfo(ip = ip, country = "Local", countryCode = "LO", isp = "Private network")
         }
 
-        cache[ip]?.let { return it }
+        synchronized(cache) { cache[ip] }?.let { return it }
 
         if (!canMakeRequest()) return null
 
@@ -125,11 +132,7 @@ class GeoIpLookup @Inject constructor() {
                     asn = json.optString("asn", ""),
                     flag = countryCodeToFlag(countryCode)
                 )
-                if (cache.size >= MAX_CACHE_SIZE) {
-                    val oldest = cache.keys.firstOrNull()
-                    if (oldest != null) cache.remove(oldest)
-                }
-                cache[ip] = info
+                synchronized(cache) { cache[ip] = info } // removeEldestEntry evicts the LRU
                 info
             } catch (e: Exception) {
                 PrivacyLog.d(TAG, "GeoIP lookup failed for $ip: ${e.message}")
@@ -144,7 +147,7 @@ class GeoIpLookup @Inject constructor() {
     }
 
     /** Cache size for diagnostics. */
-    fun cacheSize(): Int = cache.size
+    fun cacheSize(): Int = synchronized(cache) { cache.size }
 
     /** Whether rate limit backoff is currently active. */
     fun isBackingOff(): Boolean = System.currentTimeMillis() < backoffUntil.get()

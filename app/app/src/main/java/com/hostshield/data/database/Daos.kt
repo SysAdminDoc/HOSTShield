@@ -592,6 +592,9 @@ interface ConnectionLogDao {
 
     @Query("SELECT COUNT(*) FROM connection_log WHERE action = 'REJECT'")
     fun getTotalBlockedCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM connection_log WHERE action = 'REJECT' AND timestamp > :since")
+    fun getBlockedCountSince(since: Long): Flow<Int>
 }
 
 data class FirewallTopApp(

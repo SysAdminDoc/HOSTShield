@@ -170,10 +170,8 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
     if (showAddDialog) {
         AddRuleDialog(
             onDismiss = { showAddDialog = false },
-            onAdd = { host, type, redir, comment ->
-                val isRegex = comment.startsWith("REGEX:")
-                val cleanComment = if (isRegex) comment.removePrefix("REGEX:") else comment
-                viewModel.addRule(host, type, redir, cleanComment, isRegex)
+            onAdd = { host, type, redir, comment, isRegex ->
+                viewModel.addRule(host, type, redir, comment, isRegex)
                 showAddDialog = false
             }
         )
@@ -265,7 +263,7 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, String, String) -> Unit) {
+private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, String, String, Boolean) -> Unit) {
     var hostname by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(RuleType.BLOCK) }
     var redirectIp by remember { mutableStateOf("") }
@@ -371,7 +369,7 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
             TextButton(
                 onClick = {
                     if (canSubmit) {
-                        onAdd(hostname, type, redirectIp, if (isRegex) "REGEX:$comment" else comment)
+                        onAdd(hostname, type, redirectIp, comment, isRegex)
                     }
                 },
                 enabled = canSubmit,
