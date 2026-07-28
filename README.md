@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.63-blue)
+![Version](https://img.shields.io/badge/version-6.9.64-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -29,7 +29,7 @@
    uninstall it. v6.9.61 and later use a new APK certificate lineage, so Android cannot
    perform an in-place update over the older certificate. Uninstalling clears
    the previous app data.
-2. Download `HostShield-v6.9.63-full-release.apk` from
+2. Download `HostShield-v6.9.64-full-release.apk` from
    [Releases](https://github.com/SysAdminDoc/HostShield/releases).
 3. Install and launch — the onboarding wizard guides you through setup.
 4. Choose **VPN mode** (no root) or **Root mode** (better battery life), then
@@ -74,6 +74,44 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 **VPN Mode** (no root): Creates a local-only VPN tunnel. All DNS queries pass through HostShield's packet engine. No traffic leaves the device to any remote server.
 
 **Root Mode**: Redirects DNS via iptables NAT rules to a local proxy on `127.0.0.1:5454`. Zero battery overhead. Per-app firewall via iptables.
+
+---
+
+## Background & Support
+
+**The idea.** Good network-level ad, tracker, and malware blocking on Android has
+always meant choosing one tool and giving something up: AdAway needs root, DNS66
+is unmaintained, NetGuard is firewall-first, and RethinkDNS is VPN-only. HostShield
+started as an attempt to stop choosing — to put the strongest ideas from each of
+those projects behind one dual-mode engine (no-root VPN *and* rooted iptables),
+with encrypted DNS, a per-app firewall, and honest, local-only diagnostics in the
+same app.
+
+**The principles it's built on.** These are non-negotiable and shape every release:
+
+- **Local-first.** All DNS filtering happens on-device. There is no account, no
+  hosted resolver, and no analytics or crash-reporting SDK. The only outbound
+  requests are the ones you can see in the FAQ below (blocklist downloads,
+  encrypted DNS to your chosen provider, optional GeoIP, optional signed list
+  updates).
+- **Fail closed.** Encrypted DNS and other security-sensitive paths refuse to
+  silently fall back to plaintext when something goes wrong.
+- **Auditable.** GPL-3.0, open source, reproducible-leaning release provenance,
+  and no closed-source resolver or filter engine in the default build.
+
+**Who builds it.** HostShield is developed and maintained by
+[@SysAdminDoc](https://github.com/SysAdminDoc), an independent developer with a
+systems-administration background, not a company or a funded team. That means
+releases ship when they're ready and there is no roadmap driven by monetization —
+but it also means the project lives or dies on the maintainer's own continued use.
+
+**Will it be abandonware in six months?** The honest answer: it's an independent
+project, so no guarantee can be absolute. What can be said is concrete — the app
+is actively developed (see the [changelog](app/CHANGELOG.md) and the release
+cadence above), it's the maintainer's daily driver, and every release is
+open-source under GPL-3.0. If development ever stops, the code, build scripts, and
+signing story are all in this repository, so anyone can fork and keep it alive.
+Bug reports and feature requests are read and acted on — [open an issue](https://github.com/SysAdminDoc/HostShield/issues).
 
 ---
 

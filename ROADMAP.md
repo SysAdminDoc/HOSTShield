@@ -489,22 +489,15 @@ they need a device, a product decision, an external key, or an unreleased SDK.
 - [ ] Adblock `$denyallow` is still approximated as a global wildcard-allow (the
       cross-source exact-allow leak was removed in v6.9.59). Attach the exception
       to the owning rule for full AdGuard-correct scoping.
-- [ ] `DomainAgeChecker` uses a small hard-coded multi-part-suffix table; adopt a
-      full public-suffix list for complete ccSLD coverage.
 - [ ] WireGuard key-entry UI is missing even in debug builds (keys can only
       arrive via QR/backup import), so the experimental transport can't be
       completed from Settings.
 
-## Audit Findings — 2026-07-28
+## Audit Findings — 2026-07-28 (v6.9.63/6.9.64 passes)
 
-Baseline at audit time (v6.9.62, versionCode 144, commit 5b0703b): `testFullDebugUnitTest` + `lintFullDebug` BUILD SUCCESSFUL (lint: 0 errors, 11 warnings; 3 errors + 10 warnings pre-existing in lint-baseline.xml); `tools/check-release-docs.ps1` PASSES — note this contradicts the Roadmap_Blocked "Re-sign doh-bypass-list.json" item, which says the gate is red (see note added there).
-
-### P2
-
-
-
-### P3
-
-### Docs / hygiene
-
-### Unaudited — needs a pass
+The v6.9.63 deep pass fixed ~65 issues; the v6.9.64 pass added a README
+background/support section (issue #2) and two defensive hardenings (DoQ
+STREAM-frame bounds guard, HostsParser IP-classification parenthesization). No
+new actionable correctness/security findings surfaced — the codebase is
+consistently well-hardened. Remaining open work lives in the feature specs above
+and in `Roadmap_Blocked.md` (device-gated / product-decision items).

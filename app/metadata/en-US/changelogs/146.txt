@@ -1,0 +1,5 @@
+v6.9.64:
+- Add a README Background and Support section explaining the project's
+  motivation, principles, maintainer, and support commitment
+- Reject malformed DoQ frames that declare a length past the received buffer
+- Harden the hosts-file parser's IP-vs-domain classification

@@ -1,3 +1,18 @@
+# HostShield v6.9.64
+
+## Audit follow-up (2026-07-28)
+
+- Added a README "Background & Support" section covering the project's idea,
+  motivation, guiding principles, maintainer, and support commitment, in
+  response to user issue #2.
+- Hardened the experimental (debug-only) DoQ resolver: a STREAM frame whose
+  server-declared length overruns the received buffer is now rejected before
+  the DNS-length read, closing an out-of-bounds read.
+- Parenthesized the hosts-file parser's IPv4/IPv6 classification so the
+  IP-vs-domain heuristic no longer relies on implicit boolean precedence.
+- Removed seven orphaned string resources left behind by the v6.9.63 dead-toggle
+  and widget cleanup, clearing the corresponding lint warnings.
+
 # HostShield v6.9.63
 
 ## Deep-audit fix drain (2026-07-28)

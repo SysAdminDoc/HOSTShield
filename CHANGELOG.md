@@ -3,6 +3,25 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.64] - 2026-07-28
+
+### Added
+- README "Background & Support" section covering the project's motivation,
+  guiding principles, maintainer, and support commitment (addresses issue #2).
+
+### Fixed
+- DoQ STREAM-frame parsing now rejects a server-declared frame length that
+  overruns the received buffer, preventing an out-of-bounds read in the
+  experimental (debug-only) DoQ resolver path.
+
+### Changed
+- Parenthesized the IPv4/IPv6 classification in the hosts-file parser so the
+  IP-vs-domain heuristic no longer depends on implicit boolean precedence,
+  removing a latent misclassification risk for downloaded blocklists.
+- Removed seven orphaned string resources left behind by the v6.9.63 dead-toggle
+  and widget cleanup (`settings_include_ipv6*`, `settings_show_notification*`,
+  `widget_label_*`, `widget_percent_blocked`), clearing the lint warnings.
+
 ## [v6.9.63] - 2026-07-28
 
 ### Changed
