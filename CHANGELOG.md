@@ -71,6 +71,11 @@ secondary screens.
   sender as unknown instead of misattributing it to HostShield's own UID, and
   rate limiting is scoped to the action when the platform cannot expose a UID.
 
+### Fixed — background stats
+- The stats widget now refreshes its blocked/query totals from the DNS-log DAO
+  during widget updates, including the local midnight rollover, without
+  requiring the app to be opened first.
+
 ### Fixed — WebDAV
 - Root directory listings always parsed as empty (an `endsWith("")` check ate
   every entry), so "Test connection" always reported no remote files and

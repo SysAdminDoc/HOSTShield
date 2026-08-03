@@ -472,17 +472,3 @@ and in `Roadmap_Blocked.md` (device-gated / product-decision items).
 The v6.9.65 pass fixed ~35 issues across workers, root-mode lifecycle, widgets/
 tile/notifications, and secondary screens (see CHANGELOG). The items below were
 verified real but need a device, a product decision, or a design choice.
-
-- [ ] P3 — Blocking profiles have no creation/editor UI
-      Why: profiles enter the DB only via backup restore or automation
-      SET_PROFILE; `SchedulePresets.applyPreset` has zero callers, yet
-      ProfileScheduleWorker polls DB+WifiManager every 15 minutes on every
-      install. Ship the editor (wiring presets in) or gate the worker on a
-      non-empty profile table.
-      Where: SchedulePresets.kt, ProfileScheduleWorker.kt, ui/
-- [ ] P3 — Stats widget data goes stale until the app is opened
-      Why: only HomeViewModel feeds the stats widget; no background component
-      pushes counts, so "blocked today" survives midnight and idle days
-      unchanged. Push from the protection services' log-flush path or query the
-      DAO in onUpdate.
-      Where: StatsWidgetProvider.kt, HomeViewModel.kt

@@ -8,10 +8,22 @@ import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
 import com.hostshield.R
+import com.hostshield.data.database.DnsLogDao
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
 
 // Stats widget provider
 
+@AndroidEntryPoint
 class StatsWidgetProvider : AppWidgetProvider() {
+
+    @Inject lateinit var dnsLogDao: DnsLogDao
 
     companion object {
         private const val PREFS_NAME = "hostshield_stats_widget"
@@ -58,6 +70,23 @@ class StatsWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, widgetIds: IntArray) {
-        widgetIds.forEach { id -> updateAppWidget(context, manager, id) }
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val zone = ZoneId.systemDefault()
+                val todayStart = LocalDate.now(zone)
+                    .atStartOfDay(zone)
+                    .toInstant()
+                    .toEpochMilli()
+                val blockedToday = dnsLogDao.getBlockedCountSince(todayStart).first()
+                val queriesToday = dnsLogDao.getTotalCountSince(todayStart).first()
+                updateWidget(context, blockedToday, queriesToday)
+            } catch (e: Exception) {
+                android.util.Log.w("StatsWidgetProvider", "Could not refresh stats widget: ${e.message}")
+                widgetIds.forEach { id -> updateAppWidget(context, manager, id) }
+            } finally {
+                pendingResult.finish()
+            }
+        }
     }
 }
