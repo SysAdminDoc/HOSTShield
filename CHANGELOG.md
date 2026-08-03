@@ -66,6 +66,11 @@ secondary screens.
   rule, so they cannot bypass exact, more-specific wildcard, or other-source
   blocks; source-impact previews use the same scoped decision path.
 
+### Fixed — automation audit attribution
+- On Android versions before API 34, automation audit entries now record the
+  sender as unknown instead of misattributing it to HostShield's own UID, and
+  rate limiting is scoped to the action when the platform cannot expose a UID.
+
 ### Fixed — WebDAV
 - Root directory listings always parsed as empty (an `endsWith("")` check ate
   every entry), so "Test connection" always reported no remote files and

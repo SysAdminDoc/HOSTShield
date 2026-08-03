@@ -559,9 +559,3 @@ verified real but need a device, a product decision, or a design choice.
       unchanged. Push from the protection services' log-flush path or query the
       DAO in onUpdate.
       Where: StatsWidgetProvider.kt, HomeViewModel.kt
-- [ ] P3 — AutomationReceiver audit rows record HostShield's own uid below API 34
-      Why: `Binder.getCallingUid()` outside a binder transaction returns the
-      app's uid, so pre-34 audit rows misattribute every caller and the
-      rate-limit key collapses to one bucket. Record "unknown (<API34)" and key
-      the rate limit on action only.
-      Where: AutomationReceiver.kt resolveCallerUid

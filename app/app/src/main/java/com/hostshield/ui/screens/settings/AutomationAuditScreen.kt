@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hostshield.BuildConfig
 import com.hostshield.data.database.AutomationAuditDao
 import com.hostshield.data.model.AutomationAuditEntry
+import com.hostshield.service.AutomationReceiver
 import com.hostshield.ui.components.HostShieldBackHeader
 import com.hostshield.ui.components.HostShieldEmptyState
 import com.hostshield.ui.components.HostShieldSegmentOption
@@ -260,8 +261,13 @@ private fun AuditEntryCard(entry: AutomationAuditEntry, dateFormat: SimpleDateFo
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(actionShort, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                val caller = if (entry.callerUid == AutomationReceiver.UNKNOWN_CALLER_UID) {
+                    entry.callerPackage
+                } else {
+                    "${entry.callerPackage} (uid ${entry.callerUid})"
+                }
                 Text(
-                    "from ${entry.callerPackage} (uid ${entry.callerUid})",
+                    "from $caller",
                     color = TextDim, fontSize = 10.sp
                 )
             }

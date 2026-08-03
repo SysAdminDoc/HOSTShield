@@ -5,6 +5,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import android.os.Build
 
 class AutomationActionContractTest {
 
@@ -66,5 +67,34 @@ class AutomationActionContractTest {
             AutomationActionContract.MAX_PAUSE_MINUTES,
             AutomationActionContract.pauseDurationMinutes(5_000, null)
         )
+    }
+
+    @Test
+    fun pre34CallerIdentityIsRecordedAsUnknownInsteadOfReceiverUid() {
+        assertEquals(
+            AutomationReceiver.UNKNOWN_CALLER_UID,
+            AutomationReceiver.resolveCallerUidForSdk(
+                sdkInt = Build.VERSION_CODES.TIRAMISU,
+                sentUid = AutomationReceiver.UNKNOWN_CALLER_UID,
+                binderUid = 12_345,
+            )
+        )
+        assertEquals(
+            "ACTION_STATUS",
+            AutomationReceiver.rateLimitKey("ACTION_STATUS", AutomationReceiver.UNKNOWN_CALLER_UID)
+        )
+    }
+
+    @Test
+    fun api34UsesSentUidAndKeepsDistinctCallersRateLimitedSeparately() {
+        assertEquals(
+            24_681,
+            AutomationReceiver.resolveCallerUidForSdk(
+                sdkInt = Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                sentUid = 24_681,
+                binderUid = 12_345,
+            )
+        )
+        assertEquals("ACTION_STATUS:24681", AutomationReceiver.rateLimitKey("ACTION_STATUS", 24_681))
     }
 }

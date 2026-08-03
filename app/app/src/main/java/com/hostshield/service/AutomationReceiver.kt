@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Binder
 import android.os.Build
-import android.os.Process
 import android.util.Log
 import com.hostshield.data.database.AutomationAuditDao
 import com.hostshield.util.PrivacyLog
@@ -40,6 +39,7 @@ class AutomationReceiver : BroadcastReceiver() {
 
         private val TRUSTED_UIDS = setOf(0, 2000) // root, shell
         private const val RATE_LIMIT_MS = 5_000L
+        internal const val UNKNOWN_CALLER_UID = -1
 
         // Static rate limit state — survives receiver re-creation per broadcast delivery
         private val lastExecTime = java.util.concurrent.ConcurrentHashMap<String, Long>()
@@ -47,6 +47,16 @@ class AutomationReceiver : BroadcastReceiver() {
         internal fun clearRateLimitsForTest() {
             lastExecTime.clear()
         }
+
+        internal fun resolveCallerUidForSdk(sdkInt: Int, sentUid: Int, binderUid: Int): Int =
+            when {
+                sdkInt < Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> UNKNOWN_CALLER_UID
+                sentUid != UNKNOWN_CALLER_UID -> sentUid
+                else -> binderUid
+            }
+
+        internal fun rateLimitKey(action: String, callerUid: Int): String =
+            if (callerUid == UNKNOWN_CALLER_UID) action else "$action:$callerUid"
     }
 
     @Inject lateinit var prefs: AppPreferences
@@ -76,7 +86,7 @@ class AutomationReceiver : BroadcastReceiver() {
         }
 
         // Rate limiting: prevent rapid-fire commands
-        val rateKey = "$action:$callerUid"
+        val rateKey = rateLimitKey(action, callerUid)
         val now = System.currentTimeMillis()
         val lastTime = lastExecTime.get(rateKey)
         if (lastTime != null && now - lastTime < RATE_LIMIT_MS) {
@@ -198,6 +208,12 @@ class AutomationReceiver : BroadcastReceiver() {
     }
 
     private fun isCallerTrusted(context: Context, callerUid: Int, automationPermission: String): Boolean {
+        // On API < 34 a manifest-delivered BroadcastReceiver cannot recover the
+        // sender UID: Binder.getCallingUid() is the app itself outside a binder
+        // transaction. The manifest's signature-level permission has already
+        // gated delivery, so treat this caller as trusted but keep its identity
+        // explicitly unknown in audit/rate-limit state.
+        if (callerUid == UNKNOWN_CALLER_UID) return true
         if (callerUid in TRUSTED_UIDS) return true
         if (callerUid == android.os.Process.myUid()) return true
 
@@ -214,6 +230,7 @@ class AutomationReceiver : BroadcastReceiver() {
     }
 
     private fun resolveCallerPackage(context: Context, uid: Int): String {
+        if (uid == UNKNOWN_CALLER_UID) return "unknown (<API34>)"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             getSentFromPackage()?.let { return it }
         }
@@ -223,11 +240,16 @@ class AutomationReceiver : BroadcastReceiver() {
     }
 
     private fun resolveCallerUid(): Int {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            val sentUid = getSentFromUid()
-            if (sentUid != Process.INVALID_UID) return sentUid
+        val sentUid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            getSentFromUid()
+        } else {
+            UNKNOWN_CALLER_UID
         }
-        return Binder.getCallingUid()
+        return resolveCallerUidForSdk(
+            sdkInt = Build.VERSION.SDK_INT,
+            sentUid = sentUid,
+            binderUid = Binder.getCallingUid(),
+        )
     }
 
     private fun automationPermission(context: Context): String =
