@@ -298,13 +298,6 @@ coverage, and privacy-confirmed diagnostic exports.
 
 **Acceptance Criteria:**
 
-- [ ] Encrypted backup can be created from Settings and restored after process
-  recreation.
-- [ ] Wrong passphrase shows a retryable error and records a diagnostic event.
-- [ ] Schema v2 restore preserves custom upstream DNS, DoT/DoQ, WireGuard DNS,
-  schedule, DNS trap/block response, content filter, parental, firewall, and
-  theme/accessibility preferences.
-- [ ] Diagnostic ZIP tests verify expected entries and manifest version fields.
 **Dependencies:** Existing `BackupCrypto`, `BackupNonceLedger`,
 `DiagnosticExporter`, `PcapExporter`, SAF launchers, and `DiagnosticEventStore`.
 
@@ -368,19 +361,6 @@ share through FileProvider, or discard generated artifacts after review.
   short retention window or discarded by the user.
 
 **Acceptance Criteria:**
-
-- [ ] Classic PCAP export still writes a valid libpcap file and remains
-  available as a compatibility option.
-- [ ] PCAPng export opens in Wireshark with a valid Section Header, Interface
-  Description, and Enhanced Packet sequence.
-- [ ] Redacted PCAPng contains no app labels, package names, DNS hostnames, raw
-  connection destinations, or TLS/decryption secrets.
-- [ ] Full-metadata PCAPng records clearly list which sensitive metadata classes
-  were included before saving or sharing.
-- [ ] Users can save exports to a chosen location through SAF or share them via
-  a temporary FileProvider URI.
-- [ ] Connected UI or ViewModel tests can verify generated export state without
-  launching Android's chooser.
 
 **Dependencies:** Existing `PcapExporter`, `DiagnosticExporter`,
 `file_paths.xml`, `SettingsViewModel`, `ProtectionSettingsSection`, Room log
@@ -448,12 +428,6 @@ summaries by default.
 
 **Acceptance Criteria:**
 
-- [ ] If one of five feeds fails, the worker result is observable as degraded
-  and the UI names the failed feed plus its last HTTP/error state.
-- [ ] URLhaus and Spamhaus refresh policies are documented in code or metadata,
-  including Spamhaus DROP cadence and the eDROP merge.
-- [ ] Threat-intel DNS log rows show feed and match type for both domain and IP
-  matches.
 **Dependencies:** `ThreatIntelManager`, `ThreatIntelWorker`, `DnsVpnService`,
 Room migrations, `DnsLogDao`, `StatsScreen`, `LogsScreen`, `SourcesScreen`,
 `DiagnosticExporter`, and current source-health UI patterns.
@@ -472,12 +446,6 @@ from defaults or retained as a compatibility alias after the 2024 DROP merge.
 The v6.9.59 pass fixed ~45 issues across correctness, security, UX, theming, and
 accessibility (see CHANGELOG). The items below were found but deferred because
 they need a device, a product decision, an external key, or an unreleased SDK.
-
-### P2 — Needs device / live verification
-
-- [ ] Backup schema v2 + encrypted-backup passphrase UI: the crypto backend
-      exists but Settings has no passphrase prompt, and the schema omits several
-      v6.x preferences on round-trip. (Pre-existing spec above.)
 
 ### P3 — Deferred correctness / coverage
 

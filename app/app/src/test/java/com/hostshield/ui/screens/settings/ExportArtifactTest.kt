@@ -60,4 +60,25 @@ class ExportArtifactTest {
         assertTrue(artifact.filePath!!.endsWith(file.name))
         assertArrayEquals(bytes, output.toByteArray())
     }
+
+    @Test
+    fun `pcap ready state exposes artifact metadata without launching a chooser`() {
+        val file = tempDir.newFile("hostshield_dns_test.pcap")
+        file.writeBytes(byteArrayOf(1, 2, 3))
+        val artifact = buildFileExportArtifact(
+            kind = ExportArtifactKind.PCAP,
+            file = file,
+            mimeType = "application/vnd.tcpdump.pcap",
+            privacyNotice = "Contains DNS hostnames.",
+            shareSubject = "HostShield PCAP Export",
+            chooserTitle = "Share PCAP"
+        )
+
+        val state = PcapExportState.Ready(artifact, mode = "dns")
+
+        assertEquals("dns", state.mode)
+        assertEquals(file.name, state.fileName)
+        assertEquals(file.length(), state.sizeBytes)
+        assertEquals(file.absolutePath, state.filePath)
+    }
 }
