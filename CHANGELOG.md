@@ -61,6 +61,11 @@ secondary screens.
 - Overnight blocking profiles ("Fri 22:00-06:00") no longer tear down at
   midnight when the following day isn't scheduled.
 
+### Fixed — filtering semantics
+- Adblock `$denyallow` exceptions now remain attached to their owning source
+  rule, so they cannot bypass exact, more-specific wildcard, or other-source
+  blocks; source-impact previews use the same scoped decision path.
+
 ### Fixed — WebDAV
 - Root directory listings always parsed as empty (an `endsWith("")` check ate
   every entry), so "Test connection" always reported no remote files and

@@ -79,6 +79,8 @@ class BlocklistHolder @Inject constructor() {
         val sourceExactAllowDomains: Set<String>,
         val sourceWildcardAllowDomains: Set<String>,
         val dnsTypeRules: List<DnsTypeRule>,
+        val scopedDenyAllowRules: List<ScopedDenyAllowRule>,
+        val sourceWildcardBlockOriginLabels: Map<String, Set<String>>,
     ) {
         companion object {
             val EMPTY = Snapshot(
@@ -97,6 +99,8 @@ class BlocklistHolder @Inject constructor() {
                 sourceExactAllowDomains = emptySet(),
                 sourceWildcardAllowDomains = emptySet(),
                 dnsTypeRules = emptyList(),
+                scopedDenyAllowRules = emptyList(),
+                sourceWildcardBlockOriginLabels = emptyMap(),
             )
         }
     }
@@ -393,6 +397,8 @@ class BlocklistHolder @Inject constructor() {
         sourceExactAllows: Set<String> = emptySet(),
         userExactAllows: Set<String> = emptySet(),
         dnsTypeRules: List<DnsTypeRule> = emptyList(),
+        scopedDenyAllowRules: List<ScopedDenyAllowRule> = emptyList(),
+        sourceWildcardBlockOriginLabels: Map<String, Set<String>> = emptyMap(),
     ) {
         val newRoot = TrieNode()
         val newExactSet: MutableSet<String> = HashSet(newDomains.size + dohBypassDomains.size)
@@ -402,6 +408,16 @@ class BlocklistHolder @Inject constructor() {
         val normalizedSourceWildcardBlockOrigins = sourceWildcardBlockOrigins
             .mapKeys { it.key.lowercase() }
             .filterKeys { it.isNotBlank() }
+        val normalizedSourceWildcardBlockOriginLabels = sourceWildcardBlockOriginLabels
+            .mapKeys { it.key.lowercase() }
+            .filterKeys { it.isNotBlank() }
+            .mapValues { (_, labels) -> labels.map { it.trim() }.filter { it.isNotBlank() }.toSet() }
+            .toMutableMap()
+        normalizedSourceWildcardBlockOrigins.forEach { (domain, origin) ->
+            if (origin.isNotBlank()) {
+                normalizedSourceWildcardBlockOriginLabels.putIfAbsent(domain, setOf(origin))
+            }
+        }
         val normalizedSourceExactAllows = sourceExactAllows
             .map { it.lowercase() }
             .filter { it.isNotBlank() }
@@ -426,6 +442,9 @@ class BlocklistHolder @Inject constructor() {
         val normalizedDnsTypeRules = dnsTypeRules
             .map { it.normalized() }
             .filter { it.domain.isNotBlank() && it.dnsTypes.isNotEmpty() }
+        val normalizedScopedDenyAllowRules = scopedDenyAllowRules
+            .map { it.normalized() }
+            .filter { it.ownerDomain.isNotBlank() && it.allowedDomain.isNotBlank() }
 
         for (domain in normalizedSourceWildcardBlocks) {
             insertDomain(newRoot, domain, wildcardBlock = true)
@@ -483,6 +502,7 @@ class BlocklistHolder @Inject constructor() {
                 userExactAllowDomains = normalizedUserExactAllows,
                 sourceExactAllowDomains = normalizedSourceExactAllows,
                 dnsTypeRules = normalizedDnsTypeRules,
+                scopedDenyAllowRules = normalizedScopedDenyAllowRules,
             ),
             wildcardRules = wildcards,
             regexBlockRules = newRegexBlock.map(::TimedRegex),
@@ -497,6 +517,8 @@ class BlocklistHolder @Inject constructor() {
             sourceExactAllowDomains = normalizedSourceExactAllows,
             sourceWildcardAllowDomains = normalizedSourceWildcardAllows,
             dnsTypeRules = normalizedDnsTypeRules,
+            scopedDenyAllowRules = normalizedScopedDenyAllowRules,
+            sourceWildcardBlockOriginLabels = normalizedSourceWildcardBlockOriginLabels,
         )
 
         decisionCache.clear()
@@ -515,6 +537,8 @@ class BlocklistHolder @Inject constructor() {
         sourceExactAllows: Set<String> = emptySet(),
         userExactAllows: Set<String> = emptySet(),
         dnsTypeRules: List<DnsTypeRule> = emptyList(),
+        scopedDenyAllowRules: List<ScopedDenyAllowRule> = emptyList(),
+        sourceWildcardBlockOriginLabels: Map<String, Set<String>> = emptyMap(),
     ) = withContext(Dispatchers.Default) {
         update(
             newDomains,
@@ -527,7 +551,9 @@ class BlocklistHolder @Inject constructor() {
             sourceWildcardBlockOrigins,
             sourceExactAllows,
             userExactAllows,
-            dnsTypeRules
+            dnsTypeRules,
+            scopedDenyAllowRules,
+            sourceWildcardBlockOriginLabels,
         )
     }
 
@@ -575,6 +601,7 @@ class BlocklistHolder @Inject constructor() {
                 userExactAllowDomains = newUserAllows,
                 sourceExactAllowDomains = current.sourceExactAllowDomains,
                 dnsTypeRules = current.dnsTypeRules,
+                scopedDenyAllowRules = current.scopedDenyAllowRules,
             ),
             wildcardRules = current.wildcardRules,
             regexBlockRules = current.regexBlockRules,
@@ -588,6 +615,8 @@ class BlocklistHolder @Inject constructor() {
             sourceExactAllowDomains = current.sourceExactAllowDomains,
             sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
             dnsTypeRules = current.dnsTypeRules,
+            scopedDenyAllowRules = current.scopedDenyAllowRules,
+            sourceWildcardBlockOriginLabels = current.sourceWildcardBlockOriginLabels,
         )
         decisionCache.remove(h)
     }
@@ -614,6 +643,7 @@ class BlocklistHolder @Inject constructor() {
                 userExactAllowDomains = current.userExactAllowDomains,
                 sourceExactAllowDomains = current.sourceExactAllowDomains,
                 dnsTypeRules = current.dnsTypeRules,
+                scopedDenyAllowRules = current.scopedDenyAllowRules,
             ),
             wildcardRules = current.wildcardRules,
             regexBlockRules = current.regexBlockRules,
@@ -627,6 +657,8 @@ class BlocklistHolder @Inject constructor() {
             sourceExactAllowDomains = current.sourceExactAllowDomains,
             sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
             dnsTypeRules = current.dnsTypeRules,
+            scopedDenyAllowRules = current.scopedDenyAllowRules,
+            sourceWildcardBlockOriginLabels = current.sourceWildcardBlockOriginLabels,
         )
         decisionCache.remove(h)
     }
@@ -649,6 +681,7 @@ class BlocklistHolder @Inject constructor() {
                 userExactAllowDomains = newUserAllows,
                 sourceExactAllowDomains = current.sourceExactAllowDomains,
                 dnsTypeRules = current.dnsTypeRules,
+                scopedDenyAllowRules = current.scopedDenyAllowRules,
             ),
             wildcardRules = current.wildcardRules,
             regexBlockRules = current.regexBlockRules,
@@ -662,6 +695,8 @@ class BlocklistHolder @Inject constructor() {
             sourceExactAllowDomains = current.sourceExactAllowDomains,
             sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
             dnsTypeRules = current.dnsTypeRules,
+            scopedDenyAllowRules = current.scopedDenyAllowRules,
+            sourceWildcardBlockOriginLabels = current.sourceWildcardBlockOriginLabels,
         )
         decisionCache.remove(h)
     }
@@ -692,6 +727,7 @@ class BlocklistHolder @Inject constructor() {
                 userExactAllowDomains = newUserAllows,
                 sourceExactAllowDomains = current.sourceExactAllowDomains,
                 dnsTypeRules = current.dnsTypeRules,
+                scopedDenyAllowRules = current.scopedDenyAllowRules,
             ),
             wildcardRules = current.wildcardRules,
             regexBlockRules = current.regexBlockRules,
@@ -705,6 +741,8 @@ class BlocklistHolder @Inject constructor() {
             sourceExactAllowDomains = current.sourceExactAllowDomains,
             sourceWildcardAllowDomains = current.sourceWildcardAllowDomains,
             dnsTypeRules = current.dnsTypeRules,
+            scopedDenyAllowRules = current.scopedDenyAllowRules,
+            sourceWildcardBlockOriginLabels = current.sourceWildcardBlockOriginLabels,
         )
         decisionCache.remove(h)
     }
@@ -793,6 +831,7 @@ class BlocklistHolder @Inject constructor() {
                 precedence = "DNS type allow rule overrides blocklist matches for this query type"
             )
         }
+        val exactBlocked = lower in snap.exactBlockSet
         if (!snap.structuralBloom.mightContainCandidateFor(lower)) {
             return decideRegexWwwOrDefault(lower, snap, queryType)
         }
@@ -813,6 +852,22 @@ class BlocklistHolder @Inject constructor() {
             if (child.wildcardAllow) wildcardAllowMatch = match
             if (child.wildcardBlock) wildcardBlockMatch = match
             node = child
+        }
+
+        findScopedDenyAllowRule(
+            lower = lower,
+            snap = snap,
+            queryType = queryType,
+            wildcardBlockMatch = wildcardBlockMatch,
+            exactBlocked = exactBlocked,
+        )?.let { rule ->
+            return BlockDecision(
+                blocked = false,
+                reason = "denyallow",
+                source = rule.source.ifBlank { "Scoped denyallow exception" },
+                matchedValue = rule.allowedDomain,
+                precedence = "owner-scoped denyallow exception overrides its declaring source rule only"
+            )
         }
 
         // Most-specific-wins: a deeper wildcardBlock overrides a shallower wildcardAllow
@@ -840,7 +895,6 @@ class BlocklistHolder @Inject constructor() {
             )
         }
 
-        val exactBlocked = lower in snap.exactBlockSet
         val blocked = exactBlocked || wildcardBlockMatch.isNotEmpty()
 
         if (blocked) {
@@ -873,6 +927,54 @@ class BlocklistHolder @Inject constructor() {
 
         return decideRegexWwwOrDefault(lower, snap, queryType)
     }
+
+    private fun findScopedDenyAllowRule(
+        lower: String,
+        snap: Snapshot,
+        queryType: Int?,
+        wildcardBlockMatch: String,
+        exactBlocked: Boolean,
+    ): ScopedDenyAllowRule? {
+        if (exactBlocked) return null
+
+        val candidates = snap.scopedDenyAllowRules.asSequence()
+            .filter { it.matchesOwner(lower) && it.matchesAllowed(lower) && it.matchesQueryType(queryType) }
+            .toList()
+        if (candidates.isEmpty()) return null
+
+        val matchingTypedBlocks = snap.dnsTypeRules.filter {
+            !it.allow && queryType != null && it.matches(lower, queryType)
+        }
+        candidates
+            .filter { it.dnsTypes == null }
+            .filter { matchingTypedBlocks.isEmpty() }
+            .filter { it.ownerDomain == wildcardBlockMatch }
+            .filter { it.ownerDomain in snap.sourceWildcardBlockDomains }
+            .filter { it.source.isBlank() || it.source in snap.sourceWildcardBlockOriginLabels[it.ownerDomain].orEmpty() }
+            .filter { !hasUserWildcardBlock(snap, it.ownerDomain) }
+            .maxWithOrNull(compareBy<ScopedDenyAllowRule> { it.ownerDomain.count { ch -> ch == '.' } }
+                .thenBy { it.allowedDomain.length })
+            ?.let { return it }
+
+        if (wildcardBlockMatch.isNotEmpty() || matchingTypedBlocks.isEmpty()) return null
+        return candidates
+            .filter { it.dnsTypes != null }
+            .filter { rule ->
+                matchingTypedBlocks.all { block ->
+                    block.domain == rule.ownerDomain && block.source == rule.source
+                }
+            }
+            .maxWithOrNull(compareBy<ScopedDenyAllowRule> { it.ownerDomain.count { ch -> ch == '.' } }
+                .thenBy { it.allowedDomain.length })
+    }
+
+    private fun hasUserWildcardBlock(snap: Snapshot, ownerDomain: String): Boolean =
+        snap.wildcardRules.any { rule ->
+            if (rule.type != RuleType.BLOCK || rule.isRegex) return@any false
+            val pattern = rule.hostname.lowercase()
+            val base = if (pattern.startsWith("*.")) pattern.substring(2) else pattern
+            base == ownerDomain
+        }
 
     private fun decideRegexWwwOrDefault(lower: String, snap: Snapshot, queryType: Int?): BlockDecision {
         snap.regexBlockRules.firstMatchingRegex(lower)?.let { regex ->
@@ -950,6 +1052,7 @@ class BlocklistHolder @Inject constructor() {
         userExactAllowDomains: Set<String>,
         sourceExactAllowDomains: Set<String>,
         dnsTypeRules: List<DnsTypeRule>,
+        scopedDenyAllowRules: List<ScopedDenyAllowRule> = emptyList(),
     ): DomainBloomFilter {
         val candidates = LinkedHashSet<String>(
             exactBlockSet.size +
@@ -958,7 +1061,8 @@ class BlocklistHolder @Inject constructor() {
                 sourceWildcardAllowDomains.size +
                 userExactAllowDomains.size +
                 sourceExactAllowDomains.size +
-                dnsTypeRules.size
+                dnsTypeRules.size +
+                scopedDenyAllowRules.size * 2
         )
         candidates.addAll(exactBlockSet)
         candidates.addAll(sourceWildcardBlockDomains)
@@ -972,6 +1076,10 @@ class BlocklistHolder @Inject constructor() {
         }
         dnsTypeRules.forEach { rule ->
             if (rule.domain.isNotBlank()) candidates.add(rule.domain)
+        }
+        scopedDenyAllowRules.forEach { rule ->
+            if (rule.ownerDomain.isNotBlank()) candidates.add(rule.ownerDomain)
+            if (rule.allowedDomain.isNotBlank()) candidates.add(rule.allowedDomain)
         }
         return DomainBloomFilter.build(candidates)
     }

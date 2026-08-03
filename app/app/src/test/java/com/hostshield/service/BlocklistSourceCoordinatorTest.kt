@@ -111,6 +111,32 @@ class BlocklistSourceCoordinatorTest {
     }
 
     @Test
+    fun `full snapshot keeps denyallow ownership and source attribution`() = runTest {
+        val source = HostSource(
+            id = 8,
+            url = "https://example.com/adblock.txt",
+            label = "Scoped filter",
+        )
+        coEvery { repository.getEnabledBlockSources() } returns listOf(source)
+        coEvery {
+            downloader.download(source, forceDownload = true)
+        } returns Result.success(
+            DownloadResult(
+                content = "||*.africa^${'$'}denyallow=nation.africa",
+                sizeBytes = 42,
+            )
+        )
+
+        val snapshot = coordinator.downloadEnabledSourcesForFullSnapshot()
+
+        val rule = snapshot.scopedDenyAllowRules.single()
+        assertEquals("africa", rule.ownerDomain)
+        assertEquals("nation.africa", rule.allowedDomain)
+        assertEquals("Scoped filter", rule.source)
+        assertEquals(setOf("Scoped filter"), snapshot.wildcardBlockOriginLabels["africa"])
+    }
+
+    @Test
     fun `mixed block and allow sources keep allow domains for subtraction`() = runTest {
         val blockSource = HostSource(
             id = 1,

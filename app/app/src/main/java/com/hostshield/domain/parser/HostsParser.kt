@@ -3,6 +3,7 @@ package com.hostshield.domain.parser
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.domain.DnsTypeRule
+import com.hostshield.domain.ScopedDenyAllowRule
 
 // Multi-format parser for hosts, domains-only, and adblock syntax
 
@@ -29,6 +30,7 @@ object HostsParser {
         val wildcardBlockDomains: Set<String> = emptySet(),
         val wildcardAllowDomains: Set<String> = emptySet(),
         val dnsTypeRules: List<DnsTypeRule> = emptyList(),
+        val scopedDenyAllowRules: List<ScopedDenyAllowRule> = emptyList(),
         val parseDiagnostics: List<AdblockRuleParser.ParseDiagnostic> = emptyList()
     ) {
         val entryCount: Int get() = blockDomains.size + wildcardBlockDomains.size +
@@ -123,6 +125,7 @@ object HostsParser {
         val wildcardBlockDomains = mutableSetOf<String>()
         val wildcardAllowDomains = mutableSetOf<String>()
         val dnsTypeRules = mutableListOf<DnsTypeRule>()
+        val scopedDenyAllowRules = mutableListOf<ScopedDenyAllowRule>()
 
         // Domains an $important block rule protects: a non-important allow in the
         // same source must not override them (AdGuard priority: ||x^$important
@@ -137,16 +140,13 @@ object HostsParser {
 
             if (rule.dnsTypes != null) {
                 dnsTypeRules.add(rule.toDnsTypeRule(allow = false))
-                // $denyallow approximation: per AdGuard semantics $denyallow only
-                // weakens its OWN rule, but BlocklistHolder has no per-rule
-                // exception attachment, so the exception is approximated as a
-                // wildcard allow. Remaining approximation: this can still
-                // whitelist the domain against OTHER sources' wildcard blocks.
-                // It must NOT be added to the global exact allowDomains set,
-                // which would also override exact blocks and threat intel.
                 rule.denyAllowDomains.orEmpty()
                     .filter { isValidDomain(it) }
-                    .forEach { wildcardAllowDomains.add(it) }
+                    .forEach { allowedDomain ->
+                        scopedDenyAllowRules.add(
+                            rule.toScopedDenyAllowRule(allowedDomain)
+                        )
+                    }
                 return@forEach
             }
 
@@ -156,11 +156,13 @@ object HostsParser {
                 blockDomains.add(rule.domain)
             }
 
-            // $denyallow only weakens its own rule (see comment above): keep the
-            // wildcard-allow approximation, never the global exact allow.
             rule.denyAllowDomains.orEmpty()
                 .filter { isValidDomain(it) }
-                .forEach { wildcardAllowDomains.add(it) }
+                .forEach { allowedDomain ->
+                    scopedDenyAllowRules.add(
+                        rule.toScopedDenyAllowRule(allowedDomain)
+                    )
+                }
         }
 
         parsed.allowRules.forEach { rule ->
@@ -185,6 +187,7 @@ object HostsParser {
             wildcardBlockDomains = wildcardBlockDomains,
             wildcardAllowDomains = wildcardAllowDomains,
             dnsTypeRules = dnsTypeRules,
+            scopedDenyAllowRules = scopedDenyAllowRules,
             parseDiagnostics = parsed.diagnostics
         )
     }
@@ -234,6 +237,17 @@ object HostsParser {
             dnsTypesNegated = dnsTypesNegated,
             allow = allow,
             matchesSubdomains = matchesSubdomains || isWildcard
+        ).normalized()
+
+    private fun AdblockRuleParser.DnsRule.toScopedDenyAllowRule(
+        allowedDomain: String
+    ): ScopedDenyAllowRule =
+        ScopedDenyAllowRule(
+            ownerDomain = domain,
+            allowedDomain = allowedDomain,
+            ownerMatchesSubdomains = matchesSubdomains || isWildcard,
+            dnsTypes = dnsTypes,
+            dnsTypesNegated = dnsTypesNegated,
         ).normalized()
 
     /**

@@ -15,6 +15,7 @@ import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.SourceUrlPolicy
 import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
+import com.hostshield.domain.ScopedDenyAllowRule
 import com.hostshield.domain.parser.HostsParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -316,6 +317,8 @@ class SourcesViewModel @Inject constructor(
                 val sourceWildcardBlocks = mutableSetOf<String>()
                 val sourceWildcardAllows = mutableSetOf<String>()
                 val dnsTypeRules = mutableListOf<com.hostshield.domain.DnsTypeRule>()
+                val scopedDenyAllowRules = mutableListOf<ScopedDenyAllowRule>()
+                val wildcardBlockOriginLabels = mutableMapOf<String, MutableSet<String>>()
                 var failedSources = 0
 
                 for (source in blockSources) {
@@ -324,8 +327,14 @@ class SourcesViewModel @Inject constructor(
                         candidateDomains.addAll(parsed.blockDomains)
                         sourceAllowDomains.addAll(parsed.allowDomains)
                         sourceWildcardBlocks.addAll(parsed.wildcardBlockDomains)
+                        parsed.wildcardBlockDomains.forEach { domain ->
+                            wildcardBlockOriginLabels.getOrPut(domain) { mutableSetOf() }.add(source.label)
+                        }
                         sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                         dnsTypeRules.addAll(parsed.dnsTypeRules.map { it.normalized(source.label) })
+                        scopedDenyAllowRules.addAll(
+                            parsed.scopedDenyAllowRules.map { it.normalized(source.label) }
+                        )
                     }.onFailure {
                         failedSources++
                     }
@@ -358,7 +367,9 @@ class SourcesViewModel @Inject constructor(
                     regexRules = repository.getEnabledRegexRules(),
                     sourceWildcardBlocks = sourceWildcardBlocks,
                     sourceWildcardAllows = sourceWildcardAllows,
-                    dnsTypeRules = dnsTypeRules
+                    dnsTypeRules = dnsTypeRules,
+                    scopedDenyAllowRules = scopedDenyAllowRules,
+                    sourceWildcardBlockOriginLabels = wildcardBlockOriginLabels.mapValues { it.value.toSet() },
                 )
 
                 val currentKeys = blocklistHolder.exportBlockKeysForPreview()

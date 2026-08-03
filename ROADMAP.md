@@ -486,9 +486,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
       blocking) and only matter for custom redirect responses. Add validated IP
       text fields if the custom-redirect use case is prioritized.
 
-- [ ] Adblock `$denyallow` is still approximated as a global wildcard-allow (the
-      cross-source exact-allow leak was removed in v6.9.59). Attach the exception
-      to the owning rule for full AdGuard-correct scoping.
 - [ ] WireGuard key-entry UI is missing even in debug builds (keys can only
       arrive via QR/backup import), so the experimental transport can't be
       completed from Settings.

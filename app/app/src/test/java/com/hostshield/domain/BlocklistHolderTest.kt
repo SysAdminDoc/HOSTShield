@@ -95,6 +95,96 @@ class BlocklistHolderTest {
     }
 
     @Test
+    fun `denyallow exception is scoped to its owning source wildcard`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            sourceWildcardBlocks = setOf("africa"),
+            sourceWildcardBlockOrigins = mapOf("africa" to "Filter A"),
+            scopedDenyAllowRules = listOf(
+                ScopedDenyAllowRule(
+                    ownerDomain = "africa",
+                    allowedDomain = "nation.africa",
+                    source = "Filter A",
+                )
+            )
+        )
+
+        val allowed = holder.decide("cdn.nation.africa")
+        assertFalse(allowed.blocked)
+        assertEquals("denyallow", allowed.reason)
+        assertEquals("nation.africa", allowed.matchedValue)
+        assertTrue(holder.isBlocked("other.africa"))
+    }
+
+    @Test
+    fun `denyallow cannot override an exact block from another rule`() {
+        holder.update(
+            newDomains = setOf("nation.africa"),
+            wildcards = emptyList(),
+            sourceWildcardBlocks = setOf("africa"),
+            sourceWildcardBlockOrigins = mapOf("africa" to "Filter A"),
+            scopedDenyAllowRules = listOf(
+                ScopedDenyAllowRule(
+                    ownerDomain = "africa",
+                    allowedDomain = "nation.africa",
+                    source = "Filter A",
+                )
+            )
+        )
+
+        assertTrue(holder.isBlocked("nation.africa"))
+    }
+
+    @Test
+    fun `denyallow cannot override a more specific wildcard block`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            sourceWildcardBlocks = setOf("africa", "nation.africa"),
+            sourceWildcardBlockOrigins = mapOf(
+                "africa" to "Filter A",
+                "nation.africa" to "Filter B",
+            ),
+            scopedDenyAllowRules = listOf(
+                ScopedDenyAllowRule(
+                    ownerDomain = "africa",
+                    allowedDomain = "nation.africa",
+                    source = "Filter A",
+                )
+            )
+        )
+
+        assertTrue(holder.isBlocked("nation.africa"))
+    }
+
+    @Test
+    fun `typed denyallow exception only weakens its matching typed rule`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            dnsTypeRules = listOf(
+                DnsTypeRule(
+                    domain = "typed.africa",
+                    dnsTypes = setOf(28),
+                    source = "Filter A",
+                )
+            ),
+            scopedDenyAllowRules = listOf(
+                ScopedDenyAllowRule(
+                    ownerDomain = "typed.africa",
+                    allowedDomain = "nation.typed.africa",
+                    dnsTypes = setOf(28),
+                    source = "Filter A",
+                )
+            )
+        )
+
+        assertFalse(holder.isBlocked("cdn.nation.typed.africa", 28))
+        assertTrue(holder.isBlocked("other.typed.africa", 28))
+    }
+
+    @Test
     fun `decision reports source list attribution for exact and wildcard matches`() {
         holder.update(
             newDomains = setOf("ads.example.com"),

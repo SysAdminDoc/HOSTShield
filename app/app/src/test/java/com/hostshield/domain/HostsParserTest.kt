@@ -121,8 +121,13 @@ class HostsParserTest {
 
         assertTrue(result.wildcardBlockDomains.contains("actor"))
         assertTrue(result.wildcardBlockDomains.contains("africa"))
-        assertTrue(result.wildcardAllowDomains.contains("nation.africa"))
-        assertTrue(result.wildcardAllowDomains.contains("trusted.africa"))
+        assertEquals(
+            setOf("nation.africa", "trusted.africa"),
+            result.scopedDenyAllowRules.map { it.allowedDomain }.toSet()
+        )
+        assertTrue(result.scopedDenyAllowRules.all { it.ownerDomain == "africa" })
+        assertFalse(result.wildcardAllowDomains.contains("nation.africa"))
+        assertFalse(result.wildcardAllowDomains.contains("trusted.africa"))
         assertTrue(result.wildcardAllowDomains.contains("allowed.actor"))
         assertTrue(result.allowDomains.contains("allowed.actor"))
         // $denyallow only weakens its own rule: its domains stay out of the
