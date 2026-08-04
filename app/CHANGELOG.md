@@ -1,3 +1,14 @@
+# HostShield v6.9.66
+
+## Roadmap drain (2026-08-03)
+
+- Scoped AdGuard `$denyallow` exceptions now stay attached to their owning
+  source rule, and pre-34 automation audit records no longer misattribute an
+  unavailable caller UID.
+- The stats widget refreshes its daily totals from DNS logs, Settings exposes
+  validated IPv4/IPv6 redirect targets, and debug builds expose masked,
+  validated WireGuard key fields.
+
 # HostShield v6.9.65
 
 ## Deep audit wave 3 (2026-07-28)

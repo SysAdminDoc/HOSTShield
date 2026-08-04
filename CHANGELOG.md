@@ -3,7 +3,7 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
-## [v6.9.65] - 2026-07-28
+## [v6.9.66] - 2026-08-03
 
 Deep audit wave 3 — ~35 verified fixes in the surfaces earlier passes skipped:
 background workers, root-mode lifecycle, widget/tile/notification wiring, and
