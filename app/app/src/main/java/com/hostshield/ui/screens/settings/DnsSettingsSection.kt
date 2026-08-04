@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -16,7 +17,10 @@ import androidx.compose.ui.res.stringResource
 import com.hostshield.BuildConfig
 import com.hostshield.R
 import com.hostshield.util.ExperimentalEngineDisclosure
+import com.hostshield.util.WireGuardKeyPolicy
 import com.hostshield.ui.theme.*
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -43,6 +47,12 @@ fun DnsSettingsSection(
     onWireGuardEndpointChange: (String) -> Unit,
     wireGuardDnsIp: String,
     onWireGuardDnsIpChange: (String) -> Unit,
+    wireGuardPrivateKey: String,
+    onWireGuardPrivateKeyChange: (String) -> Unit,
+    wireGuardPublicKey: String,
+    onWireGuardPublicKeyChange: (String) -> Unit,
+    wireGuardPresharedKey: String,
+    onWireGuardPresharedKeyChange: (String) -> Unit,
     dnsTrapEnabled: Boolean,
     onDnsTrapEnabledChange: (Boolean) -> Unit,
     customUpstreamDns: String,
@@ -136,7 +146,35 @@ fun DnsSettingsSection(
                 }
             )
             Spacer(Modifier.height(4.dp))
+            Text(stringResource(R.string.dns_wireguard_keys_title), color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             Text(stringResource(R.string.dns_wireguard_keys_hint), color = TextDim, fontSize = 10.sp)
+            Spacer(Modifier.height(4.dp))
+            WireGuardKeyField(
+                value = wireGuardPrivateKey,
+                onValueChange = onWireGuardPrivateKeyChange,
+                label = stringResource(R.string.dns_wireguard_private_key),
+                required = true,
+                obscured = true,
+                saveDescription = stringResource(R.string.dns_save_wireguard_private_key)
+            )
+            Spacer(Modifier.height(4.dp))
+            WireGuardKeyField(
+                value = wireGuardPublicKey,
+                onValueChange = onWireGuardPublicKeyChange,
+                label = stringResource(R.string.dns_wireguard_public_key),
+                required = true,
+                obscured = false,
+                saveDescription = stringResource(R.string.dns_save_wireguard_public_key)
+            )
+            Spacer(Modifier.height(4.dp))
+            WireGuardKeyField(
+                value = wireGuardPresharedKey,
+                onValueChange = onWireGuardPresharedKeyChange,
+                label = stringResource(R.string.dns_wireguard_preshared_key),
+                required = false,
+                obscured = true,
+                saveDescription = stringResource(R.string.dns_save_wireguard_preshared_key)
+            )
         }
         } // end BuildConfig.DEBUG gate for DoQ/WireGuard
         Spacer(Modifier.height(8.dp))
@@ -289,6 +327,77 @@ fun DnsSettingsSection(
             }
         }
     }
+}
+
+@Composable
+private fun WireGuardKeyField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    required: Boolean,
+    obscured: Boolean,
+    saveDescription: String
+) {
+    var draft by remember { mutableStateOf(value) }
+    var revealed by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(value) { draft = value }
+    val normalized = remember(draft) { WireGuardKeyPolicy.normalize(draft) }
+    val error = when {
+        draft.isBlank() && required -> stringResource(R.string.dns_wireguard_key_required)
+        draft.isNotBlank() && normalized == null -> stringResource(R.string.dns_wireguard_key_invalid)
+        else -> null
+    }
+    val canSave = (draft.isBlank() && !required) || normalized != null
+    OutlinedTextField(
+        value = draft,
+        onValueChange = { draft = it },
+        label = { Text(label, fontSize = 12.sp) },
+        modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 52.dp),
+        singleLine = true,
+        isError = error != null,
+        supportingText = error?.let { message ->
+            { Text(message, color = Red, fontSize = 11.sp) }
+        },
+        visualTransformation = if (obscured && !revealed) {
+            PasswordVisualTransformation()
+        } else {
+            VisualTransformation.None
+        },
+        textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+        shape = RoundedCornerShape(10.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Blue,
+            unfocusedBorderColor = Surface3,
+            errorBorderColor = Red,
+            errorCursorColor = Red,
+            cursorColor = Blue,
+            focusedTextColor = TextPrimary,
+            unfocusedTextColor = TextPrimary
+        ),
+        trailingIcon = {
+            Row {
+                if (draft.trim() != value && canSave) {
+                    IconButton(onClick = {
+                        onValueChange(normalized ?: "")
+                    }) {
+                        Icon(Icons.Filled.Check, saveDescription, tint = Green, modifier = Modifier.size(18.dp))
+                    }
+                }
+                if (obscured) {
+                    IconButton(onClick = { revealed = !revealed }) {
+                        Icon(
+                            if (revealed) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            contentDescription = stringResource(
+                                if (revealed) R.string.dns_hide_wireguard_key else R.string.dns_show_wireguard_key
+                            ),
+                            tint = TextDim,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+        }
+    )
 }
 
 @Composable

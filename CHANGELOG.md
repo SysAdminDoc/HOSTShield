@@ -80,6 +80,11 @@ secondary screens.
 - Settings now exposes validated IPv4 and IPv6 redirect-target fields, while
   preserving the blocking-safe `0.0.0.0` and `::` defaults.
 
+### Added — WireGuard configuration
+- Debug builds now expose validated private, peer-public, and optional
+  preshared-key fields for the experimental DNS tunnel; private and preshared
+  values continue to use secure storage and are masked by default.
+
 ### Fixed — WebDAV
 - Root directory listings always parsed as empty (an `endsWith("")` check ate
   every entry), so "Test connection" always reported no remote files and

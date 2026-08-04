@@ -368,7 +368,18 @@
     <!-- DNS settings -->
     <string name="dns_endpoint_hint">Endpoint (host:port)</string>
     <string name="dns_tunnel_ip_hint">DNS IP inside tunnel (e.g. 1.1.1.1)</string>
-    <string name="dns_wireguard_keys_hint">Configure keys in WireGuard settings</string>
+    <string name="dns_wireguard_keys_hint">Base64-encoded 32-byte keys; private and preshared values are stored securely.</string>
+    <string name="dns_wireguard_keys_title">WireGuard keys</string>
+    <string name="dns_wireguard_private_key">Private key</string>
+    <string name="dns_wireguard_public_key">Peer public key</string>
+    <string name="dns_wireguard_preshared_key">Preshared key (optional)</string>
+    <string name="dns_wireguard_key_required">This key is required.</string>
+    <string name="dns_wireguard_key_invalid">Enter a valid base64-encoded 32-byte key.</string>
+    <string name="dns_save_wireguard_private_key">Save WireGuard private key</string>
+    <string name="dns_save_wireguard_public_key">Save WireGuard peer public key</string>
+    <string name="dns_save_wireguard_preshared_key">Save WireGuard preshared key</string>
+    <string name="dns_show_wireguard_key">Show WireGuard key</string>
+    <string name="dns_hide_wireguard_key">Hide WireGuard key</string>
     <string name="dns_section_title">DNS</string>
     <string name="dns_over_https">DNS-over-HTTPS</string>
     <string name="dns_over_https_sub">Encrypt DNS queries</string>

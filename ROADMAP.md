@@ -449,10 +449,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
 
 ### P3 — Deferred correctness / coverage
 
-- [ ] WireGuard key-entry UI is missing even in debug builds (keys can only
-      arrive via QR/backup import), so the experimental transport can't be
-      completed from Settings.
-
 ## Audit Findings — 2026-07-28 (v6.9.63/6.9.64 passes)
 
 The v6.9.63 deep pass fixed ~65 issues; the v6.9.64 pass added a README

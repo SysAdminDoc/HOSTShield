@@ -220,6 +220,9 @@ data class SettingsUiState(
     val wireGuardEnabled: Boolean = false,
     val wireGuardEndpoint: String = "",
     val wireGuardDnsIp: String = "",
+    val wireGuardPrivateKey: String = "",
+    val wireGuardPublicKey: String = "",
+    val wireGuardPresharedKey: String = "",
     val onlineGeoIpEnabled: Boolean = false,
     val lanDnsEnabled: Boolean = false,
     val lanDnsRunning: Boolean = false,
@@ -462,6 +465,24 @@ class SettingsViewModel @Inject constructor(
             }
         }
 
+        viewModelScope.launch {
+            combine(
+                prefs.wireGuardPrivateKey,
+                prefs.wireGuardPublicKey,
+                prefs.wireGuardPresharedKey
+            ) { privateKey, publicKey, presharedKey ->
+                WireGuardKeys(privateKey, publicKey, presharedKey)
+            }.collect { keys ->
+                _uiState.update {
+                    it.copy(
+                        wireGuardPrivateKey = keys.privateKey,
+                        wireGuardPublicKey = keys.publicKey,
+                        wireGuardPresharedKey = keys.presharedKey
+                    )
+                }
+            }
+        }
+
         // ── Root availability (one-shot) ──────────────────────
         viewModelScope.launch(Dispatchers.IO) {
             val available = rootUtil.isRootAvailable()
@@ -486,6 +507,7 @@ class SettingsViewModel @Inject constructor(
     private data class SchedulePrefs(val enabled: Boolean, val start: String, val end: String, val mode: String)
     private data class DotDoqPrefs(val dotEnabled: Boolean, val dotProvider: String, val doqEnabled: Boolean, val doqProvider: String)
     private data class WireGuardPrefs(val enabled: Boolean, val endpoint: String, val dnsIp: String)
+    private data class WireGuardKeys(val privateKey: String, val publicKey: String, val presharedKey: String)
     private data class LanDnsPrefs(val enabled: Boolean, val port: Int, val allowExternalClients: Boolean)
 
     private fun loadSystemInfo() {
