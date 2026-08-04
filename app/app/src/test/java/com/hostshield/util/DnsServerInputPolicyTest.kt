@@ -28,4 +28,16 @@ class DnsServerInputPolicyTest {
         assertNull(DnsServerInputPolicy.normalizeServerIp("8.8.8.8; reboot"))
         assertEquals("", DnsServerInputPolicy.normalizeServerList("dns.google, 999.1.1.1"))
     }
+
+    @Test
+    fun `family-specific normalizers keep redirect targets in their address family`() {
+        assertEquals("0.0.0.0", DnsServerInputPolicy.normalizeIpv4(" 0.0.0.0 "))
+        assertNull(DnsServerInputPolicy.normalizeIpv4("::"))
+        assertEquals(
+            "0:0:0:0:0:0:0:1",
+            DnsServerInputPolicy.normalizeIpv6("::1")
+        )
+        assertNull(DnsServerInputPolicy.normalizeIpv6("127.0.0.1"))
+        assertNull(DnsServerInputPolicy.normalizeIpv6("2001:db8::bad value"))
+    }
 }

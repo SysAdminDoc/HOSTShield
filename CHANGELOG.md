@@ -76,6 +76,10 @@ secondary screens.
   during widget updates, including the local midnight rollover, without
   requiring the app to be opened first.
 
+### Added — redirect targets
+- Settings now exposes validated IPv4 and IPv6 redirect-target fields, while
+  preserving the blocking-safe `0.0.0.0` and `::` defaults.
+
 ### Fixed — WebDAV
 - Root directory listings always parsed as empty (an `endsWith("")` check ate
   every entry), so "Test connection" always reported no remote files and

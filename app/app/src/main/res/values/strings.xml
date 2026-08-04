@@ -378,6 +378,17 @@
     <string name="dns_wireguard_experimental">WireGuard DNS (experimental)</string>
     <string name="dns_save_wireguard_endpoint">Save WireGuard endpoint</string>
     <string name="dns_save_wireguard_ip">Save WireGuard DNS IP</string>
+    <string name="dns_redirect_targets">Block redirect targets</string>
+    <string name="dns_redirect_targets_sub">IPv4 and IPv6 addresses used for custom redirect responses. Defaults preserve blocking.</string>
+    <string name="dns_ipv4_redirect">IPv4 redirect target</string>
+    <string name="dns_ipv4_redirect_hint">e.g. 0.0.0.0</string>
+    <string name="dns_ipv4_redirect_invalid">Enter a valid IPv4 address.</string>
+    <string name="dns_save_ipv4_redirect">Save IPv4 redirect target</string>
+    <string name="dns_ipv6_redirect">IPv6 redirect target</string>
+    <string name="dns_ipv6_redirect_hint">e.g. ::</string>
+    <string name="dns_ipv6_redirect_invalid">Enter a valid IPv6 address.</string>
+    <string name="dns_redirect_target_required">A redirect target is required.</string>
+    <string name="dns_save_ipv6_redirect">Save IPv6 redirect target</string>
     <string name="dns_trap">DNS Trap</string>
     <string name="dns_trap_sub">Catch hardcoded DNS + block DoH/DoT bypass</string>
     <string name="dns_save_custom_upstream">Save custom upstream DNS</string>

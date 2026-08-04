@@ -33,6 +33,10 @@ fun DnsSettingsSection(
     onDoqEnabledChange: (Boolean) -> Unit,
     doqProvider: String,
     onDoqProviderChange: (String) -> Unit,
+    ipv4Redirect: String,
+    onIpv4RedirectChange: (String) -> Unit,
+    ipv6Redirect: String,
+    onIpv6RedirectChange: (String) -> Unit,
     wireGuardEnabled: Boolean,
     onWireGuardEnabledChange: (Boolean) -> Unit,
     wireGuardEndpoint: String,
@@ -135,6 +139,49 @@ fun DnsSettingsSection(
             Text(stringResource(R.string.dns_wireguard_keys_hint), color = TextDim, fontSize = 10.sp)
         }
         } // end BuildConfig.DEBUG gate for DoQ/WireGuard
+        Spacer(Modifier.height(8.dp))
+        Text(stringResource(R.string.dns_redirect_targets), color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.dns_redirect_targets_sub), color = TextDim, fontSize = 10.sp)
+        Spacer(Modifier.height(4.dp))
+        var ipv4Target by remember { mutableStateOf(ipv4Redirect) }
+        LaunchedEffect(ipv4Redirect) { ipv4Target = ipv4Redirect }
+        val normalizedIpv4 = remember(ipv4Target) {
+            com.hostshield.util.DnsServerInputPolicy.normalizeIpv4(ipv4Target)
+        }
+        RedirectTargetField(
+            value = ipv4Target,
+            onValueChange = { ipv4Target = it },
+            label = stringResource(R.string.dns_ipv4_redirect),
+            placeholder = stringResource(R.string.dns_ipv4_redirect_hint),
+            error = when {
+                ipv4Target.isBlank() -> stringResource(R.string.dns_redirect_target_required)
+                normalizedIpv4 == null -> stringResource(R.string.dns_ipv4_redirect_invalid)
+                else -> null
+            },
+            showSave = ipv4Target.trim() != ipv4Redirect && normalizedIpv4 != null,
+            onSave = { normalizedIpv4?.let(onIpv4RedirectChange) },
+            saveDescription = stringResource(R.string.dns_save_ipv4_redirect)
+        )
+        Spacer(Modifier.height(4.dp))
+        var ipv6Target by remember { mutableStateOf(ipv6Redirect) }
+        LaunchedEffect(ipv6Redirect) { ipv6Target = ipv6Redirect }
+        val normalizedIpv6 = remember(ipv6Target) {
+            com.hostshield.util.DnsServerInputPolicy.normalizeIpv6(ipv6Target)
+        }
+        RedirectTargetField(
+            value = ipv6Target,
+            onValueChange = { ipv6Target = it },
+            label = stringResource(R.string.dns_ipv6_redirect),
+            placeholder = stringResource(R.string.dns_ipv6_redirect_hint),
+            error = when {
+                ipv6Target.isBlank() -> stringResource(R.string.dns_redirect_target_required)
+                normalizedIpv6 == null -> stringResource(R.string.dns_ipv6_redirect_invalid)
+                else -> null
+            },
+            showSave = ipv6Target.trim() != ipv6Redirect && normalizedIpv6 != null,
+            onSave = { normalizedIpv6?.let(onIpv6RedirectChange) },
+            saveDescription = stringResource(R.string.dns_save_ipv6_redirect)
+        )
         Spacer(Modifier.height(8.dp))
         SettingsToggle(
             stringResource(R.string.dns_trap),
@@ -242,6 +289,49 @@ fun DnsSettingsSection(
             }
         }
     }
+}
+
+@Composable
+private fun RedirectTargetField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    error: String?,
+    showSave: Boolean,
+    onSave: () -> Unit,
+    saveDescription: String
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label, fontSize = 12.sp) },
+        placeholder = { Text(placeholder, color = TextDim, fontSize = 12.sp) },
+        modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 52.dp),
+        singleLine = true,
+        isError = error != null,
+        supportingText = error?.let { message ->
+            { Text(message, color = Red, fontSize = 11.sp) }
+        },
+        textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+        shape = RoundedCornerShape(10.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Blue,
+            unfocusedBorderColor = Surface3,
+            errorBorderColor = Red,
+            errorCursorColor = Red,
+            cursorColor = Blue,
+            focusedTextColor = TextPrimary,
+            unfocusedTextColor = TextPrimary
+        ),
+        trailingIcon = {
+            if (showSave) {
+                IconButton(onClick = onSave) {
+                    Icon(Icons.Filled.Check, saveDescription, tint = Green, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
+    )
 }
 
 @Composable

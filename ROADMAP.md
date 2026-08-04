@@ -449,11 +449,6 @@ they need a device, a product decision, an external key, or an unreleased SDK.
 
 ### P3 — Deferred correctness / coverage
 
-- [ ] Hosts IPv4/IPv6 redirect-target prefs (`setIpv4Redirect`/`setIpv6Redirect`)
-      still have no Settings control — they default to `0.0.0.0`/`::` (correct for
-      blocking) and only matter for custom redirect responses. Add validated IP
-      text fields if the custom-redirect use case is prioritized.
-
 - [ ] WireGuard key-entry UI is missing even in debug builds (keys can only
       arrive via QR/backup import), so the experimental transport can't be
       completed from Settings.

@@ -26,14 +26,22 @@ object DnsServerInputPolicy {
     fun normalizeServerIp(rawValue: String): String? {
         val value = rawValue.trim().trim('[', ']')
         if (value.isBlank()) return null
-        if (IPV4_RE.matches(value)) {
-            val octets = value.split(".").map { it.toIntOrNull() ?: return null }
-            return if (octets.size == 4 && octets.all { it in 0..255 }) {
-                octets.joinToString(".")
-            } else {
-                null
-            }
+        return normalizeIpv4(value) ?: normalizeIpv6(value)
+    }
+
+    fun normalizeIpv4(rawValue: String): String? {
+        val value = rawValue.trim().trim('[', ']')
+        if (!IPV4_RE.matches(value)) return null
+        val octets = value.split(".").map { it.toIntOrNull() ?: return null }
+        return if (octets.size == 4 && octets.all { it in 0..255 }) {
+            octets.joinToString(".")
+        } else {
+            null
         }
+    }
+
+    fun normalizeIpv6(rawValue: String): String? {
+        val value = rawValue.trim().trim('[', ']')
         if (!value.contains(":") || !IPV6_RE.matches(value)) return null
         return runCatching {
             val address = InetAddress.getByName(value)
