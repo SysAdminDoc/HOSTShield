@@ -2,10 +2,16 @@ package com.hostshield.util
 
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
+import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class PcapExporterTest {
+
+    @get:Rule
+    val tempDir = TemporaryFolder()
 
     @Test
     fun `PCAP magic number is correct`() {
@@ -89,6 +95,36 @@ class PcapExporterTest {
 
         assertEquals(1708123456, sec)
         assertEquals(789000, usec)
+    }
+
+    @Test
+    fun `prepareExportFile sweeps stale PCAP files and uses exports directory`() {
+        val cacheDir = tempDir.newFolder("cache")
+        val exportsDir = File(cacheDir, "exports").apply { mkdirs() }
+        val now = System.currentTimeMillis()
+        val staleMs = now - 25L * 60L * 60L * 1000L
+        val staleRoot = File(cacheDir, "hostshield_dns_1.pcap").apply {
+            writeText("stale")
+            setLastModified(staleMs)
+        }
+        val staleExport = File(exportsDir, "hostshield_dns_2.pcap").apply {
+            writeText("stale")
+            setLastModified(staleMs)
+        }
+        val fresh = File(exportsDir, "hostshield_dns_3.pcap").apply { writeText("fresh") }
+        val unrelated = File(cacheDir, "hostshield_dns_4.txt").apply {
+            writeText("keep")
+            setLastModified(staleMs)
+        }
+
+        val target = PcapExporter.prepareExportFile(cacheDir, "hostshield_dns_", now)
+
+        assertEquals(exportsDir, target.parentFile)
+        assertTrue(target.name.startsWith("hostshield_dns_"))
+        assertFalse(staleRoot.exists())
+        assertFalse(staleExport.exists())
+        assertTrue(fresh.exists())
+        assertTrue(unrelated.exists())
     }
 
     @Test

@@ -7,6 +7,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.FileOutputStream
+import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -129,6 +130,36 @@ class DiagnosticExporterTest {
             )
             assertEquals(3, json.getInt("event_count"))
         }
+    }
+
+    @Test
+    fun `prepareDiagnosticFile sweeps stale reports but keeps fresh and unrelated files`() {
+        val cacheDir = tempDir.newFolder("cache")
+        val diagnosticsDir = File(cacheDir, "diagnostics").apply { mkdirs() }
+        val now = System.currentTimeMillis()
+        val staleMs = now - 25L * 60L * 60L * 1000L
+        val staleReport = File(diagnosticsDir, "hostshield-diag-1.txt").apply {
+            writeText("stale")
+            setLastModified(staleMs)
+        }
+        val staleZip = File(diagnosticsDir, "hostshield-diag-2.zip").apply {
+            writeText("stale")
+            setLastModified(staleMs)
+        }
+        val fresh = File(diagnosticsDir, "hostshield-diag-3.zip").apply { writeText("fresh") }
+        val unrelated = File(diagnosticsDir, "other.txt").apply {
+            writeText("keep")
+            setLastModified(staleMs)
+        }
+
+        val target = DiagnosticExporter.prepareDiagnosticFile(cacheDir, ".zip", now)
+
+        assertEquals(diagnosticsDir, target.parentFile)
+        assertTrue(target.name.endsWith(".zip"))
+        assertFalse(staleReport.exists())
+        assertFalse(staleZip.exists())
+        assertTrue(fresh.exists())
+        assertTrue(unrelated.exists())
     }
 
     @Test

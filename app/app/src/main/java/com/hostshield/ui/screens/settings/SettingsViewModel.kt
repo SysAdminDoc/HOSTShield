@@ -19,6 +19,7 @@ import com.hostshield.util.BackupRestoreUtil
 import com.hostshield.util.BatteryOptimizationUtil
 import com.hostshield.util.DiagnosticEventStore
 import com.hostshield.util.DiagnosticEventType
+import com.hostshield.util.DiagnosticPackageGenerator
 import com.hostshield.util.EvidenceJsonlDataset
 import com.hostshield.util.EvidenceJsonlExportOptions
 import com.hostshield.util.EvidenceJsonlExporter
@@ -245,7 +246,7 @@ class SettingsViewModel @Inject constructor(
     private val pcapExporter: PcapExporter,
     private val evidenceJsonlExporter: EvidenceJsonlExporter,
     private val updateChecker: UpdateChecker,
-    private val diagnosticExporter: com.hostshield.util.DiagnosticExporter,
+    private val diagnosticExporter: DiagnosticPackageGenerator,
     private val diagnosticEvents: DiagnosticEventStore,
     private val firewallRuleDao: com.hostshield.data.database.FirewallRuleDao,
     private val localDnsServer: LocalDnsServer

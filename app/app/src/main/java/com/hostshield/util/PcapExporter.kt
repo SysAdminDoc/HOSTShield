@@ -35,6 +35,11 @@ class PcapExporter @Inject constructor(
 ) {
     companion object {
         private const val TAG = "PcapExport"
+        private const val EXPORT_DIR_NAME = "exports"
+        private const val EXPORT_MAX_AGE_MS = 24L * 60L * 60L * 1000L
+        private const val DNS_FILE_PREFIX = "hostshield_dns_"
+        private const val FIREWALL_FILE_PREFIX = "hostshield_fw_"
+        private const val ALL_FILE_PREFIX = "hostshield_all_"
         // PCAP magic numbers
         private const val PCAP_MAGIC = 0xA1B2C3D4.toInt()
         private const val PCAP_VERSION_MAJOR = 2
@@ -76,6 +81,30 @@ class PcapExporter @Inject constructor(
                 null
             }
         }
+
+        /**
+         * Resolve a PCAP destination inside the FileProvider-backed exports
+         * directory and remove only stale HostShield PCAP artifacts. The root
+         * sweep covers files produced by versions before the dedicated directory
+         * was used; unrelated cache files are never touched.
+         */
+        internal fun prepareExportFile(cacheDir: File, prefix: String, nowMs: Long): File {
+            require(prefix in setOf(DNS_FILE_PREFIX, FIREWALL_FILE_PREFIX, ALL_FILE_PREFIX)) {
+                "Unsupported PCAP export prefix"
+            }
+            val exportDir = File(cacheDir, EXPORT_DIR_NAME).apply { mkdirs() }
+            val cutoff = nowMs - EXPORT_MAX_AGE_MS
+            sequenceOf(cacheDir, exportDir)
+                .flatMap { dir -> dir.listFiles()?.asSequence().orEmpty() }
+                .filter {
+                    it.isFile &&
+                        it.name.startsWith(prefix) &&
+                        it.name.endsWith(".pcap") &&
+                        it.lastModified() < cutoff
+                }
+                .forEach { it.delete() }
+            return File(exportDir, "$prefix$nowMs.pcap")
+        }
     }
 
     /**
@@ -93,7 +122,7 @@ class PcapExporter @Inject constructor(
                 return@withContext null
             }
 
-            val file = File(context.cacheDir, "hostshield_dns_${System.currentTimeMillis()}.pcap")
+            val file = prepareExportFile(context.cacheDir, DNS_FILE_PREFIX, System.currentTimeMillis())
             FileOutputStream(file).use { fos ->
                 writePcapHeader(fos)
 
@@ -126,7 +155,7 @@ class PcapExporter @Inject constructor(
 
             if (logs.isEmpty()) return@withContext null
 
-            val file = File(context.cacheDir, "hostshield_fw_${System.currentTimeMillis()}.pcap")
+            val file = prepareExportFile(context.cacheDir, FIREWALL_FILE_PREFIX, System.currentTimeMillis())
             FileOutputStream(file).use { fos ->
                 writePcapHeader(fos)
 
@@ -165,7 +194,7 @@ class PcapExporter @Inject constructor(
 
             if (dnsLogs.isEmpty() && connLogs.isEmpty()) return@withContext null
 
-            val file = File(context.cacheDir, "hostshield_all_${System.currentTimeMillis()}.pcap")
+            val file = prepareExportFile(context.cacheDir, ALL_FILE_PREFIX, System.currentTimeMillis())
             FileOutputStream(file).use { fos ->
                 writePcapHeader(fos)
 

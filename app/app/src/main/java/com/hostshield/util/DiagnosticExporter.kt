@@ -32,6 +32,10 @@ import javax.inject.Singleton
 
 private val THREAT_INTEL_DIAGNOSTIC_REASONS = setOf("threat_intel_domain", "threat_intel_ip")
 
+interface DiagnosticPackageGenerator {
+    suspend fun generateZip(context: Context): File
+}
+
 internal data class ThreatIntelDiagnosticReviewRow(
     val feedName: String,
     val matchType: String,
@@ -100,11 +104,31 @@ class DiagnosticExporter @Inject constructor(
     private val privateDnsDetector: PrivateDnsDetector,
     private val diagnosticEventStore: DiagnosticEventStore,
     private val threatIntelManager: ThreatIntelManager
-) {
+) : DiagnosticPackageGenerator {
     companion object {
         private const val TAG = "DiagExport"
         private const val DIAGNOSTIC_COMMAND_TIMEOUT_MS = 2_000L
         private const val MAX_DIAGNOSTIC_COMMAND_OUTPUT_BYTES = 64L * 1024L
+        private const val DIAGNOSTIC_DIR_NAME = "diagnostics"
+        private const val DIAGNOSTIC_FILE_PREFIX = "hostshield-diag-"
+        private const val DIAGNOSTIC_MAX_AGE_MS = 24L * 60L * 60L * 1000L
+
+        /** Resolve a diagnostic artifact and sweep only stale diagnostic files. */
+        internal fun prepareDiagnosticFile(cacheDir: File, suffix: String, nowMs: Long): File {
+            require(suffix == ".txt" || suffix == ".zip") { "Unsupported diagnostic suffix" }
+            val dir = File(cacheDir, DIAGNOSTIC_DIR_NAME).apply { mkdirs() }
+            val cutoff = nowMs - DIAGNOSTIC_MAX_AGE_MS
+            dir.listFiles()
+                ?.asSequence()
+                ?.filter {
+                    it.isFile &&
+                        it.name.startsWith(DIAGNOSTIC_FILE_PREFIX) &&
+                        (it.name.endsWith(".txt") || it.name.endsWith(".zip")) &&
+                        it.lastModified() < cutoff
+                }
+                ?.forEach { it.delete() }
+            return File(dir, "$DIAGNOSTIC_FILE_PREFIX$nowMs$suffix")
+        }
     }
 
     /**
@@ -316,9 +340,7 @@ class DiagnosticExporter @Inject constructor(
         sb.appendLine("── End of Report ───────────────────────────────────")
 
         // Write to file
-        val dir = File(context.cacheDir, "diagnostics")
-        dir.mkdirs()
-        val file = File(dir, "hostshield-diag-${System.currentTimeMillis()}.txt")
+        val file = prepareDiagnosticFile(context.cacheDir, ".txt", System.currentTimeMillis())
         file.writeText(sb.toString())
         Log.i(TAG, "Diagnostic report: ${file.absolutePath} (${file.length()} bytes)")
         file
@@ -327,7 +349,7 @@ class DiagnosticExporter @Inject constructor(
     /**
      * Generate a ZIP package containing the text report and raw event JSONL.
      */
-    suspend fun generateZip(context: Context): File = withContext(Dispatchers.IO) {
+    override suspend fun generateZip(context: Context): File = withContext(Dispatchers.IO) {
         val report = generate(context)
         val eventsJsonl = diagnosticEventStore.readJsonlSnapshot()
         val remoteDohVersion = prefs.getRemoteDohVersion()
@@ -335,34 +357,37 @@ class DiagnosticExporter @Inject constructor(
         val remoteDohWildcardCount = countCsvValues(prefs.getRemoteDohWildcards())
         val threatFeeds = threatIntelManager.getFeedHealthSnapshot()
         val threatReviewSummary = summarizeThreatIntelReviewLogs(dnsLogDao.getRecentLogs(500).first())
-        val dir = File(context.cacheDir, "diagnostics")
-        dir.mkdirs()
-
-        val zip = File(dir, "hostshield-diag-${System.currentTimeMillis()}.zip")
-        ZipOutputStream(FileOutputStream(zip)).use { zos ->
-            zos.addFileEntry("hostshield-diagnostic.txt", report)
-            zos.addTextEntry("diagnostic-events.jsonl", eventsJsonl)
-            zos.addTextEntry(
-                "manifest.json",
-                JSONObject()
-                    .put("generated_at_ms", System.currentTimeMillis())
-                    .put("app_version", BuildConfig.VERSION_NAME)
-                    .put("version_code", BuildConfig.VERSION_CODE)
-                    .put("event_count", eventsJsonl.lineSequence().filter { it.isNotBlank() }.count())
-                    .put("doh_pin_manifest_version", DohPinManifest.VERSION)
-                    .put("doh_pin_manifest_issued_on", DohPinManifest.ISSUED_ON)
-                    .put("remote_doh_bypass_version", remoteDohVersion)
-                    .put("remote_doh_bypass_domain_count", remoteDohDomainCount)
-                    .put("remote_doh_bypass_wildcard_count", remoteDohWildcardCount)
-                    .put("threat_intel_domain_count", threatIntelManager.domainCount)
-                    .put("threat_intel_ip_cidr_count", threatIntelManager.ipCidrCount)
-                    .put("threat_intel_feed_count", threatFeeds.size)
-                    .put("threat_intel_degraded_feed_count", threatFeeds.count { it.consecutiveFailures > 0 })
-                    .put("threat_intel_review_block_count", threatReviewSummary.blockCount)
-                    .put("threat_intel_review_domain_count", threatReviewSummary.domainCount)
-                    .put("threat_intel_review_summary_count", threatReviewSummary.rows.size)
-                    .toString(2)
-            )
+        val zip = prepareDiagnosticFile(context.cacheDir, ".zip", System.currentTimeMillis())
+        try {
+            ZipOutputStream(FileOutputStream(zip)).use { zos ->
+                zos.addFileEntry("hostshield-diagnostic.txt", report)
+                zos.addTextEntry("diagnostic-events.jsonl", eventsJsonl)
+                zos.addTextEntry(
+                    "manifest.json",
+                    JSONObject()
+                        .put("generated_at_ms", System.currentTimeMillis())
+                        .put("app_version", BuildConfig.VERSION_NAME)
+                        .put("version_code", BuildConfig.VERSION_CODE)
+                        .put("event_count", eventsJsonl.lineSequence().filter { it.isNotBlank() }.count())
+                        .put("doh_pin_manifest_version", DohPinManifest.VERSION)
+                        .put("doh_pin_manifest_issued_on", DohPinManifest.ISSUED_ON)
+                        .put("remote_doh_bypass_version", remoteDohVersion)
+                        .put("remote_doh_bypass_domain_count", remoteDohDomainCount)
+                        .put("remote_doh_bypass_wildcard_count", remoteDohWildcardCount)
+                        .put("threat_intel_domain_count", threatIntelManager.domainCount)
+                        .put("threat_intel_ip_cidr_count", threatIntelManager.ipCidrCount)
+                        .put("threat_intel_feed_count", threatFeeds.size)
+                        .put("threat_intel_degraded_feed_count", threatFeeds.count { it.consecutiveFailures > 0 })
+                        .put("threat_intel_review_block_count", threatReviewSummary.blockCount)
+                        .put("threat_intel_review_domain_count", threatReviewSummary.domainCount)
+                        .put("threat_intel_review_summary_count", threatReviewSummary.rows.size)
+                        .toString(2)
+                )
+            }
+        } finally {
+            // The report is embedded in the ZIP and is not itself a user-facing
+            // artifact. Keeping it doubles sensitive cache residue.
+            report.delete()
         }
 
         Log.i(TAG, "Diagnostic package: ${zip.absolutePath} (${zip.length()} bytes)")
