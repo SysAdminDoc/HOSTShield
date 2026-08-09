@@ -3,6 +3,18 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.67] - 2026-08-09
+
+Roadmap drain — completed the local backup/export and threat-intelligence
+health work that remained actionable without device-gated or product decisions.
+
+- Backups now use schema v2, roundtrip current Room and preference state through
+  real tests, and keep endpoint/password material encrypted-only.
+- Diagnostic and PCAP artifacts share a bounded cache lifecycle, with a
+  testable diagnostic generation seam and stale-artifact cleanup.
+- Threat-feed parser drift is counted and surfaced as degraded health, retained
+  feed metrics survive refresh failures, and diagnostics include the summary.
+
 ## [v6.9.66] - 2026-08-03
 
 Deep audit wave 3 — ~35 verified fixes in the surfaces earlier passes skipped:

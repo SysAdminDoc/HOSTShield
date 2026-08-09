@@ -1,3 +1,15 @@
+# HostShield v6.9.67
+
+## Roadmap drain (2026-08-09)
+
+- Backup schema v2 now roundtrips current Room and preference state through the
+  real utility, while sensitive endpoint and credential fields remain
+  encrypted-only.
+- Diagnostic and PCAP exports clean stale cache artifacts and expose a
+  testable diagnostic generation seam.
+- Threat-intel feeds count malformed entries, preserve last-good metrics across
+  failures, and expose parser drift in Stats and diagnostics.
+
 # HostShield v6.9.66
 
 ## Roadmap drain (2026-08-03)
