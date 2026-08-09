@@ -28,6 +28,11 @@ data class BackupResult(
     val firewallRulesCount: Int = 0
 )
 
+data class BackupPayload(
+    val json: String,
+    val encrypted: Boolean
+)
+
 @Singleton
 class BackupRestoreUtil @Inject constructor(
     private val database: com.hostshield.data.database.HostShieldDatabase,
@@ -39,14 +44,16 @@ class BackupRestoreUtil @Inject constructor(
     private val prefs: AppPreferences
 ) {
     companion object {
+        const val BACKUP_SCHEMA_VERSION = 2
         const val MAX_BACKUP_BYTES = 25L * 1024L * 1024L
         private val HOST_LABEL_RE = Regex("""^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$""")
         private val PACKAGE_NAME_RE = Regex("""^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$""")
         private val IPV4_RE = Regex("""^(?:\d{1,3}\.){3}\d{1,3}$""")
         private val IPV6_LITERAL_RE = Regex("""^[0-9a-fA-F:]{2,45}$""")
 
-        fun decodeBackupBytes(rawBytes: ByteArray, passphrase: String? = null): String {
-            return if (BackupCrypto.isEncrypted(rawBytes)) {
+        fun decodeBackupPayload(rawBytes: ByteArray, passphrase: String? = null): BackupPayload {
+            val encrypted = BackupCrypto.isEncrypted(rawBytes)
+            val json = if (encrypted) {
                 if (passphrase.isNullOrEmpty()) {
                     throw EncryptedBackupException("Backup is encrypted. Please provide a passphrase.")
                 }
@@ -55,7 +62,11 @@ class BackupRestoreUtil @Inject constructor(
             } else {
                 String(rawBytes, Charsets.UTF_8)
             }
+            return BackupPayload(json = json, encrypted = encrypted)
         }
+
+        fun decodeBackupBytes(rawBytes: ByteArray, passphrase: String? = null): String =
+            decodeBackupPayload(rawBytes, passphrase).json
 
         internal fun normalizeRestoredSourceUrl(rawUrl: String): String? {
             val validation = SourceUrlPolicy.validate(rawUrl)
@@ -114,10 +125,10 @@ class BackupRestoreUtil @Inject constructor(
     /**
      * Create a full JSON backup of all app data.
      */
-    suspend fun createBackup(): String = withContext(Dispatchers.IO) {
+    suspend fun createBackup(includeSecrets: Boolean = false): String = withContext(Dispatchers.IO) {
         val root = JSONObject()
         root.put("app", "HostShield")
-        root.put("backup_version", 2)
+        root.put("backup_version", BACKUP_SCHEMA_VERSION)
         root.put("created_at", System.currentTimeMillis())
 
         // Sources (all, not just enabled)
@@ -244,7 +255,6 @@ class BackupRestoreUtil @Inject constructor(
         prefsObj.put("parental_enabled", prefs.parentalEnabled.first())
         prefsObj.put("parental_age_profile", prefs.parentalAgeProfile.first())
         prefsObj.put("wireguard_enabled", prefs.wireGuardEnabled.first())
-        prefsObj.put("wireguard_endpoint", prefs.wireGuardEndpoint.first())
         prefsObj.put("wireguard_dns_ip", prefs.wireGuardDnsIp.first())
 
         // v2 UI
@@ -270,7 +280,29 @@ class BackupRestoreUtil @Inject constructor(
         // v2 firewall
         prefsObj.put("blocked_apps", JSONArray(prefs.blockedApps.first().toList()))
 
+        // v2 LAN DNS
+        prefsObj.put("lan_dns_enabled", prefs.lanDnsEnabled.first())
+        prefsObj.put("lan_dns_port", prefs.lanDnsPort.first())
+        prefsObj.put("lan_dns_allow_external_clients", prefs.lanDnsAllowExternalClients.first())
+
+        // The peer public key and tunnel DNS address are not credentials. The
+        // endpoint, private key, optional PSK, WebDAV password, and parental
+        // PIN hash are Keystore-backed secrets and are intentionally omitted
+        // from plaintext/automatic backups. They are included only when the
+        // caller is producing an encrypted export.
+        prefsObj.put("wireguard_public_key", prefs.wireGuardPublicKey.first())
+
         root.put("preferences", prefsObj)
+
+        if (includeSecrets) {
+            root.put("encrypted_secrets", JSONObject().apply {
+                put("wireguard_endpoint", prefs.wireGuardEndpoint.first())
+                put("wireguard_private_key", prefs.wireGuardPrivateKey.first())
+                put("wireguard_preshared_key", prefs.wireGuardPresharedKey.first())
+                put("webdav_password", prefs.webdavPassword.first())
+                put("parental_pin_hash", prefs.parentalPinHash.first())
+            })
+        }
 
         root.toString(2)
     }
@@ -302,7 +334,7 @@ class BackupRestoreUtil @Inject constructor(
     /**
      * Restore from a backup JSON string.
      */
-    suspend fun restoreBackup(json: String): BackupResult = withContext(Dispatchers.IO) {
+    suspend fun restoreBackup(json: String, allowSecrets: Boolean = false): BackupResult = withContext(Dispatchers.IO) {
         // Parse the whole document up front so a JSON error aborts before any
         // write, and run every entity insert inside a single Room transaction so
         // a mid-restore failure rolls back rather than leaving half-applied state.
@@ -524,8 +556,8 @@ class BackupRestoreUtil @Inject constructor(
             if (p.has("parental_enabled")) prefs.setParentalEnabled(p.getBoolean("parental_enabled"))
             if (p.has("parental_age_profile")) prefs.setParentalAgeProfile(p.getString("parental_age_profile"))
             if (p.has("wireguard_enabled")) prefs.setWireGuardEnabled(p.getBoolean("wireguard_enabled"))
-            if (p.has("wireguard_endpoint")) prefs.setWireGuardEndpoint(p.getString("wireguard_endpoint"))
             if (p.has("wireguard_dns_ip")) prefs.setWireGuardDnsIp(p.getString("wireguard_dns_ip"))
+            if (p.has("wireguard_public_key")) prefs.setWireGuardPublicKey(p.getString("wireguard_public_key"))
 
             // v2 UI
             if (p.has("accent_color")) prefs.setAccentColor(p.getString("accent_color"))
@@ -564,6 +596,37 @@ class BackupRestoreUtil @Inject constructor(
                 for (i in 0 until blockedArr.length()) blocked.add(blockedArr.getString(i))
                 prefs.setBlockedApps(blocked)
             }
+
+            // LAN DNS is preference-only state; the service observer owns the
+            // actual foreground-service lifecycle after restore.
+            if (p.has("lan_dns_enabled")) prefs.setLanDnsEnabled(p.getBoolean("lan_dns_enabled"))
+            if (p.has("lan_dns_port")) {
+                val port = p.getInt("lan_dns_port")
+                if (port in 1024..65535) prefs.setLanDnsPort(port)
+            }
+            if (p.has("lan_dns_allow_external_clients")) {
+                prefs.setLanDnsAllowExternalClients(p.getBoolean("lan_dns_allow_external_clients"))
+            }
+
+            if (allowSecrets) {
+                root.optJSONObject("encrypted_secrets")?.let { secrets ->
+                    if (secrets.has("wireguard_endpoint")) {
+                        prefs.setWireGuardEndpoint(secrets.getString("wireguard_endpoint"))
+                    }
+                    if (secrets.has("wireguard_private_key")) {
+                        prefs.setWireGuardPrivateKey(secrets.getString("wireguard_private_key"))
+                    }
+                    if (secrets.has("wireguard_preshared_key")) {
+                        prefs.setWireGuardPresharedKey(secrets.getString("wireguard_preshared_key"))
+                    }
+                    if (secrets.has("webdav_password")) {
+                        prefs.setWebdavPassword(secrets.getString("webdav_password"))
+                    }
+                    if (secrets.has("parental_pin_hash")) {
+                        prefs.setParentalPinHash(secrets.getString("parental_pin_hash"))
+                    }
+                }
+            }
         }
 
         BackupResult(sourcesCount, rulesCount, profilesCount, firewallRulesCount)
@@ -577,17 +640,23 @@ class BackupRestoreUtil @Inject constructor(
      * so the caller can prompt the user for a passphrase.
      * Plaintext JSON files are returned as-is regardless of passphrase.
      */
-    suspend fun readBackupFromUri(
+    suspend fun readBackupPayloadFromUri(
         context: Context,
         uri: Uri,
         passphrase: String? = null
-    ): String = withContext(Dispatchers.IO) {
+    ): BackupPayload = withContext(Dispatchers.IO) {
         val rawBytes = context.contentResolver.openInputStream(uri)?.use { stream ->
             BoundedInputReader.readBytes(stream, MAX_BACKUP_BYTES, "Backup file")
         } ?: throw Exception("Cannot open input stream")
 
-        decodeBackupBytes(rawBytes, passphrase)
+        decodeBackupPayload(rawBytes, passphrase)
     }
+
+    suspend fun readBackupFromUri(
+        context: Context,
+        uri: Uri,
+        passphrase: String? = null
+    ): String = readBackupPayloadFromUri(context, uri, passphrase).json
 }
 
 /**

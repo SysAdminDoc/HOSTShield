@@ -852,7 +852,8 @@ class SettingsViewModel @Inject constructor(
     fun backupToUri(uri: Uri, passphrase: String? = null) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val json = backupRestore.createBackup()
+                val encrypted = !passphrase.isNullOrEmpty()
+                val json = backupRestore.createBackup(includeSecrets = encrypted)
                 if (passphrase.isNullOrEmpty()) {
                     val artifact = buildContentExportArtifact(
                         kind = ExportArtifactKind.BACKUP,
@@ -879,8 +880,8 @@ class SettingsViewModel @Inject constructor(
     fun restoreFromUri(uri: Uri, passphrase: String? = null) {
         viewModelScope.launch {
             try {
-                val json = backupRestore.readBackupFromUri(getApplication(), uri, passphrase)
-                val result = backupRestore.restoreBackup(json)
+                val payload = backupRestore.readBackupPayloadFromUri(getApplication(), uri, passphrase)
+                val result = backupRestore.restoreBackup(payload.json, allowSecrets = payload.encrypted)
                 _uiState.update {
                     it.copy(
                         backupDialog = BackupDialogState.None,
