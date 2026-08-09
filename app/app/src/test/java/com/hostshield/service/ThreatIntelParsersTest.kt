@@ -52,6 +52,17 @@ class ThreatIntelParsersTest {
     }
 
     @Test
+    fun `ip list parser reports malformed tokens without dropping valid entries`() {
+        val result = parseThreatIpCidrsWithDiagnostics(
+            "999.1.1.1 1.2.3.4/7 10.0.0.0/8 192.168.1.1/33",
+            "Feed"
+        )
+
+        assertEquals(listOf("10.0.0.0/8" to "Feed"), result.cidrs)
+        assertEquals(3, result.malformedEntryCount)
+    }
+
+    @Test
     fun `threat ip token normalizer rejects malformed Spamhaus-shaped tokens`() {
         // The Spamhaus DROP parser now validates every token through this helper,
         // so an out-of-range octet cannot be mapped onto the 0.0.0.0 bit path.

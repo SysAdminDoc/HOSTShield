@@ -217,7 +217,7 @@ class DiagnosticExporter @Inject constructor(
             sb.appendLine("Last complete update: ${diagnosticAge(threatIntelManager.lastUpdated)}")
             feeds.forEach { feed ->
                 sb.appendLine(
-                    "Feed ${feed.name}: ${diagnosticFeedStatus(feed)}, entries=${feed.entryCount}, http=${if (feed.httpStatus > 0) feed.httpStatus else "-"}, failures=${feed.consecutiveFailures}, last_success=${diagnosticAge(feed.lastSuccess)}, sha256=${feed.sha256.take(12).ifBlank { "-" }}"
+                    "Feed ${feed.name}: ${diagnosticFeedStatus(feed)}, entries=${feed.entryCount}, malformed=${feed.malformedEntryCount}, http=${if (feed.httpStatus > 0) feed.httpStatus else "-"}, failures=${feed.consecutiveFailures}, last_success=${diagnosticAge(feed.lastSuccess)}, sha256=${feed.sha256.take(12).ifBlank { "-" }}"
                 )
                 if (feed.lastError.isNotBlank()) {
                     sb.appendLine("  Last error: ${feed.lastError}")
@@ -378,6 +378,7 @@ class DiagnosticExporter @Inject constructor(
                         .put("threat_intel_ip_cidr_count", threatIntelManager.ipCidrCount)
                         .put("threat_intel_feed_count", threatFeeds.size)
                         .put("threat_intel_degraded_feed_count", threatFeeds.count { it.consecutiveFailures > 0 })
+                        .put("threat_intel_malformed_entry_count", threatFeeds.sumOf { it.malformedEntryCount })
                         .put("threat_intel_review_block_count", threatReviewSummary.blockCount)
                         .put("threat_intel_review_domain_count", threatReviewSummary.domainCount)
                         .put("threat_intel_review_summary_count", threatReviewSummary.rows.size)
@@ -463,6 +464,7 @@ class DiagnosticExporter @Inject constructor(
             feed.lastSuccess == 0L && feed.lastFailure == 0L -> "no_cache"
             feed.lastSuccess == 0L -> "failed"
             feed.consecutiveFailures > 0 && feed.lastFailure >= feed.lastSuccess -> "degraded"
+            feed.malformedEntryCount > 0 -> "degraded"
             now - feed.lastSuccess > 48 * 60 * 60 * 1000L -> "stale"
             else -> "fresh"
         }

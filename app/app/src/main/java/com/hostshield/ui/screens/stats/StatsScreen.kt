@@ -786,7 +786,7 @@ private fun ThreatIntelFeedHealthRow(feed: ThreatIntelFeedHealthUi, numberFormat
         val bytes = formatThreatIntelBytes(feed.bytesDownloaded)
         val hash = feed.sha256Short.ifBlank { "-" }
         Text(
-            "Bytes $bytes | SHA-256 $hash | Failures ${feed.consecutiveFailures}",
+            "Bytes $bytes | SHA-256 $hash | Failures ${feed.consecutiveFailures} | Malformed ${numberFormat.format(feed.malformedEntryCount)}",
             color = TextDim,
             fontSize = 10.sp,
             lineHeight = 14.sp

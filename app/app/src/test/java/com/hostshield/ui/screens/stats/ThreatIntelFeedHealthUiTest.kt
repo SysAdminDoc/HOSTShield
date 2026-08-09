@@ -73,6 +73,22 @@ class ThreatIntelFeedHealthUiTest {
     }
 
     @Test
+    fun `maps parser drift to degraded`() {
+        val now = 1_000_000L
+        val ui = ThreatIntelFeedHealthUi.fromHealth(
+            ThreatIntelManager.FeedHealth(
+                name = "URLhaus",
+                lastSuccess = now - 30_000L,
+                malformedEntryCount = 4
+            ),
+            nowMs = now
+        )
+
+        assertEquals(ThreatIntelFeedStatus.DEGRADED, ui.status)
+        assertEquals(4, ui.malformedEntryCount)
+    }
+
+    @Test
     fun `maps never refreshed feed to no cache`() {
         val ui = ThreatIntelFeedHealthUi.fromHealth(
             ThreatIntelManager.FeedHealth(name = "URLhaus"),

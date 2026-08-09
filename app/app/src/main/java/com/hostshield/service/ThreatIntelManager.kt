@@ -18,16 +18,30 @@ import javax.inject.Singleton
 private val THREAT_IPV4_TOKEN = Regex("""(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?(?![\d.])""")
 private val THREAT_DOMAIN_LABEL = Regex("""^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$""")
 
-internal fun parseThreatIpCidrs(body: String, source: String): List<Pair<String, String>> {
+internal data class ThreatIpParseResult(
+    val cidrs: List<Pair<String, String>>,
+    val malformedEntryCount: Int
+)
+
+internal fun parseThreatIpCidrsWithDiagnostics(body: String, source: String): ThreatIpParseResult {
     val cidrs = LinkedHashSet<Pair<String, String>>()
+    var malformedEntryCount = 0
     for (line in body.lineSequence()) {
         val searchable = line.substringBefore("#").substringBefore(";")
         for (match in THREAT_IPV4_TOKEN.findAll(searchable)) {
-            normalizeThreatIpToken(match.value)?.let { cidrs.add(it to source) }
+            val normalized = normalizeThreatIpToken(match.value)
+            if (normalized == null) {
+                malformedEntryCount++
+            } else {
+                cidrs.add(normalized to source)
+            }
         }
     }
-    return cidrs.toList()
+    return ThreatIpParseResult(cidrs.toList(), malformedEntryCount)
 }
+
+internal fun parseThreatIpCidrs(body: String, source: String): List<Pair<String, String>> =
+    parseThreatIpCidrsWithDiagnostics(body, source).cidrs
 
 internal fun normalizeThreatIpToken(token: String): String? {
     val parts = token.split("/", limit = 2)
@@ -103,7 +117,8 @@ class ThreatIntelManager @Inject constructor(
 
     private data class ParseResult(
         val domains: List<Pair<String, String>> = emptyList(),   // domain -> source
-        val cidrs: List<Pair<String, String>> = emptyList()      // cidr -> source
+        val cidrs: List<Pair<String, String>> = emptyList(),      // cidr -> source
+        val malformedEntryCount: Int = 0
     )
 
     data class FeedHealth(
@@ -115,7 +130,8 @@ class ThreatIntelManager @Inject constructor(
         val bytesDownloaded: Long = 0L,
         val sha256: String = "",
         val consecutiveFailures: Int = 0,
-        val lastError: String = ""
+        val lastError: String = "",
+        val malformedEntryCount: Int = 0
     )
 
     private data class DownloadResult(
@@ -299,7 +315,8 @@ class ThreatIntelManager @Inject constructor(
                         bytesDownloaded = h.optLong("bytes_downloaded"),
                         sha256 = h.optString("sha256", ""),
                         consecutiveFailures = h.optInt("consecutive_failures"),
-                        lastError = h.optString("last_error", "")
+                        lastError = h.optString("last_error", ""),
+                        malformedEntryCount = h.optInt("malformed_entry_count")
                     )
                 }
             }
@@ -364,23 +381,29 @@ class ThreatIntelManager @Inject constructor(
 
     private fun parseHostsFile(body: String, source: String): ParseResult {
         val domains = mutableListOf<Pair<String, String>>()
+        var malformedEntryCount = 0
         for (line in body.lineSequence()) {
             val trimmed = line.trim()
             if (trimmed.isEmpty() || trimmed.startsWith("#")) continue
             // Format: "127.0.0.1 malware.example.com" or "0.0.0.0 malware.example.com"
             val parts = trimmed.split("\\s+".toRegex())
-            if (parts.size >= 2 && (parts[0] == "127.0.0.1" || parts[0] == "0.0.0.0")) {
-                val domain = normalizeThreatDomainToken(parts[1])
-                if (domain != null) {
-                    domains.add(domain to source)
-                }
+            if (parts.size < 2 || (parts[0] != "127.0.0.1" && parts[0] != "0.0.0.0")) {
+                malformedEntryCount++
+                continue
+            }
+            val domain = normalizeThreatDomainToken(parts[1])
+            if (domain != null) {
+                domains.add(domain to source)
+            } else {
+                malformedEntryCount++
             }
         }
-        return ParseResult(domains = domains)
+        return ParseResult(domains = domains, malformedEntryCount = malformedEntryCount)
     }
 
     private fun parseSpamhausDrop(body: String, source: String): ParseResult {
         val cidrs = mutableListOf<Pair<String, String>>()
+        var malformedEntryCount = 0
         for (line in body.lineSequence()) {
             val trimmed = line.trim()
             if (trimmed.isEmpty() || trimmed.startsWith(";")) continue
@@ -389,26 +412,32 @@ class ThreatIntelManager @Inject constructor(
             // mapped onto the 0.0.0.0 bit path in the radix trie and flag benign
             // ranges.
             val cidr = trimmed.split(";", " ").first().trim()
-            normalizeThreatIpToken(cidr)?.let { cidrs.add(it to source) }
+            val normalized = normalizeThreatIpToken(cidr)
+            if (normalized == null) malformedEntryCount++
+            else cidrs.add(normalized to source)
         }
-        return ParseResult(cidrs = cidrs)
+        return ParseResult(cidrs = cidrs, malformedEntryCount = malformedEntryCount)
     }
 
     private fun parseIpList(body: String, source: String): ParseResult {
-        return ParseResult(cidrs = parseThreatIpCidrs(body, source))
+        val result = parseThreatIpCidrsWithDiagnostics(body, source)
+        return ParseResult(cidrs = result.cidrs, malformedEntryCount = result.malformedEntryCount)
     }
 
     private fun parseDomainList(body: String, source: String): ParseResult {
         val domains = mutableListOf<Pair<String, String>>()
+        var malformedEntryCount = 0
         for (line in body.lineSequence()) {
             val trimmed = line.trim()
             if (trimmed.isEmpty() || trimmed.startsWith("#")) continue
             val domain = normalizeThreatDomainToken(trimmed)
             if (domain != null) {
                 domains.add(domain to source)
+            } else {
+                malformedEntryCount++
             }
         }
-        return ParseResult(domains = domains)
+        return ParseResult(domains = domains, malformedEntryCount = malformedEntryCount)
     }
 
     // ── Network ───────────────────────────────────────────────
@@ -477,7 +506,8 @@ class ThreatIntelManager @Inject constructor(
                             bytesDownloaded = dl.bytesDownloaded,
                             sha256 = sha256Hex(body),
                             consecutiveFailures = 0,
-                            lastError = ""
+                            lastError = "",
+                            malformedEntryCount = result.malformedEntryCount
                         )
                         successCount++
                         Log.i(TAG, "Parsed ${feed.name}: ${result.domains.size} domains, ${result.cidrs.size} CIDRs")
@@ -489,11 +519,12 @@ class ThreatIntelManager @Inject constructor(
                             lastSuccess = prev?.lastSuccess ?: 0L,
                             lastFailure = System.currentTimeMillis(),
                             httpStatus = dl.httpStatus,
-                            entryCount = 0,
-                            bytesDownloaded = dl.bytesDownloaded,
-                            sha256 = "",
+                            entryCount = prev?.entryCount ?: 0,
+                            bytesDownloaded = prev?.bytesDownloaded ?: 0L,
+                            sha256 = prev?.sha256 ?: "",
                             consecutiveFailures = (prev?.consecutiveFailures ?: 0) + 1,
-                            lastError = "Parse: ${e.message?.take(120)}"
+                            lastError = "Parse: ${e.message?.take(120)}",
+                            malformedEntryCount = prev?.malformedEntryCount ?: 0
                         )
                     }
                 } else {
@@ -503,11 +534,12 @@ class ThreatIntelManager @Inject constructor(
                         lastSuccess = prev?.lastSuccess ?: 0L,
                         lastFailure = System.currentTimeMillis(),
                         httpStatus = dl.httpStatus,
-                        entryCount = 0,
-                        bytesDownloaded = 0L,
-                        sha256 = "",
+                        entryCount = prev?.entryCount ?: 0,
+                        bytesDownloaded = prev?.bytesDownloaded ?: 0L,
+                        sha256 = prev?.sha256 ?: "",
                         consecutiveFailures = (prev?.consecutiveFailures ?: 0) + 1,
-                        lastError = dl.error?.take(120) ?: "Download failed"
+                        lastError = dl.error?.take(120) ?: "Download failed",
+                        malformedEntryCount = prev?.malformedEntryCount ?: 0
                     )
                 }
             }
@@ -576,6 +608,7 @@ class ThreatIntelManager @Inject constructor(
                     put("sha256", h.sha256)
                     put("consecutive_failures", h.consecutiveFailures)
                     put("last_error", h.lastError)
+                    put("malformed_entry_count", h.malformedEntryCount)
                 })
             }
             json.put(CACHE_KEY_FEED_HEALTH, healthArray)

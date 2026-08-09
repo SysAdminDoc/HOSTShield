@@ -119,7 +119,8 @@ data class ThreatIntelFeedHealthUi(
     val bytesDownloaded: Long,
     val sha256Short: String,
     val consecutiveFailures: Int,
-    val lastError: String
+    val lastError: String,
+    val malformedEntryCount: Int
 ) {
     companion object {
         private const val STALE_AFTER_MS = 48 * 60 * 60 * 1000L
@@ -132,6 +133,7 @@ data class ThreatIntelFeedHealthUi(
                 health.lastSuccess == 0L && health.lastFailure == 0L -> ThreatIntelFeedStatus.NEVER_REFRESHED
                 health.lastSuccess == 0L -> ThreatIntelFeedStatus.FAILED
                 health.consecutiveFailures > 0 && health.lastFailure >= health.lastSuccess -> ThreatIntelFeedStatus.DEGRADED
+                health.malformedEntryCount > 0 -> ThreatIntelFeedStatus.DEGRADED
                 nowMs - health.lastSuccess > STALE_AFTER_MS -> ThreatIntelFeedStatus.STALE
                 else -> ThreatIntelFeedStatus.HEALTHY
             }
@@ -145,7 +147,8 @@ data class ThreatIntelFeedHealthUi(
                 bytesDownloaded = health.bytesDownloaded,
                 sha256Short = health.sha256.take(12),
                 consecutiveFailures = health.consecutiveFailures,
-                lastError = health.lastError
+                lastError = health.lastError,
+                malformedEntryCount = health.malformedEntryCount
             )
         }
     }
