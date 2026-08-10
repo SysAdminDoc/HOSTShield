@@ -1594,3 +1594,173 @@ See [`app/CHANGELOG.md`](app/CHANGELOG.md) for the full v6.4.0 release notes.
 ## [v4.6.0]
 
 - Latency sparkline, source stats, search history, query type chart.
+
+## Roadmap archive — 2026-08-10 — ROADMAP.md
+
+<details>
+<summary>Original roadmap snapshot</summary>
+
+```markdown
+# HostShield Roadmap
+
+Last refreshed: 2026-08-09
+Baseline: v6.9.67, versionCode 149
+
+## Principles
+
+- Local-first Android DNS firewall and blocker.
+- No hosted account model and no remote telemetry.
+- No-root VPN path remains first-class; root mode is a power-user accelerator.
+- Fail closed for encrypted DNS and security-sensitive downgrade paths.
+- Prefer auditable open-source dependencies, standards-track protocols, and local exportable diagnostics.
+- Experimental protocol code must stay behind clear maturity gates until audited or replaced.
+
+Research artifacts for this roadmap live in `.ai/research/2026-05-17/`.
+
+Release governance note: the project is licensed under GPL-3.0.
+
+## Autonomous Refresh - 2026-06-06
+
+This refresh resumed the existing roadmap instead of replacing it. Local
+inspection covered the repo root, recent git history, release docs,
+Android manifest/service lifecycle paths, security storage, automation intents,
+top-flow UI tests, diagnostics, PCAP export, threat intel, CI, and prior
+research docs. External research was refreshed against RethinkDNS, AdGuard for
+Android, NetGuard, AdAway, PCAPdroid, Android VPN/foreground-service docs, and
+Google Play package-visibility policy.
+
+## Watchlist
+
+- DELEG record standardization.
+- Android 16+ VPN and foreground service policy changes.
+- OkHttp 5 HTTP/3 maturity and Android behavior.
+- Cronet embedded update cadence and binary size/security tradeoffs.
+- DNSCrypt proxy stamp/protocol changes.
+- Hagezi/OISD format and licensing changes.
+- Play policy around `QUERY_ALL_PACKAGES`, VPN services, and content filtering.
+- Android 15 `dataSync` foreground-service timeout behavior for long-running
+  local VPN/root/proxy protection services.
+
+## Not Planned
+
+- Hosted cloud resolver account model. It conflicts with HostShield's local-first/no-telemetry identity.
+- Browser extension form factor. Browser blockers already own that layer; HostShield's value is Android OS-level coverage.
+- Third-party telemetry or crash SDK. Use local event log and manual export instead.
+- Bundled general-purpose VPN service. HostShield can coexist with VPNs and route DNS, but should not become a VPN provider.
+- Closed-source binary resolver/filter engines for production defaults.
+
+## Source Index
+
+Local source IDs and external source IDs are defined in `.ai/research/2026-05-17/SOURCE_REGISTER.md`.
+
+Core local evidence:
+
+- L003 `README.md`
+- L004 `CHANGELOG.md`
+- L008 `app/app/build.gradle.kts`
+- L012 `AndroidManifest.xml`
+- L013 `DnsVpnService.kt`
+- L014 `BlocklistHolder.kt`
+- L015 `DohResolver.kt`
+- L018 `DoqResolver.kt`
+- L019 `WireGuardProxy.kt`
+- L020 `DnsStampParser.kt`
+- L021 `DnsCryptRoutePlanner.kt`
+- L022 `SecureStore.kt`, `PasswordKdf.kt`
+- L023 `BackupCrypto.kt`, `BackupNonceLedger.kt`, `EncryptedBackup.kt`
+- L024-L026 Room database and migrations
+- L027 `TrackerSignatureDb.kt`
+- L028 `GeoIpLookup.kt`
+- L029 curated blocklists
+- L030 `AndroidManifest.xml`, `BootReceiver.kt`, `DnsVpnService.kt`,
+  `RootDnsService.kt`, `DnsProxyService.kt`, `AutomationReceiver.kt`
+- L031 `TopFlowComposeTest.kt`, `HostShieldTestTags.kt`, primary Compose screens
+- L032 `PcapExporter.kt`, `DiagnosticExporter.kt`, `ThreatIntelManager.kt`
+- L033 `.github/workflows/release.yml`, `tools/check-release-docs.ps1`,
+  `tools/release-provenance.ps1`, `app/metadata/en-US/*`, `app/README.md`
+- L034 `SettingsScreen.kt`, `SettingsViewModel.kt`, `BackupRestoreUtil.kt`,
+  `BackupRestoreUtilTest.kt`, `BackupCryptoTest.kt`, `AppPreferences.kt`
+- L035 `ProtectionSettingsSection.kt`, `DiagnosticEventStore.kt`,
+  `PcapExporterTest.kt`, `file_paths.xml`, `AndroidManifest.xml` FileProvider
+  declaration
+- L036 `ThreatIntelManager.kt`, `ThreatIntelWorker.kt`,
+  `SourceHealthWorker.kt`, `DnsVpnService.kt`, `Entities.kt`, `Daos.kt`,
+  `StatsScreen.kt`, `HomeStatsSection.kt`, `SourcesScreen.kt`, and
+  threat-intel log/UI call sites
+
+Primary external evidence:
+
+- E001-E014 Android platform, Compose, Room, Material, and build docs.
+- E015-E036 direct competitors and adjacent DNS/firewall projects.
+- E037-E041 DNSCrypt implementation references.
+- E042-E051 DNS standards.
+- E052-E066 and E083 security and dependency references.
+- E067-E075 datasets and distribution references.
+- E076-E078 hardened Android and VPN coexistence references.
+- E085 Android Developers: Android 15 `dataSync` foreground-service timeout
+  behavior, https://developer.android.com/about/versions/15/behavior-changes-15
+- E086 Android Developers: foreground service type guidance and boot-start
+  restrictions, https://developer.android.com/develop/background-work/services/fgs/service-types
+- E087 Android Developers: VPN, always-on VPN, per-app VPN, and bypass behavior,
+  https://developer.android.com/develop/connectivity/vpn
+- E088 Google Play policy: `QUERY_ALL_PACKAGES` package visibility permission,
+  https://support.google.com/googleplay/android-developer/answer/10158779
+- E089 RethinkDNS Android app and docs, https://github.com/celzero/rethink-app
+  and https://docs.rethinkdns.com/firewall/
+- E090 AdGuard for Android feature/UX notes, https://adguard.com/en/blog/adguard-v4-0-for-android-old-vs-new.html
+  and https://adguard.com/en/blog/in-depth-review-adguard-for-android.html
+- E091 NetGuard README/FAQ, https://github.com/M66B/NetGuard
+- E092 AdAway README, https://github.com/AdAway/AdAway
+- E093 PCAPdroid README/docs, https://github.com/emanuele-f/PCAPdroid
+- E094 Android 16 VPN market-signal reports, including
+  https://www.techradar.com/vpn/vpn-privacy-security/problems-with-your-android-vpn-warns-its-googles-fault
+- E095 DNSCrypt upstream/protocol references, https://github.com/DNSCrypt/dnscrypt-proxy
+  and https://dnscrypt.info/protocol
+- E096 IETF OPSAWG pcapng draft, including Section Header, Interface
+  Description, Enhanced Packet, Name Resolution, Interface Statistics, comments,
+  and custom extension guidance,
+  https://datatracker.ietf.org/doc/draft-ietf-opsawg-pcapng/
+- E097 AndroidX FileProvider docs for content-URI sharing and temporary grants,
+  https://developer.android.com/reference/androidx/core/content/FileProvider
+- E098 Android Storage Access Framework docs for user-chosen document creation,
+  https://developer.android.com/training/data-storage/shared/documents-files
+- E099 PCAPdroid user guide dump modes and PCAPng feature notes,
+  https://emanuele-f.github.io/PCAPdroid/dump_modes and
+  https://emanuele-f.github.io/PCAPdroid/paid_features
+- E100 Wireshark TLS/decryption-secrets references for PCAPng DSB expectations,
+  https://wiki.wireshark.org/TLS and https://wiki.wireshark.org/DecryptionBlock
+- E101 URLhaus Community API and download behavior, including feed freshness and
+  auth-key expectations, https://urlhaus.abuse.ch/api/
+- E102 Spamhaus DROP FAQ, including DROP/eDROP merge, attribution, and refresh
+  cadence expectations, https://www.spamhaus.org/faqs/do-not-route-or-peer-drop/
+- E103 Emerging Threats compromised-IP feed current output shape,
+  https://rules.emergingthreats.net/blockrules/compromised-ips.txt
+- E104 PCAPdroid paid malware-detection/status UX and blacklist update model,
+  https://emanuele-f.github.io/PCAPdroid/paid_features
+- E105 HaGeZi DNS blocklists and Threat Intelligence Feed variants,
+  https://github.com/hagezi/dns-blocklists
+
+## Audit Findings — 2026-07-22 (v6.9.59 deep audit)
+
+The v6.9.59 pass fixed ~45 issues across correctness, security, UX, theming, and
+accessibility (see CHANGELOG). The items below were found but deferred because
+they need a device, a product decision, an external key, or an unreleased SDK.
+
+### P3 — Deferred correctness / coverage
+
+## Audit Findings — 2026-07-28 (v6.9.63/6.9.64 passes)
+
+The v6.9.63 deep pass fixed ~65 issues; the v6.9.64 pass added a README
+background/support section (issue #2) and two defensive hardenings (DoQ
+STREAM-frame bounds guard, HostsParser IP-classification parenthesization). No
+new actionable correctness/security findings surfaced — the codebase is
+consistently well-hardened.
+
+## Audit Findings — 2026-07-28 (v6.9.65 pass, verified-unfixed)
+
+The v6.9.65 pass fixed ~35 issues across workers, root-mode lifecycle, widgets/
+tile/notifications, and secondary screens (see CHANGELOG). The items below were
+verified real but need a device, a product decision, or a design choice.
+```
+
+</details>
