@@ -1,5 +1,6 @@
 package com.hostshield.service
 
+import androidx.annotation.VisibleForTesting
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -341,7 +342,8 @@ class IptablesManager @Inject constructor(
 
     // ---- Script Generation (AFWall+ pattern) --------------------
 
-    private fun buildScript(rules: List<FirewallRule>, mode: FirewallMode): List<String> {
+    @VisibleForTesting
+    internal fun buildScript(rules: List<FirewallRule>, mode: FirewallMode): List<String> {
         val cmds = mutableListOf<String>()
 
         // Clear existing chains
@@ -458,7 +460,8 @@ class IptablesManager @Inject constructor(
         return cmds
     }
 
-    private fun buildClearScript(): List<String> {
+    @VisibleForTesting
+    internal fun buildClearScript(): List<String> {
         val cmds = mutableListOf<String>()
 
         // Remove jump from OUTPUT

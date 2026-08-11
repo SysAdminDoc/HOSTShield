@@ -1,5 +1,6 @@
 package com.hostshield.service
 
+import androidx.annotation.VisibleForTesting
 import android.util.Log
 import com.hostshield.util.DiagnosticEventStore
 import com.hostshield.util.DiagnosticEventType
@@ -37,7 +38,8 @@ class DohResolver @Inject constructor(
         // RFC 8484 caps the wire-format response at 65535 bytes. Anything larger
         // is malformed or hostile. We also reject responses smaller than the
         // 12-byte DNS header to avoid handing partial messages to parsers.
-        private const val MAX_DOH_RESPONSE = 65535
+        @VisibleForTesting
+        internal const val MAX_DOH_RESPONSE = 65535
         private const val MIN_DNS_MESSAGE = 12
         // After this many consecutive failures, a provider is demoted to the end
         // of the failover order so we stop hitting a known-broken endpoint first.
@@ -262,7 +264,8 @@ class DohResolver @Inject constructor(
      * load a multi-megabyte body into memory, which a hostile or misconfigured
      * endpoint could use to OOM the VPN process.
      */
-    private fun readBoundedBody(resp: okhttp3.Response): ByteArray? {
+    @VisibleForTesting
+    internal fun readBoundedBody(resp: okhttp3.Response): ByteArray? {
         val body = resp.body
         val declared = body.contentLength()
         if (declared > MAX_DOH_RESPONSE) {
