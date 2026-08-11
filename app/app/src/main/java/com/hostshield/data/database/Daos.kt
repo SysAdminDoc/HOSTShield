@@ -97,7 +97,7 @@ interface UserRuleDao {
     @Query("SELECT * FROM user_rules WHERE is_regex = 1 AND enabled = 1")
     suspend fun getEnabledRegexRules(): List<UserRule>
 
-    @Query("SELECT * FROM user_rules WHERE hostname LIKE '%' || :query || '%'")
+    @Query("SELECT * FROM user_rules WHERE hostname LIKE '%' || :query || '%' ESCAPE '\'")
     fun search(query: String): Flow<List<UserRule>>
 
     @Query("SELECT COUNT(*) FROM user_rules WHERE type = :type")
@@ -136,7 +136,7 @@ interface DnsLogDao {
     @Query("SELECT * FROM dns_logs WHERE blocked = 1 ORDER BY timestamp DESC LIMIT :limit")
     fun getBlockedLogs(limit: Int = 500): Flow<List<DnsLogEntry>>
 
-    @Query("SELECT * FROM dns_logs WHERE hostname LIKE '%' || :query || '%' ORDER BY timestamp DESC LIMIT :limit")
+    @Query("SELECT * FROM dns_logs WHERE hostname LIKE '%' || :query || '%' ESCAPE '\' ORDER BY timestamp DESC LIMIT :limit")
     fun searchLogs(query: String, limit: Int = 200): Flow<List<DnsLogEntry>>
 
     @Query("SELECT hostname, COUNT(*) as cnt FROM dns_logs WHERE blocked = 1 GROUP BY hostname ORDER BY cnt DESC LIMIT :limit")
@@ -500,7 +500,7 @@ interface FirewallRuleDao {
     @Query("SELECT COUNT(*) FROM firewall_rules WHERE wifi_allowed = 0 OR mobile_allowed = 0 OR vpn_allowed = 0")
     fun getBlockedCount(): Flow<Int>
 
-    @Query("SELECT * FROM firewall_rules WHERE app_label LIKE '%' || :query || '%' OR package_name LIKE '%' || :query || '%'")
+    @Query("SELECT * FROM firewall_rules WHERE app_label LIKE '%' || :query || '%' ESCAPE '\' OR package_name LIKE '%' || :query || '%' ESCAPE '\'")
     fun search(query: String): Flow<List<FirewallRule>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

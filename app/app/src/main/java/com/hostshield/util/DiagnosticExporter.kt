@@ -385,6 +385,12 @@ class DiagnosticExporter @Inject constructor(
                         .toString(2)
                 )
             }
+        } catch (e: Throwable) {
+            // A half-written ZIP is not a usable artifact, and it sits in the
+            // FileProvider-exposed diagnostics dir carrying DNS metadata until the
+            // 24h sweep catches it a day later. Remove it before rethrowing.
+            zip.delete()
+            throw e
         } finally {
             // The report is embedded in the ZIP and is not itself a user-facing
             // artifact. Keeping it doubles sensitive cache residue.
@@ -464,8 +470,8 @@ class DiagnosticExporter @Inject constructor(
             feed.lastSuccess == 0L && feed.lastFailure == 0L -> "no_cache"
             feed.lastSuccess == 0L -> "failed"
             feed.consecutiveFailures > 0 && feed.lastFailure >= feed.lastSuccess -> "degraded"
-            feed.malformedEntryCount > 0 -> "degraded"
             now - feed.lastSuccess > 48 * 60 * 60 * 1000L -> "stale"
+            feed.isMalformedRatioSignificant -> "degraded"
             else -> "fresh"
         }
     }

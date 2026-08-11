@@ -133,8 +133,12 @@ data class ThreatIntelFeedHealthUi(
                 health.lastSuccess == 0L && health.lastFailure == 0L -> ThreatIntelFeedStatus.NEVER_REFRESHED
                 health.lastSuccess == 0L -> ThreatIntelFeedStatus.FAILED
                 health.consecutiveFailures > 0 && health.lastFailure >= health.lastSuccess -> ThreatIntelFeedStatus.DEGRADED
-                health.malformedEntryCount > 0 -> ThreatIntelFeedStatus.DEGRADED
+                // Freshness outranks parser drift: a feed that has not refreshed in
+                // days is STALE (actionable) rather than DEGRADED because one entry
+                // was odd. A ratio threshold keeps a single header line (e.g.
+                // "127.0.0.1 localhost") from pinning a feed to DEGRADED forever.
                 nowMs - health.lastSuccess > STALE_AFTER_MS -> ThreatIntelFeedStatus.STALE
+                health.isMalformedRatioSignificant -> ThreatIntelFeedStatus.DEGRADED
                 else -> ThreatIntelFeedStatus.HEALTHY
             }
             return ThreatIntelFeedHealthUi(

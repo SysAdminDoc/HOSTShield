@@ -1,5 +1,6 @@
 package com.hostshield.data.repository
 
+import com.hostshield.data.database.SqlLike
 import com.hostshield.data.database.UserRuleDao
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
@@ -13,7 +14,7 @@ class RuleRepository @Inject constructor(
 ) {
     fun getAllRules(): Flow<List<UserRule>> = ruleDao.getAllRules()
     fun getRulesByType(type: RuleType): Flow<List<UserRule>> = ruleDao.getByType(type)
-    fun searchRules(query: String): Flow<List<UserRule>> = ruleDao.search(query)
+    fun searchRules(query: String): Flow<List<UserRule>> = ruleDao.search(SqlLike.escape(query))
     fun getRuleCount(type: RuleType): Flow<Int> = ruleDao.countByType(type)
     suspend fun addRule(rule: UserRule): Long = ruleDao.insert(rule)
     suspend fun updateRule(rule: UserRule) = ruleDao.update(rule)

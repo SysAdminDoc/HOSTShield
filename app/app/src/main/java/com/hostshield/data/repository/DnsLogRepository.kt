@@ -1,5 +1,6 @@
 package com.hostshield.data.repository
 
+import com.hostshield.data.database.SqlLike
 import com.hostshield.data.database.*
 import com.hostshield.data.model.BlockStats
 import com.hostshield.data.model.DnsLogEntry
@@ -15,7 +16,8 @@ class DnsLogRepository @Inject constructor(
     // Logs
     fun getRecentLogs(limit: Int = 500): Flow<List<DnsLogEntry>> = logDao.getRecentLogs(limit)
     fun getBlockedLogs(limit: Int = 500): Flow<List<DnsLogEntry>> = logDao.getBlockedLogs(limit)
-    fun searchLogs(query: String, limit: Int = 200): Flow<List<DnsLogEntry>> = logDao.searchLogs(query, limit)
+    fun searchLogs(query: String, limit: Int = 200): Flow<List<DnsLogEntry>> =
+        logDao.searchLogs(SqlLike.escape(query), limit)
     fun getTopBlocked(limit: Int = 20): Flow<List<TopHostname>> = logDao.getTopBlocked(limit)
     fun getTopAllowed(since: Long, limit: Int = 10): Flow<List<TopHostname>> = logDao.getTopAllowed(since, limit)
     fun getTopTrackerOwners(since: Long, limit: Int = 10): Flow<List<TrackerOwnerStat>> = logDao.getTopTrackerOwners(since, limit)

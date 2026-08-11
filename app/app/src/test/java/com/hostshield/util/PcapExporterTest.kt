@@ -93,8 +93,16 @@ class PcapExporterTest {
             setLastModified(staleMs)
         }
 
+        // A stale capture from a DIFFERENT export mode must also be swept: it holds
+        // the same DNS metadata and previously survived until that mode ran again.
+        val staleOtherMode = File(exportsDir, "hostshield_all_9.pcap").apply {
+            writeText("stale")
+            setLastModified(staleMs)
+        }
+
         val target = PcapExporter.prepareExportFile(cacheDir, "hostshield_dns_", now)
 
+        assertFalse(staleOtherMode.exists())
         assertEquals(exportsDir, target.parentFile)
         assertTrue(target.name.startsWith("hostshield_dns_"))
         assertFalse(staleRoot.exists())

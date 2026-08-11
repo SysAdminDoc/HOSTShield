@@ -88,6 +88,10 @@ class ThreatIntelManager @Inject constructor(
 ) {
     companion object {
         private const val TAG = "ThreatIntel"
+        /** Ignore this many unparsed lines before considering a feed degraded. */
+        internal const val MALFORMED_ABSOLUTE_FLOOR = 2
+        /** Share of unparsed lines that indicates real parser drift. */
+        internal const val MALFORMED_RATIO_THRESHOLD = 0.01
         private const val CACHE_FILE = "threat_intel_cache.json"
         private const val CACHE_KEY_DOMAINS = "domains"
         private const val CACHE_KEY_IP_CIDRS = "ip_cidrs"
@@ -132,7 +136,22 @@ class ThreatIntelManager @Inject constructor(
         val consecutiveFailures: Int = 0,
         val lastError: String = "",
         val malformedEntryCount: Int = 0
-    )
+    ) {
+        /**
+         * True when parser drift is widespread enough to be worth surfacing.
+         *
+         * A single unparsed line — feeds routinely carry a `127.0.0.1 localhost`
+         * header — is not a health problem, but `malformedEntryCount > 0` pinned
+         * such a feed to DEGRADED permanently, training users to ignore the state.
+         */
+        val isMalformedRatioSignificant: Boolean
+            get() {
+                if (malformedEntryCount <= MALFORMED_ABSOLUTE_FLOOR) return false
+                val parsed = entryCount + malformedEntryCount
+                if (parsed <= 0) return false
+                return malformedEntryCount.toDouble() / parsed >= MALFORMED_RATIO_THRESHOLD
+            }
+    }
 
     private data class DownloadResult(
         val body: String? = null,

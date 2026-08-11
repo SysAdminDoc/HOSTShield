@@ -95,11 +95,16 @@ class PcapExporter @Inject constructor(
             }
             val exportDir = File(cacheDir, EXPORT_DIR_NAME).apply { mkdirs() }
             val cutoff = nowMs - EXPORT_MAX_AGE_MS
+            // Sweep every known prefix, not just this export's. Filtering on the
+            // current prefix left stale captures from the other two export modes —
+            // which contain DNS hostnames — sitting in cache until the user happened
+            // to run that exact mode again.
+            val knownPrefixes = setOf(DNS_FILE_PREFIX, FIREWALL_FILE_PREFIX, ALL_FILE_PREFIX)
             sequenceOf(cacheDir, exportDir)
                 .flatMap { dir -> dir.listFiles()?.asSequence().orEmpty() }
                 .filter {
                     it.isFile &&
-                        it.name.startsWith(prefix) &&
+                        knownPrefixes.any { known -> it.name.startsWith(known) } &&
                         it.name.endsWith(".pcap") &&
                         it.lastModified() < cutoff
                 }
