@@ -3,6 +3,83 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [v6.9.68] - 2026-08-11
+
+Audit drain — 40 verified findings from the 2026-08-11 deep audit, across
+correctness, security, release gating, UX, accessibility, and test quality.
+
+### Fixed - correctness
+- Per-app firewall rules with "block in background" blocked their app 100% of
+  the time: the foreground-app tracker was never called, so the comparison
+  always saw an empty value. The VPN now samples the foreground app while such a
+  rule is active, and the decision fails open when it is unknown. Metered state
+  also refreshes on network change instead of being frozen at VPN start.
+- Block redirect targets are now applied. The IPv4/IPv6 prefs were written by
+  Settings and round-tripped by backup, but no runtime path read them, so a
+  configured redirect silently did nothing.
+- A source's `$denyallow` exception could cancel an identical wildcard block
+  shipped by a different source. An exception now applies only where no
+  unexcepted blocker remains.
+- The DoH-bypass guard held the bare domain `mullvad.net`, blackholing the
+  website and the Mullvad app's control plane with no way to override. Narrowed
+  to the resolver host.
+- Restoring a backup whose active profile name already existed left the device
+  with no active profile, silently dropping per-profile source narrowing.
+- Rules JSON export/import dropped every regex rule and IPv6 redirect.
+- Profiles export their sources by URL, so a restore cannot bind a profile to
+  unrelated blocklists on another device.
+- Adblock rules: regex rules carrying a scoping modifier are rejected instead of
+  becoming unscoped global patterns, and IDN domains convert to punycode.
+- Parsers strip a UTF-8 BOM, which previously ate the first line of a list.
+- `clearTemporaryAllow` is synchronized like every other snapshot mutator.
+- Manual import understands adblock-syntax rule files; they previously imported
+  as zero rules with no error.
+- Log/rule/firewall search escapes `%` and `_`.
+
+### Fixed - security
+- On Android 8-13 any app could flip protection by sending SHORTCUT_TOGGLE with
+  a host-less referrer. Referrer is caller-supplied there, so the toggle now
+  requires a tap below API 34; API 34+ keeps the authoritative caller check.
+- Restored backups validate WireGuard keys, and a backup cannot replace the
+  parental PIN while parental controls are active.
+- Diagnostic ZIPs that fail mid-write are deleted rather than left in the
+  shared cache, and PCAP cleanup sweeps every export mode.
+- Debug-signed release artifacts carry a `-debugsigned` version suffix.
+
+### Fixed - release gating
+- Added the missing store changelogs for 6.9.66 and 6.9.67; the release-doc gate
+  had been failing since the 6.9.66 bump.
+- The gate derived nothing about migrations - it required the literal string
+  "v1-v15" while the database was at v20, so correcting the docs would have
+  failed it. The range now comes from the tracked schemas, and the WorkManager
+  audit is checked for completeness against the workers in the tree.
+- The OSV gate ranked anything it could not score as UNKNOWN and skipped it, so
+  a CVSS 4.0-only critical passed silently. It now fails closed.
+- Release provenance fails when the SBOM or OSV report is missing instead of
+  recording "unavailable" and exiting 0.
+- `docs/` is actually shipped; the `!docs/` negation was a no-op.
+
+### Fixed - UX, theming, accessibility
+- Settings and Add Source no longer discard typed input on rotation, and the DNS
+  cache row updates live instead of freezing.
+- Light mode no longer shows a black window background; charts re-tint on accent
+  and dynamic-color changes.
+- Onboarding honors "Remove animations".
+- The block-response radio group announces each option once, with the correct
+  role and a full-size target.
+- TalkBack state descriptions and shared Cancel buttons come from resources, so
+  they follow the device language.
+
+### Testing
+- 642 unit tests (was 566). Added probe-verified regression coverage for the two
+  historical P0 sites - the DoH bounded-body read and the iptables script
+  ordering - plus the fail-closed encrypted-DNS invariant, pause auto-resume
+  protection-state truth, temporary-allow precedence, RFC 2308 MINIMUM=0, and
+  threat-intel CIDR boundaries.
+- Removed 14 tests that asserted against values built inside the test and passed
+  with the code under test deleted, and one that made a live network request to
+  ipapi.co on every run.
+
 ## [v6.9.67] - 2026-08-09
 
 Roadmap drain — completed the local backup/export and threat-intelligence

@@ -1,0 +1,11 @@
+v6.9.68:
+- Per-app "block in background" rules no longer block the app all the time
+- Block redirect targets actually redirect; they were saved but never used
+- Apps on Android 8-13 can no longer flip protection off without you
+- A filter list's exception can no longer cancel another list's block
+- Mullvad's website and app are reachable again; only its DNS is guarded
+- Restoring a backup keeps your active profile and your regex rules
+- Rotating the screen no longer discards settings you were typing
+- Light mode no longer flashes black; charts follow your accent color
+- Onboarding respects "Remove animations"; screen readers announce in your
+  language

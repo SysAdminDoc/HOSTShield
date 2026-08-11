@@ -1,3 +1,28 @@
+# HostShield v6.9.68
+
+## Audit drain (2026-08-11)
+
+40 verified findings from the 2026-08-11 deep audit. Highlights: context-firewall
+background rules blocked unconditionally because the foreground-app tracker was
+never called; block redirect targets were saved but never read by any runtime
+path; a pre-API-34 SHORTCUT_TOGGLE bypass let any app disable protection; a
+`$denyallow` exception could cancel another source's identical block; the
+DoH-bypass guard blackholed all of mullvad.net; backup restore could leave no
+active profile and dropped regex rules on JSON export.
+
+Release gating was repaired: the store changelogs for 6.9.66/6.9.67 were missing
+(the gate had been red since the 6.9.66 bump), the gate itself pinned a false
+"v1-v15" migration claim against a v20 database, the OSV check skipped anything
+it could not score, and provenance recorded missing evidence as "unavailable"
+while exiting 0.
+
+UI: rotation-safe settings fields, live DNS cache stats, a light-mode window
+background, palette-keyed charts, reduced-motion onboarding, single-announcement
+radio semantics, and resource-backed TalkBack strings.
+
+Tests: 566 -> 642, including probe-verified regressions for both historical P0
+sites, and the removal of 14 tests that passed with their subject deleted.
+
 # HostShield v6.9.67
 
 ## Roadmap drain (2026-08-09)

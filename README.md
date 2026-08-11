@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.67-blue)
+![Version](https://img.shields.io/badge/version-6.9.68-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
@@ -478,6 +478,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.68** | Audit drain: context-firewall background rules, working block redirect targets, a pre-API-34 shortcut-toggle bypass, denyallow/Mullvad filtering scope, and release gates that verify what they claim. |
 | **6.9.67** | Roadmap drain: encrypted-only backup secrets with real schema-v2 roundtrips, retained diagnostic/PCAP artifacts with test seams, and malformed threat-feed health accounting. |
 | **6.9.66** | Roadmap drain: scoped `$denyallow` semantics, pre-34 automation attribution, fresh stats widgets, validated redirect targets, and debug WireGuard key configuration. |
 | **6.9.62** | HostShield-hosted Spotify Ads list with five device-confirmed additions, migration v20 for existing installs, and a live audit/repair of every default and gallery blocklist endpoint. |
