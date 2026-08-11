@@ -405,35 +405,41 @@ class BackupRestoreUtil @Inject constructor(
 
         // Restore profiles — dedupe by name (no unique index; duplicate rows can
         // carry multiple is_active=1 flags and make getActiveProfile() nondeterministic).
-        val existingProfileNames = profileDao.getAllProfilesList().map { it.name }.toMutableSet()
+        val existingProfilesByName = profileDao.getAllProfilesList().associateBy { it.name }
+        val seenProfileNames = existingProfilesByName.keys.toMutableSet()
         if (root.has("profiles")) {
             val arr = root.getJSONArray("profiles")
-            // If the backup activates a profile, clear existing active flags first
-            // so exactly one profile ends up active after restore.
-            val backupActivates = (0 until arr.length()).any {
-                arr.getJSONObject(it).optBoolean("is_active", false)
-            }
-            if (backupActivates) profileDao.deactivateAll()
-            var activeAssigned = false
+            // Resolve the activation target before touching any flags. Deduping by
+            // name used to skip the insert AND the activation, so restoring your own
+            // backup — where the active profile's name already exists — cleared every
+            // is_active flag and left the device with no active profile, silently
+            // dropping per-profile source narrowing.
+            var activationTarget: Long? = null
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
                 val name = boundedText(obj.optString("name", ""), 80)
                 if (name.isBlank()) continue
-                if (!existingProfileNames.add(name)) continue
-                // Only the first active profile in the backup keeps the flag.
-                val wantsActive = obj.optBoolean("is_active", false) && !activeAssigned
-                if (wantsActive) activeAssigned = true
-                profileDao.insert(BlockingProfile(
+                // Only the first active profile in the backup wins.
+                val wantsActive = obj.optBoolean("is_active", false) && activationTarget == null
+                if (!seenProfileNames.add(name)) {
+                    // Already present: adopt the existing row as the activation target.
+                    if (wantsActive) activationTarget = existingProfilesByName[name]?.id
+                    continue
+                }
+                val insertedId = profileDao.insert(BlockingProfile(
                     name = name,
-                    isActive = wantsActive,
+                    isActive = false,
                     sourceIds = boundedText(obj.optString("source_ids", ""), 500),
                     scheduleStart = boundedText(obj.optString("schedule_start", ""), 16),
                     scheduleEnd = boundedText(obj.optString("schedule_end", ""), 16),
                     daysOfWeek = boundedText(obj.optString("days_of_week", "0,1,2,3,4,5,6"), 32),
                     wifiSsids = boundedText(obj.optString("wifi_ssids", ""), 500)
                 ))
+                if (wantsActive && insertedId > 0) activationTarget = insertedId
                 profilesCount++
             }
+            // Only disturb existing activation when the backup actually names one.
+            activationTarget?.let { profileDao.activateExclusive(it) }
         }
 
         // Restore firewall rules. The unique uid index means a plain REPLACE

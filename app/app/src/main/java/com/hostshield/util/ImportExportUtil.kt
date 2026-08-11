@@ -54,6 +54,7 @@ class ImportExportUtil @Inject constructor() {
                 put("enabled", rule.enabled)
                 put("comment", rule.comment)
                 put("is_wildcard", rule.isWildcard)
+                put("is_regex", rule.isRegex)
             })
         }
         root.put("rules", rulesArr)
@@ -107,15 +108,21 @@ class ImportExportUtil @Inject constructor() {
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
                 val isWildcard = obj.optBoolean("is_wildcard", false)
-                val hostname = normalizedRuleHost(obj.optString("hostname", ""), isWildcard)
-                    ?: continue
+                val isRegex = obj.optBoolean("is_regex", false)
+                // Regex patterns fail hostname validation, so without this branch every
+                // exported regex rule was silently dropped on import.
+                val hostname = if (isRegex) {
+                    BackupRestoreUtil.normalizeRestoredRegex(obj.optString("hostname", "")) ?: continue
+                } else {
+                    normalizedRuleHost(obj.optString("hostname", ""), isWildcard) ?: continue
+                }
                 val type = try {
                     RuleType.valueOf(obj.optString("type", "BLOCK"))
                 } catch (_: Exception) {
                     continue
                 }
                 val redirectIp = obj.optString("redirect_ip", "")
-                if (type == RuleType.REDIRECT && !isIpLike(redirectIp)) continue
+                if (type == RuleType.REDIRECT && !BackupRestoreUtil.isValidRedirectIp(redirectIp)) continue
 
                 rules.add(UserRule(
                     hostname = hostname,
@@ -123,7 +130,8 @@ class ImportExportUtil @Inject constructor() {
                     redirectIp = redirectIp,
                     enabled = obj.optBoolean("enabled", true),
                     comment = obj.optString("comment", ""),
-                    isWildcard = isWildcard
+                    isWildcard = isWildcard && !isRegex,
+                    isRegex = isRegex
                 ))
             }
         }
