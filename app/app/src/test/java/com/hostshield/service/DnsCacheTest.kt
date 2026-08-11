@@ -468,4 +468,62 @@ class DnsCacheTest {
         assertNotNull(result)
         assertFalse(result!!.isStale)
     }
+
+    /**
+     * NXDOMAIN carrying an SOA in the authority section, so the RFC 2308 MINIMUM
+     * field can be exercised. The existing builder emits no authority records, so
+     * no test could construct one.
+     */
+    private fun buildNxdomainWithSoa(minimumTtl: Int, soaTtl: Int = 3600): ByteArray {
+        val header = ByteArray(12)
+        header[0] = 0x12; header[1] = 0x34
+        header[2] = 0x80.toByte()
+        header[3] = 3                                   // RCODE=3 NXDOMAIN
+        header[4] = 0; header[5] = 1                    // QDCOUNT=1
+        header[6] = 0; header[7] = 0                    // ANCOUNT=0
+        header[8] = 0; header[9] = 1                    // NSCOUNT=1
+        val question = byteArrayOf(
+            7, 101, 120, 97, 109, 112, 108, 101, 3, 99, 111, 109, 0, 0, 1, 0, 1
+        )
+        // SOA RR: NAME=pointer, TYPE=6, CLASS=1, TTL, RDLENGTH, RDATA
+        // RDATA = MNAME(ptr) RNAME(ptr) SERIAL REFRESH RETRY EXPIRE MINIMUM
+        val rdata = ByteArray(4 + 20)
+        rdata[0] = 0xC0.toByte(); rdata[1] = 12         // MNAME pointer
+        rdata[2] = 0xC0.toByte(); rdata[3] = 12         // RNAME pointer
+        // serial/refresh/retry/expire left zero; MINIMUM is the last 4 bytes
+        rdata[20] = (minimumTtl shr 24).toByte()
+        rdata[21] = (minimumTtl shr 16).toByte()
+        rdata[22] = (minimumTtl shr 8).toByte()
+        rdata[23] = (minimumTtl and 0xFF).toByte()
+
+        val rr = ByteArray(12 + rdata.size)
+        rr[0] = 0xC0.toByte(); rr[1] = 12               // NAME pointer
+        rr[2] = 0; rr[3] = 6                            // TYPE=SOA
+        rr[4] = 0; rr[5] = 1                            // CLASS=IN
+        rr[6] = (soaTtl shr 24).toByte()
+        rr[7] = (soaTtl shr 16).toByte()
+        rr[8] = (soaTtl shr 8).toByte()
+        rr[9] = (soaTtl and 0xFF).toByte()
+        rr[10] = (rdata.size shr 8).toByte()
+        rr[11] = (rdata.size and 0xFF).toByte()
+        System.arraycopy(rdata, 0, rr, 12, rdata.size)
+
+        return header + question + rr
+    }
+
+    // RFC 2308: MINIMUM=0 means "do not cache this negative answer". The advertised
+    // behavior had no test, so a regression re-caching it would have gone unnoticed.
+    @Test
+    fun `NXDOMAIN with SOA MINIMUM zero is not cached`() {
+        val response = buildNxdomainWithSoa(minimumTtl = 0)
+        cache.put("nx-zero.example.com", 1, response)
+        assertNull(cache.get("nx-zero.example.com", 1, txId(0x1234)))
+    }
+
+    @Test
+    fun `NXDOMAIN with a positive SOA MINIMUM is cached`() {
+        val response = buildNxdomainWithSoa(minimumTtl = 120)
+        cache.put("nx-positive.example.com", 1, response)
+        assertNotNull(cache.get("nx-positive.example.com", 1, txId(0x1234)))
+    }
 }

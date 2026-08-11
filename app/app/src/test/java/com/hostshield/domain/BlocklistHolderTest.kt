@@ -607,4 +607,55 @@ class BlocklistHolderTest {
         assertFalse(holder.isBlocked("api.mullvad.net"))
         assertFalse(holder.isBlocked("mullvad.net"))
     }
+
+    // The v6.9.63 temporary-allow fix (a user allow beats wildcard/regex blocks and
+    // reverts cleanly) had no coverage beyond the exact-block case.
+    @Test
+    fun `temporary allow overrides a source wildcard block and reverts`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            sourceWildcardBlocks = setOf("ads.example"),
+            sourceWildcardBlockOrigins = mapOf("ads.example" to "Filter A"),
+        )
+        assertTrue(holder.isBlocked("cdn.ads.example"))
+
+        holder.allowDomain("cdn.ads.example")
+        assertFalse(
+            "temporary allow must beat a source wildcard block",
+            holder.isBlocked("cdn.ads.example")
+        )
+
+        holder.clearTemporaryAllow("cdn.ads.example")
+        assertTrue(
+            "clearing the allow must restore the wildcard block",
+            holder.isBlocked("cdn.ads.example")
+        )
+    }
+
+    @Test
+    fun `temporary allow overrides a regex block and reverts`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            regexRules = listOf(
+                UserRule(hostname = "^ads[0-9]+", type = RuleType.BLOCK, isRegex = true)
+            ),
+        )
+        assertTrue(holder.isBlocked("ads42.example"))
+
+        holder.allowDomain("ads42.example")
+        assertFalse(holder.isBlocked("ads42.example"))
+
+        holder.clearTemporaryAllow("ads42.example")
+        assertTrue(holder.isBlocked("ads42.example"))
+    }
+
+    @Test
+    fun `clearing an allow that was never set leaves blocking unchanged`() {
+        holder.update(newDomains = setOf("ads.example.com"), wildcards = emptyList())
+        holder.clearTemporaryAllow("never-allowed.example")
+        assertTrue(holder.isBlocked("ads.example.com"))
+        assertFalse(holder.isBlocked("never-allowed.example"))
+    }
 }
