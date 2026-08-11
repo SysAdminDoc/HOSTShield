@@ -69,6 +69,25 @@ $kotlinMajorMinor = if ($kotlinVersion -match '^(\d+\.\d+)') { $Matches[1] } els
 $agpMajorMinor = if ($agpVersion -match '^(\d+\.\d+)') { $Matches[1] } else { $agpVersion }
 $metadataChangelog = "app/metadata/en-US/changelogs/$versionCode.txt"
 
+# Derive the documented Room migration range from the tracked schema JSONs rather
+# than a hand-written constant. A literal here previously required README to keep
+# claiming a stale range long after the database moved on, so correcting the docs
+# would have failed this gate.
+$schemaRoot = Join-Path $repoRoot "app/app/schemas"
+$schemaVersions = @()
+if (Test-Path -LiteralPath $schemaRoot) {
+    $schemaVersions = @(
+        Get-ChildItem -LiteralPath $schemaRoot -Recurse -Filter "*.json" -ErrorAction SilentlyContinue |
+            ForEach-Object { [int]([System.IO.Path]::GetFileNameWithoutExtension($_.Name)) } |
+            Sort-Object
+    )
+}
+if ($schemaVersions.Count -eq 0) {
+    throw "Unable to determine the Room schema version from app/app/schemas."
+}
+$maxSchemaVersion = $schemaVersions[-1]
+$migrationRange = "v1-v$maxSchemaVersion"
+
 $docs = @{
     "README.md" = Read-RepoFile "README.md"
     "app/README.md" = Read-RepoFile "app/README.md"
@@ -349,7 +368,7 @@ $requiredPatterns = @{
         "com.hostshield.ACTION_ENABLE",
         "com.hostshield.ACTION_SET_PROFILE",
         "duration_minutes",
-        "v1-v15",
+        $migrationRange,
         "run-protection-resilience-matrix.ps1",
         "without GitHub Actions workflows"
     )
@@ -497,6 +516,22 @@ if ($fgsTypeHelper -notmatch 'FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED' -or $fgsT
 if ($workManagerAudit -match '\bdataSync\b' -or $workManagerAudit -match 'FOREGROUND_SERVICE_TYPE_DATA_SYNC') {
     $failures.Add("docs/WORKMANAGER_AUDIT.md still contains stale dataSync foreground-service claims.")
 }
+
+# Assert the audit actually enumerates every worker in the tree. Grepping the doc
+# for one forbidden word let it silently fall behind by a worker for ~9 releases.
+$serviceDir = Join-Path $repoRoot "app/app/src/main/java/com/hostshield/service"
+if (Test-Path -LiteralPath $serviceDir) {
+    $workerFiles = @(
+        Get-ChildItem -LiteralPath $serviceDir -Filter "*Worker.kt" -File -ErrorAction SilentlyContinue |
+            Where-Object { (Get-Content -Raw -LiteralPath $_.FullName) -match 'CoroutineWorker|:\s*Worker\(' }
+    )
+    foreach ($workerFile in $workerFiles) {
+        $workerName = [System.IO.Path]::GetFileNameWithoutExtension($workerFile.Name)
+        if ($workManagerAudit -notmatch [regex]::Escape($workerName)) {
+            $failures.Add("docs/WORKMANAGER_AUDIT.md does not document worker $workerName.")
+        }
+    }
+}
 foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt")) {
     if ($docs[$doc] -notmatch [regex]::Escape("targetSdk $targetSdk")) {
         $failures.Add("$doc is missing targetSdk $targetSdk platform claim.")
@@ -562,7 +597,6 @@ $forbiddenPatterns = @(
     "Kotlin 2.0",
     "Kotlin 2.1",
     "Android SDK 35",
-    "v1-v12",
     "com.hostshield.action.ENABLE",
     "com.hostshield.action.DISABLE",
     "com.hostshield.action.STATUS",

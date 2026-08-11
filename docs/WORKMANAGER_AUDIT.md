@@ -1,6 +1,6 @@
 # WorkManager and Foreground-Service Audit
 
-Last audited for HostShield v6.9.11 on 2026-06-15.
+Last audited for HostShield v6.9.68 on 2026-08-11.
 
 ## Foreground Services
 
@@ -9,10 +9,13 @@ Last audited for HostShield v6.9.11 on 2026-06-15.
 | `DnsVpnService` | `systemExempted` | `FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED` on Android 14+ | Local VPN DNS filtering, watchdog, 60-second heartbeat. |
 | `RootDnsService` | `systemExempted` | `FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED` on Android 14+ | Root-mode local DNS proxy and logger. |
 | `DnsProxyService` | `systemExempted` | `FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED` on Android 14+ | Local DNS proxy mode. |
+| `LocalDnsServerService` | `specialUse` | `FOREGROUND_SERVICE_TYPE_SPECIAL_USE` on Android 14+ | Opt-in LAN DNS server. Not a protection service; carries `PROPERTY_SPECIAL_USE_FGS_SUBTYPE`. |
 
-`specialUse` is no longer used for HostShield's protection services. The app
-declares `FOREGROUND_SERVICE_SYSTEM_EXEMPTED` for Android 14+ foreground-service
-type enforcement.
+`specialUse` is no longer used for HostShield's three **protection** services
+(`DnsVpnService`, `RootDnsService`, `DnsProxyService`), which declare
+`FOREGROUND_SERVICE_SYSTEM_EXEMPTED` for Android 14+ foreground-service type
+enforcement. The optional LAN DNS server is the one remaining `specialUse`
+declaration.
 
 ## WorkManager Jobs
 
@@ -26,6 +29,7 @@ type enforcement.
 | `PauseResumeWorker` | One-shot resume after user pause duration | None | Replaces broadcast `goAsync()` sleeps so long pauses survive process death and Doze. |
 | `ThreatIntelWorker` | Daily refresh | Connected | Background feed refresh; safe to defer. |
 | `AutoBackupWorker` | Weekly backup | None | Local backup maintenance; safe to defer. |
+| `TemporaryAllowWorker` | One-shot re-block after a DNS-log temporary allow expires | None | Restores the domain to `BlocklistHolder` (and root hosts mode) so process death cannot turn a timed allow into a permanent bypass. |
 
 No direct `JobScheduler` usage exists in the source tree; scheduling is routed
 through WorkManager.

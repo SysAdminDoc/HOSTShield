@@ -29,7 +29,7 @@
    uninstall it. v6.9.61 and later use a new APK certificate lineage, so Android cannot
    perform an in-place update over the older certificate. Uninstalling clears
    the previous app data.
-2. Download `HostShield-v6.9.67-full-release.apk` from
+2. Download the newest `HostShield-v*-full-release.apk` asset from
    [Releases](https://github.com/SysAdminDoc/HostShield/releases).
 3. Install and launch — the onboarding wizard guides you through setup.
 4. Choose **VPN mode** (no root) or **Root mode** (better battery life), then
@@ -181,7 +181,7 @@ Bug reports and feature requests are read and acted on — [open an issue](https
 
 | Feature | Description |
 |---------|-------------|
-| **Curated Gallery** | 50+ categorized blocklists with tier, size, and breakage warnings for aggressive packs |
+| **Curated Gallery** | 45+ categorized blocklists with tier, size, and breakage warnings for aggressive packs |
 | **Enabled Defaults** | AdAway Default and StevenBlack Unified are enabled on fresh installs and upgraded existing installs |
 | **Source Categories** | ADS, TRACKERS, MALWARE, ADULT, SOCIAL, CRYPTO, ALLOWLIST, CUSTOM |
 | **Allowlist Sources** | Subscribed allowlists (Anudeep, HaGeZi) override blocklist entries and can show neutralized-domain examples |
@@ -350,7 +350,7 @@ Public actions are protected by HostShield's signature-level automation permissi
 | Language | Kotlin 2.3 |
 | UI | Jetpack Compose + Material 3 |
 | DI | Hilt (Dagger) |
-| Database | Room (11 entities, explicit v1-v15 migrations) |
+| Database | Room (11 entities, explicit v1-v20 migrations) |
 | Preferences | DataStore |
 | Async | Coroutines + Flow, ViewModels + StateFlow |
 | Networking | OkHttp 5 (source downloads, pinned DoH resolver) |
@@ -365,7 +365,7 @@ Public actions are protected by HostShield's signature-level automation permissi
 ```
 app/src/main/java/com/hostshield/
 ├── data/
-│   ├── database/      # Room DB, DAOs, converters, migrations (v1-v15)
+│   ├── database/      # Room DB, DAOs, converters, migrations (v1-v20)
 │   ├── model/         # Entities (11 tables), enums
 │   ├── preferences/   # DataStore preferences (AppPreferences)
 │   ├── repository/    # HostShieldRepository
@@ -443,7 +443,7 @@ Entirely local — no traffic goes to a remote server. The VPN tunnel intercepts
 CNAME cloaking detection (including SVCB/HTTPS records), serve-stale DNS cache (RFC 8767), fail-closed DoH with certificate pinning and selected-provider preference, per-app iptables firewall, live query streaming, 7-day trend charts, query anomaly detection, rate-limited GeoIP lookup, tracker SDK scanning, DNS leak test, automation API, and a modern Material 3 Compose UI.
 
 **How is this different from RethinkDNS?**
-HostShield focuses on local DNS blocking with a curated gallery of 50+ blocklists. It has a dual-mode architecture (VPN + root) while RethinkDNS is VPN-only. HostShield includes an iptables-based per-app firewall for rooted devices, tracker SDK scanning, and hosts file diffing.
+HostShield focuses on local DNS blocking with a curated gallery of 45+ blocklists. It has a dual-mode architecture (VPN + root) while RethinkDNS is VPN-only. HostShield includes an iptables-based per-app firewall for rooted devices, tracker SDK scanning, and hosts file diffing.
 
 **Does it work with other VPNs?**
 In VPN mode: no — Android only allows one VPN at a time. In root mode: yes — iptables rules work alongside any VPN.

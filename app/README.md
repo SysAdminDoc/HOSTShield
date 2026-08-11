@@ -16,7 +16,7 @@ Current module baseline: v6.9.67, versionCode 149.
    it. v6.9.61 and later use a new Android debug-certificate lineage, so they cannot update
    in place over the older HostShield certificate; uninstalling clears the
    previous app data.
-2. Download `HostShield-v6.9.67-full-release.apk` from
+2. Download the newest `HostShield-v*-full-release.apk` asset from
    [Releases](https://github.com/SysAdminDoc/HostShield/releases).
 3. Install and launch — the onboarding wizard guides you through setup.
 4. Choose **VPN mode** (no root) or **Root mode** (better battery life), then

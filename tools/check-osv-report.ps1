@@ -237,10 +237,17 @@ function Get-VulnerabilitySeverity {
         }
     }
 
+    # Any severity vector we cannot score (CVSS 4.0 uses a macro-vector lookup this
+    # script does not implement) must not silently rank as UNKNOWN and slip under
+    # the minimum-severity filter. Track it and force the finding to be surfaced.
+    $unscored = $false
     foreach ($entry in Convert-ToArray (Get-JsonProperty $Vulnerability @("severity"))) {
-        $score = Get-CvssScore ([string](Get-JsonProperty $entry @("score")))
+        $scoreText = [string](Get-JsonProperty $entry @("score"))
+        $score = Get-CvssScore $scoreText
         if ($null -ne $score) {
             $scoreCandidates.Add([double]$score)
+        } elseif (-not [string]::IsNullOrWhiteSpace($scoreText)) {
+            $unscored = $true
         }
     }
 
@@ -266,9 +273,14 @@ function Get-VulnerabilitySeverity {
         }
     }
 
+    if ($unscored -and $bestRank -eq 0) {
+        $bestSeverity = "UNSCORED"
+    }
+
     return [pscustomobject]@{
         Name = $bestSeverity
         Rank = $bestRank
+        Unscored = $unscored
     }
 }
 
@@ -375,7 +387,9 @@ foreach ($result in Convert-ToArray (Get-JsonProperty $report @("results"))) {
             }
 
             $severity = Get-VulnerabilitySeverity $vulnerability
-            if ($severity.Rank -lt $minimumRank) {
+            # Fail closed: a vulnerability we could not score is reported (and must be
+            # allowlisted deliberately) rather than skipped as sub-threshold.
+            if ($severity.Rank -lt $minimumRank -and -not $severity.Unscored) {
                 continue
             }
 

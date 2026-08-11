@@ -14,11 +14,13 @@ app/build/
 hs_err_pid*.log
 replay_pid*.log
 
-# Markdown files local-only (except README)
+# Markdown files local-only (except README and the published docs/ set).
+# NOTE: "!docs/" alone is a no-op — *.md matches at every depth, and negating the
+# directory cannot re-include files that themselves match the pattern. The
+# per-path negations below are what actually ship.
 *.md
 !README.md
-!docs/
-!docs/WORKMANAGER_AUDIT.md
+!docs/**
 
 # AI config
 CODEX_CHANGELOG.md
