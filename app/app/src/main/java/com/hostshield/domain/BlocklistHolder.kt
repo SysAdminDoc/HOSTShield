@@ -380,7 +380,11 @@ class BlocklistHolder @Inject constructor() {
     private val dohBypassWildcards = setOf(
         "dns.nextdns.io",           // NextDNS per-profile: <id>.dns.nextdns.io
         "dns.controld.com",         // ControlD per-profile
-        "mullvad.net",              // Mullvad DNS variants
+        // Scoped to the resolver host, not the registrable domain: a bare
+        // "mullvad.net" also blackholed www./api./cdn., which are the website and
+        // the Mullvad VPN app's control plane, and the DoH-bypass guard runs ahead
+        // of every allow path so nothing in the UI could override it.
+        "dns.mullvad.net",          // Mullvad per-profile: <variant>.dns.mullvad.net
         "canadianshield.cira.ca",   // CIRA variants
     )
 
@@ -928,6 +932,38 @@ class BlocklistHolder @Inject constructor() {
         return decideRegexWwwOrDefault(lower, snap, queryType)
     }
 
+    /**
+     * True when [rule]'s exception accounts for every source that contributes the
+     * wildcard block on its owner domain.
+     *
+     * Sources collapse into one trie node, so a membership test ("my source is one
+     * of the blockers") let source A's `$denyallow` neutralize source B's identical
+     * unconditional `||africa^`. An exception may only win where no unexcepted
+     * blocker remains: every origin label must be the rule's own source or have its
+     * own matching exception for the same name.
+     */
+    private fun coversEveryBlockingSource(
+        rule: ScopedDenyAllowRule,
+        snap: Snapshot,
+        lower: String,
+        queryType: Int?,
+    ): Boolean {
+        val origins = snap.sourceWildcardBlockOriginLabels[rule.ownerDomain].orEmpty()
+        // No attribution recorded — keep the historical unlabeled-rule behavior.
+        if (origins.isEmpty()) return true
+        if (rule.source.isBlank()) return false
+        return origins.all { origin ->
+            origin == rule.source || snap.scopedDenyAllowRules.any { other ->
+                other.source == origin &&
+                    other.ownerDomain == rule.ownerDomain &&
+                    other.dnsTypes == null &&
+                    other.matchesOwner(lower) &&
+                    other.matchesAllowed(lower) &&
+                    other.matchesQueryType(queryType)
+            }
+        }
+    }
+
     private fun findScopedDenyAllowRule(
         lower: String,
         snap: Snapshot,
@@ -950,7 +986,7 @@ class BlocklistHolder @Inject constructor() {
             .filter { matchingTypedBlocks.isEmpty() }
             .filter { it.ownerDomain == wildcardBlockMatch }
             .filter { it.ownerDomain in snap.sourceWildcardBlockDomains }
-            .filter { it.source.isBlank() || it.source in snap.sourceWildcardBlockOriginLabels[it.ownerDomain].orEmpty() }
+            .filter { coversEveryBlockingSource(it, snap, lower, queryType) }
             .filter { !hasUserWildcardBlock(snap, it.ownerDomain) }
             .maxWithOrNull(compareBy<ScopedDenyAllowRule> { it.ownerDomain.count { ch -> ch == '.' } }
                 .thenBy { it.allowedDomain.length })

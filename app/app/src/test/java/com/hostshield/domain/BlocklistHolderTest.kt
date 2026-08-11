@@ -543,4 +543,68 @@ class BlocklistHolderTest {
         assertTrue(holder.isBlocked("old.example.com"))
         assertFalse(holder.isBlocked("new.example.com"))
     }
+
+    // Regression: the origin-label filter was a membership test, so an exception
+    // shipped by one source neutralized an identical unconditional wildcard block
+    // shipped by another. Sources collapse into one trie node.
+    @Test
+    fun `denyallow cannot override an identical wildcard block from another source`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            sourceWildcardBlocks = setOf("africa"),
+            sourceWildcardBlockOriginLabels = mapOf("africa" to setOf("Filter A", "Filter B")),
+            scopedDenyAllowRules = listOf(
+                ScopedDenyAllowRule(
+                    ownerDomain = "africa",
+                    allowedDomain = "nation.africa",
+                    source = "Filter A",
+                )
+            )
+        )
+
+        assertTrue(holder.isBlocked("nation.africa"))
+        assertTrue(holder.isBlocked("cdn.nation.africa"))
+    }
+
+    @Test
+    fun `denyallow applies when every blocking source carries the same exception`() {
+        holder.update(
+            newDomains = emptySet(),
+            wildcards = emptyList(),
+            sourceWildcardBlocks = setOf("africa"),
+            sourceWildcardBlockOriginLabels = mapOf("africa" to setOf("Filter A", "Filter B")),
+            scopedDenyAllowRules = listOf(
+                ScopedDenyAllowRule(
+                    ownerDomain = "africa",
+                    allowedDomain = "nation.africa",
+                    source = "Filter A",
+                ),
+                ScopedDenyAllowRule(
+                    ownerDomain = "africa",
+                    allowedDomain = "nation.africa",
+                    source = "Filter B",
+                ),
+            )
+        )
+
+        val allowed = holder.decide("nation.africa")
+        assertFalse(allowed.blocked)
+        assertEquals("denyallow", allowed.reason)
+        assertTrue(holder.isBlocked("other.africa"))
+    }
+
+    // The DoH-bypass guard runs before every allow path, so its wildcards must
+    // cover resolver hosts only — never a whole company's registrable domain.
+    @Test
+    fun `doh bypass guard blocks Mullvad resolvers but not the rest of the domain`() {
+        holder.update(newDomains = emptySet(), wildcards = emptyList())
+
+        assertTrue(holder.isBlocked("dns.mullvad.net"))
+        assertTrue(holder.isBlocked("adblock.dns.mullvad.net"))
+        assertTrue(holder.isBlocked("base.dns.mullvad.net"))
+        assertFalse(holder.isBlocked("www.mullvad.net"))
+        assertFalse(holder.isBlocked("api.mullvad.net"))
+        assertFalse(holder.isBlocked("mullvad.net"))
+    }
 }
