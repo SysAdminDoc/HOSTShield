@@ -49,6 +49,7 @@ import com.hostshield.ui.theme.Blue
 import com.hostshield.ui.theme.Flamingo
 import com.hostshield.ui.theme.Green
 import com.hostshield.ui.theme.LocalHighContrastAmoled
+import com.hostshield.ui.theme.LocalHostShieldPalette
 import com.hostshield.ui.theme.Mauve
 import com.hostshield.ui.theme.Peach
 import com.hostshield.ui.theme.Red
@@ -100,7 +101,7 @@ fun HourlyBlockedChart(
         )
     )
 
-    key(LocalHighContrastAmoled.current) {
+    key(LocalHostShieldPalette.current) {
         CartesianChartHost(
             chart = rememberCartesianChart(
                 rememberLineCartesianLayer(lineProvider = lineProvider),
@@ -154,7 +155,7 @@ fun DailyTrendChart(
         ),
     )
 
-    key(LocalHighContrastAmoled.current) {
+    key(LocalHostShieldPalette.current) {
         CartesianChartHost(
             chart = rememberCartesianChart(
                 rememberColumnCartesianLayer(
@@ -303,7 +304,7 @@ fun LatencyHistogram(
         ),
     )
 
-    key(LocalHighContrastAmoled.current) {
+    key(LocalHostShieldPalette.current) {
         CartesianChartHost(
             chart = rememberCartesianChart(
                 rememberColumnCartesianLayer(

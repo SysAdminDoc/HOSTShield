@@ -291,6 +291,11 @@ object AdblockRuleParser {
         // above, so any remaining '*' is an unsupported inline wildcard. A dot is
         // still required so bare tokens aren't treated as domains.
         if (cleanDomain.any { it == '/' || it == ':' || it == '*' || it == '?' || it.isWhitespace() }) return null
+        // DNS queries arrive punycode-encoded, so an IDN rule stored verbatim
+        // (||exämple.com^, or a Cyrillic homograph from a regional list) can never
+        // match — it just inflates entry_count and the trie/bloom. Convert like
+        // AdGuard does, and reject input IDN cannot encode.
+        val asciiDomain = toPunycodeOrNull(cleanDomain) ?: return null
 
         // Parse modifiers
         var isImportant = false
@@ -354,7 +359,7 @@ object AdblockRuleParser {
         }
 
         return DnsRule(
-            domain = cleanDomain,
+            domain = asciiDomain,
             isException = isException,
             isImportant = isImportant,
             isBadfilter = isBadfilter,
@@ -365,6 +370,17 @@ object AdblockRuleParser {
             denyAllowDomains = denyAllowDomains,
             redirectIp = redirectIpValue
         )
+    }
+
+    /**
+     * Convert a hostname to its ASCII (punycode) form, or null if it cannot be
+     * encoded. Already-ASCII names pass through unchanged.
+     */
+    private fun toPunycodeOrNull(domain: String): String? {
+        if (domain.all { it.code < 128 }) return domain
+        return runCatching { java.net.IDN.toASCII(domain).lowercase() }
+            .getOrNull()
+            ?.takeIf { it.isNotEmpty() && it.length <= 253 }
     }
 
     /** Parse a /regex/ rule. */
@@ -383,9 +399,14 @@ object AdblockRuleParser {
         var isBadfilter = false
         if (afterPattern.startsWith('$')) {
             for (mod in afterPattern.removePrefix("$").split(',')) {
-                when (mod.trim()) {
+                when (val name = mod.trim()) {
                     "important" -> isImportant = true
                     "badfilter" -> isBadfilter = true
+                    // Anything else scopes the rule ($client=, $app=, $denyallow=...).
+                    // Ignoring it would turn a scoped rule into an unscoped global
+                    // regex — the over-globalization class removed from the domain
+                    // path in v6.9.59/63. Reject instead.
+                    else -> if (name.isNotEmpty()) return null
                 }
             }
         }

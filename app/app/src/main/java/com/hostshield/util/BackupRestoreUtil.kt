@@ -120,6 +120,26 @@ class BackupRestoreUtil @Inject constructor(
 
         private fun boundedText(value: String, maxLength: Int): String =
             value.trim().take(maxLength)
+
+        /**
+         * Rebuild a profile's `source_ids` against this device's rows.
+         *
+         * Prefers the exported URLs, which are stable across devices; falls back to
+         * the raw ids for backups written before URLs were recorded. Unknown URLs
+         * are dropped rather than mapped to whatever happens to hold that row id.
+         */
+        internal fun remapProfileSourceIds(
+            sourceUrls: String,
+            legacySourceIds: String,
+            sourceIdByUrl: Map<String, Long>,
+        ): String {
+            if (sourceUrls.isBlank()) return legacySourceIds
+            return sourceUrls.split(',')
+                .mapNotNull { raw -> normalizeRestoredSourceUrl(raw) }
+                .mapNotNull { url -> sourceIdByUrl[url] }
+                .distinct()
+                .joinToString(",")
+        }
     }
 
     /**
@@ -166,11 +186,23 @@ class BackupRestoreUtil @Inject constructor(
         // Profiles (all, not just active)
         val profilesArr = JSONArray()
         val allProfiles = profileDao.getAllProfilesList()
+        // source_ids are autoincrement row ids, which mean nothing on another
+        // device: the same numbers can exist there pointing at different lists, and
+        // the coordinator's empty-set fallback only catches a total mismatch. Export
+        // the URLs too (already the dedupe key) so restore can remap.
+        val sourceUrlById = hostSourceDao.getAllSourcesList().associate { it.id to it.url }
         allProfiles.forEach { profile ->
             profilesArr.put(JSONObject().apply {
                 put("name", profile.name)
                 put("is_active", profile.isActive)
                 put("source_ids", profile.sourceIds)
+                put(
+                    "source_urls",
+                    profile.sourceIds.split(',')
+                        .mapNotNull { it.trim().toLongOrNull() }
+                        .mapNotNull { sourceUrlById[it] }
+                        .joinToString(",")
+                )
                 put("schedule_start", profile.scheduleStart)
                 put("schedule_end", profile.scheduleEnd)
                 put("days_of_week", profile.daysOfWeek)
@@ -405,6 +437,7 @@ class BackupRestoreUtil @Inject constructor(
 
         // Restore profiles — dedupe by name (no unique index; duplicate rows can
         // carry multiple is_active=1 flags and make getActiveProfile() nondeterministic).
+        val sourceIdByUrl = hostSourceDao.getAllSourcesList().associate { it.url to it.id }
         val existingProfilesByName = profileDao.getAllProfilesList().associateBy { it.name }
         val seenProfileNames = existingProfilesByName.keys.toMutableSet()
         if (root.has("profiles")) {
@@ -429,7 +462,11 @@ class BackupRestoreUtil @Inject constructor(
                 val insertedId = profileDao.insert(BlockingProfile(
                     name = name,
                     isActive = false,
-                    sourceIds = boundedText(obj.optString("source_ids", ""), 500),
+                    sourceIds = remapProfileSourceIds(
+                        boundedText(obj.optString("source_urls", ""), 2000),
+                        boundedText(obj.optString("source_ids", ""), 500),
+                        sourceIdByUrl,
+                    ),
                     scheduleStart = boundedText(obj.optString("schedule_start", ""), 16),
                     scheduleEnd = boundedText(obj.optString("schedule_end", ""), 16),
                     daysOfWeek = boundedText(obj.optString("days_of_week", "0,1,2,3,4,5,6"), 32),

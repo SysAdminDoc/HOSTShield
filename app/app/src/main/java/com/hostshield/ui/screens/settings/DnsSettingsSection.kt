@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -100,7 +101,7 @@ fun DnsSettingsSection(
                 Spacer(Modifier.height(6.dp))
                 ExperimentalEngineNote(ExperimentalEngineDisclosure.WIREGUARD_LABEL)
                 Spacer(Modifier.height(6.dp))
-                var wgEndpoint by remember { mutableStateOf(wireGuardEndpoint) }
+                var wgEndpoint by rememberSaveable { mutableStateOf(wireGuardEndpoint) }
             LaunchedEffect(wireGuardEndpoint) { wgEndpoint = wireGuardEndpoint }
             OutlinedTextField(
                 value = wgEndpoint,
@@ -123,7 +124,7 @@ fun DnsSettingsSection(
                 }
             )
             Spacer(Modifier.height(4.dp))
-            var wgDnsIp by remember { mutableStateOf(wireGuardDnsIp) }
+            var wgDnsIp by rememberSaveable { mutableStateOf(wireGuardDnsIp) }
             LaunchedEffect(wireGuardDnsIp) { wgDnsIp = wireGuardDnsIp }
             OutlinedTextField(
                 value = wgDnsIp,
@@ -181,7 +182,7 @@ fun DnsSettingsSection(
         Text(stringResource(R.string.dns_redirect_targets), color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Text(stringResource(R.string.dns_redirect_targets_sub), color = TextDim, fontSize = 10.sp)
         Spacer(Modifier.height(4.dp))
-        var ipv4Target by remember { mutableStateOf(ipv4Redirect) }
+        var ipv4Target by rememberSaveable { mutableStateOf(ipv4Redirect) }
         LaunchedEffect(ipv4Redirect) { ipv4Target = ipv4Redirect }
         val normalizedIpv4 = remember(ipv4Target) {
             com.hostshield.util.DnsServerInputPolicy.normalizeRedirectIpv4(ipv4Target)
@@ -201,7 +202,7 @@ fun DnsSettingsSection(
             saveDescription = stringResource(R.string.dns_save_ipv4_redirect)
         )
         Spacer(Modifier.height(4.dp))
-        var ipv6Target by remember { mutableStateOf(ipv6Redirect) }
+        var ipv6Target by rememberSaveable { mutableStateOf(ipv6Redirect) }
         LaunchedEffect(ipv6Redirect) { ipv6Target = ipv6Redirect }
         val normalizedIpv6 = remember(ipv6Target) {
             com.hostshield.util.DnsServerInputPolicy.normalizeRedirectIpv6(ipv6Target)
@@ -229,7 +230,7 @@ fun DnsSettingsSection(
         ) { onDnsTrapEnabledChange(it) }
         Spacer(Modifier.height(8.dp))
         // Custom upstream DNS
-        var customDns by remember { mutableStateOf(customUpstreamDns) }
+        var customDns by rememberSaveable { mutableStateOf(customUpstreamDns) }
         LaunchedEffect(customUpstreamDns) { customDns = customUpstreamDns }
         // Validate before allowing save so an invalid entry surfaces an error
         // instead of silently being dropped at consumption time.
@@ -249,7 +250,7 @@ fun DnsSettingsSection(
             singleLine = true,
             isError = !dnsIsValid,
             supportingText = if (!dnsIsValid) {
-                { Text("Enter up to 4 valid IPv4/IPv6 addresses, comma-separated.", color = Red, fontSize = 11.sp) }
+                { Text(stringResource(R.string.dns_custom_upstream_invalid), color = Red, fontSize = 11.sp) }
             } else null,
             textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
             shape = RoundedCornerShape(10.dp),
@@ -297,16 +298,26 @@ fun DnsSettingsSection(
         Spacer(Modifier.height(12.dp))
         Text(stringResource(R.string.dns_cache_title), color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(4.dp))
-        val cacheStats = com.hostshield.service.DnsVpnService.currentCacheStats
-        if (cacheStats != null) {
+        // Poll into snapshot state: reading the @Volatile service field directly is
+        // not observable by Compose, so the row froze at whatever value existed on
+        // the last recomposition and never appeared/disappeared when protection
+        // started or stopped while Settings was open.
+        val cacheStats by produceState<com.hostshield.service.DnsCache.CacheStats?>(initialValue = null) {
+            while (true) {
+                value = com.hostshield.service.DnsVpnService.currentCacheStats
+                kotlinx.coroutines.delay(2000)
+            }
+        }
+        val stats = cacheStats
+        if (stats != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                val cacheEntryCount = cacheStats.size + cacheStats.negativeSize + cacheStats.failureSize
-                val staleCount = cacheStats.staleHits.toInt()
+                val cacheEntryCount = stats.size + stats.negativeSize + stats.failureSize
+                val staleCount = stats.staleHits.toInt()
                 Text(pluralStringResource(R.plurals.dns_cache_entries, cacheEntryCount, cacheEntryCount), color = TextDim, fontSize = 11.sp)
-                Text(stringResource(R.string.dns_cache_hit_rate, (cacheStats.hitRate * 100).toInt()), color = Green, fontSize = 11.sp)
+                Text(stringResource(R.string.dns_cache_hit_rate, (stats.hitRate * 100).toInt()), color = Green, fontSize = 11.sp)
                 Text(pluralStringResource(R.plurals.dns_cache_stale, staleCount, staleCount), color = TextDim, fontSize = 11.sp)
             }
             Spacer(Modifier.height(6.dp))
@@ -338,7 +349,9 @@ private fun WireGuardKeyField(
     obscured: Boolean,
     saveDescription: String
 ) {
-    var draft by remember { mutableStateOf(value) }
+    // Draft-then-save fields: without rememberSaveable a rotation silently
+    // reverts unsaved edits to the persisted value.
+    var draft by rememberSaveable { mutableStateOf(value) }
     var revealed by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(value) { draft = value }
     val normalized = remember(draft) { WireGuardKeyPolicy.normalize(draft) }

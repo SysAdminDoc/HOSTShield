@@ -39,6 +39,22 @@ fun Modifier.accessibilitySelection(label: String, selected: Boolean): Modifier 
         stateDescription = if (selected) "Selected" else "Not selected"
     }
 
+/**
+ * Semantics for one option in a radio group.
+ *
+ * Use on the whole row and leave the inner [androidx.compose.material3.RadioButton]
+ * non-interactive: applying selection semantics to both makes TalkBack announce
+ * every option twice, and a size-constrained clickable radio also falls below the
+ * 48dp minimum interactive target. [Role.RadioButton] is also the correct role
+ * here — [accessibilitySelection] reports Role.Tab.
+ */
+fun Modifier.accessibilityRadio(label: String, selected: Boolean): Modifier =
+    semantics(mergeDescendants = true) {
+        role = Role.RadioButton
+        contentDescription = label
+        stateDescription = if (selected) "Selected" else "Not selected"
+    }
+
 fun Modifier.accessibilityLiveRegion(label: String): Modifier =
     semantics {
         contentDescription = label

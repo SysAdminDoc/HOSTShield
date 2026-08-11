@@ -395,6 +395,7 @@
     <string name="dns_redirect_targets_sub">Addresses returned for blocked domains when the block response is set to Zero IP. Keep 0.0.0.0 and :: to blackhole them.</string>
     <string name="dns_ipv4_redirect">IPv4 redirect target</string>
     <string name="dns_ipv4_redirect_hint">e.g. 0.0.0.0</string>
+    <string name="dns_custom_upstream_invalid">Enter up to 4 valid IPv4 or IPv6 addresses, comma-separated.</string>
     <string name="dns_ipv4_redirect_invalid">Enter a valid IPv4 address.</string>
     <string name="dns_save_ipv4_redirect">Save IPv4 redirect target</string>
     <string name="dns_ipv6_redirect">IPv6 redirect target</string>

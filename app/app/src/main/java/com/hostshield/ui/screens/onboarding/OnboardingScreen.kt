@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hostshield.data.model.BlockMethod
+import com.hostshield.ui.accessibility.rememberAnimationsEnabled
 import com.hostshield.ui.theme.*
 import com.hostshield.util.PrivateDnsDetector
 
@@ -145,19 +146,29 @@ fun OnboardingScreen(
 
 @Composable
 private fun WelcomePage(onNext: () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition(label = "welcome")
-    val glowPulse by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.5f,
-        animationSpec = infiniteRepeatable(tween(2500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "pulse"
-    )
-    val ringRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(10000, easing = LinearEasing), RepeatMode.Restart),
-        label = "ring"
-    )
+    // Honor "Remove animations": this is the first screen a new user ever sees,
+    // and the pulse/rotation would otherwise run for the whole page lifetime.
+    val animationsEnabled = rememberAnimationsEnabled()
+    val glowPulse: Float
+    val ringRotation: Float
+    if (animationsEnabled) {
+        val infiniteTransition = rememberInfiniteTransition(label = "welcome")
+        glowPulse = infiniteTransition.animateFloat(
+            initialValue = 0.2f,
+            targetValue = 0.5f,
+            animationSpec = infiniteRepeatable(tween(2500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+            label = "pulse"
+        ).value
+        ringRotation = infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(10000, easing = LinearEasing), RepeatMode.Restart),
+            label = "ring"
+        ).value
+    } else {
+        glowPulse = 0.35f
+        ringRotation = 0f
+    }
     val teal = Teal
     val tealGlow = TealGlow
     val surface0 = Surface0

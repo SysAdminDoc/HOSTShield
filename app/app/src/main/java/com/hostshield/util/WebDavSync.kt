@@ -76,36 +76,6 @@ class WebDavSync @Inject constructor(
     }
 
     /**
-     * Download the resource at [remotePath] via HTTP GET.
-     * Returns `null` on any failure.
-     */
-    fun download(
-        serverUrl: String,
-        credentials: Credentials,
-        remotePath: String
-    ): ByteArray? {
-        return try {
-            val url = buildUrl(serverUrl, remotePath)
-            val request = Request.Builder()
-                .url(url)
-                .header("Authorization", basicAuth(credentials))
-                .get()
-                .build()
-            httpClient.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    response.body.byteStream().use { stream ->
-                        BoundedInputReader.readBytes(stream, MAX_WEBDAV_DOWNLOAD_BYTES, "WebDAV download")
-                    }
-                } else {
-                    null
-                }
-            }
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    /**
      * List files/directories under [remotePath] using PROPFIND (Depth: 1).
      */
     fun listFiles(
@@ -250,37 +220,6 @@ class WebDavSync @Inject constructor(
             }
         } catch (e: Exception) {
             SyncResult.NetworkError(e.message ?: "Unknown network error")
-        }
-    }
-
-    /**
-     * Download the most recent backup from the server.
-     * Returns the [SyncResult] together with the raw bytes (null on failure).
-     */
-    fun fetchLatestBackup(
-        serverUrl: String,
-        credentials: Credentials
-    ): Pair<SyncResult, ByteArray?> {
-        return try {
-            val files = listFiles(serverUrl, credentials, BACKUPS_DIR)
-                ?: return Pair(SyncResult.NetworkError("Failed to list remote backups"), null)
-            val backups = files.filter { !it.isDirectory && it.name.endsWith(".json") }
-
-            if (backups.isEmpty()) {
-                return Pair(SyncResult.NetworkError("No backups found"), null)
-            }
-
-            // Sort by name descending — timestamp in the filename ensures correct order
-            val latest = backups.sortedByDescending { it.name }.first()
-            val data = download(serverUrl, credentials, latest.path)
-
-            if (data != null) {
-                Pair(SyncResult.Success, data)
-            } else {
-                Pair(SyncResult.NetworkError("Failed to download backup"), null)
-            }
-        } catch (e: Exception) {
-            Pair(SyncResult.NetworkError(e.message ?: "Unknown error"), null)
         }
     }
 

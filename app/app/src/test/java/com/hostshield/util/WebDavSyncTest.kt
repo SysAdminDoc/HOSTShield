@@ -28,7 +28,6 @@ class WebDavSyncTest {
         val credentials = WebDavSync.Credentials("user", "password")
 
         assertThat(sync.upload("http://cloud.example.com/dav", credentials, "/backup.json", byteArrayOf(1))).isFalse()
-        assertThat(sync.download("http://cloud.example.com/dav", credentials, "/backup.json")).isNull()
         assertThat(sync.listFiles("http://cloud.example.com/dav", credentials, "/")).isNull()
         assertThat(sync.delete("http://cloud.example.com/dav", credentials, "/backup.json")).isFalse()
         assertThat(sync.createDirectory("http://cloud.example.com/dav", credentials, "/HostShield")).isFalse()

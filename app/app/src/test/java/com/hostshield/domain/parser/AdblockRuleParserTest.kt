@@ -301,4 +301,46 @@ class AdblockRuleParserTest {
         val result = AdblockRuleParser.parse("0.0.0.0 $hosts")
         assertEquals(16, result.blockRules.size)
     }
+
+    // Regression: parseRegexRule parsed only important/badfilter and silently
+    // ignored every other modifier, so a scoped rule became an unscoped global
+    // regex - the over-globalization class removed from the domain path earlier.
+    @Test
+    fun `a regex rule carrying a scoping modifier is rejected`() {
+        assertNull(AdblockRuleParser.parseLine("/tracker/\$client=192.168.1.5"))
+        assertNull(AdblockRuleParser.parseLine("/ads/\$app=com.example"))
+        assertNull(AdblockRuleParser.parseLine("/x/\$denyallow=good.com"))
+    }
+
+    @Test
+    fun `a regex rule keeps the modifiers it does support`() {
+        val important = AdblockRuleParser.parseLine("/ads/\$important")
+        assertNotNull(important)
+        assertTrue(important!!.isRegex)
+        assertTrue(important.isImportant)
+
+        val badfilter = AdblockRuleParser.parseLine("/ads/\$badfilter")
+        assertNotNull(badfilter)
+        assertTrue(badfilter!!.isBadfilter)
+
+        val plain = AdblockRuleParser.parseLine("/ads[0-9]+/")
+        assertNotNull(plain)
+        assertTrue(plain!!.isRegex)
+    }
+
+    // DNS queries arrive punycode-encoded, so an IDN rule stored verbatim could
+    // never match - it only inflated entry counts and the trie/bloom.
+    @Test
+    fun `IDN domain rules are converted to punycode`() {
+        val rule = AdblockRuleParser.parseLine("||ex\u00E4mple.com^")
+        assertNotNull(rule)
+        assertEquals("xn--exmple-cua.com", rule!!.domain)
+    }
+
+    @Test
+    fun `ASCII domain rules are unchanged`() {
+        val rule = AdblockRuleParser.parseLine("||ads.example.com^")
+        assertNotNull(rule)
+        assertEquals("ads.example.com", rule!!.domain)
+    }
 }

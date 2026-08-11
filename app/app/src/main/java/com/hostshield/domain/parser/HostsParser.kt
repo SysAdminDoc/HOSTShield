@@ -71,7 +71,7 @@ object HostsParser {
      * first line of a BOM-prefixed list fails every shape check — silently losing
      * one entry per such source and skewing the [isAdblockFormat] ratio.
      */
-    internal fun stripBom(content: String): String = content.removePrefix("﻿")
+    internal fun stripBom(content: String): String = content.removePrefix("\uFEFF")
 
     fun isAdblockFormat(rawContent: String): Boolean {
         val content = stripBom(rawContent)

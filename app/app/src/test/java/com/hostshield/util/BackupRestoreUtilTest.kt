@@ -41,4 +41,45 @@ class BackupRestoreUtilTest {
         assertNull(BackupRestoreUtil.normalizePackageName("com.example;rm"))
         assertNull(BackupRestoreUtil.normalizePackageName("example"))
     }
+
+    // Regression: profiles stored device-local autoincrement row ids, so restoring
+    // onto a device whose sources were inserted in a different order could bind a
+    // profile to unrelated blocklists without any warning.
+    @Test
+    fun `profile source ids are remapped by URL on restore`() {
+        val local = mapOf(
+            "https://lists.example.com/ads.txt" to 7L,
+            "https://lists.example.com/tracking.txt" to 9L,
+        )
+
+        assertEquals(
+            "7,9",
+            BackupRestoreUtil.remapProfileSourceIds(
+                "https://lists.example.com/ads.txt,https://lists.example.com/tracking.txt",
+                "1,2",
+                local,
+            )
+        )
+    }
+
+    @Test
+    fun `unknown source URLs are dropped rather than mapped by stale id`() {
+        val local = mapOf("https://lists.example.com/ads.txt" to 7L)
+        assertEquals(
+            "7",
+            BackupRestoreUtil.remapProfileSourceIds(
+                "https://lists.example.com/ads.txt,https://gone.example.com/old.txt",
+                "1,2",
+                local,
+            )
+        )
+    }
+
+    @Test
+    fun `legacy backups without URLs keep their raw source ids`() {
+        assertEquals(
+            "1,2",
+            BackupRestoreUtil.remapProfileSourceIds("", "1,2", emptyMap())
+        )
+    }
 }

@@ -95,8 +95,6 @@ fun DnsBenchmarkScreen(
 
         // Results
         if (viewModel.results.isNotEmpty()) {
-            val best = viewModel.results.first().avgLatencyMs
-
             viewModel.results.forEachIndexed { index, result ->
                 val barColor = when {
                     !result.isReachable -> Red

@@ -73,7 +73,9 @@ fun SourcesScreen(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val sourceFilter by viewModel.filter.collectAsStateWithLifecycle()
     val savedFilters by viewModel.savedFilters.collectAsStateWithLifecycle()
-    var showAddDialog by remember { mutableStateOf(false) }
+    // rememberSaveable so a rotation mid-entry does not close the dialog and
+    // discard its (saveable) URL/label/category fields. Matches RulesScreen.
+    var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var pendingDeleteSource by remember { mutableStateOf<HostSource?>(null) }
     val filteredSources = remember(sources, searchQuery, sourceFilter) {
         sources.filter { source ->

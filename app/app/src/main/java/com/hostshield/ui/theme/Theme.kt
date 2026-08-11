@@ -1,6 +1,7 @@
 package com.hostshield.ui.theme
 
 import android.app.Activity
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -473,6 +474,11 @@ fun HostShieldTheme(
                 window.statusBarColor = palette.black.toArgb()
                 window.navigationBarColor = palette.black.toArgb()
             }
+            // The XML windowBackground is a fixed black and there is no values-night
+            // split (the in-app theme setting wins over the system one anyway), so in
+            // light mode the window layer stayed black for the app's lifetime — a
+            // black flash on IME resize and in overscroll stretch areas.
+            window.setBackgroundDrawable(ColorDrawable(palette.black.toArgb()))
         }
     }
 

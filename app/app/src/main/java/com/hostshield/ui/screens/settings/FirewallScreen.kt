@@ -489,7 +489,7 @@ private fun NetworkFirewallTab(
     // Column headers
     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Text("App", modifier = Modifier.weight(1f), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        Text("WiFi", modifier = Modifier.widthIn(min = 48.dp), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+        Text("Wi-Fi", modifier = Modifier.widthIn(min = 48.dp), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2, lineHeight = 12.sp)
         Text("Data", modifier = Modifier.widthIn(min = 48.dp), color = TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2, lineHeight = 12.sp)
@@ -555,10 +555,10 @@ private fun NetworkFirewallTab(
                     Text("UID ${rule.uid}", color = TextDim, fontSize = 9.sp)
                 }
 
-                // WiFi toggle
+                // Wi-Fi toggle
                 IconButton(
                     onClick = { viewModel.toggleWifi(rule.uid, !rule.wifiAllowed) },
-                    modifier = Modifier.size(48.dp).accessibilityToggle("${rule.appLabel} WiFi access", rule.wifiAllowed)
+                    modifier = Modifier.size(48.dp).accessibilityToggle("${rule.appLabel} Wi-Fi access", rule.wifiAllowed)
                 ) {
                     Icon(
                         Icons.Filled.Wifi,

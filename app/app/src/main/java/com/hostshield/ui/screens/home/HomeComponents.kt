@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.hostshield.R
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.HostShieldStatusBanner
+import com.hostshield.ui.accessibility.rememberAnimationsEnabled
 import com.hostshield.ui.theme.*
 import java.text.NumberFormat
 import kotlin.math.cos
@@ -82,14 +83,7 @@ fun ShieldOrb(
 ) {
     // Respect the system "remove animations" setting for the decorative
     // infinite pulse/rotation animations (they'd otherwise burn frames forever).
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val animationsEnabled = remember {
-        android.provider.Settings.Global.getFloat(
-            context.contentResolver,
-            android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,
-            1f
-        ) != 0f
-    }
+    val animationsEnabled = rememberAnimationsEnabled()
 
     val glowPulse: Float
     val ringRotation: Float

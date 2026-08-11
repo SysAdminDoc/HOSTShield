@@ -48,6 +48,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.res.stringResource
 import com.hostshield.BuildConfig
 import com.hostshield.R
+import com.hostshield.ui.accessibility.accessibilityRadio
 import com.hostshield.ui.accessibility.accessibilitySelection
 import com.hostshield.ui.HostShieldTestTags
 import com.hostshield.ui.components.HostShieldFilterChip
@@ -1347,20 +1348,22 @@ internal fun BlockResponseSelector(current: String, onSelect: (String) -> Unit) 
                 onClick = { onSelect(key) },
                 shape = RoundedCornerShape(8.dp),
                 color = if (selected) Blue.copy(alpha = 0.12f) else Surface2,
-                modifier = Modifier.fillMaxWidth().accessibilitySelection("$label block response type", selected)
+                modifier = Modifier.fillMaxWidth().accessibilityRadio("$label block response type", selected)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Non-interactive: the row is the single target, so TalkBack
+                    // announces each option once and the 48dp minimum still applies.
                     RadioButton(
                         selected = selected,
-                        onClick = { onSelect(key) },
+                        onClick = null,
                         colors = RadioButtonDefaults.colors(
                             selectedColor = Blue,
                             unselectedColor = TextDim
                         ),
-                        modifier = Modifier.size(20.dp).accessibilitySelection("$label block response type", selected)
+                        modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(8.dp))
                     Column {
