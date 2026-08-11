@@ -120,6 +120,8 @@ class DnsVpnService : VpnService() {
         private const val TAG = "HostShield"
         private const val WATCHDOG_INTERVAL_MS = 60_000L  // Doze/App Standby heartbeat
         private const val HEARTBEAT_INTERVAL_MS = 60_000L
+        /** Foreground-app sampling cadence for context-aware `blockBackground` rules. */
+        private const val FOREGROUND_POLL_INTERVAL_MS = 5_000L
         private const val WATCHDOG_REQUEST_CODE = 99
         private const val WRITE_CHANNEL_CAPACITY = 512
 
@@ -346,6 +348,7 @@ class DnsVpnService : VpnService() {
     @Volatile private var stabilityFlushJob: Job? = null
     @Volatile private var vpnRecoveryMonitorJob: Job? = null
     @Volatile private var tunnelHeartbeatJob: Job? = null
+    @Volatile private var contextStateJob: Job? = null
 
     // Pause state: when paused, all queries are allowed (no blocking)
     @Volatile private var isPaused = false
@@ -550,6 +553,7 @@ class DnsVpnService : VpnService() {
             val ctxRules = firewallRuleDao.getContextAwareRules().first()
             contextRules = ctxRules.associateBy { it.packageName }
             ContextState.register(this)
+            startContextStateMonitor()
             useDoH = prefs.dohEnabled.first()
             dohProvider = DohResolver.Provider.fromId(prefs.dohProvider.first())
             useDoT = prefs.dotEnabled.first()
@@ -819,6 +823,8 @@ class DnsVpnService : VpnService() {
         stabilityFlushJob?.cancel(); stabilityFlushJob = null
         // Disconnect WireGuard proxy if active
         try { if (useWireGuard) wireGuardProxy.disconnect() } catch (_: Exception) { }
+        contextStateJob?.cancel(); contextStateJob = null
+        ContextState.foregroundPackage = ""
         ContextState.unregister(this)
         dnsAnswerCache.clear()
         dnsCache.clear()
@@ -913,6 +919,11 @@ class DnsVpnService : VpnService() {
                 // NetGuard uses hasTransport(TRANSPORT_VPN) to filter these out.
                 override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
                     if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return
+                    // Metered state was previously sampled only at ContextState.register(),
+                    // so `blockMetered` rules enforced whatever was true at VPN start
+                    // across every Wi-Fi/cellular handover that did not fire onLost.
+                    ContextState.isMetered =
+                        !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
                 }
 
                 override fun onLost(network: Network) {
@@ -1438,6 +1449,36 @@ class DnsVpnService : VpnService() {
         }
     }
 
+    /**
+     * Keeps [ContextState.foregroundPackage] fresh for `blockBackground` rules.
+     *
+     * Without this the field stays at its "" initial value forever, and every
+     * background rule blocks its app unconditionally (the policy fails open on the
+     * empty value, so an ungranted usage-stats permission degrades to "never block
+     * by background" rather than "always block").
+     *
+     * Only runs when at least one active rule actually needs it — polling usage
+     * stats has a battery cost and requires PACKAGE_USAGE_STATS.
+     */
+    private fun startContextStateMonitor() {
+        contextStateJob?.cancel()
+        if (contextRules.values.none { it.blockBackground }) {
+            ContextState.foregroundPackage = ""
+            contextStateJob = null
+            return
+        }
+        contextStateJob = serviceScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                try {
+                    ContextState.updateForegroundApp(this@DnsVpnService)
+                } catch (e: Exception) {
+                    Log.d(TAG, "Foreground sample failed: ${e.message}")
+                }
+                delay(FOREGROUND_POLL_INTERVAL_MS)
+            }
+        }
+    }
+
     /** Periodic log flusher — every 2 seconds. Crash-resistant: catches per-cycle errors. */
     private fun startLogFlusher() {
         logFlushJob?.cancel()
@@ -1669,12 +1710,16 @@ class DnsVpnService : VpnService() {
     private fun buildTcpRst(orig: ByteArray, ihl: Int) = TcpRstBuilder.buildTcpRst(orig, ihl)
 
     /** Check if a context-aware firewall rule should block this app right now. */
-    private fun shouldBlockByContext(rule: com.hostshield.data.model.FirewallRule, pkg: String): Boolean {
-        if (rule.blockScreenOff && !ContextState.isScreenOn) return true
-        if (rule.blockBackground && ContextState.foregroundPackage != pkg) return true
-        if (rule.blockMetered && ContextState.isMetered) return true
-        return false
-    }
+    private fun shouldBlockByContext(rule: com.hostshield.data.model.FirewallRule, pkg: String): Boolean =
+        ContextFirewallPolicy.shouldBlock(
+            blockScreenOff = rule.blockScreenOff,
+            blockBackground = rule.blockBackground,
+            blockMetered = rule.blockMetered,
+            packageName = pkg,
+            isScreenOn = ContextState.isScreenOn,
+            foregroundPackage = ContextState.foregroundPackage,
+            isMetered = ContextState.isMetered,
+        )
 
     // ── DNS Parsing & Response (delegated to DnsPacketParser) ──
 
