@@ -46,6 +46,7 @@ import com.hostshield.service.LogCleanupWorker
 import com.hostshield.service.ProfileScheduleWorker
 import com.hostshield.service.ProtectionServiceStarter
 import com.hostshield.service.RootDnsService
+import com.hostshield.service.ShortcutTrustPolicy
 import com.hostshield.service.SourceHealthWorker
 import com.hostshield.ui.navigation.HostShieldAdaptiveNavigationScaffold
 import com.hostshield.ui.navigation.Screen
@@ -111,19 +112,31 @@ class MainActivity : ComponentActivity() {
         when (intent?.action) {
             "com.hostshield.SHORTCUT_TOGGLE" -> {
                 // MainActivity is exported for the launcher, so any app could send
-                // this action. Only honor it from the launcher/system or ourselves
-                // so a third-party app cannot flip protection.
-                if (isTrustedShortcutCaller()) {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        toggleProtectionFromShortcut()
+                // this action. Only a system-supplied caller identity is trustworthy;
+                // see ShortcutTrustPolicy for why the pre-34 referrer is not.
+                when (shortcutToggleTrust()) {
+                    ShortcutTrustPolicy.Decision.TRUSTED -> {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            toggleProtectionFromShortcut()
+                        }
                     }
-                } else {
-                    Log.w("MainActivity", "Ignoring SHORTCUT_TOGGLE from untrusted caller")
-                    android.widget.Toast.makeText(
-                        this,
-                        "Toggle Protection can only be triggered from your launcher.",
-                        android.widget.Toast.LENGTH_SHORT,
-                    ).show()
+                    ShortcutTrustPolicy.Decision.UNVERIFIABLE -> {
+                        // App opens on Home; the user completes the toggle with one tap.
+                        Log.i("MainActivity", "SHORTCUT_TOGGLE needs a tap (caller unverifiable below API ${ShortcutTrustPolicy.MIN_VERIFIABLE_SDK})")
+                        android.widget.Toast.makeText(
+                            this,
+                            getString(R.string.shortcut_toggle_tap_shield),
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                    ShortcutTrustPolicy.Decision.UNTRUSTED -> {
+                        Log.w("MainActivity", "Ignoring SHORTCUT_TOGGLE from untrusted caller")
+                        android.widget.Toast.makeText(
+                            this,
+                            getString(R.string.shortcut_toggle_untrusted),
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                    }
                 }
             }
             "com.hostshield.SHORTCUT_REFRESH" -> {
@@ -152,29 +165,24 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * True when a SHORTCUT_TOGGLE launch originated from a trusted source:
-     * ourselves, the OS, or the actual default launcher.
+     * Whether this SHORTCUT_TOGGLE launch may flip protection without a user tap.
      *
-     * On API 34+ the launched-from identity is authoritative and cannot be
-     * spoofed via `EXTRA_REFERRER`. On older releases only the referrer is
-     * available (spoofable), so we narrow trust to the resolved home/launcher
-     * package instead of any `FLAG_SYSTEM` app — closing the "claim to be
-     * com.android.settings" bypass while still honoring third-party launchers.
+     * On API 34+ the launched-from identity comes from the system and cannot be
+     * spoofed. Below that the only signal is `getReferrer()`, which echoes
+     * caller-supplied `EXTRA_REFERRER` — a third-party app can present a
+     * host-less URI (previously trusted outright) or simply claim the launcher's
+     * package, so no referrer rule is sound. Those launches require a tap instead.
      */
-    private fun isTrustedShortcutCaller(): Boolean {
-        val homePackage = resolveHomePackage()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            val callerUid = try { launchedFromUid } catch (_: Exception) { return false }
-            if (callerUid == android.os.Process.myUid()) return true
-            if (callerUid == android.os.Process.SYSTEM_UID) return true
-            val callerPackage = try { launchedFromPackage } catch (_: Exception) { null }
-            return callerPackage != null && callerPackage == homePackage
-        }
-        // Pre-34 fallback: referrer is the only signal (spoofable). Trust
-        // system-delivered (null), ourselves, or the default launcher only.
-        val caller = referrer?.host ?: return true
-        if (caller == packageName) return true
-        return homePackage != null && caller == homePackage
+    private fun shortcutToggleTrust(): ShortcutTrustPolicy.Decision {
+        val verifiable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+        return ShortcutTrustPolicy.decide(
+            sdkInt = Build.VERSION.SDK_INT,
+            callerUid = if (verifiable) try { launchedFromUid } catch (_: Exception) { null } else null,
+            myUid = android.os.Process.myUid(),
+            systemUid = android.os.Process.SYSTEM_UID,
+            callerPackage = if (verifiable) try { launchedFromPackage } catch (_: Exception) { null } else null,
+            homePackage = resolveHomePackage(),
+        )
     }
 
     /** The current default launcher (home) package, or null if unresolved. */

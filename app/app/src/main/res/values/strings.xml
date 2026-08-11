@@ -2,6 +2,8 @@
 <resources>
     <string name="app_name">HostShield</string>
     <string name="widget_description">Quick toggle and block count</string>
+    <string name="shortcut_toggle_tap_shield">Tap the shield to toggle protection.</string>
+    <string name="shortcut_toggle_untrusted">Toggle Protection can only be triggered from your launcher.</string>
     <string name="shortcut_toggle">Toggle</string>
     <string name="shortcut_toggle_long">Toggle Protection</string>
     <string name="shortcut_refresh">Refresh</string>
