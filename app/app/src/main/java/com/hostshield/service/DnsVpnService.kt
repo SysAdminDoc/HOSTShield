@@ -1945,7 +1945,13 @@ class DnsVpnService : VpnService() {
         val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
         val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
         val stale = dnsCache.getStale(domain, qtypeNum, txId)
-        if (stale != null) {
+        // Decision lives in EncryptedFailurePolicy so the "never plaintext" rule is
+        // covered by a test instead of only by review.
+        val action = EncryptedFailurePolicy.decide(
+            encryptedTransport = true,
+            staleAvailable = stale != null,
+        )
+        if (action == EncryptedFailurePolicy.Action.SERVE_STALE && stale != null) {
             PrivacyLog.i(TAG, "SERVE-STALE $domain (upstream failed, returning expired cache)")
             val pfResult = postForwardChecks(
                 stale,
