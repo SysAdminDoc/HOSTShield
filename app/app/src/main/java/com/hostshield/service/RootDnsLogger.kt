@@ -113,6 +113,8 @@ class RootDnsLogger @Inject constructor(
     private var logFlushJob: Job? = null
     private var loggingEnabled = true
     private var blockResponseType = "nxdomain"
+    private var ipv4Redirect = ""
+    private var ipv6Redirect = ""
     private var edeEnabled = false
     private val pendingBlockedStats = java.util.concurrent.atomic.AtomicInteger(0)
     private val pendingAllowedStats = java.util.concurrent.atomic.AtomicInteger(0)
@@ -132,6 +134,8 @@ class RootDnsLogger @Inject constructor(
                 // Read logging preference
                 loggingEnabled = try { prefs.dnsLogging.first() } catch (_: Exception) { true }
                 blockResponseType = try { prefs.blockResponseType.first() } catch (_: Exception) { "nxdomain" }
+                ipv4Redirect = try { prefs.ipv4Redirect.first() } catch (_: Exception) { "" }
+                ipv6Redirect = try { prefs.ipv6Redirect.first() } catch (_: Exception) { "" }
                 edeEnabled = try { prefs.edeEnabled.first() } catch (_: Exception) { false }
                 Log.i(TAG, "Root DNS starting (logging=$loggingEnabled, blockResponse=$blockResponseType, ede=$edeEnabled)")
 
@@ -728,14 +732,15 @@ class RootDnsLogger @Inject constructor(
     }
 
     /**
-     * Zero-IP response: RCODE=0 (NOERROR) with A=0.0.0.0 or AAAA=::.
+     * Zero-IP response: RCODE=0 (NOERROR) with A=0.0.0.0 or AAAA=::, or the
+     * configured redirect target when the user set one.
      * Only for A/AAAA queries; other types return null (caller falls back).
      */
     private fun buildZeroIpResponse(query: ByteArray, queryType: String): ByteArray? {
         if (query.size < 12) return null
         val rdata = when (queryType) {
-            "A" -> byteArrayOf(0, 0, 0, 0)
-            "AAAA" -> ByteArray(16)
+            "A" -> DnsPacketBuilder.parseIpv4Bytes(ipv4Redirect) ?: byteArrayOf(0, 0, 0, 0)
+            "AAAA" -> DnsPacketBuilder.parseIpv6Bytes(ipv6Redirect) ?: ByteArray(16)
             else -> return null
         }
         val rdataType = when (queryType) {

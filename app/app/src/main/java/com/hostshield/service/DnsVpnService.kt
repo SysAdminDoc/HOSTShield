@@ -296,6 +296,8 @@ class DnsVpnService : VpnService() {
     @Volatile private var safeSearchEnabled = false
     @Volatile private var contentFilterCategories: Set<ContentCategory> = emptySet()
     @Volatile private var blockResponseType = "nxdomain"
+    @Volatile private var ipv4Redirect = ""
+    @Volatile private var ipv6Redirect = ""
     private var edeEnabled = false
     // Custom upstream DNS — updated live by startDnsConfigObserver()
     @Volatile private var upstreamDnsServers = UPSTREAM_DNS.toList()
@@ -605,6 +607,8 @@ class DnsVpnService : VpnService() {
                 }.toSet()
             loggingEnabled = prefs.dnsLogging.first()
             blockResponseType = prefs.blockResponseType.first()
+            ipv4Redirect = prefs.ipv4Redirect.first()
+            ipv6Redirect = prefs.ipv6Redirect.first()
             edeEnabled = prefs.edeEnabled.first()
 
             // Resolve custom upstream DNS
@@ -1334,7 +1338,10 @@ class DnsVpnService : VpnService() {
      */
     private fun buildBlockResponse(dns: ByteArray, qtype: String, reason: String? = null): ByteArray? {
         val edeCode = if (edeEnabled) DnsPacketBuilder.EDE_BLOCKED else -1
-        return DnsPacketBuilder.buildBlockResponse(dns, blockResponseType, edeCode, if (edeEnabled) reason else null)
+        return DnsPacketBuilder.buildBlockResponse(
+            dns, blockResponseType, edeCode, if (edeEnabled) reason else null,
+            ipv4Redirect, ipv6Redirect,
+        )
     }
 
     private fun logAsync(
@@ -2045,6 +2052,9 @@ class DnsVpnService : VpnService() {
                 prefs.contentFilterCategories.map { it.sorted().joinToString(",") },
                 prefs.parentalEnabled.map { it.toString() },
                 prefs.parentalAgeProfile,
+                prefs.blockResponseType,
+                prefs.ipv4Redirect,
+                prefs.ipv6Redirect,
             ) { values -> values.joinToString("|") }
                 .distinctUntilChanged()
                 .drop(1)
@@ -2065,9 +2075,15 @@ class DnsVpnService : VpnService() {
         } catch (e: Exception) {
             Log.w(TAG, "Parental control live reload failed: ${e.message}")
         }
+        // Block-response shape and redirect targets were also read only at
+        // startVpn(), so editing them in Settings did nothing until a restart.
+        blockResponseType = prefs.blockResponseType.first()
+        ipv4Redirect = prefs.ipv4Redirect.first()
+        ipv6Redirect = prefs.ipv6Redirect.first()
         PrivacyLog.i(TAG, "Filter config reloaded live: " +
             "threatIntel=$threatIntelEnabled, safeSearch=$safeSearchEnabled, " +
-            "contentCategories=${contentFilterCategories.size}")
+            "contentCategories=${contentFilterCategories.size}, " +
+            "blockResponse=$blockResponseType")
     }
 
     private suspend fun applyLiveDnsConfig() {

@@ -181,13 +181,45 @@ object DnsPacketBuilder {
      * @param queryDns Original DNS query bytes
      * @return DNS response bytes with appropriate answer
      */
-    fun buildZeroIp(queryDns: ByteArray): ByteArray {
+    fun buildZeroIp(
+        queryDns: ByteArray,
+        ipv4Redirect: String = "",
+        ipv6Redirect: String = "",
+    ): ByteArray {
         val qtype = parseQueryType(queryDns)
         return when (qtype) {
-            TYPE_A.toInt() -> buildZeroIpA(queryDns)
-            TYPE_AAAA.toInt() -> buildZeroIpAaaa(queryDns)
+            TYPE_A.toInt() -> buildZeroIpA(queryDns, parseIpv4Bytes(ipv4Redirect))
+            TYPE_AAAA.toInt() -> buildZeroIpAaaa(queryDns, parseIpv6Bytes(ipv6Redirect))
             else -> buildNxdomain(queryDns, includeSoa = false)
         }
+    }
+
+    /** Literal dotted-quad to 4 bytes. Null for blank/invalid input (no DNS lookup). */
+    internal fun parseIpv4Bytes(value: String): ByteArray? {
+        val trimmed = value.trim()
+        if (trimmed.isEmpty()) return null
+        val parts = trimmed.split(".")
+        if (parts.size != 4) return null
+        val out = ByteArray(4)
+        for (i in 0 until 4) {
+            if (parts[i].isEmpty() || parts[i].length > 3) return null
+            val n = parts[i].toIntOrNull() ?: return null
+            if (n !in 0..255) return null
+            out[i] = n.toByte()
+        }
+        return out
+    }
+
+    /** Literal IPv6 to 16 bytes. Null for blank/invalid input (no DNS lookup). */
+    internal fun parseIpv6Bytes(value: String): ByteArray? {
+        val trimmed = value.trim().trim('[', ']')
+        if (trimmed.isEmpty() || !trimmed.contains(':')) return null
+        // Guard getByName against anything that could be treated as a hostname.
+        if (!trimmed.all { it.isDigit() || it in "abcdefABCDEF:." }) return null
+        return runCatching {
+            val addr = java.net.InetAddress.getByName(trimmed)
+            if (addr is java.net.Inet6Address) addr.address else null
+        }.getOrNull()?.takeIf { it.size == 16 }
     }
 
     /**
@@ -197,10 +229,19 @@ object DnsPacketBuilder {
      * @param responseType One of "nxdomain", "zero_ip", "refused"
      * @return DNS response bytes
      */
+    /**
+     * Build the response served for a blocked domain.
+     *
+     * [ipv4Redirect]/[ipv6Redirect] are the user's configured redirect targets. When
+     * set (and [responseType] is `zero_ip`) the A/AAAA answer carries that address
+     * instead of the 0.0.0.0 / :: blackhole, which is what the Settings "Redirect
+     * targets" fields promise. Empty values keep the historical zero-IP behavior.
+     */
     fun buildBlockResponse(queryDns: ByteArray, responseType: String, edeInfoCode: Int = -1,
-                            blockReason: String? = null): ByteArray {
+                            blockReason: String? = null, ipv4Redirect: String = "",
+                            ipv6Redirect: String = ""): ByteArray {
         val resp = when (responseType) {
-            "zero_ip" -> buildZeroIp(queryDns)
+            "zero_ip" -> buildZeroIp(queryDns, ipv4Redirect, ipv6Redirect)
             "refused" -> buildRefused(queryDns)
             else -> buildNxdomain(queryDns)
         }
@@ -307,10 +348,10 @@ object DnsPacketBuilder {
         return record
     }
 
-    private fun buildZeroIpA(queryDns: ByteArray): ByteArray {
-        // NOERROR with A=0.0.0.0
+    private fun buildZeroIpA(queryDns: ByteArray, redirect: ByteArray? = null): ByteArray {
+        // NOERROR with A=0.0.0.0 (or the configured IPv4 redirect target)
         val resp = buildResponseWithRcode(queryDns, RCODE_NOERROR, includeSoa = false)
-        // Add answer record: name pointer + TYPE_A + CLASS_IN + TTL(300) + RDLENGTH(4) + 0.0.0.0
+        // Add answer record: name pointer + TYPE_A + CLASS_IN + TTL(300) + RDLENGTH(4) + address
         val answer = ByteArray(2 + 2 + 2 + 4 + 2 + 4)
         answer[0] = 0xC0.toByte(); answer[1] = 0x0C // name pointer
         answer[2] = 0; answer[3] = 1 // TYPE = A
@@ -318,7 +359,10 @@ object DnsPacketBuilder {
         // TTL = 300
         answer[6] = 0; answer[7] = 0; answer[8] = 1; answer[9] = 0x2C
         answer[10] = 0; answer[11] = 4 // RDLENGTH = 4
-        // 0.0.0.0 (already zeroed)
+        // 0.0.0.0 unless a redirect target is configured
+        if (redirect != null && redirect.size == 4) {
+            System.arraycopy(redirect, 0, answer, 12, 4)
+        }
 
         val full = ByteArray(resp.size + answer.size)
         System.arraycopy(resp, 0, full, 0, resp.size)
@@ -328,17 +372,20 @@ object DnsPacketBuilder {
         return full
     }
 
-    private fun buildZeroIpAaaa(queryDns: ByteArray): ByteArray {
-        // NOERROR with AAAA=::
+    private fun buildZeroIpAaaa(queryDns: ByteArray, redirect: ByteArray? = null): ByteArray {
+        // NOERROR with AAAA=:: (or the configured IPv6 redirect target)
         val resp = buildResponseWithRcode(queryDns, RCODE_NOERROR, includeSoa = false)
-        // Answer: name pointer + TYPE_AAAA + CLASS_IN + TTL(300) + RDLENGTH(16) + ::
+        // Answer: name pointer + TYPE_AAAA + CLASS_IN + TTL(300) + RDLENGTH(16) + address
         val answer = ByteArray(2 + 2 + 2 + 4 + 2 + 16)
         answer[0] = 0xC0.toByte(); answer[1] = 0x0C
         answer[2] = 0; answer[3] = 28 // TYPE = AAAA
         answer[4] = 0; answer[5] = 1 // CLASS = IN
         answer[6] = 0; answer[7] = 0; answer[8] = 1; answer[9] = 0x2C // TTL = 300
         answer[10] = 0; answer[11] = 16 // RDLENGTH = 16
-        // :: (all zeroed)
+        // :: unless a redirect target is configured
+        if (redirect != null && redirect.size == 16) {
+            System.arraycopy(redirect, 0, answer, 12, 16)
+        }
 
         val full = ByteArray(resp.size + answer.size)
         System.arraycopy(resp, 0, full, 0, resp.size)

@@ -524,4 +524,94 @@ class DnsPacketBuilderTest {
         val optLen = ((withEde[optStart + 13].toInt() and 0xFF) shl 8) or (withEde[optStart + 14].toInt() and 0xFF)
         assertEquals("OPTION-LENGTH = 2 + extra text length", 2 + extraText.size, optLen)
     }
+
+    // ── Redirect targets (blocked-domain answer address) ──────
+
+    /** Offset of the answer RDATA in a zero-IP response: header+question+12. */
+    private fun rdataOffset(query: ByteArray) = query.size + 12
+
+    @Test
+    fun `zero ip A answer is 0_0_0_0 when no redirect configured`() {
+        val q = buildQuery("ads.example.com", qtype = 1)
+        val resp = DnsPacketBuilder.buildZeroIp(q)
+        val off = rdataOffset(q)
+        assertEquals(0, resp[off].toInt() and 0xFF)
+        assertEquals(0, resp[off + 1].toInt() and 0xFF)
+        assertEquals(0, resp[off + 2].toInt() and 0xFF)
+        assertEquals(0, resp[off + 3].toInt() and 0xFF)
+    }
+
+    // Regression: the ipv4Redirect/ipv6Redirect prefs were written by Settings and
+    // round-tripped by backup but read by no runtime path, so a configured
+    // redirect target silently did nothing.
+    @Test
+    fun `zero ip A answer carries the configured IPv4 redirect target`() {
+        val q = buildQuery("ads.example.com", qtype = 1)
+        val resp = DnsPacketBuilder.buildZeroIp(q, ipv4Redirect = "10.1.2.3")
+        val off = rdataOffset(q)
+        assertEquals(10, resp[off].toInt() and 0xFF)
+        assertEquals(1, resp[off + 1].toInt() and 0xFF)
+        assertEquals(2, resp[off + 2].toInt() and 0xFF)
+        assertEquals(3, resp[off + 3].toInt() and 0xFF)
+    }
+
+    @Test
+    fun `zero ip AAAA answer carries the configured IPv6 redirect target`() {
+        val q = buildQuery("ads.example.com", qtype = 28)
+        val resp = DnsPacketBuilder.buildZeroIp(q, ipv6Redirect = "fd00::abcd")
+        val off = rdataOffset(q)
+        assertEquals(0xFD, resp[off].toInt() and 0xFF)
+        assertEquals(0x00, resp[off + 1].toInt() and 0xFF)
+        assertEquals(0xAB, resp[off + 14].toInt() and 0xFF)
+        assertEquals(0xCD, resp[off + 15].toInt() and 0xFF)
+    }
+
+    @Test
+    fun `buildBlockResponse threads the redirect target through zero_ip`() {
+        val q = buildQuery("ads.example.com", qtype = 1)
+        val resp = DnsPacketBuilder.buildBlockResponse(
+            q, "zero_ip", -1, null, "192.168.1.50", ""
+        )
+        val off = rdataOffset(q)
+        assertEquals(192, resp[off].toInt() and 0xFF)
+        assertEquals(168, resp[off + 1].toInt() and 0xFF)
+        assertEquals(1, resp[off + 2].toInt() and 0xFF)
+        assertEquals(50, resp[off + 3].toInt() and 0xFF)
+    }
+
+    @Test
+    fun `an invalid redirect target falls back to the zero-IP blackhole`() {
+        val q = buildQuery("ads.example.com", qtype = 1)
+        val resp = DnsPacketBuilder.buildZeroIp(q, ipv4Redirect = "not-an-ip")
+        val off = rdataOffset(q)
+        assertEquals(0, resp[off].toInt() and 0xFF)
+        assertEquals(0, resp[off + 3].toInt() and 0xFF)
+    }
+
+    @Test
+    fun `nxdomain and refused ignore redirect targets`() {
+        val q = buildQuery("ads.example.com", qtype = 1)
+        val nx = DnsPacketBuilder.buildBlockResponse(q, "nxdomain", -1, null, "10.1.2.3", "")
+        assertEquals("ANCOUNT stays 0 for NXDOMAIN", 0, u16(nx, 6))
+        val refused = DnsPacketBuilder.buildBlockResponse(q, "refused", -1, null, "10.1.2.3", "")
+        assertEquals("RCODE=5 REFUSED", 5, refused[3].toInt() and 0x0F)
+    }
+
+    @Test
+    fun `parseIpv4Bytes rejects malformed input`() {
+        assertNull(DnsPacketBuilder.parseIpv4Bytes(""))
+        assertNull(DnsPacketBuilder.parseIpv4Bytes("1.2.3"))
+        assertNull(DnsPacketBuilder.parseIpv4Bytes("1.2.3.4.5"))
+        assertNull(DnsPacketBuilder.parseIpv4Bytes("256.1.1.1"))
+        assertNull(DnsPacketBuilder.parseIpv4Bytes("a.b.c.d"))
+        assertNotNull(DnsPacketBuilder.parseIpv4Bytes("255.255.255.0"))
+    }
+
+    @Test
+    fun `parseIpv6Bytes rejects hostnames and malformed input`() {
+        assertNull(DnsPacketBuilder.parseIpv6Bytes(""))
+        assertNull(DnsPacketBuilder.parseIpv6Bytes("example.com"))
+        assertNull(DnsPacketBuilder.parseIpv6Bytes("10.0.0.1"))
+        assertEquals(16, DnsPacketBuilder.parseIpv6Bytes("::1")?.size)
+    }
 }

@@ -390,7 +390,7 @@
     <string name="dns_save_wireguard_endpoint">Save WireGuard endpoint</string>
     <string name="dns_save_wireguard_ip">Save WireGuard DNS IP</string>
     <string name="dns_redirect_targets">Block redirect targets</string>
-    <string name="dns_redirect_targets_sub">IPv4 and IPv6 addresses used for custom redirect responses. Defaults preserve blocking.</string>
+    <string name="dns_redirect_targets_sub">Addresses returned for blocked domains when the block response is set to Zero IP. Keep 0.0.0.0 and :: to blackhole them.</string>
     <string name="dns_ipv4_redirect">IPv4 redirect target</string>
     <string name="dns_ipv4_redirect_hint">e.g. 0.0.0.0</string>
     <string name="dns_ipv4_redirect_invalid">Enter a valid IPv4 address.</string>

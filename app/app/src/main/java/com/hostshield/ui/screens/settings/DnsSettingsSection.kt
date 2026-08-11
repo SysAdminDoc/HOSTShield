@@ -184,7 +184,7 @@ fun DnsSettingsSection(
         var ipv4Target by remember { mutableStateOf(ipv4Redirect) }
         LaunchedEffect(ipv4Redirect) { ipv4Target = ipv4Redirect }
         val normalizedIpv4 = remember(ipv4Target) {
-            com.hostshield.util.DnsServerInputPolicy.normalizeIpv4(ipv4Target)
+            com.hostshield.util.DnsServerInputPolicy.normalizeRedirectIpv4(ipv4Target)
         }
         RedirectTargetField(
             value = ipv4Target,
@@ -204,7 +204,7 @@ fun DnsSettingsSection(
         var ipv6Target by remember { mutableStateOf(ipv6Redirect) }
         LaunchedEffect(ipv6Redirect) { ipv6Target = ipv6Redirect }
         val normalizedIpv6 = remember(ipv6Target) {
-            com.hostshield.util.DnsServerInputPolicy.normalizeIpv6(ipv6Target)
+            com.hostshield.util.DnsServerInputPolicy.normalizeRedirectIpv6(ipv6Target)
         }
         RedirectTargetField(
             value = ipv6Target,

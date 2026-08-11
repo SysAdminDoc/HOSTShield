@@ -40,4 +40,30 @@ class DnsServerInputPolicyTest {
         assertNull(DnsServerInputPolicy.normalizeIpv6("127.0.0.1"))
         assertNull(DnsServerInputPolicy.normalizeIpv6("2001:db8::bad value"))
     }
+
+    @Test
+    fun `redirect normalizer keeps the blackhole and sinkhole defaults`() {
+        assertEquals("0.0.0.0", DnsServerInputPolicy.normalizeRedirectIpv4("0.0.0.0"))
+        // 127.0.0.1 is the classic hosts-file sinkhole — must stay allowed.
+        assertEquals("127.0.0.1", DnsServerInputPolicy.normalizeRedirectIpv4("127.0.0.1"))
+        assertEquals("10.1.2.3", DnsServerInputPolicy.normalizeRedirectIpv4("10.1.2.3"))
+        assertEquals("0:0:0:0:0:0:0:0", DnsServerInputPolicy.normalizeRedirectIpv6("::"))
+    }
+
+    @Test
+    fun `redirect normalizer rejects targets that would break resolution`() {
+        // HostShield's own virtual DNS servers — redirecting there loops back in.
+        assertNull(DnsServerInputPolicy.normalizeRedirectIpv4("192.0.2.1"))
+        assertNull(DnsServerInputPolicy.normalizeRedirectIpv4("198.51.100.7"))
+        assertNull(DnsServerInputPolicy.normalizeRedirectIpv4("203.0.113.9"))
+        // Tunnel address, multicast, limited broadcast.
+        assertNull(DnsServerInputPolicy.normalizeRedirectIpv4("10.120.0.1"))
+        assertNull(DnsServerInputPolicy.normalizeRedirectIpv4("224.0.0.1"))
+        assertNull(DnsServerInputPolicy.normalizeRedirectIpv4("239.1.2.3"))
+        assertNull(DnsServerInputPolicy.normalizeRedirectIpv4("255.255.255.255"))
+        assertNull(DnsServerInputPolicy.normalizeRedirectIpv6("ff02::1"))
+        assertNull(DnsServerInputPolicy.normalizeRedirectIpv6("fd00::1"))
+        // Still rejects plain garbage.
+        assertNull(DnsServerInputPolicy.normalizeRedirectIpv4("not-an-ip"))
+    }
 }
