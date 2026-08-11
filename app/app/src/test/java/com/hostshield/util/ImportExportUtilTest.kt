@@ -8,8 +8,11 @@ import org.junit.Test
 
 class ImportExportUtilTest {
 
+    // These three previously asserted against a copy-pasted in-test parser
+    // (parseHostsContent) and inline ABP string handling, so they passed with the
+    // production importer deleted. They now drive the real ImportExportUtil.
     @Test
-    fun `parseHostsImport handles standard format`() {
+    fun `hosts import extracts blocked domains from standard format`() = runBlocking {
         val content = """
             0.0.0.0 ads.example.com
             127.0.0.1 tracker.evil.com
@@ -17,26 +20,34 @@ class ImportExportUtilTest {
             malware.bad.org
         """.trimIndent()
 
-        val domains = parseHostsContent(content)
-        assertTrue(domains.contains("ads.example.com"))
-        assertTrue(domains.contains("tracker.evil.com"))
-        assertTrue(domains.contains("malware.bad.org"))
+        val result = ImportExportUtil().importHostsFormat(content)
+        val hosts = result.blocklist.map { it.hostname }
+
+        assertTrue(hosts.contains("ads.example.com"))
+        assertTrue(hosts.contains("tracker.evil.com"))
+        assertTrue(hosts.contains("malware.bad.org"))
     }
 
     @Test
-    fun `parseHostsImport skips localhost`() {
+    fun `hosts import skips localhost aliases`() = runBlocking {
         val content = """
             127.0.0.1 localhost
+            127.0.0.1 localhost.localdomain
+            ::1 ip6-localhost
             0.0.0.0 real-blocked.com
         """.trimIndent()
 
-        val domains = parseHostsContent(content)
-        assertFalse(domains.contains("localhost"))
-        assertTrue(domains.contains("real-blocked.com"))
+        val result = ImportExportUtil().importHostsFormat(content)
+        val hosts = result.blocklist.map { it.hostname }
+
+        assertFalse(hosts.contains("localhost"))
+        assertFalse(hosts.contains("localhost.localdomain"))
+        assertFalse(hosts.contains("ip6-localhost"))
+        assertTrue(hosts.contains("real-blocked.com"))
     }
 
     @Test
-    fun `parseABPFormat extracts domains`() {
+    fun `hosts import reads ABP block and exception rules`() = runBlocking {
         val content = """
             ||ads.example.com^
             ||tracker.evil.com^
@@ -44,25 +55,11 @@ class ImportExportUtilTest {
             ! comment
         """.trimIndent()
 
-        val blocked = mutableSetOf<String>()
-        val allowed = mutableSetOf<String>()
+        val result = ImportExportUtil().importHostsFormat(content)
 
-        content.lines().forEach { line ->
-            val trimmed = line.trim()
-            when {
-                trimmed.startsWith("@@||") && trimmed.endsWith("^") -> {
-                    allowed.add(trimmed.removePrefix("@@||").removeSuffix("^"))
-                }
-                trimmed.startsWith("||") && trimmed.endsWith("^") -> {
-                    blocked.add(trimmed.removePrefix("||").removeSuffix("^"))
-                }
-            }
-        }
-
-        assertEquals(2, blocked.size)
-        assertEquals(1, allowed.size)
-        assertTrue(blocked.contains("ads.example.com"))
-        assertTrue(allowed.contains("allowed.com"))
+        assertTrue(result.blocklist.map { it.hostname }.contains("ads.example.com"))
+        assertTrue(result.blocklist.map { it.hostname }.contains("tracker.evil.com"))
+        assertTrue(result.allowlist.map { it.hostname }.contains("allowed.com"))
     }
 
     @Test
@@ -141,30 +138,6 @@ class ImportExportUtilTest {
         assertEquals(listOf("ads.example.com", "^ads[0-9]+\\\\.example$"), result.blocklist.map { it.hostname })
         assertEquals(listOf("allowed.example.org"), result.allowlist.map { it.hostname })
         assertEquals(listOf(false, true), result.blocklist.map { it.isRegex })
-    }
-
-    // Helper that mimics the hosts file parsing logic
-    private fun parseHostsContent(content: String): Set<String> {
-        val localhost = setOf("localhost", "localhost.localdomain", "local",
-            "broadcasthost", "ip6-localhost", "ip6-loopback")
-        val domains = mutableSetOf<String>()
-
-        content.lines().forEach { rawLine ->
-            val line = rawLine.substringBefore('#').trim()
-            if (line.isEmpty()) return@forEach
-
-            val parts = line.split(Regex("\\s+"))
-            when {
-                parts.size >= 2 -> {
-                    val host = parts[1].lowercase()
-                    if (host !in localhost) domains.add(host)
-                }
-                parts.size == 1 && parts[0].contains('.') -> {
-                    domains.add(parts[0].lowercase())
-                }
-            }
-        }
-        return domains
     }
 
     // Regression: exportJson omitted is_regex and importJson ran every hostname

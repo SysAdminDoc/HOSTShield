@@ -3,6 +3,7 @@ package com.hostshield.util
 import android.content.Context
 import android.net.Uri
 import com.hostshield.data.source.SourceUrlPolicy
+import com.hostshield.domain.parser.AdblockRuleParser
 import com.hostshield.data.model.FirewallRule
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
@@ -195,6 +196,27 @@ class ImportExportUtil @Inject constructor() {
             }
 
             if (line.startsWith("#")) return@forEach
+            if (line.startsWith("!")) return@forEach // adblock comment
+
+            // Adblock-syntax rules (||domain^, @@||domain^). autoImport() routes any
+            // non-JSON, non-CSV file here, so without this an AdGuard/uBlock-style
+            // rules file imported as zero rules with no error.
+            if (line.startsWith("||") || line.startsWith("@@")) {
+                val parsed = AdblockRuleParser.parseLine(line)
+                if (parsed != null && !parsed.isBadfilter && !parsed.isRegex) {
+                    val hostname = if (parsed.isWildcard) "*.${parsed.domain}" else parsed.domain
+                    val normalized = normalizedRuleHost(hostname, parsed.isWildcard)
+                    if (normalized != null) {
+                        val rule = UserRule(
+                            hostname = normalized,
+                            type = if (parsed.isException) RuleType.ALLOW else RuleType.BLOCK,
+                            isWildcard = parsed.isWildcard,
+                        )
+                        if (parsed.isException) allow.add(rule) else block.add(rule)
+                    }
+                }
+                return@forEach
+            }
 
             val parts = line.split(Regex("\\s+"), limit = 3)
             when {

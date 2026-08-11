@@ -2,6 +2,8 @@ package com.hostshield.util
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 
@@ -32,13 +34,24 @@ class GeoIpLookupTest {
         }
     }
 
+    // Classification only: calling lookup() with a public address performs a real
+    // HTTPS request to ipapi.co from the unit suite (slow, quota-burning, flaky),
+    // and offline it returned null so the assertion was skipped entirely — the
+    // test proved nothing either way.
     @Test
-    fun `IPv4 172 dot 15 is not private`() = runBlocking {
-        val result = lookup.lookup("172.15.0.1")
-        // Should NOT return "Local" — either null (rate limited) or real GeoIP
-        if (result != null) {
-            assert(result.country != "Local") { "172.15.0.1 is not private" }
-        }
+    fun `IPv4 addresses outside RFC 1918 are not treated as private`() {
+        assertFalse(lookup.isPrivateOrReserved("172.15.0.1"))
+        assertFalse(lookup.isPrivateOrReserved("172.32.0.1"))
+        assertFalse(lookup.isPrivateOrReserved("8.8.8.8"))
+        assertFalse(lookup.isPrivateOrReserved("1.1.1.1"))
+    }
+
+    @Test
+    fun `RFC 1918 boundaries are classified as private`() {
+        assertTrue(lookup.isPrivateOrReserved("172.16.0.1"))
+        assertTrue(lookup.isPrivateOrReserved("172.31.255.254"))
+        assertTrue(lookup.isPrivateOrReserved("10.0.0.1"))
+        assertTrue(lookup.isPrivateOrReserved("192.168.1.1"))
     }
 
     @Test

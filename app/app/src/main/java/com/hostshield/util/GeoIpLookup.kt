@@ -1,5 +1,6 @@
 package com.hostshield.util
 
+import androidx.annotation.VisibleForTesting
 import android.util.Log
 import com.hostshield.data.source.BoundedResponseReader
 import kotlinx.coroutines.Dispatchers
@@ -152,7 +153,8 @@ class GeoIpLookup @Inject constructor() {
     /** Whether rate limit backoff is currently active. */
     fun isBackingOff(): Boolean = System.currentTimeMillis() < backoffUntil.get()
 
-    private fun isPrivateOrReserved(ip: String): Boolean {
+    @VisibleForTesting
+    internal fun isPrivateOrReserved(ip: String): Boolean {
         if (ip.contains(':')) {
             return ip.startsWith("::") || ip.startsWith("fc") ||
                 ip.startsWith("fd") || ip.startsWith("fe80:") ||
