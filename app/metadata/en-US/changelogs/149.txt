@@ -1,0 +1,7 @@
+v6.9.67:
+- Backups use schema v2 and keep endpoint and password material encrypted-only
+- Diagnostic and packet-capture exports share a bounded cache lifecycle and
+  clean up stale artifacts
+- Malformed threat-feed entries are counted and surfaced as degraded feed
+  health instead of being dropped silently
+- Add WireGuard key and block redirect target settings

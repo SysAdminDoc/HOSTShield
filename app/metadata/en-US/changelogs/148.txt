@@ -1,0 +1,11 @@
+v6.9.66:
+- Protection state now tells the truth: pause, schedules, the widget, and the
+  Quick Settings tile no longer claim "Protected" when Android denied the start
+- The widget's Enable/Disable button actually toggles protection
+- Fix a root-mode race that could black-hole all device DNS until reboot
+- Root mode no longer breaks TCP DNS or corrupts large DNS answers
+- Live query rate, latency sparkline, and anomaly alerts work again
+- Overnight blocking schedules no longer end at midnight
+- WebDAV listings show your files; upload uses the values on screen
+- Editable schedule times, firewall bulk-action confirmations, and many
+  widget, tile, notification, and contrast fixes
