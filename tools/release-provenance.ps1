@@ -6,7 +6,11 @@ param(
     [string]$OsvReportPath = "artifacts/release-provenance/osv-results.json",
     [string]$OsvAllowlistPath = "tools/osv-allowlist.json",
     [string]$PageAlignmentReportPath = "artifacts/release-provenance/android-page-alignment.txt",
-    [string]$ProtectionMatrixPath = "artifacts/release-provenance/protection-resilience-matrix.json"
+    [string]$ProtectionMatrixPath = "artifacts/release-provenance/protection-resilience-matrix.json",
+    # A provenance document that records "unavailable" for the SBOM and the OSV
+    # scan looks complete but attests to nothing. Release runs must fail instead;
+    # pass this switch for a deliberate local/no-evidence run.
+    [switch]$AllowMissingEvidence
 )
 
 $ErrorActionPreference = "Stop"
@@ -167,6 +171,14 @@ $osvReportHash = if ($osvReport) { (Get-FileHash -Algorithm SHA256 -LiteralPath 
 $osvAllowlistHash = if ($osvAllowlist) { (Get-FileHash -Algorithm SHA256 -LiteralPath $osvAllowlist).Hash.ToLowerInvariant() } else { "unavailable" }
 $pageAlignmentReportHash = if ($pageAlignmentReport) { (Get-FileHash -Algorithm SHA256 -LiteralPath $pageAlignmentReport).Hash.ToLowerInvariant() } else { "unavailable" }
 $protectionMatrixHash = if ($protectionMatrix) { (Get-FileHash -Algorithm SHA256 -LiteralPath $protectionMatrix).Hash.ToLowerInvariant() } else { "unavailable" }
+$missingEvidence = New-Object System.Collections.Generic.List[string]
+if (-not $sbom) { $missingEvidence.Add("SBOM ($SbomPath)") }
+if (-not $osvReport) { $missingEvidence.Add("OSV report ($OsvReportPath)") }
+if ($missingEvidence.Count -gt 0 -and -not $AllowMissingEvidence) {
+    throw ("Release provenance is missing required evidence:`n - " + ($missingEvidence -join "`n - ") +
+        "`nGenerate it, or re-run with -AllowMissingEvidence for a non-release run.")
+}
+
 $sbomName = if ($sbom) { Split-Path -Leaf $sbom } else { Split-Path -Leaf $SbomPath }
 $osvReportName = if ($osvReport) { Split-Path -Leaf $osvReport } else { Split-Path -Leaf $OsvReportPath }
 $pageAlignmentReportName = if ($pageAlignmentReport) { Split-Path -Leaf $pageAlignmentReport } else { Split-Path -Leaf $PageAlignmentReportPath }

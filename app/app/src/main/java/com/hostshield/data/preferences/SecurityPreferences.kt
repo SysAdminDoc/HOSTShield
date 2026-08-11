@@ -7,6 +7,7 @@ import com.hostshield.util.ParentalPinHashPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -93,23 +94,42 @@ class SecurityPreferences @Inject constructor(
     // Secret accessors are cold flows so the Keystore decrypt + disk I/O runs on
     // collection (off the caller's thread), not eagerly at property access.
 
+    /**
+     * Bumped whenever a SecureStore-backed secret is written.
+     *
+     * The accessors below were cold `flow { emit(...) }` values that completed
+     * after one element, so a `combine()` over them in a ViewModel emitted once
+     * at init and never again — a saved key kept showing its pre-save value and
+     * the save affordance stayed visible, reading as "rejected".
+     */
+    private val secretRevision = MutableStateFlow(0)
+
     /** Endpoint is now served from SecureStore (Flow wrapper for API compat). */
     val wireGuardEndpoint: Flow<String>
-        get() = flow { emit(secureStore.getString(SEC_WG_ENDPOINT)) }.flowOn(Dispatchers.IO)
-    suspend fun setWireGuardEndpoint(endpoint: String) = secureStore.putString(SEC_WG_ENDPOINT, endpoint)
+        get() = secretRevision.map { secureStore.getString(SEC_WG_ENDPOINT) }.flowOn(Dispatchers.IO)
+    suspend fun setWireGuardEndpoint(endpoint: String) {
+        secureStore.putString(SEC_WG_ENDPOINT, endpoint)
+        secretRevision.value++
+    }
 
     /** Private key is now served from SecureStore (Flow wrapper for API compat). */
     val wireGuardPrivateKey: Flow<String>
-        get() = flow { emit(secureStore.getString(SEC_WG_PRIVATE_KEY)) }.flowOn(Dispatchers.IO)
-    suspend fun setWireGuardPrivateKey(key: String) = secureStore.putString(SEC_WG_PRIVATE_KEY, key)
+        get() = secretRevision.map { secureStore.getString(SEC_WG_PRIVATE_KEY) }.flowOn(Dispatchers.IO)
+    suspend fun setWireGuardPrivateKey(key: String) {
+        secureStore.putString(SEC_WG_PRIVATE_KEY, key)
+        secretRevision.value++
+    }
 
     val wireGuardPublicKey: Flow<String> = ds.data.map { it[Keys.WIREGUARD_PUBLIC_KEY] ?: "" }
     suspend fun setWireGuardPublicKey(key: String) = ds.edit { it[Keys.WIREGUARD_PUBLIC_KEY] = key }
 
     /** Pre-shared key is now served from SecureStore (Flow wrapper for API compat). */
     val wireGuardPresharedKey: Flow<String>
-        get() = flow { emit(secureStore.getString(SEC_WG_PSK)) }.flowOn(Dispatchers.IO)
-    suspend fun setWireGuardPresharedKey(key: String) = secureStore.putString(SEC_WG_PSK, key)
+        get() = secretRevision.map { secureStore.getString(SEC_WG_PSK) }.flowOn(Dispatchers.IO)
+    suspend fun setWireGuardPresharedKey(key: String) {
+        secureStore.putString(SEC_WG_PSK, key)
+        secretRevision.value++
+    }
 
     val wireGuardDnsIp: Flow<String> = ds.data.map { it[Keys.WIREGUARD_DNS_IP] ?: "" }
     suspend fun setWireGuardDnsIp(ip: String) = ds.edit { it[Keys.WIREGUARD_DNS_IP] = ip }
@@ -144,7 +164,7 @@ class SecurityPreferences @Inject constructor(
 
     /** PIN hash is now served from SecureStore (Flow wrapper for API compat). */
     val parentalPinHash: Flow<String>
-        get() = flow { emit(secureStore.getString(SEC_PARENTAL_PIN_HASH)) }.flowOn(Dispatchers.IO)
+        get() = secretRevision.map { secureStore.getString(SEC_PARENTAL_PIN_HASH) }.flowOn(Dispatchers.IO)
 
     /** True when a parental PIN hash exists but can't be decrypted (Keystore loss). */
     suspend fun isParentalPinUndecryptable(): Boolean = withContext(Dispatchers.IO) {
