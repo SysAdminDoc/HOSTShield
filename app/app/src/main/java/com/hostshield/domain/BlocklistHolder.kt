@@ -711,7 +711,14 @@ class BlocklistHolder @Inject constructor() {
      * the sources/rules dictate (source wildcard/exact/regex/dnstype block) on
      * the next decision, instead of being stamped as a "User block rule" the way
      * [addDomain] would. No-op if the domain is not currently temp-allowed.
+     *
+     * Synchronized like every other mutator: this is a read-copy-swap of the
+     * volatile snapshot, and it runs on a WorkManager thread (TemporaryAllowWorker)
+     * while UI-driven add/block/allow calls run elsewhere. Without the lock one
+     * write silently overwrites the other — either the user's new rule vanishes
+     * until the next rebuild, or the temporary allow outlives its expiry.
      */
+    @Synchronized
     fun clearTemporaryAllow(hostname: String) {
         val h = hostname.lowercase()
         val current = snapshot

@@ -99,7 +99,7 @@ class BackupRestoreRoundTripRobolectricTest {
         every { prefs.lanDnsAllowExternalClients } returns flowOf(false)
         every { prefs.wireGuardPublicKey } returns flowOf("peer-public-key")
         every { prefs.wireGuardEndpoint } returns flowOf("wg.example.com:51820")
-        every { prefs.wireGuardPrivateKey } returns flowOf("private-key")
+        every { prefs.wireGuardPrivateKey } returns flowOf("AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=")
         every { prefs.wireGuardPresharedKey } returns flowOf("preshared-key")
         every { prefs.webdavPassword } returns flowOf("webdav-password")
         every { prefs.parentalPinHash } returns flowOf("pin-hash")
@@ -162,10 +162,12 @@ class BackupRestoreRoundTripRobolectricTest {
         val encryptedJson = util.createBackup(includeSecrets = true)
         val encryptedRoot = JSONObject(encryptedJson)
         assertEquals("wg.example.com:51820", encryptedRoot.getJSONObject("encrypted_secrets").getString("wireguard_endpoint"))
-        assertEquals("private-key", encryptedRoot.getJSONObject("encrypted_secrets").getString("wireguard_private_key"))
+        assertEquals("AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=", encryptedRoot.getJSONObject("encrypted_secrets").getString("wireguard_private_key"))
         assertEquals("peer-public-key", encryptedRoot.getJSONObject("preferences").getString("wireguard_public_key"))
 
         val restorePrefs = mockk<AppPreferences>(relaxed = true)
+        // Parental controls off on the restoring device, so the PIN hash may apply.
+        every { restorePrefs.parentalEnabled } returns flowOf(false)
         val restoreUtil = BackupRestoreUtil(
             database,
             database.hostSourceDao(),
@@ -188,7 +190,7 @@ class BackupRestoreRoundTripRobolectricTest {
         assertEquals("*.ads.example", database.appDnsRuleDao().getAllRulesList().single().domain)
         coVerify { restorePrefs.setLanDnsPort(5354) }
         coVerify { restorePrefs.setWireGuardEndpoint("wg.example.com:51820") }
-        coVerify { restorePrefs.setWireGuardPrivateKey("private-key") }
+        coVerify { restorePrefs.setWireGuardPrivateKey("AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=") }
         coVerify { restorePrefs.setWebdavPassword("webdav-password") }
         coVerify { restorePrefs.setParentalPinHash("pin-hash") }
     }
@@ -250,5 +252,70 @@ class BackupRestoreRoundTripRobolectricTest {
         val active = database.profileDao().getActiveProfile()
         assertNotNull(active)
         assertEquals("Existing", active!!.name)
+    }
+
+    // A supervised user must not be able to take over the guardian's PIN by
+    // restoring an encrypted backup they made on a fresh install.
+    @Test
+    fun `restore does not replace the parental PIN while parental controls are active`() = runBlocking {
+        val util = BackupRestoreUtil(
+            database,
+            database.hostSourceDao(),
+            database.userRuleDao(),
+            database.profileDao(),
+            database.firewallRuleDao(),
+            database.appDnsRuleDao(),
+            prefs
+        )
+        val encrypted = util.createBackup(includeSecrets = true)
+
+        val restorePrefs = mockk<AppPreferences>(relaxed = true)
+        every { restorePrefs.parentalEnabled } returns flowOf(true)
+        val restoreUtil = BackupRestoreUtil(
+            database,
+            database.hostSourceDao(),
+            database.userRuleDao(),
+            database.profileDao(),
+            database.firewallRuleDao(),
+            database.appDnsRuleDao(),
+            restorePrefs
+        )
+
+        restoreUtil.restoreBackup(encrypted, allowSecrets = true)
+
+        coVerify(exactly = 0) { restorePrefs.setParentalPinHash(any()) }
+        // Other secrets still restore normally.
+        coVerify { restorePrefs.setWebdavPassword("webdav-password") }
+    }
+
+    @Test
+    fun `an invalid WireGuard key in a backup is skipped instead of being stored`() = runBlocking {
+        val util = BackupRestoreUtil(
+            database,
+            database.hostSourceDao(),
+            database.userRuleDao(),
+            database.profileDao(),
+            database.firewallRuleDao(),
+            database.appDnsRuleDao(),
+            prefs
+        )
+        val root = JSONObject(util.createBackup(includeSecrets = true))
+        root.getJSONObject("encrypted_secrets").put("wireguard_private_key", "not base64!!")
+
+        val restorePrefs = mockk<AppPreferences>(relaxed = true)
+        every { restorePrefs.parentalEnabled } returns flowOf(false)
+        val restoreUtil = BackupRestoreUtil(
+            database,
+            database.hostSourceDao(),
+            database.userRuleDao(),
+            database.profileDao(),
+            database.firewallRuleDao(),
+            database.appDnsRuleDao(),
+            restorePrefs
+        )
+
+        restoreUtil.restoreBackup(root.toString(), allowSecrets = true)
+
+        coVerify(exactly = 0) { restorePrefs.setWireGuardPrivateKey(any()) }
     }
 }

@@ -361,4 +361,24 @@ class HostsParserTest {
         assertEquals(50_000, results.size)
         assertTrue("50k lines parsed in ${elapsed}ms", elapsed < 5000)
     }
+
+    // Regression: U+FEFF is not whitespace, so trim() kept it and the first line
+    // of a BOM-prefixed list failed every shape check - one silently lost entry
+    // per such source, plus a skewed adblock-format ratio.
+    @Test
+    fun `a UTF-8 BOM does not swallow the first hosts entry`() {
+        val content = "\uFEFF0.0.0.0 ads.example.com\n0.0.0.0 tracker.example.com"
+        val hosts = HostsParser.parse(content).map { it.hostname }
+        assertTrue("BOM first entry was dropped", hosts.contains("ads.example.com"))
+        assertTrue(hosts.contains("tracker.example.com"))
+    }
+
+    @Test
+    fun `a UTF-8 BOM does not swallow the first adblock rule`() {
+        val content = "\uFEFF||ads.example.com^\n||tracker.example.com^"
+        // ||domain^ matches subdomains, so it lands in wildcardBlockDomains.
+        val blocked = HostsParser.parseForBlocking(content).wildcardBlockDomains
+        assertTrue("BOM first rule was dropped", blocked.contains("ads.example.com"))
+        assertTrue(blocked.contains("tracker.example.com"))
+    }
 }

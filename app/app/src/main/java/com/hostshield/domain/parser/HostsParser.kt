@@ -66,7 +66,15 @@ object HostsParser {
      * Heuristic: if >20% of non-empty, non-comment lines start with || or @@||,
      * treat the entire file as adblock syntax.
      */
-    fun isAdblockFormat(content: String): Boolean {
+    /**
+     * Strip a UTF-8 BOM. U+FEFF is not whitespace, so `trim()` keeps it and the
+     * first line of a BOM-prefixed list fails every shape check — silently losing
+     * one entry per such source and skewing the [isAdblockFormat] ratio.
+     */
+    internal fun stripBom(content: String): String = content.removePrefix("﻿")
+
+    fun isAdblockFormat(rawContent: String): Boolean {
+        val content = stripBom(rawContent)
         var total = 0
         var adblock = 0
         content.lineSequence().take(100).forEach { rawLine ->
@@ -89,7 +97,8 @@ object HostsParser {
      * Allow rules, $important, $dnstype, and other modifiers are available
      * via parseAdblock() for callers that need them.
      */
-    fun parse(content: String): Set<ParsedHost> {
+    fun parse(rawContent: String): Set<ParsedHost> {
+        val content = stripBom(rawContent)
         if (isAdblockFormat(content)) {
             return parseAdblockAsHosts(content)
         }
@@ -112,7 +121,8 @@ object HostsParser {
      * `||domain^` and `||*.domain^` rules, plus allow wildcards for `@@||`
      * and `$denyallow=` exceptions.
      */
-    fun parseForBlocking(content: String): BlockingParseResult {
+    fun parseForBlocking(rawContent: String): BlockingParseResult {
+        val content = stripBom(rawContent)
         if (!isAdblockFormat(content)) {
             return BlockingParseResult(
                 blockDomains = parseHostsFormat(content).mapTo(mutableSetOf()) { it.hostname }
@@ -214,7 +224,8 @@ object HostsParser {
      * allowlists use `@@||domain^` exception rules, which are preserved as
      * wildcard allows so they override matching source wildcard blocks.
      */
-    fun parseForAllowing(content: String): AllowlistParseResult {
+    fun parseForAllowing(rawContent: String): AllowlistParseResult {
+        val content = stripBom(rawContent)
         if (!isAdblockFormat(content)) {
             return AllowlistParseResult(
                 allowDomains = parseHostsFormat(content).mapTo(mutableSetOf()) { it.hostname }

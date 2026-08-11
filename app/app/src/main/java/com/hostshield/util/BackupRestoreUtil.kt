@@ -615,20 +615,35 @@ class BackupRestoreUtil @Inject constructor(
             }
 
             if (allowSecrets) {
+                // Pre-v6.9.67 backups (plaintext and encrypted alike, both stamped
+                // backup_version 2) stored the endpoint here. Without this fallback a
+                // restore brought back wireguard_enabled=true and dropped the endpoint,
+                // leaving an enabled-but-unconfigured tunnel with no warning.
+                if (p.has("wireguard_endpoint")) {
+                    prefs.setWireGuardEndpoint(p.getString("wireguard_endpoint"))
+                }
                 root.optJSONObject("encrypted_secrets")?.let { secrets ->
                     if (secrets.has("wireguard_endpoint")) {
                         prefs.setWireGuardEndpoint(secrets.getString("wireguard_endpoint"))
                     }
+                    // Keys are applied unvalidated no longer: an invalid base64 key
+                    // reached Base64.decode on the VPN start path and threw before the
+                    // surrounding try, aborting startup in debug builds.
                     if (secrets.has("wireguard_private_key")) {
-                        prefs.setWireGuardPrivateKey(secrets.getString("wireguard_private_key"))
+                        WireGuardKeyPolicy.normalize(secrets.getString("wireguard_private_key"))
+                            ?.let { prefs.setWireGuardPrivateKey(it) }
                     }
                     if (secrets.has("wireguard_preshared_key")) {
-                        prefs.setWireGuardPresharedKey(secrets.getString("wireguard_preshared_key"))
+                        WireGuardKeyPolicy.normalize(secrets.getString("wireguard_preshared_key"))
+                            ?.let { prefs.setWireGuardPresharedKey(it) }
                     }
                     if (secrets.has("webdav_password")) {
                         prefs.setWebdavPassword(secrets.getString("webdav_password"))
                     }
-                    if (secrets.has("parental_pin_hash")) {
+                    // Never let a restore replace an active parental PIN: a supervised
+                    // user could otherwise make their own encrypted backup on a fresh
+                    // install and restore it to take over the guardian's PIN.
+                    if (secrets.has("parental_pin_hash") && !prefs.parentalEnabled.first()) {
                         prefs.setParentalPinHash(secrets.getString("parental_pin_hash"))
                     }
                 }

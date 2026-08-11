@@ -137,7 +137,8 @@ object AdblockRuleParser {
      * @param content Raw file content
      * @return ParseResult with categorized rules
      */
-    fun parse(content: String): ParseResult {
+    fun parse(rawContent: String): ParseResult {
+        val content = HostsParser.stripBom(rawContent)
         val blockRules = mutableListOf<DnsRule>()
         val allowRules = mutableListOf<DnsRule>()
         val badfilterRules = mutableListOf<DnsRule>()
