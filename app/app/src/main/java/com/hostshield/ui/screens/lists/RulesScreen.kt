@@ -1,5 +1,7 @@
 package com.hostshield.ui.screens.lists
 
+import com.hostshield.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -377,7 +379,7 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
                 modifier = Modifier.testTag(HostShieldTestTags.Rules.ConfirmAddButton)
             ) { Text("Add rule", color = if (canSubmit) Teal else TextDim) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel), color = TextSecondary) } }
     )
 }
 

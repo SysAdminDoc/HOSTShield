@@ -1,5 +1,7 @@
 package com.hostshield.ui.screens.settings
 
+import com.hostshield.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -340,7 +342,7 @@ fun ParentalControlScreen(
             dismissButton = {
                 if (!viewModel.isPinUpgradeDialog()) {
                     TextButton(onClick = { viewModel.dismissPinDialog() }) {
-                        Text("Cancel", color = TextDim)
+                        Text(stringResource(R.string.action_cancel), color = TextDim)
                     }
                 }
             },

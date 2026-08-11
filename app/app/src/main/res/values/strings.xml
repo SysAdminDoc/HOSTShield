@@ -84,6 +84,10 @@
     <string name="label_root">Root</string>
     <string name="label_available">Available</string>
     <string name="label_unavailable">Unavailable</string>
+    <!-- Accessibility state descriptions (read by TalkBack) -->
+    <string name="a11y_state_on">On</string>
+    <string name="a11y_state_off">Off</string>
+    <string name="a11y_state_disabled">Disabled</string>
     <string name="label_selected">Selected</string>
     <string name="label_not_selected">Not selected</string>
     <string name="label_start">Start</string>

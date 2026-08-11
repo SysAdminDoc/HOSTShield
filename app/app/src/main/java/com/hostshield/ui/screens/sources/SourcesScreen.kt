@@ -791,7 +791,7 @@ private fun AddSourceDialog(
             ) { Text(stringResource(R.string.sources_add_source), color = Teal, fontWeight = FontWeight.SemiBold) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel), color = TextSecondary) }
         }
     )
 }
