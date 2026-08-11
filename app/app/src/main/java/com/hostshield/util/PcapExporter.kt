@@ -1,5 +1,6 @@
 package com.hostshield.util
 
+import androidx.annotation.VisibleForTesting
 import android.content.Context
 import android.util.Log
 import com.hostshield.data.database.ConnectionLogDao
@@ -227,7 +228,8 @@ class PcapExporter @Inject constructor(
 
     // ---- PCAP file format helpers ----
 
-    private fun writePcapHeader(out: OutputStream) {
+    @VisibleForTesting
+    internal fun writePcapHeader(out: OutputStream) {
         val buf = ByteBuffer.allocate(24).order(ByteOrder.LITTLE_ENDIAN)
         buf.putInt(PCAP_MAGIC)
         buf.putShort(PCAP_VERSION_MAJOR.toShort())
@@ -239,7 +241,8 @@ class PcapExporter @Inject constructor(
         out.write(buf.array())
     }
 
-    private fun writePcapRecord(out: OutputStream, data: ByteArray, timestampMs: Long) {
+    @VisibleForTesting
+    internal fun writePcapRecord(out: OutputStream, data: ByteArray, timestampMs: Long) {
         val sec = (timestampMs / 1000).toInt()
         val usec = ((timestampMs % 1000) * 1000).toInt()
 

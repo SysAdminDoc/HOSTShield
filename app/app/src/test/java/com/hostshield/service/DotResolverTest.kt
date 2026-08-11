@@ -21,17 +21,27 @@ class DotResolverTest {
         }
     }
 
+    // Regression: this test was named for port 853 but asserted only hostname/IP
+    // shape — changing the connect port to 53 (plaintext) passed the whole suite.
     @Test
-    fun `DoT providers connect to port 853`() {
+    fun `DoT connects on the RFC 7858 port`() {
+        assertEquals(853, DotResolver.DOT_PORT)
+    }
+
+    @Test
+    fun `DoT providers declare a usable hostname and literal IPv4 address`() {
         DotResolver.Provider.entries.forEach { provider ->
             assertTrue(
                 "Provider ${provider.name} must have a non-blank hostname",
                 provider.hostname.isNotBlank()
             )
-            assertTrue(
-                "Provider ${provider.name} must have a valid IP",
-                provider.ip.matches(Regex("""\d+\.\d+\.\d+\.\d+"""))
-            )
+            val octets = provider.ip.split(".")
+            assertEquals("Provider ${provider.name} must have a dotted-quad IP", 4, octets.size)
+            octets.forEach { octet ->
+                val value = octet.toIntOrNull()
+                assertNotNull("Provider ${provider.name} has a non-numeric octet", value)
+                assertTrue("Provider ${provider.name} octet out of range: $octet", value!! in 0..255)
+            }
         }
     }
 

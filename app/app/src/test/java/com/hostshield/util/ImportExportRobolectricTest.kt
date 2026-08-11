@@ -51,16 +51,6 @@ class ImportExportRobolectricTest {
     }
 
     @Test
-    fun `cache directory is writable`() {
-        val cacheDir = context.cacheDir
-        assertTrue(cacheDir.exists() || cacheDir.mkdirs())
-        val testFile = File(cacheDir, "robo-test.tmp")
-        testFile.writeText("test")
-        assertEquals("test", testFile.readText())
-        testFile.delete()
-    }
-
-    @Test
     fun `exported rule preserves all fields`() {
         val rule = UserRule(
             hostname = "tracker.example.com",

@@ -19,6 +19,7 @@ import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -190,5 +191,64 @@ class BackupRestoreRoundTripRobolectricTest {
         coVerify { restorePrefs.setWireGuardPrivateKey("private-key") }
         coVerify { restorePrefs.setWebdavPassword("webdav-password") }
         coVerify { restorePrefs.setParentalPinHash("pin-hash") }
+    }
+
+    // Regression: profile restore deduped by name and skipped the insert, but had
+    // already run deactivateAll() — so restoring your own backup, where the active
+    // profile's name already exists, left the device with zero active profiles and
+    // silently dropped per-profile source narrowing.
+    @Test
+    fun `restoring a backup whose active profile name already exists keeps it active`() = runBlocking {
+        database.profileDao().insert(
+            BlockingProfile(name = "Night", isActive = true, sourceIds = "1")
+        )
+        val util = BackupRestoreUtil(
+            database,
+            database.hostSourceDao(),
+            database.userRuleDao(),
+            database.profileDao(),
+            database.firewallRuleDao(),
+            database.appDnsRuleDao(),
+            prefs
+        )
+        val backup = util.createBackup()
+
+        // Restore onto the same install — the name collides with the existing row.
+        val result = util.restoreBackup(backup)
+
+        val active = database.profileDao().getActiveProfile()
+        assertNotNull("an active profile must survive restore", active)
+        assertEquals("Night", active!!.name)
+        assertEquals(0, result.profilesCount) // deduped, not re-inserted
+        assertEquals(1, database.profileDao().getAllProfilesList().size)
+    }
+
+    @Test
+    fun `restoring a backup with no active profile leaves the current one active`() = runBlocking {
+        database.profileDao().insert(
+            BlockingProfile(name = "Existing", isActive = true)
+        )
+        val util = BackupRestoreUtil(
+            database,
+            database.hostSourceDao(),
+            database.userRuleDao(),
+            database.profileDao(),
+            database.firewallRuleDao(),
+            database.appDnsRuleDao(),
+            prefs
+        )
+        val backup = JSONObject(util.createBackup()).apply {
+            put("profiles", org.json.JSONArray().put(
+                JSONObject()
+                    .put("name", "Imported")
+                    .put("is_active", false)
+            ))
+        }.toString()
+
+        util.restoreBackup(backup)
+
+        val active = database.profileDao().getActiveProfile()
+        assertNotNull(active)
+        assertEquals("Existing", active!!.name)
     }
 }

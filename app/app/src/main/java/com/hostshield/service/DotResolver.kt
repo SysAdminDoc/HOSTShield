@@ -1,5 +1,6 @@
 package com.hostshield.service
 
+import androidx.annotation.VisibleForTesting
 import android.util.Log
 import com.hostshield.util.PrivacyLog
 import java.io.DataInputStream
@@ -27,7 +28,8 @@ class DotResolver @Inject constructor() {
 
     companion object {
         private const val TAG = "DotResolver"
-        private const val DOT_PORT = 853
+        @VisibleForTesting
+        internal const val DOT_PORT = 853
         private const val CONNECT_TIMEOUT_MS = 5000
         private const val READ_TIMEOUT_MS = 5000
         // RFC 7858 caps the length-prefixed message at 65535. Large DNSSEC /
