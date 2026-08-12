@@ -15,6 +15,42 @@ internal const val LEGACY_SPOTIFY_ADS_SOURCE_URL =
 private const val SPOTIFY_ADS_DESCRIPTION =
     "Aggressive Spotify ad and telemetry list maintained by HostShield. May interrupt playback or app updates. ~84 entries."
 
+private const val HOSTSHIELD_BLOCKLIST_BASE_URL =
+    "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/"
+internal const val HAGEZI_REFERRAL_ALLOWLIST_SOURCE_URL =
+    HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-ReferralAllowlist.txt"
+
+internal val HAGEZI_SOURCE_URL_MIGRATIONS = mapOf(
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/light.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-Light.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/multi.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-Multi.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-Pro.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.plus.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-ProPlus.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/ultimate.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-Ultimate.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/tif.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-TIF.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.mini.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-TIF-Mini.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/dyndns.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-DynDNS.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/spam-tlds.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-SpamTLDs.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/gambling.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-Gambling.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt" to
+        HAGEZI_REFERRAL_ALLOWLIST_SOURCE_URL,
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/spam-tlds-adblock-allow.txt" to
+        HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-SpamTLDsAllow.txt",
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist.txt" to
+        HAGEZI_REFERRAL_ALLOWLIST_SOURCE_URL,
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist-referral.txt" to
+        HAGEZI_REFERRAL_ALLOWLIST_SOURCE_URL
+)
+
 internal fun spotifyAdsDefaultSource() = HostSource(
     url = SPOTIFY_ADS_SOURCE_URL,
     label = "Spotify Ads",
@@ -124,7 +160,7 @@ class SourceRepository @Inject constructor(
                 enabled = false
             ),
             HostSource(
-                url = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt",
+                url = HAGEZI_REFERRAL_ALLOWLIST_SOURCE_URL,
                 label = "HaGeZi Referral Allowlist",
                 description = "Adblock-syntax referral and native tracker unbreak list for aggressive HaGeZi packs. ~1.6k entries.",
                 category = SourceCategory.ALLOWLIST,
@@ -139,8 +175,8 @@ class SourceRepository @Inject constructor(
     private suspend fun repairKnownSourceUrls(existing: List<HostSource>) {
         val alreadyHasHostedSpotify = existing.any { it.url == SPOTIFY_ADS_SOURCE_URL }
         existing.forEach { source ->
-            when (source.url) {
-                LEGACY_SPOTIFY_ADS_SOURCE_URL -> {
+            when {
+                source.url == LEGACY_SPOTIFY_ADS_SOURCE_URL -> {
                     if (alreadyHasHostedSpotify) {
                         sourceDao.delete(source)
                     } else {
@@ -168,20 +204,34 @@ class SourceRepository @Inject constructor(
                     }
                 }
 
-                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist.txt",
-                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist-referral.txt" ->
-                    sourceDao.update(
-                        source.copy(
-                            url = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt",
-                            label = "HaGeZi Referral Allowlist",
-                            description = "Adblock-syntax referral and native tracker unbreak list for aggressive HaGeZi packs. ~1.6k entries.",
-                            category = SourceCategory.ALLOWLIST,
-                            health = SourceHealth.UNKNOWN,
-                            lastError = "",
-                            lastHttpStatus = 0,
-                            consecutiveFailures = 0
-                        )
+                source.url in HAGEZI_SOURCE_URL_MIGRATIONS -> {
+                    val migrated = source.copy(
+                        url = HAGEZI_SOURCE_URL_MIGRATIONS.getValue(source.url),
+                        entryCount = 0,
+                        lastUpdated = 0L,
+                        lastModifiedOnline = "",
+                        etag = "",
+                        sizeBytes = 0L,
+                        health = SourceHealth.UNKNOWN,
+                        lastError = "",
+                        lastHttpStatus = 0,
+                        consecutiveFailures = 0,
+                        prevEntryCount = 0,
+                        domainsAdded = 0,
+                        domainsRemoved = 0
                     )
+                    sourceDao.update(
+                        if (migrated.url == HAGEZI_REFERRAL_ALLOWLIST_SOURCE_URL) {
+                            migrated.copy(
+                                label = "HaGeZi Referral Allowlist",
+                                description = "Adblock-syntax referral and native tracker unbreak list for aggressive HaGeZi packs. ~1.6k entries.",
+                                category = SourceCategory.ALLOWLIST
+                            )
+                        } else {
+                            migrated
+                        }
+                    )
+                }
             }
         }
     }

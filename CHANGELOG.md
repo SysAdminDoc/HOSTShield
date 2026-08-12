@@ -3,6 +3,12 @@
 All notable changes to HostShield will be documented in this file. Detailed
 release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 
+## [Unreleased]
+
+- Replaced the 12 dead HaGeZi gallery and allowlist URLs with HostShield-hosted
+  ABP snapshots, and migrate existing subscriptions from every retired URL to
+  the matching local mirror.
+
 ## [v6.9.68] - 2026-08-11
 
 Audit drain — 40 verified findings from the 2026-08-11 deep audit, across

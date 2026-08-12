@@ -15,15 +15,15 @@ class CuratedBlocklistsCatalogTest {
         val byLabel = lists.associateBy { it.label }
 
         val expected = mapOf(
-            "HaGeZi Light (Multi-Light)" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/light.txt",
-            "HaGeZi Multi Normal" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/multi.txt",
-            "HaGeZi Multi Pro" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt",
-            "HaGeZi Multi Pro++" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.plus.txt",
-            "HaGeZi Multi Ultimate" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/ultimate.txt",
-            "HaGeZi Threat Intelligence" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/tif.txt",
-            "HaGeZi TIF Mini" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.mini.txt",
-            "HaGeZi DynDNS" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/dyndns.txt",
-            "HaGeZi Most Abused TLDs" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/spam-tlds.txt"
+            "HaGeZi Light (Multi-Light)" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-Light.txt",
+            "HaGeZi Multi Normal" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-Multi.txt",
+            "HaGeZi Multi Pro" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-Pro.txt",
+            "HaGeZi Multi Pro++" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-ProPlus.txt",
+            "HaGeZi Multi Ultimate" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-Ultimate.txt",
+            "HaGeZi Threat Intelligence" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-TIF.txt",
+            "HaGeZi TIF Mini" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-TIF-Mini.txt",
+            "HaGeZi DynDNS" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-DynDNS.txt",
+            "HaGeZi Most Abused TLDs" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-SpamTLDs.txt"
         )
 
         expected.forEach { (label, url) ->
@@ -39,6 +39,23 @@ class CuratedBlocklistsCatalogTest {
     }
 
     @Test
+    fun `hagezi catalog URLs point to non-empty HostShield mirrors`() {
+        val mirrorRoot = listOf(
+            File("blocklists"),
+            File("../blocklists"),
+            File("../../blocklists")
+        ).first { it.isDirectory }
+
+        readCatalog()
+            .filter { it.url.contains("/blocklists/HaGeZi-") }
+            .forEach { item ->
+                val file = File(mirrorRoot, item.url.substringAfterLast('/'))
+                assertTrue("${item.label} mirror is missing: ${file.path}", file.isFile)
+                assertTrue("${item.label} mirror is empty", file.length() > 0L)
+            }
+    }
+
+    @Test
     fun `repaired gallery sources use verified primary or HostShield URLs`() {
         val byLabel = readCatalog().associateBy { it.label }
         val expected = mapOf(
@@ -48,7 +65,7 @@ class CuratedBlocklistsCatalogTest {
             "Windows Spy Blocker" to "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt",
             "Stamparm Malware" to "https://raw.githubusercontent.com/stamparm/blackbook/master/blackbook.txt",
             "NoCoin Cryptojacking" to "https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/hosts.txt",
-            "HaGeZi Gambling" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/gambling.txt",
+            "HaGeZi Gambling" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-Gambling.txt",
             "HostShield Facebook Domains" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/Facebook.txt",
             "HostShield TikTok Domains" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/Tiktok.txt"
         )
@@ -80,8 +97,8 @@ class CuratedBlocklistsCatalogTest {
             "Anudeep's Whitelist" to "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt",
             "Anudeep's Optional Whitelist" to "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt",
             "Anudeep's Referral Sites" to "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/referral-sites.txt",
-            "HaGeZi Referral Allowlist" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral-native.txt",
-            "HaGeZi Most Abused TLD Allowlist" to "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/spam-tlds-adblock-allow.txt"
+            "HaGeZi Referral Allowlist" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-ReferralAllowlist.txt",
+            "HaGeZi Most Abused TLD Allowlist" to "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-SpamTLDsAllow.txt"
         )
 
         expected.forEach { (label, url) ->

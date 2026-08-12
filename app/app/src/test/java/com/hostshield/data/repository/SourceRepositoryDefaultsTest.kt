@@ -46,4 +46,21 @@ class SourceRepositoryDefaultsTest {
             assertTrue("$discoveredHost missing", discoveredHost in entries)
         }
     }
+
+    @Test
+    fun `retired Hagezi URLs migrate to the HostShield mirrors`() {
+        assertEquals(14, HAGEZI_SOURCE_URL_MIGRATIONS.size)
+        assertEquals(12, HAGEZI_SOURCE_URL_MIGRATIONS.values.distinct().size)
+        assertTrue(
+            HAGEZI_SOURCE_URL_MIGRATIONS.values.all {
+                it.startsWith("https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/")
+            }
+        )
+        assertEquals(
+            HAGEZI_REFERRAL_ALLOWLIST_SOURCE_URL,
+            HAGEZI_SOURCE_URL_MIGRATIONS.getValue(
+                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/whitelist.txt"
+            )
+        )
+    }
 }
