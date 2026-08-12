@@ -343,6 +343,7 @@ class DnsVpnService : VpnService() {
             tunFdValid = { vpnInterface?.fileDescriptor?.valid() == true },
             vpnEstablishedAt = { vpnEstablishedAt },
             inboundPacketCount = { tunInboundPacketCount.get() },
+            recordDiagnosticEvent = { type, message, fields -> recordEvent(type, message, fields) },
         )
     }
 

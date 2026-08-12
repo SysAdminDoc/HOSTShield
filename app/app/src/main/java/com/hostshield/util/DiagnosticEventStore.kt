@@ -22,6 +22,7 @@ enum class DiagnosticEventType(val wireName: String) {
     CERT_PIN_FAILURE("cert_pin_failure"),
     RESOLVER_FAILOVER("resolver_failover"),
     DOZE_RESUME("doze_resume"),
+    VPN_RECOVERY_SNAPSHOT("vpn_recovery_snapshot"),
     ROOT_COMMAND_FAILED("root_command_failed"),
     BACKUP_IMPORT_FAILED("backup_import_failed"),
     FOREGROUND_SERVICE_TIMEOUT("foreground_service_timeout"),

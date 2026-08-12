@@ -162,6 +162,19 @@ class ProtectionResilienceMatrixTest {
         )
         store.recordBlocking(DiagnosticEventType.VPN_START, "VPN started", mapOf("source" to "matrix"))
         store.recordBlocking(DiagnosticEventType.VPN_STOP, "VPN stopped", mapOf("source" to "matrix"))
+        store.recordBlocking(
+            DiagnosticEventType.VPN_RECOVERY_SNAPSHOT,
+            "VPN recovery observation window reached with no tunnel ingress",
+            mapOf(
+                "sdk_int" to 37,
+                "always_on" to true,
+                "lockdown_enabled" to true,
+                "tun_fd_valid" to true,
+                "validated_physical_network" to true,
+                "elapsed_since_vpn_start_ms" to 120_000L,
+                "inbound_packet_count" to 0L
+            )
+        )
 
         val lines = store.readJsonlSnapshotBlocking()
             .lineSequence()
@@ -169,11 +182,12 @@ class ProtectionResilienceMatrixTest {
             .map(::JSONObject)
             .toList()
 
-        assertEquals(4, lines.size)
+        assertEquals(5, lines.size)
         assertTrue(lines.any { it.getString("type") == "foreground_service_start_failed" })
         assertTrue(lines.any { it.getString("type") == "foreground_service_timeout" })
         assertTrue(lines.any { it.getString("type") == "vpn_start" })
         assertTrue(lines.any { it.getString("type") == "vpn_stop" })
+        assertTrue(lines.any { it.getString("type") == "vpn_recovery_snapshot" })
     }
 
     private fun diagnosticEventFile(): File =

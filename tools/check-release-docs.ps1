@@ -721,6 +721,12 @@ $releaseGatePatterns = @{
             "cmd user list",
             "dumpsys deviceidle whitelist",
             "AttemptVpnStartStop",
+            "AttemptRecoveryObservation",
+            "RequireRecoveryAdvisory",
+            "RecoveryObservationSeconds",
+            "ExpectedSdk",
+            "UpdateApkPath",
+            "vpn_recovery_snapshot",
             "protection-resilience-matrix.json"
         )
     }

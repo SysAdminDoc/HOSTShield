@@ -36,6 +36,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
   WorkManager resumes, automation, Quick Settings, direct VPN starts, and
   root/DNS proxy promotion. The connected record includes service types,
   preference transitions, cleanup behavior, and `FGS_INTRODUCE_TIME_LIMITS`.
+- Refreshed Android 16+ VPN recovery validation for the current API 36/37
+  platforms, recording bounded zero-inbound observation evidence and adding
+  update/recovery options to the connected resilience matrix.
 
 ## [v6.9.68] - 2026-08-11
 

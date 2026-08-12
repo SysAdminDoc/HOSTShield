@@ -281,6 +281,11 @@ powershell -ExecutionPolicy Bypass -File .\tools\check-release-docs.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\check-release-docs.ps1 -SkipRemoteUrlLiveness
 powershell -ExecutionPolicy Bypass -File .\tools\check-cronet-posture.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\run-protection-resilience-matrix.ps1
+# API-36/37 VPN recovery evidence (run once per emulator; waits 125 seconds)
+powershell -ExecutionPolicy Bypass -File .\tools\run-protection-resilience-matrix.ps1 `
+  -Serial emulator-5556 -PackageName com.hostshield.debug -ExpectedSdk 36 `
+  -UpdateApkPath app\app\build\outputs\apk\full\debug\app-full-debug.apk `
+  -AttemptRecoveryObservation
 powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 ```
 
@@ -465,8 +470,15 @@ Protection services use Android's `systemExempted` foreground-service type for V
 **Does it send data to any server?**
 No. All DNS filtering happens locally on-device. The only network requests are: downloading blocklist sources (user-configured URLs), encrypted DNS queries to the user-selected provider, optional rate-limited GeoIP lookup through ipapi.co, and optional remote DoH bypass / CNAME cloak list updates from GitHub. Remote DoH bypass updates are accepted only when their payload hash and release-key signature verify.
 
-**What about the Android 16 VPN update bug?**
-Android 16 has a confirmed system-level bug where VPN apps become unusable after a background app update while always-on VPN is active. The device's network stack enters a corrupted state where all connections time out even though the VPN tunnel appears connected. This affects all VPN-based apps (Mullvad, Proton, Ivanti, TunnelBear, and others have confirmed it). Google has not issued a fix. HostShield detects this condition automatically (since v6.5.2) and shows a recovery banner on the Home screen. **Workaround**: reboot the device, or uninstall and reinstall the app. On rooted devices, HostShield offers a one-tap device restart from the recovery banner. To prevent the issue, disable always-on VPN before updating HostShield, then re-enable it after the update completes.
+**What about VPN recovery after an Android 16 update?**
+On Android 16 and newer, HostShield watches for the narrow recovery pattern in which its VPN
+service reports always-on lockdown, the TUN descriptor is still valid, a physical network is
+validated, and no inbound tunnel packet arrives during the first two minutes. It records one
+redacted `vpn_recovery_snapshot` diagnostic event and shows a Home recovery banner only when
+all of those signals agree. **Workaround**: restart the device when the banner appears. The
+connected validation matrix can update a debug APK and capture API-36/API-37 evidence with
+`-AttemptRecoveryObservation`; an advisory is required only when the test device has
+always-on VPN and lockdown configured.
 
 **What about Work Profiles and Private Spaces?**
 Android Work Profiles managed by a DPC (Device Policy Controller) can override VPN settings. Known limitations: (1) The DPC may force its own always-on VPN, preventing HostShield's VPN from starting. Use root mode instead. (2) Some DPCs set a lockdown VPN that bypasses user VPN tunnels entirely, causing DNS queries from work apps to leak to Google DNS or the DPC's resolver. (3) Work Profile DNS resolution may route through a separate network stack that HostShield cannot intercept in VPN mode. Android 15's Private Spaces create an isolated user profile. HostShield detects Private Spaces (since v6.5.1) and shows a warning banner when VPN-based DNS filtering may not cover apps inside the private space. **Workaround**: use root mode for full coverage across all profiles, or enable always-on VPN with lockdown in Android settings to force all profiles through HostShield's tunnel.

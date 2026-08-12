@@ -1,12 +1,17 @@
 [CmdletBinding()]
 param(
     [string]$OutputPath = "artifacts/release-provenance/protection-resilience-matrix.json",
-    [string]$PackageName = "com.hostshield",
+    [string]$PackageName = "",
     [string]$AdbPath = "adb",
     [string]$Serial = "",
     [switch]$RequireDevice,
     [switch]$SkipConnectedTests,
     [switch]$AttemptVpnStartStop,
+    [switch]$AttemptRecoveryObservation,
+    [switch]$RequireRecoveryAdvisory,
+    [ValidateRange(0, 3600)][int]$RecoveryObservationSeconds = 0,
+    [ValidateRange(0, 37)][int]$ExpectedSdk = 0,
+    [string]$UpdateApkPath = "",
     [string]$GradleTask = ":app:connectedFullDebugAndroidTest",
     [string]$InstrumentationClass = "com.hostshield.ui.ProtectionResilienceMatrixTest"
 )
@@ -18,7 +23,24 @@ $repoRoot = Resolve-Path (Join-Path $scriptRoot "..")
 $scenarioResults = New-Object System.Collections.Generic.List[object]
 $deviceObservations = New-Object System.Collections.Generic.List[object]
 
+if ($AttemptRecoveryObservation -and $RecoveryObservationSeconds -eq 0) {
+    $RecoveryObservationSeconds = 125
+}
+if ($RequireRecoveryAdvisory -and $RecoveryObservationSeconds -eq 0) {
+    $RecoveryObservationSeconds = 125
+    $AttemptRecoveryObservation = $true
+}
+
 function Resolve-RepoOutputPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        return $Path
+    }
+    return Join-Path $repoRoot $Path
+}
+
+function Resolve-RepoInputPath {
     param([Parameter(Mandatory = $true)][string]$Path)
 
     if ([System.IO.Path]::IsPathRooted($Path)) {
@@ -167,6 +189,8 @@ $dnsVpnService = Read-RepoFile "app/app/src/main/java/com/hostshield/service/Dns
 $bootReceiver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/BootReceiver.kt"
 $privateSpaceDetector = Read-RepoFile "app/app/src/main/java/com/hostshield/util/PrivateSpaceDetector.kt"
 $homeWarnings = Read-RepoFile "app/app/src/main/java/com/hostshield/ui/screens/home/HomeWarningsSection.kt"
+$recoveryDetector = Read-RepoFile "app/app/src/main/java/com/hostshield/util/Android16VpnRecoveryDetector.kt"
+$recoveryMonitor = Read-RepoFile "app/app/src/main/java/com/hostshield/service/VpnRecoveryMonitor.kt"
 $connectedTest = Read-RepoFile "app/app/src/androidTest/java/com/hostshield/ui/ProtectionResilienceMatrixTest.kt"
 
 $systemExemptedCount = [regex]::Matches($manifest, 'foregroundServiceType="systemExempted"').Count
@@ -190,12 +214,18 @@ Add-ScenarioResult `
     -Title "Always-on lockdown and Android 16 recovery advisory" `
     -Mode "connected-or-static" `
     -Status $(if (
-        (Test-ContainsAll $dnsVpnService @("Android16VpnRecoveryDetector.shouldShowRecoveryAdvisory", "vpnRecoveryAdvisoryState.value = VpnRecoveryAdvisory")) -and
+        (Test-ContainsAll $dnsVpnService @("VpnRecoveryMonitor.advisory", "vpnRecoveryAdvisory")) -and
+        (Test-ContainsAll $recoveryDetector @("ANDROID_16_SDK", "MIN_OBSERVATION_WINDOW_MS", "shouldShowRecoveryAdvisory")) -and
+        (Test-ContainsAll $recoveryMonitor @("VPN_RECOVERY_SNAPSHOT", "elapsed_since_vpn_start_ms", "inbound_packet_count")) -and
         (Test-ContainsAll $homeWarnings @("warning_vpn_recovery_root", "warning_vpn_recovery_no_root")) -and
         (Test-ContainsAll $connectedTest @("VPN recovery advisory", "Restart device to recover the VPN stack"))
     ) { "pass" } else { "fail" }) `
-    -Details "Static and connected UI checks cover the recovery banner; adb records always_on_vpn_app and always_on_vpn_lockdown when a device is present." `
-    -Evidence @{}
+    -Details "Static and connected UI checks cover the recovery banner; runtime mode captures the detector observation window and zero-inbound evidence when requested." `
+    -Evidence @{
+        recovery_observation_requested = [bool]($AttemptRecoveryObservation -or $RecoveryObservationSeconds -gt 0)
+        expected_sdk = $ExpectedSdk
+        update_apk_requested = [bool]$UpdateApkPath
+    }
 
 Add-ScenarioResult `
     -Id "boot-update-resume" `
@@ -274,20 +304,83 @@ if ($selectedDevice) {
     $sdk = Invoke-AdbShell $adbExe $selectedDevice "getprop ro.build.version.sdk"
     $manufacturer = Invoke-AdbShell $adbExe $selectedDevice "getprop ro.product.manufacturer"
     $model = Invoke-AdbShell $adbExe $selectedDevice "getprop ro.product.model"
+    if ($UpdateApkPath) {
+        $apk = Resolve-RepoInputPath $UpdateApkPath
+        if (-not (Test-Path -LiteralPath $apk -PathType Leaf)) {
+            throw "Update APK was not found: $apk"
+        }
+        $update = Invoke-External -FilePath $adbExe -Arguments @(
+            "-s",
+            $selectedDevice,
+            "install",
+            "-r",
+            "-d",
+            "-g",
+            $apk
+        )
+        Add-DeviceObservation `
+            -Id "app-update" `
+            -Status $(if ($update.exit_code -eq 0 -and $update.output -match "Success") { "pass" } else { "fail" }) `
+            -Details "Installed the supplied APK over the existing package to exercise the post-update recovery observation path." `
+            -Evidence @{
+                apk = $apk
+                exit_code = $update.exit_code
+                output = $update.output
+            }
+    } else {
+        Add-DeviceObservation -Id "app-update" -Status "skipped" -Details "No -UpdateApkPath was supplied; no package update was performed."
+    }
+
+    if (-not $PackageName) {
+        $packageCandidates = @(
+            "com.hostshield.debug",
+            "com.hostshield.play.debug",
+            "com.hostshield",
+            "com.hostshield.play"
+        )
+        foreach ($candidate in $packageCandidates) {
+            $candidatePath = Invoke-AdbShell $adbExe $selectedDevice "pm path $candidate"
+            if ($candidatePath.exit_code -eq 0 -and $candidatePath.output -match [regex]::Escape($candidate)) {
+                $PackageName = $candidate
+                break
+            }
+        }
+        if (-not $PackageName) {
+            $PackageName = "com.hostshield.debug"
+        }
+    }
+
     $packagePath = Invoke-AdbShell $adbExe $selectedDevice "pm path $PackageName"
     $alwaysOn = Invoke-AdbShell $adbExe $selectedDevice "settings get secure always_on_vpn_app"
     $lockdown = Invoke-AdbShell $adbExe $selectedDevice "settings get secure always_on_vpn_lockdown"
     $users = Invoke-AdbShell $adbExe $selectedDevice "cmd user list"
     $batteryWhitelist = Invoke-AdbShell $adbExe $selectedDevice "dumpsys deviceidle whitelist"
+    $vpnDump = Invoke-AdbShell $adbExe $selectedDevice "dumpsys vpn"
+    $connectivityDump = Invoke-AdbShell $adbExe $selectedDevice "dumpsys connectivity"
 
     $deviceInfo.sdk = $sdk.output
     $deviceInfo.manufacturer = $manufacturer.output
     $deviceInfo.model = $model.output
     $deviceInfo.package_installed = ($packagePath.exit_code -eq 0 -and $packagePath.output -match [regex]::Escape($PackageName))
 
+    if ($ExpectedSdk -gt 0) {
+        $sdkMatches = $sdk.output.Trim() -eq [string]$ExpectedSdk
+        Add-DeviceObservation `
+            -Id "sdk-selection" `
+            -Status $(if ($sdkMatches) { "pass" } else { "fail" }) `
+            -Details "Compared the connected device API level with -ExpectedSdk." `
+            -Evidence @{
+                expected_sdk = $ExpectedSdk
+                actual_sdk = $sdk.output
+            }
+    }
+
     Add-DeviceObservation -Id "always-on-lockdown-state" -Status "recorded" -Details "Captured secure VPN settings from the connected device." -Evidence @{
         always_on_vpn_app = $alwaysOn.output
         always_on_vpn_lockdown = $lockdown.output
+        vpn_dump_contains_package = ($vpnDump.output -match [regex]::Escape($PackageName))
+        vpn_dump_tail = ($vpnDump.output -split "`n" | Select-Object -Last 80) -join "`n"
+        connectivity_dump_tail = ($connectivityDump.output -split "`n" | Select-Object -Last 40) -join "`n"
     }
     Add-DeviceObservation -Id "profile-state" -Status "recorded" -Details "Captured Android user/profile list for work-profile or Private Space review." -Evidence @{
         users = $users.output
@@ -318,12 +411,87 @@ if ($selectedDevice) {
         Add-DeviceObservation -Id "connected-resilience-tests" -Status "skipped" -Details "Skipped by -SkipConnectedTests."
     }
 
+    $recoveryObservationRequested = $AttemptRecoveryObservation -or $RecoveryObservationSeconds -gt 0
+    if ($recoveryObservationRequested) {
+        $sdkNumber = 0
+        [int]::TryParse($sdk.output.Trim(), [ref]$sdkNumber) | Out-Null
+        if ($sdkNumber -lt 36) {
+            Add-DeviceObservation `
+                -Id "vpn-recovery-observation" `
+                -Status "fail" `
+                -Details "The recovery detector requires Android 16/API 36 or newer." `
+                -Evidence @{ actual_sdk = $sdk.output }
+        } elseif (-not $deviceInfo.package_installed) {
+            Add-DeviceObservation `
+                -Id "vpn-recovery-observation" `
+                -Status "fail" `
+                -Details "The recovery observation requires the HostShield package to be installed." `
+                -Evidence @{}
+        } else {
+            $start = Invoke-External -FilePath $adbExe -Arguments @(
+                "-s", $selectedDevice, "shell", "am", "broadcast",
+                "-a", "com.hostshield.ACTION_ENABLE", "-p", $PackageName
+            )
+            $deadline = [DateTime]::UtcNow.AddSeconds($RecoveryObservationSeconds)
+            while ([DateTime]::UtcNow -lt $deadline) {
+                $remaining = [int][Math]::Ceiling(($deadline - [DateTime]::UtcNow).TotalSeconds)
+                Start-Sleep -Seconds ([Math]::Min(5, [Math]::Max(1, $remaining)))
+            }
+
+            $recoveryEvents = Invoke-AdbShell $adbExe $selectedDevice "run-as $PackageName cat files/diagnostics/diagnostic-events.jsonl"
+            $recoveryLog = Invoke-External -FilePath $adbExe -Arguments @(
+                "-s", $selectedDevice, "shell", "logcat", "-d", "-v", "threadtime", "-s", "HostShield:I"
+            )
+            $snapshotSeen = $recoveryEvents.output -match '"type"\s*:\s*"vpn_recovery_snapshot"' -or
+                $recoveryLog.output -match "VPN recovery observation window reached"
+            $advisorySeen = $recoveryLog.output -match "Android 16 VPN recovery advisory raised"
+            $alwaysOnConfigured =
+                $alwaysOn.output.Trim() -and
+                $alwaysOn.output.Trim() -ne "null" -and
+                $alwaysOn.output.Trim() -ne "0"
+            $lockdownConfigured = $lockdown.output.Trim() -eq "1" -or
+                $lockdown.output.Trim().ToLowerInvariant() -eq "true"
+            $observationStatus = if ($advisorySeen) {
+                "pass"
+            } elseif ($snapshotSeen) {
+                "pass"
+            } elseif (-not $alwaysOnConfigured -or -not $lockdownConfigured) {
+                "not_configured"
+            } else {
+                "not_observed"
+            }
+            if ($RequireRecoveryAdvisory -and -not $advisorySeen) {
+                $observationStatus = "fail"
+            }
+            Add-DeviceObservation `
+                -Id "vpn-recovery-observation" `
+                -Status $observationStatus `
+                -Details "Requested protection through the app's automation receiver and observed the Android 16 recovery window for $RecoveryObservationSeconds seconds; advisory evidence is required only with -RequireRecoveryAdvisory." `
+                -Evidence @{
+                    start_exit_code = $start.exit_code
+                    start_output = $start.output
+                    always_on_vpn_app = $alwaysOn.output
+                    always_on_vpn_lockdown = $lockdown.output
+                    recovery_snapshot_seen = $snapshotSeen
+                    recovery_advisory_seen = $advisorySeen
+                    diagnostic_events_exit_code = $recoveryEvents.exit_code
+                    diagnostic_events_tail = ($recoveryEvents.output -split "`n" | Select-Object -Last 20) -join "`n"
+                    recovery_log_tail = ($recoveryLog.output -split "`n" | Select-Object -Last 80) -join "`n"
+                }
+            $stopAfterObservation = Invoke-External -FilePath $adbExe -Arguments @(
+                "-s", $selectedDevice, "shell", "am", "broadcast",
+                "-a", "com.hostshield.ACTION_DISABLE", "-p", $PackageName
+            )
+        }
+    } else {
+        Add-DeviceObservation -Id "vpn-recovery-observation" -Status "manual_required" -Details "Recovery observation was not attempted. Supply -AttemptRecoveryObservation or -RecoveryObservationSeconds, optionally with -UpdateApkPath and -ExpectedSdk 36/37."
+    }
+
     if ($AttemptVpnStartStop) {
-        $serviceComponent = "$PackageName/.service.DnsVpnService"
-        $start = Invoke-External -FilePath $adbExe -Arguments @("-s", $selectedDevice, "shell", "am", "start-foreground-service", "-n", $serviceComponent, "-a", "com.hostshield.VPN_START")
+        $start = Invoke-External -FilePath $adbExe -Arguments @("-s", $selectedDevice, "shell", "am", "broadcast", "-a", "com.hostshield.ACTION_ENABLE", "-p", $PackageName)
         Start-Sleep -Seconds 3
         $vpnDumpAfterStart = Invoke-AdbShell $adbExe $selectedDevice "dumpsys vpn"
-        $stop = Invoke-External -FilePath $adbExe -Arguments @("-s", $selectedDevice, "shell", "am", "startservice", "-n", $serviceComponent, "-a", "com.hostshield.VPN_STOP")
+        $stop = Invoke-External -FilePath $adbExe -Arguments @("-s", $selectedDevice, "shell", "am", "broadcast", "-a", "com.hostshield.ACTION_DISABLE", "-p", $PackageName)
         Add-DeviceObservation -Id "vpn-start-stop-live" -Status "recorded" -Details "Attempted live VPN service start and stop; requires prior user VPN consent to prove tunnel activation." -Evidence @{
             start_exit_code = $start.exit_code
             start_output = $start.output
@@ -342,6 +510,7 @@ if ($selectedDevice) {
         contains_timeout = ($events.output -match "foreground_service_timeout")
         contains_vpn_start = ($events.output -match "vpn_start")
         contains_vpn_stop = ($events.output -match "vpn_stop")
+        contains_recovery_snapshot = ($events.output -match "vpn_recovery_snapshot")
         output_tail = ($events.output -split "`n" | Select-Object -Last 40) -join "`n"
     }
 }

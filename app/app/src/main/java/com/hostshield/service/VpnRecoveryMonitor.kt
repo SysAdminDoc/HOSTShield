@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import com.hostshield.util.Android16VpnRecoveryDetector
+import com.hostshield.util.DiagnosticEventType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -15,6 +16,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Watches the Android 16 always-on/lockdown failure mode where the VPN is up
@@ -26,6 +28,7 @@ internal class VpnRecoveryMonitor(
     private val tunFdValid: () -> Boolean,
     private val vpnEstablishedAt: () -> Long,
     private val inboundPacketCount: () -> Long,
+    private val recordDiagnosticEvent: ((DiagnosticEventType, String, Map<String, Any?>) -> Unit)? = null,
 ) {
     companion object {
         private const val CHECK_INTERVAL_MS = 30_000L
@@ -40,6 +43,7 @@ internal class VpnRecoveryMonitor(
     }
 
     private var monitorJob: Job? = null
+    private val observationRecorded = AtomicBoolean(false)
 
     fun start(scope: CoroutineScope) {
         cancel()
@@ -54,10 +58,12 @@ internal class VpnRecoveryMonitor(
     fun cancel() {
         monitorJob?.cancel()
         monitorJob = null
+        observationRecorded.set(false)
         advisoryState.value = null
     }
 
     fun onInboundPacket() {
+        observationRecorded.set(false)
         if (advisoryState.value != null) advisoryState.value = null
     }
 
@@ -76,6 +82,28 @@ internal class VpnRecoveryMonitor(
             elapsedSinceVpnStartMs = SystemClock.elapsedRealtime() - vpnEstablishedAt(),
             inboundPacketCount = inboundPacketCount(),
         )
+
+        if (
+            snapshot.elapsedSinceVpnStartMs >= Android16VpnRecoveryDetector.MIN_OBSERVATION_WINDOW_MS &&
+            snapshot.inboundPacketCount == 0L &&
+            observationRecorded.compareAndSet(false, true)
+        ) {
+            recordDiagnosticEvent?.invoke(
+                DiagnosticEventType.VPN_RECOVERY_SNAPSHOT,
+                "VPN recovery observation window reached with no tunnel ingress",
+                mapOf(
+                    "sdk_int" to snapshot.sdkInt,
+                    "vpn_running" to snapshot.vpnRunning,
+                    "always_on" to snapshot.alwaysOn,
+                    "lockdown_enabled" to snapshot.lockdownEnabled,
+                    "tun_fd_valid" to snapshot.tunFdValid,
+                    "validated_physical_network" to snapshot.hasValidatedPhysicalNetwork,
+                    "elapsed_since_vpn_start_ms" to snapshot.elapsedSinceVpnStartMs,
+                    "inbound_packet_count" to snapshot.inboundPacketCount,
+                ),
+            )
+            Log.i(TAG, "VPN recovery observation window reached: $snapshot")
+        }
 
         if (Android16VpnRecoveryDetector.shouldShowRecoveryAdvisory(snapshot)) {
             if (advisoryState.value == null) {
