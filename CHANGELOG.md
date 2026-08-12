@@ -23,6 +23,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
   surfacing applied/skipped scoped-rule counts in Sources.
 - Updated the Android build toolchain and dependency patches: AGP 9.3.1, KSP
   2.3.11, Hilt 2.60.1, CycloneDX 3.4.1, and Bouncy Castle 1.85.2.
+- Added a guided “What broke?” app diagnosis flow that groups recent blocked
+  domains by package, shows the matching decision sources, and creates revocable
+  per-app allow rules from Apps; Rules now lists and controls those rules.
 
 ## [v6.9.68] - 2026-08-11
 

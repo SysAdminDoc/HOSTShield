@@ -52,6 +52,7 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
     val apps by viewModel.apps.collectAsStateWithLifecycle()
     val selectedApp by viewModel.selectedApp.collectAsStateWithLifecycle()
     val appDomains by viewModel.appDomains.collectAsStateWithLifecycle()
+    val diagnosis by viewModel.diagnosis.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val appFilter by viewModel.filter.collectAsStateWithLifecycle()
     val savedFilters by viewModel.savedFilters.collectAsStateWithLifecycle()
@@ -195,7 +196,11 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(filtered, key = { it.appPackage }) { app ->
-                        AppListItem(app = app, onClick = { viewModel.selectApp(app.appPackage) })
+                        AppListItem(
+                            app = app,
+                            onClick = { viewModel.selectApp(app.appPackage) },
+                            onDiagnose = { viewModel.diagnoseApp(app.appPackage) },
+                        )
                     }
                     item { Spacer(Modifier.height(16.dp)) }
                 }
@@ -214,6 +219,12 @@ fun AppsScreen(viewModel: AppsViewModel = hiltViewModel(), onBack: () -> Unit = 
             val totalDomains = effectiveDomains.size
             val blockedDomains = effectiveDomains.count { it.blocked }
             val blockRate = if (totalDomains > 0) (blockedDomains * 100 / totalDomains) else 0
+
+            DiagnosisCard(
+                diagnosis = diagnosis,
+                onAllow = viewModel::allowDomainForApp,
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
 
             // Summary cards
             Row(
@@ -266,7 +277,11 @@ private fun formatCompact(n: Int): String = when {
 }
 
 @Composable
-private fun AppListItem(app: AppQueryStat, onClick: () -> Unit) {
+private fun AppListItem(
+    app: AppQueryStat,
+    onClick: () -> Unit,
+    onDiagnose: () -> Unit,
+) {
     val blockRate = if (app.totalQueries > 0) (app.blockedQueries * 100 / app.totalQueries) else 0
     val barColor = when {
         blockRate > 60 -> Red
@@ -319,8 +334,109 @@ private fun AppListItem(app: AppQueryStat, onClick: () -> Unit) {
                 )
             }
 
+            IconButton(
+                onClick = onDiagnose,
+                modifier = Modifier.size(48.dp),
+            ) {
+                Icon(
+                    Icons.Filled.Search,
+                    "Diagnose ${app.appLabel.ifEmpty { app.appPackage }}",
+                    tint = Blue,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
             Spacer(Modifier.width(6.dp))
             Icon(Icons.Filled.ChevronRight, "View app details", tint = TextDim, modifier = Modifier.size(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun DiagnosisCard(
+    diagnosis: AppDiagnosisState,
+    onAllow: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (diagnosis.isLoading || diagnosis.blockedDomains.isEmpty()) return
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            "What broke?",
+            color = TextPrimary,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            "Recent blocked domains for this app, with the rule path that matched.",
+            color = TextDim,
+            fontSize = 11.sp,
+            modifier = Modifier.padding(top = 2.dp, bottom = 8.dp),
+        )
+        diagnosis.blockedDomains.forEach { domain ->
+            DiagnosisDomainItem(
+                domain = domain,
+                alreadyAllowed = domain.hostname in diagnosis.allowedDomains,
+                onAllow = { onAllow(domain.hostname) },
+            )
+            Spacer(Modifier.height(4.dp))
+        }
+    }
+}
+
+@Composable
+private fun DiagnosisDomainItem(
+    domain: AppBreakageDomain,
+    alreadyAllowed: Boolean,
+    onAllow: () -> Unit,
+) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Block, "Blocked", tint = Red, modifier = Modifier.size(15.dp))
+                Spacer(Modifier.width(7.dp))
+                Text(
+                    domain.hostname,
+                    color = TextPrimary,
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
+                Text("${domain.hitCount}x", color = TextDim, fontSize = 10.sp)
+            }
+            Text(
+                "Matched by: ${domain.sources.joinToString()}",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(start = 22.dp, top = 5.dp),
+            )
+            if (domain.matchedValues.isNotEmpty()) {
+                Text(
+                    "Rule: ${domain.matchedValues.joinToString()}",
+                    color = TextDim,
+                    fontSize = 10.sp,
+                    maxLines = 2,
+                    modifier = Modifier.padding(start = 22.dp, top = 2.dp),
+                )
+            }
+            if (alreadyAllowed) {
+                Text(
+                    "Allowed for this app",
+                    color = Green,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 22.dp, top = 8.dp),
+                )
+            } else {
+                TextButton(
+                    onClick = onAllow,
+                    modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp),
+                ) {
+                    Icon(Icons.Filled.Check, null, tint = Teal, modifier = Modifier.size(15.dp))
+                    Spacer(Modifier.width(5.dp))
+                    Text("Allow for this app", color = Teal, fontSize = 12.sp)
+                }
+            }
         }
     }
 }

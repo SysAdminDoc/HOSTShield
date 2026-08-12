@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hostshield.data.model.RuleType
+import com.hostshield.data.model.AppDnsRule
 import com.hostshield.data.model.UserRule
 import com.hostshield.ui.accessibility.accessibilityLiveRegion
 import com.hostshield.ui.accessibility.accessibilityToggle
@@ -52,6 +53,7 @@ import com.hostshield.util.BackupRestoreUtil
 @Composable
 fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
+    val appRules by viewModel.appRules.collectAsStateWithLifecycle()
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var filterType by remember { mutableStateOf<RuleType?>(null) }
     var clipboardMessage by remember { mutableStateOf<String?>(null) }
@@ -61,6 +63,12 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
 
     val filtered = remember(rules, filterType) {
         if (filterType == null) rules else rules.filter { it.type == filterType }
+    }
+    val filteredAppRules = remember(appRules, filterType) {
+        if (filterType == null) appRules else appRules.filter {
+            (it.action.equals("block", ignoreCase = true) && filterType == RuleType.BLOCK) ||
+                (it.action.equals("allow", ignoreCase = true) && filterType == RuleType.ALLOW)
+        }
     }
     val pasteDomainsFromClipboard = {
         scope.launch {
@@ -117,7 +125,7 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
                 Spacer(Modifier.height(8.dp))
             }
 
-            if (filtered.isEmpty()) {
+            if (filtered.isEmpty() && filteredAppRules.isEmpty()) {
                 item {
                     val filteredByType = filterType != null
                     HostShieldEmptyState(
@@ -146,6 +154,29 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
                     rule = rule,
                     onToggle = { viewModel.toggleRule(rule.id, it) },
                     onDelete = { pendingDeleteRule = rule }
+                )
+            }
+            if (filteredAppRules.isNotEmpty()) {
+                item {
+                    Text(
+                        "Per-app DNS rules",
+                        color = TextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
+                    )
+                    Text(
+                        "Rules created by the app diagnosis flow. Disable or delete one to revoke it.",
+                        color = TextDim,
+                        fontSize = 11.sp,
+                    )
+                }
+            }
+            items(filteredAppRules, key = { "app-${it.id}" }) { rule ->
+                AppRuleItem(
+                    rule = rule,
+                    onToggle = { viewModel.toggleAppRule(rule, it) },
+                    onDelete = { viewModel.deleteAppRule(rule) },
                 )
             }
             item { Spacer(Modifier.height(140.dp)) }
@@ -259,6 +290,89 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
                 checked = rule.enabled, onCheckedChange = onToggle,
                 modifier = Modifier.accessibilityToggle("Enable ${rule.hostname} rule", rule.enabled),
                 colors = SwitchDefaults.colors(checkedThumbColor = color, checkedTrackColor = color.copy(alpha = 0.25f), uncheckedThumbColor = TextDim, uncheckedTrackColor = Surface3)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppRuleItem(
+    rule: AppDnsRule,
+    onToggle: (Boolean) -> Unit,
+    onDelete: () -> Unit,
+) {
+    val isAllow = rule.action.equals("allow", ignoreCase = true)
+    val color = if (isAllow) Green else Red
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(14.dp).heightIn(min = 48.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp))
+                    .background(color.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    if (isAllow) Icons.Filled.CheckCircle else Icons.Filled.Block,
+                    null,
+                    tint = color,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        rule.domain,
+                        color = TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = FontFamily.Monospace,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Surface(shape = RoundedCornerShape(3.dp), color = color.copy(alpha = 0.1f)) {
+                        Text(
+                            if (isAllow) "APP ALLOW" else "APP BLOCK",
+                            Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                            color = color,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                Text(
+                    rule.packageName,
+                    color = TextDim,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    Icons.Filled.Delete,
+                    "Delete app rule ${rule.domain}",
+                    tint = Red.copy(alpha = 0.5f),
+                    modifier = Modifier.size(15.dp),
+                )
+            }
+            Switch(
+                checked = rule.enabled,
+                onCheckedChange = onToggle,
+                modifier = Modifier.accessibilityToggle(
+                    "Enable ${rule.domain} for ${rule.packageName}",
+                    rule.enabled,
+                ),
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = color,
+                    checkedTrackColor = color.copy(alpha = 0.25f),
+                    uncheckedThumbColor = TextDim,
+                    uncheckedTrackColor = Surface3,
+                ),
             )
         }
     }

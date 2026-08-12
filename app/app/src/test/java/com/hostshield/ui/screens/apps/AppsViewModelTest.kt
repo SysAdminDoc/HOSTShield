@@ -4,13 +4,17 @@ import app.cash.turbine.test
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.database.AppQueryStat
+import com.hostshield.data.database.AppDnsRuleDao
 import com.hostshield.data.database.DnsLogDao
+import com.hostshield.data.model.AppDnsRule
+import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.preferences.SavedDenseListFilter
 import com.hostshield.data.preferences.UiPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.util.RootUtil
+import com.hostshield.service.AppDnsRuleEngine
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,18 +35,24 @@ import org.junit.Test
 class AppsViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var dnsLogDao: DnsLogDao
+    private lateinit var appDnsRuleDao: AppDnsRuleDao
+    private lateinit var appDnsRuleEngine: AppDnsRuleEngine
     private lateinit var repository: HostShieldRepository
     private lateinit var blocklist: BlocklistHolder
     private lateinit var prefs: AppPreferences
     private lateinit var uiPreferences: UiPreferences
     private lateinit var rootUtil: RootUtil
     private val appsFlow = MutableStateFlow<List<AppQueryStat>>(emptyList())
+    private val appLogsFlow = MutableStateFlow<List<DnsLogEntry>>(emptyList())
+    private val appRulesFlow = MutableStateFlow<List<AppDnsRule>>(emptyList())
     private val createdViewModels = mutableListOf<ViewModel>()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         dnsLogDao = mockk(relaxed = true)
+        appDnsRuleDao = mockk(relaxed = true, relaxUnitFun = true)
+        appDnsRuleEngine = mockk(relaxed = true, relaxUnitFun = true)
         repository = mockk(relaxed = true, relaxUnitFun = true)
         blocklist = mockk(relaxed = true, relaxUnitFun = true)
         prefs = mockk(relaxed = true)
@@ -51,6 +61,8 @@ class AppsViewModelTest {
 
         every { dnsLogDao.getAllAppsWithCounts() } returns appsFlow
         every { dnsLogDao.getDomainsForApp(any(), any()) } returns flowOf(emptyList())
+        every { dnsLogDao.getLogsForApp(any(), any()) } returns appLogsFlow
+        every { appDnsRuleDao.getRulesForApp(any()) } returns appRulesFlow
         every { prefs.ui } returns uiPreferences
         every { uiPreferences.savedDenseListFilters(any()) } returns flowOf(emptyList())
     }
@@ -64,7 +76,16 @@ class AppsViewModelTest {
 
     private fun createViewModel(
         savedStateHandle: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle()
-    ) = AppsViewModel(dnsLogDao, repository, blocklist, prefs, rootUtil, savedStateHandle)
+    ) = AppsViewModel(
+        dnsLogDao,
+        appDnsRuleDao,
+        appDnsRuleEngine,
+        repository,
+        blocklist,
+        prefs,
+        rootUtil,
+        savedStateHandle,
+    )
         .also { createdViewModels += it }
 
     @Test
@@ -135,5 +156,52 @@ class AppsViewModelTest {
         advanceUntilIdle()
 
         coVerify { uiPreferences.clearDenseListFilters("apps") }
+    }
+
+    @Test
+    fun `breakage projection groups blocked domains and preserves source attribution`() {
+        val domains = buildAppBreakageDomains(
+            listOf(
+                DnsLogEntry(
+                    hostname = "ads.example.com",
+                    blocked = true,
+                    decisionSource = "HaGeZi",
+                    matchedValue = "example.com",
+                    decisionReason = "source_list",
+                ),
+                DnsLogEntry(
+                    hostname = "ads.example.com",
+                    blocked = true,
+                    decisionSource = "AdGuard",
+                    decisionReason = "source_list",
+                ),
+                DnsLogEntry(hostname = "ok.example.com", blocked = false),
+            )
+        )
+
+        assertEquals(1, domains.size)
+        assertEquals("ads.example.com", domains.single().hostname)
+        assertEquals(2, domains.single().hitCount)
+        assertEquals(listOf("AdGuard", "HaGeZi"), domains.single().sources)
+        assertEquals(listOf("example.com"), domains.single().matchedValues)
+    }
+
+    @Test
+    fun `app diagnosis allow creates revocable app-scoped rule`() = runTest {
+        val vm = createViewModel()
+        vm.selectApp("com.example.app")
+        vm.allowDomainForApp("Ads.Example.COM")
+        advanceUntilIdle()
+
+        coVerify {
+            appDnsRuleDao.insert(
+                match {
+                    it.packageName == "com.example.app" &&
+                        it.domain == "ads.example.com" &&
+                        it.action == "allow"
+                }
+            )
+        }
+        coVerify { appDnsRuleEngine.reloadForApp("com.example.app") }
     }
 }

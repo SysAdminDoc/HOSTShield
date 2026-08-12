@@ -3,9 +3,12 @@ package com.hostshield.ui.screens.lists
 import app.cash.turbine.test
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hostshield.data.database.AppDnsRuleDao
+import com.hostshield.data.model.AppDnsRule
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.service.AppDnsRuleEngine
 import io.mockk.*
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
@@ -21,14 +24,20 @@ import org.junit.Test
 class RulesViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: HostShieldRepository
+    private lateinit var appDnsRuleDao: AppDnsRuleDao
+    private lateinit var appDnsRuleEngine: AppDnsRuleEngine
     private val rulesFlow = MutableStateFlow<List<UserRule>>(emptyList())
+    private val appRulesFlow = MutableStateFlow<List<AppDnsRule>>(emptyList())
     private val createdViewModels = mutableListOf<ViewModel>()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true, relaxUnitFun = true)
+        appDnsRuleDao = mockk(relaxed = true, relaxUnitFun = true)
+        appDnsRuleEngine = mockk(relaxed = true, relaxUnitFun = true)
         every { repository.getAllRules() } returns rulesFlow
+        every { appDnsRuleDao.getAllRules() } returns appRulesFlow
     }
 
     @After
@@ -38,7 +47,7 @@ class RulesViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = RulesViewModel(repository)
+    private fun createViewModel() = RulesViewModel(repository, appDnsRuleDao, appDnsRuleEngine)
         .also { createdViewModels += it }
 
     @Test
@@ -129,5 +138,37 @@ class RulesViewModelTest {
         advanceUntilIdle()
 
         coVerify { repository.toggleRule(42L, false) }
+    }
+
+    @Test
+    fun `app rules flow emits app-scoped rules`() = runTest {
+        val vm = createViewModel()
+        val rule = AppDnsRule(
+            id = 3,
+            packageName = "com.example.app",
+            domain = "ads.example.com",
+            action = "allow",
+        )
+        vm.appRules.test {
+            assertEquals(emptyList<AppDnsRule>(), awaitItem())
+            appRulesFlow.value = listOf(rule)
+            assertEquals(listOf(rule), awaitItem())
+        }
+    }
+
+    @Test
+    fun `deleting an app rule revokes it and reloads that package`() = runTest {
+        val vm = createViewModel()
+        val rule = AppDnsRule(
+            id = 7,
+            packageName = "com.example.app",
+            domain = "ads.example.com",
+            action = "allow",
+        )
+        vm.deleteAppRule(rule)
+        advanceUntilIdle()
+
+        coVerify { appDnsRuleDao.delete(rule) }
+        coVerify { appDnsRuleEngine.reloadForApp("com.example.app") }
     }
 }
