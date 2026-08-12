@@ -152,13 +152,26 @@ $migrationRange = "v1-v$maxSchemaVersion"
 
 $docs = @{
     "README.md" = Read-RepoFile "README.md"
-    "app/README.md" = Read-RepoFile "app/README.md"
-    "app/CHANGELOG.md" = Read-RepoFile "app/CHANGELOG.md"
+    "CHANGELOG.md" = Read-RepoFile "CHANGELOG.md"
     "app/metadata/en-US/full_description.txt" = Read-RepoFile "app/metadata/en-US/full_description.txt"
     "app/metadata/en-US/short_description.txt" = Read-RepoFile "app/metadata/en-US/short_description.txt"
 }
 
 $failures = New-Object System.Collections.Generic.List[string]
+
+# Keep the historical app-directory paths discoverable without maintaining a
+# second copy of either document. Only the root documents are release-gated.
+$canonicalDocPointers = @{
+    "app/README.md" = "../README.md"
+    "app/CHANGELOG.md" = "../CHANGELOG.md"
+}
+foreach ($pointer in $canonicalDocPointers.GetEnumerator()) {
+    if (-not (Test-RepoFile $pointer.Key)) {
+        $failures.Add("Missing canonical document pointer: $($pointer.Key)")
+    } elseif ((Read-RepoFile $pointer.Key) -notmatch [regex]::Escape($pointer.Value)) {
+        $failures.Add("$($pointer.Key) must point to $($pointer.Value), not duplicate release content.")
+    }
+}
 
 $remoteUrlSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $curatedBlocklistsPath = "app/app/src/main/assets/curated_blocklists.json"
@@ -573,7 +586,7 @@ if ($dohUpdater -notmatch [regex]::Escape($expectedDohManifestUrl)) {
     $failures.Add("$dohUpdaterPath does not point at $expectedDohManifestUrl")
 }
 
-foreach ($doc in @("README.md", "app/README.md")) {
+foreach ($doc in @("README.md")) {
     if ($docs[$doc] -notmatch [regex]::Escape("version-$versionName")) {
         $failures.Add("$doc does not advertise version badge $versionName.")
     }
@@ -592,6 +605,7 @@ $requiredPatterns = @{
         "ipapi.co",
         "Kotlin $kotlinMajorMinor",
         "AGP $agpMajorMinor",
+        "Android SDK $compileSdk",
         "com.hostshield.ACTION_ENABLE",
         "com.hostshield.ACTION_SET_PROFILE",
         "duration_minutes",
@@ -599,17 +613,7 @@ $requiredPatterns = @{
         "run-protection-resilience-matrix.ps1",
         "without GitHub Actions workflows"
     )
-    "app/README.md" = @(
-        "fail-closed",
-        "405 tracker SDK signatures",
-        "ipapi.co",
-        "Android SDK $compileSdk",
-        "com.hostshield.ACTION_ENABLE",
-        "duration_minutes",
-        "run-protection-resilience-matrix.ps1",
-        "v$versionName"
-    )
-    "app/CHANGELOG.md" = @(
+    "CHANGELOG.md" = @(
         "v$versionName"
     )
     "app/metadata/en-US/full_description.txt" = @(
@@ -759,7 +763,7 @@ if (Test-Path -LiteralPath $serviceDir) {
         }
     }
 }
-foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt")) {
+foreach ($doc in @("README.md", "app/metadata/en-US/full_description.txt")) {
     if ($docs[$doc] -notmatch [regex]::Escape("targetSdk $targetSdk")) {
         $failures.Add("$doc is missing targetSdk $targetSdk platform claim.")
     }
@@ -768,7 +772,7 @@ foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_descri
 if ($dohResolver -notmatch 'certificatePinner' -or $dnsVpnService -notmatch 'failClosedEncrypted') {
     $failures.Add("Encrypted-DNS fail-closed code claims are not backed by DohResolver pinning plus DnsVpnService.failClosedEncrypted.")
 }
-if ($docs["README.md"] -notmatch 'fail-closed' -or $docs["app/README.md"] -notmatch 'fail-closed') {
+if ($docs["README.md"] -notmatch 'fail-closed') {
     $failures.Add("README docs must continue to state the encrypted-DNS fail-closed posture.")
 }
 
@@ -831,7 +835,7 @@ $forbiddenPatterns = @(
     "--ei pause_minutes"
 )
 
-foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt", $metadataChangelog)) {
+foreach ($doc in @("README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt", $metadataChangelog)) {
     if (-not $docs.ContainsKey($doc)) {
         continue
     }
@@ -857,7 +861,7 @@ $lanDnsGateImplemented = (
     $protectionSettingsSection -match 'lan_dns_allow_external'
 )
 
-foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
+foreach ($doc in @("README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
     foreach ($pattern in $currentLocalDnsClaimPatterns) {
         if (($docs[$doc] -match [regex]::Escape($pattern)) -and -not $lanDnsGateImplemented) {
             $failures.Add("$doc contains an unwired Local DNS Server release-doc claim: $pattern")
@@ -872,7 +876,7 @@ $lanDnsReleaseClaimPatterns = @(
     "local-network permission"
 )
 
-foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
+foreach ($doc in @("README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
     foreach ($pattern in $lanDnsReleaseClaimPatterns) {
         if (($docs[$doc] -match [regex]::Escape($pattern)) -and -not $lanDnsGateImplemented) {
             $failures.Add("$doc claims LAN DNS support, but the manifest/service/Settings gate is incomplete: $pattern")
@@ -902,7 +906,7 @@ $adaptiveLargeScreenClaimPatterns = @(
     "Android 16 large-screen"
 )
 
-foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
+foreach ($doc in @("README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
     foreach ($pattern in $adaptiveLargeScreenClaimPatterns) {
         if (($docs[$doc] -match [regex]::Escape($pattern)) -and -not $adaptiveLargeScreenGateImplemented) {
             $failures.Add("$doc claims adaptive large-screen navigation, but the scaffold/dependency/test gate is incomplete: $pattern")
@@ -916,8 +920,7 @@ $localeConfigReadyImplemented = (
     $stringsXml -match 'name="home_search_placeholder"' -and
     $stringsXml -match 'name="qr_export_subtitle"' -and
     $stringsXml -match 'name="dns_over_https"' -and
-    $docs["README.md"] -match 'non-English per-app languages stay deferred until full translations are available' -and
-    $docs["app/README.md"] -match 'non-English app languages stay deferred until complete translations ship'
+    $docs["README.md"] -match 'non-English per-app languages stay deferred until full translations are available'
 )
 
 $localeConfigClaimPatterns = @(
@@ -926,7 +929,7 @@ $localeConfigClaimPatterns = @(
     "per-app languages"
 )
 
-foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
+foreach ($doc in @("README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
     foreach ($pattern in $localeConfigClaimPatterns) {
         if (($docs[$doc] -match [regex]::Escape($pattern)) -and -not $localeConfigReadyImplemented) {
             $failures.Add("$doc claims LocaleConfig readiness, but resources.properties/string-resource/doc gate is incomplete: $pattern")
@@ -940,7 +943,7 @@ $releaseEffectiveExperimentalDnsClaims = @(
     "stay out of production defaults"
 )
 
-foreach ($doc in @("README.md", "app/README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
+foreach ($doc in @("README.md", "app/metadata/en-US/full_description.txt", "app/metadata/en-US/short_description.txt")) {
     foreach ($pattern in $releaseEffectiveExperimentalDnsClaims) {
         if ($docs[$doc] -match [regex]::Escape($pattern)) {
             $failures.Add("$doc implies release-effective experimental DNS transports: $pattern")

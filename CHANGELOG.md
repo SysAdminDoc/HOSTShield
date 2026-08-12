@@ -1,7 +1,7 @@
 # Changelog
 
-All notable changes to HostShield will be documented in this file. Detailed
-release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
+All notable changes to HostShield are documented in this canonical changelog.
+The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 
 ## [Unreleased]
 
@@ -15,6 +15,9 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   fallback until its credential-gated refresh is published.
 - Added runtime Home and DNS Settings warnings for DoH/DoT certificate-pin review
   and expiry, backed by an injectable clock and provider/date-specific messages.
+- Consolidated the root README and changelog as the canonical documentation;
+  legacy app-directory paths now point to them and the release gate no longer
+  maintains duplicate-content checks.
 
 ## [v6.9.68] - 2026-08-11
 
@@ -1666,7 +1669,7 @@ issues found in a deep audit of the v6.4 codebase.
 
 ## [v6.4.0] - 2026-03-27
 
-See [`app/CHANGELOG.md`](app/CHANGELOG.md) for the full v6.4.0 release notes.
+See this changelog for the full v6.4.0 release notes.
 
 ## [v6.3.0]
 
