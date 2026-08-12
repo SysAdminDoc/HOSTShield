@@ -21,6 +21,8 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 - Enforced valid `$app=<package>` source rules per querying package, including
   negated scopes, while keeping `$client`/`$ctag` rules safely skipped and
   surfacing applied/skipped scoped-rule counts in Sources.
+- Updated the Android build toolchain and dependency patches: AGP 9.3.1, KSP
+  2.3.11, Hilt 2.60.1, CycloneDX 3.4.1, and Bouncy Castle 1.85.2.
 
 ## [v6.9.68] - 2026-08-11
 

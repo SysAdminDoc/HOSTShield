@@ -358,7 +358,7 @@ Public actions are protected by HostShield's signature-level automation permissi
 | Networking | OkHttp 5 (source downloads, pinned DoH resolver) |
 | Root | libsu (topjohnwu) |
 | GeoIP | Bounded ipapi.co lookup with in-memory cache and exponential backoff |
-| Build | Gradle KTS, version catalog, AGP 9.2, KSP, Android SDK 37 compile / targetSdk 36, minSdk 26 |
+| Build | Gradle KTS, version catalog, AGP 9.3, KSP, Android SDK 37 compile / targetSdk 36, minSdk 26 |
 
 ---
 
