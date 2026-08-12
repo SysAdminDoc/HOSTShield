@@ -38,11 +38,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.FileOutputStream
-import java.net.DatagramPacket
-import java.net.DatagramSocket
 import java.util.concurrent.atomic.AtomicInteger
 import java.net.InetAddress
-import java.net.InetSocketAddress
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -278,7 +275,29 @@ class DnsVpnService : VpnService() {
 
     // DNS Response Cache — LRU with TTL-aware expiration
     private val dnsCache = DnsCache(maxEntries = 2000, maxNegativeEntries = 500)
-    private val dnsQueryDeduplicator = DnsQueryDeduplicator<UpstreamResolveResult>()
+    private val dnsForwarder by lazy {
+        DnsForwarder(
+            dohResolver = dohResolver,
+            dotResolver = dotResolver,
+            doqResolver = doqResolver,
+            wireGuardProxy = wireGuardProxy,
+            config = {
+                DnsForwardingConfig(
+                    useDoH = useDoH,
+                    dohProvider = dohProvider,
+                    useDoT = useDoT,
+                    dotProvider = dotProvider,
+                    useDoQ = useDoQ,
+                    doqProvider = doqProvider,
+                    useWireGuard = useWireGuard,
+                    upstreamDnsServers = upstreamDnsServers,
+                )
+            },
+            protectDatagram = { socket -> protect(socket) },
+            protectSocket = { socket -> protect(socket) },
+            defaultUpstreamDnsServers = UPSTREAM_DNS.toList(),
+        )
+    }
 
     private val dnsLogManager by lazy {
         DnsLogManager(
@@ -1691,93 +1710,6 @@ class DnsVpnService : VpnService() {
         return PostForwardResult(blocked = false)
     }
 
-    private sealed class UpstreamResolveResult {
-        data class Success(
-            val response: ByteArray,
-            val latencyMs: Int,
-            val upstreamServer: String
-        ) : UpstreamResolveResult()
-
-        data class EncryptedFailure(val transport: String) : UpstreamResolveResult()
-        data object PlaintextFailure : UpstreamResolveResult()
-    }
-
-    private suspend fun resolveUdpPlaintext(dns: ByteArray): UpstreamResolveResult {
-        val sock = DatagramSocket()
-        return try {
-            val startMs = System.currentTimeMillis()
-            val primary = upstreamDnsServers.firstOrNull() ?: UPSTREAM_DNS[0]
-            var responseUpstream = primary
-            protect(sock); sock.soTimeout = 5000
-            sock.send(DatagramPacket(dns, dns.size, InetAddress.getByName(primary), DNS_PORT))
-            val buf = ByteArray(1500); val rp = DatagramPacket(buf, buf.size)
-            try {
-                sock.receive(rp)
-            } catch (_: java.net.SocketTimeoutException) {
-                sock.close()
-                val fallback = upstreamDnsServers.getOrElse(1) { UPSTREAM_DNS.getOrElse(1) { UPSTREAM_DNS[0] } }
-                val sock2 = DatagramSocket(); protect(sock2); sock2.soTimeout = 5000
-                try {
-                    sock2.send(DatagramPacket(dns, dns.size, InetAddress.getByName(fallback), DNS_PORT))
-                    sock2.receive(rp)
-                    responseUpstream = fallback
-                } finally { try { sock2.close() } catch (_: Exception) { } }
-            }
-            val respBytes = retryTruncatedUdpOverTcp(dns, buf.copyOf(rp.length), responseUpstream)
-            val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-            UpstreamResolveResult.Success(respBytes, latencyMs, responseUpstream)
-        } catch (_: Exception) {
-            UpstreamResolveResult.PlaintextFailure
-        } finally {
-            try { sock.close() } catch (_: Exception) { }
-        }
-    }
-
-    private fun retryTruncatedUdpOverTcp(
-        dns: ByteArray,
-        udpResponse: ByteArray,
-        upstream: String
-    ): ByteArray {
-        val udpReceivedAtMs = DnsTcpFallback.monotonicNowMs()
-        val result = DnsTcpFallback.resolveTruncatedUdpResponse(
-            udpResponse = udpResponse,
-            udpReceivedAtMs = udpReceivedAtMs
-        ) {
-            forwardOverTcp(dns, upstream)
-        }
-        if (result.retriedOverTcp && !result.retryStartedWithinDeadline) {
-            Log.w(
-                TAG,
-                "TCP DNS fallback for TC=1 started after ${result.retryStartDelayMs}ms " +
-                    "(expected <= ${DnsTcpFallback.MAX_TCP_RETRY_START_DELAY_MS}ms)"
-            )
-        }
-        return result.response
-    }
-
-    private fun forwardOverTcp(dns: ByteArray, upstream: String): ByteArray? {
-        val sock = java.net.Socket()
-        try {
-            protect(sock)
-            sock.connect(InetSocketAddress(InetAddress.getByName(upstream), DNS_PORT), 3000)
-            sock.soTimeout = 4000
-            val out = java.io.DataOutputStream(sock.getOutputStream())
-            val input = java.io.DataInputStream(sock.getInputStream())
-            out.writeShort(dns.size)
-            out.write(dns)
-            out.flush()
-            val respLen = input.readUnsignedShort()
-            if (respLen < 12 || respLen > 65535) return null
-            val resp = ByteArray(respLen)
-            input.readFully(resp)
-            return resp
-        } catch (_: Exception) {
-            return null
-        } finally {
-            try { sock.close() } catch (_: Exception) { }
-        }
-    }
-
     private suspend fun serveStale(
         dns: ByteArray,
         domain: String,
@@ -1949,7 +1881,7 @@ class DnsVpnService : VpnService() {
         // Flush cache so subsequent queries use the newly selected resolver
         // instead of answers cached from the previous one.
         dnsCache.clear()
-        dnsQueryDeduplicator.clear()
+        dnsForwarder.clear()
         PrivacyLog.i(TAG, "DNS config reloaded live: " +
             "DoH=${if (useDoH) dohProvider.name else "off"}, " +
             "DoT=${if (useDoT) dotProvider.name else "off"}, " +
@@ -1957,106 +1889,18 @@ class DnsVpnService : VpnService() {
             "upstream=${upstreamDnsServers.joinToString(",")}")
     }
 
-    private suspend fun resolveDoH(dns: ByteArray, domain: String): UpstreamResolveResult {
-        try {
-            val startMs = System.currentTimeMillis()
-            val dohResult = dohResolver.resolveWithMetadata(dns, dohProvider)
-            val resp = dohResult?.response
-            if (resp != null) {
-                val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val upstreamLabel = when (dohResult.transport) {
-                    DohResolver.Transport.DOH3 -> "DoH3:${dohResult.provider.name}"
-                    DohResolver.Transport.DOH -> "DoH:${dohResult.provider.name}"
-                }
-
-                return UpstreamResolveResult.Success(resp, latencyMs, upstreamLabel)
-            }
-            else {
-                return UpstreamResolveResult.EncryptedFailure("DoH")
-            }
-        } catch (e: Exception) {
-            PrivacyLog.w(TAG, "DoH forward failed for $domain (${e.javaClass.simpleName}) — failing closed")
-            return UpstreamResolveResult.EncryptedFailure("DoH")
-        }
-    }
-
-    /**
-     * Forward DNS query via DNS-over-QUIC (RFC 9250).
-     * Falls back to DoH (still encrypted) when enabled, otherwise fails closed.
-     */
-    private suspend fun resolveDoQ(dns: ByteArray, domain: String): UpstreamResolveResult {
-        try {
-            val startMs = System.currentTimeMillis()
-            val resp = doqResolver.resolve(dns, doqProvider)
-            if (resp != null) {
-                val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                val upstreamLabel = "DoQ:${doqProvider.name}"
-
-                return UpstreamResolveResult.Success(resp, latencyMs, upstreamLabel)
-            } else {
-                return if (useDoH) resolveDoH(dns, domain) else UpstreamResolveResult.EncryptedFailure("DoQ")
-            }
-        } catch (e: Exception) {
-            PrivacyLog.w(TAG, "DoQ forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
-            return if (useDoH) resolveDoH(dns, domain) else UpstreamResolveResult.EncryptedFailure("DoQ")
-        }
-    }
-
-    private suspend fun resolveWireGuard(dns: ByteArray, domain: String): UpstreamResolveResult {
-        try {
-            val startMs = System.currentTimeMillis()
-            val resp = wireGuardProxy.resolveDns(dns)
-            if (resp != null) {
-                val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                return UpstreamResolveResult.Success(resp, latencyMs, "WireGuard")
-            } else {
-                return when {
-                    useDoQ -> resolveDoQ(dns, domain)
-                    useDoH -> resolveDoH(dns, domain)
-                    else -> UpstreamResolveResult.EncryptedFailure("WireGuard")
-                }
-            }
-        } catch (e: Exception) {
-            PrivacyLog.w(TAG, "WireGuard forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
-            return when {
-                useDoQ -> resolveDoQ(dns, domain)
-                useDoH -> resolveDoH(dns, domain)
-                else -> UpstreamResolveResult.EncryptedFailure("WireGuard")
-            }
-        }
-    }
-
-    private suspend fun resolveDoT(dns: ByteArray, domain: String): UpstreamResolveResult {
-        try {
-            val startMs = System.currentTimeMillis()
-            val resp = dotResolver.resolve(dns, dotProvider)
-            if (resp != null) {
-                val latencyMs = (System.currentTimeMillis() - startMs).toInt()
-                return UpstreamResolveResult.Success(resp, latencyMs, "DoT:${dotProvider.name}")
-            } else {
-                return if (useDoH) resolveDoH(dns, domain) else UpstreamResolveResult.EncryptedFailure("DoT")
-            }
-        } catch (e: Exception) {
-            PrivacyLog.w(TAG, "DoT forward failed for $domain (${e.javaClass.simpleName}: ${e.message}) — falling back")
-            return if (useDoH) resolveDoH(dns, domain) else UpstreamResolveResult.EncryptedFailure("DoT")
-        }
-    }
-
-    /**
-     * Dispatch DNS query to the best available encrypted transport.
-     * Priority: WireGuard > DoQ > DoT > DoH. Falls back to plaintext UDP only
-     * when no encrypted transport is enabled; enabled transports fail closed.
-     */
-    private suspend fun forwardEncrypted(dns: ByteArray, domain: String, orig: ByteArray, ihl: Int,
-                                          app: Pair<String, String> = Pair("", ""),
-                                          wrapV6: Boolean = false, v6Hdr: Int = 0,
-                                          skipThreatIntelChecks: Boolean = false) {
+    private suspend fun forwardEncrypted(
+        dns: ByteArray,
+        domain: String,
+        orig: ByteArray,
+        ihl: Int,
+        app: Pair<String, String> = Pair("", ""),
+        wrapV6: Boolean = false,
+        v6Hdr: Int = 0,
+        skipThreatIntelChecks: Boolean = false,
+    ) {
         val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-        val resolved = dnsQueryDeduplicator.getOrRun(
-            DnsQueryDeduplicator.Key(domain, qtypeNum, currentDnsRouteKey())
-        ) {
-            resolveConfiguredUpstream(dns, domain)
-        }
+        val resolved = dnsForwarder.resolve(dns, domain)
         if (resolved.shared) {
             PrivacyLog.d(TAG, "DEDUP HIT $domain (${DnsPacketBuilder.queryTypeLabel(qtypeNum)})")
         }
@@ -2068,7 +1912,7 @@ class DnsVpnService : VpnService() {
             if (wrapV6) v6Hdr else ihl,
             wrapV6,
             app,
-            skipThreatIntelChecks
+            skipThreatIntelChecks,
         )
     }
 
@@ -2078,15 +1922,9 @@ class DnsVpnService : VpnService() {
         dns: ByteArray,
         domain: String,
         app: Pair<String, String> = Pair("", ""),
-        skipThreatIntelChecks: Boolean = false
+        skipThreatIntelChecks: Boolean = false,
     ) {
-        val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-        val resolved = dnsQueryDeduplicator.getOrRun(
-            DnsQueryDeduplicator.Key(domain, qtypeNum, currentDnsRouteKey())
-        ) {
-            resolveConfiguredUpstream(dns, domain)
-        }.value
-
+        val resolved = dnsForwarder.resolve(dns, domain).value
         if (resolved is UpstreamResolveResult.Success) {
             val response = patchDnsTransactionId(resolved.response, dns)
             postForwardChecks(
@@ -2096,19 +1934,10 @@ class DnsVpnService : VpnService() {
                 app,
                 resolved.latencyMs,
                 resolved.upstreamServer,
-                skipThreatIntelChecks
+                skipThreatIntelChecks,
             )
         }
     }
-
-    private suspend fun resolveConfiguredUpstream(dns: ByteArray, domain: String): UpstreamResolveResult =
-        when {
-            useWireGuard -> resolveWireGuard(dns, domain)
-            useDoQ -> resolveDoQ(dns, domain)
-            useDoT -> resolveDoT(dns, domain)
-            useDoH -> resolveDoH(dns, domain)
-            else -> resolveUdpPlaintext(dns)
-        }
 
     private suspend fun sendResolvedResponse(
         result: UpstreamResolveResult,
@@ -2155,14 +1984,6 @@ class DnsVpnService : VpnService() {
                 serveStale(dns, domain, orig, headerOffset, isV6, app, skipThreatIntelChecks)
             }
         }
-    }
-
-    private fun currentDnsRouteKey(): String = when {
-        useWireGuard -> "wireguard|doq=$useDoQ:${doqProvider.name}|doh=$useDoH:${dohProvider.name}"
-        useDoQ -> "doq:${doqProvider.name}|doh=$useDoH:${dohProvider.name}"
-        useDoT -> "dot:${dotProvider.name}|doh=$useDoH:${dohProvider.name}"
-        useDoH -> "doh:${dohProvider.name}"
-        else -> "udp:${upstreamDnsServers.joinToString(",")}"
     }
 
     private fun patchDnsTransactionId(response: ByteArray, query: ByteArray): ByteArray {
