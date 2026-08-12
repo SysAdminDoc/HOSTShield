@@ -60,6 +60,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 - Completed the API-37 light-mode visual audit across Settings, Dashboard, and
   Statistics; action buttons, accent swatches, status colors, and chart tokens
   remained legible, so no code fixes were required.
+- Added block-reason facets and a seven-day block-reason chart; user-rule notes
+  and optional expiry now round-trip through backup/JSON and expire via a
+  persistent WorkManager reconciliation.
 
 ## [v6.9.68] - 2026-08-11
 

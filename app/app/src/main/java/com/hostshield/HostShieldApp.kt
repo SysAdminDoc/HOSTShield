@@ -7,6 +7,7 @@ import com.hostshield.data.preferences.SecurityPreferences
 import com.hostshield.data.preferences.SyncPreferences
 import com.hostshield.service.CnameCloakUpdater
 import com.hostshield.service.AutoBackupWorker
+import com.hostshield.service.RuleExpiryWorker
 import com.hostshield.service.ThreatIntelWorker
 import com.topjohnwu.superuser.Shell
 import dagger.hilt.android.HiltAndroidApp
@@ -55,6 +56,17 @@ class HostShieldApp : Application(), Configuration.Provider {
                 AutoBackupWorker.schedule(this@HostShieldApp, syncPreferences.autoBackupIntervalDays.first())
             } catch (e: Exception) {
                 android.util.Log.w("HostShieldApp", "AutoBackup scheduling failed: ${e.message}")
+            }
+        }
+
+        // User-rule expiry is database-backed and must continue while the UI
+        // process is stopped. WorkManager persists the periodic reconciliation
+        // and BootReceiver re-registers it after a device restore/reboot.
+        appScope.launch {
+            try {
+                RuleExpiryWorker.schedule(this@HostShieldApp)
+            } catch (e: Exception) {
+                android.util.Log.w("HostShieldApp", "Rule expiry scheduling failed: ${e.message}")
             }
         }
     }

@@ -21,7 +21,8 @@ class RuleRepository @Inject constructor(
     suspend fun deleteRule(rule: UserRule) = ruleDao.delete(rule)
     suspend fun toggleRule(id: Long, enabled: Boolean) = ruleDao.setEnabled(id, enabled)
     suspend fun ruleExists(hostname: String): Boolean = ruleDao.exists(hostname)
-    suspend fun getEnabledWildcards(): List<UserRule> = ruleDao.getEnabledWildcards()
-    suspend fun getEnabledRegexRules(): List<UserRule> = ruleDao.getEnabledRegexRules()
-    suspend fun getEnabledRulesByType(type: RuleType): List<UserRule> = ruleDao.getEnabledByType(type)
+    suspend fun getEnabledWildcards(): List<UserRule> = ruleDao.getEnabledWildcards(System.currentTimeMillis())
+    suspend fun getEnabledRegexRules(): List<UserRule> = ruleDao.getEnabledRegexRules(System.currentTimeMillis())
+    suspend fun getEnabledRulesByType(type: RuleType): List<UserRule> =
+        ruleDao.getEnabledByType(type, System.currentTimeMillis())
 }

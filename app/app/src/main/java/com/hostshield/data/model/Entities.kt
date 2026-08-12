@@ -65,7 +65,8 @@ fun HostSource.hasActiveHealthFailure(): Boolean =
     tableName = "user_rules",
     indices = [
         Index(value = ["hostname"], unique = true),
-        Index(value = ["enabled", "type"])
+        Index(value = ["enabled", "type"]),
+        Index(value = ["expires_at"])
     ]
 )
 data class UserRule(
@@ -74,6 +75,7 @@ data class UserRule(
     @ColumnInfo(name = "type") val type: RuleType = RuleType.BLOCK,
     @ColumnInfo(name = "redirect_ip") val redirectIp: String = "",
     @ColumnInfo(name = "comment") val comment: String = "",
+    @ColumnInfo(name = "expires_at", defaultValue = "0") val expiresAt: Long = 0L,
     @ColumnInfo(name = "enabled") val enabled: Boolean = true,
     @ColumnInfo(name = "is_wildcard") val isWildcard: Boolean = false,
     @ColumnInfo(name = "is_regex") val isRegex: Boolean = false,

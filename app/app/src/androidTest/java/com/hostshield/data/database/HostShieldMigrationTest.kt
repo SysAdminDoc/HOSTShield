@@ -111,11 +111,13 @@ class HostShieldMigrationTest {
         assertColumn(db, "firewall_rules", "blocked_countries")
         assertColumn(db, "firewall_rules", "lan_allowed")
         assertColumn(db, "app_dns_rules", "created_at")
+        assertColumn(db, "user_rules", "expires_at")
         assertIndex(db, "index_dns_logs_app_package_blocked_timestamp")
         assertIndex(db, "index_dns_logs_app_package_hostname")
         assertIndex(db, "index_host_sources_enabled")
         assertIndex(db, "index_host_sources_category")
         assertIndex(db, "index_user_rules_enabled_type")
+        assertIndex(db, "index_user_rules_expires_at")
     }
 
     private fun assertSeedDataSurvived(db: SupportSQLiteDatabase, version: Int) {
@@ -321,8 +323,13 @@ class HostShieldMigrationTest {
             insertHostSource("https://adaway.org/hosts.txt", "AdAway Default", builtInEnabled)
             insertHostSource("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", "StevenBlack Unified", builtInEnabled)
             if (version >= 19) {
+                val spotifyUrl = if (version >= 20) {
+                    "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/SpotifyAds.txt"
+                } else {
+                    "https://raw.githubusercontent.com/Mireli5656/adblock360-/refs/heads/main/lists/spotifyadlist.hosts"
+                }
                 insertHostSource(
-                    "https://raw.githubusercontent.com/Mireli5656/adblock360-/refs/heads/main/lists/spotifyadlist.hosts",
+                    spotifyUrl,
                     "Spotify Ads",
                     0
                 )

@@ -27,7 +27,14 @@ class RulesViewModel @Inject constructor(
     val appRules: StateFlow<List<AppDnsRule>> = appDnsRuleDao.getAllRules()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun addRule(hostname: String, type: RuleType, redirectIp: String = "", comment: String = "", isRegex: Boolean = false) {
+    fun addRule(
+        hostname: String,
+        type: RuleType,
+        redirectIp: String = "",
+        comment: String = "",
+        isRegex: Boolean = false,
+        expiresAt: Long = 0L,
+    ) {
         // Trim BEFORE the wildcard check: " *.example.com" must classify as a
         // wildcard, not be stored as an exact rule for a literal "*." string
         // that can never match a DNS hostname.
@@ -37,7 +44,10 @@ class RulesViewModel @Inject constructor(
             repository.addRule(UserRule(
                 hostname = trimmed.let { if (isRegex) it else it.lowercase() },
                 type = type, redirectIp = redirectIp,
-                comment = comment, isWildcard = isWild, isRegex = isRegex
+                comment = comment.trim().take(500),
+                expiresAt = expiresAt.coerceAtLeast(0L),
+                isWildcard = isWild,
+                isRegex = isRegex,
             ))
         }
     }

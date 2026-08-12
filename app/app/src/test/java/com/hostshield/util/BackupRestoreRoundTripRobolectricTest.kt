@@ -122,7 +122,9 @@ class BackupRestoreRoundTripRobolectricTest {
             com.hostshield.data.model.UserRule(
                 hostname = "*.ads.example",
                 type = RuleType.BLOCK,
-                isWildcard = true
+                isWildcard = true,
+                comment = "temporary exception",
+                expiresAt = 1_800_000_000_000L,
             )
         )
         database.profileDao().insert(
@@ -186,6 +188,8 @@ class BackupRestoreRoundTripRobolectricTest {
         assertEquals(1, result.firewallRulesCount)
         assertEquals(1, database.hostSourceDao().getAllSourcesList().size)
         assertEquals("*.ads.example", database.userRuleDao().getAllRulesList().single().hostname)
+        assertEquals("temporary exception", database.userRuleDao().getAllRulesList().single().comment)
+        assertEquals(1_800_000_000_000L, database.userRuleDao().getAllRulesList().single().expiresAt)
         assertEquals("Office", database.profileDao().getAllProfilesList().single().wifiSsids)
         assertEquals("*.ads.example", database.appDnsRuleDao().getAllRulesList().single().domain)
         coVerify { restorePrefs.setLanDnsPort(5354) }

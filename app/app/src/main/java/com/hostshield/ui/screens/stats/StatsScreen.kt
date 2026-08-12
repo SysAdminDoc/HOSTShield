@@ -37,6 +37,7 @@ import com.hostshield.data.database.ThreatIntelDailyImpact
 import com.hostshield.data.database.ThreatIntelFeedImpact
 import com.hostshield.data.database.ThreatIntelTopApp
 import com.hostshield.data.database.ThreatIntelTopDomain
+import com.hostshield.data.model.BlockReasonFacet
 import com.hostshield.ui.components.HostShieldCompactState
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
@@ -236,6 +237,63 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel(), onNavigateToLogs: (
                                     nf.format(stat.cnt),
                                     color = TextDim, fontSize = 10.sp
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Block reason facets
+        if (state.blockReasonStats.isNotEmpty()) {
+            item {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Red.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(Icons.Filled.Category, null, tint = Red, modifier = Modifier.size(14.dp))
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Text("Block Reasons (7d)", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        val maxCount = state.blockReasonStats.maxOf { it.count }.coerceAtLeast(1)
+                        state.blockReasonStats.take(7).forEach { stat ->
+                            val color = blockReasonColor(stat.facet)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    stat.facet.label,
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.width(126.dp),
+                                    maxLines = 1,
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(12.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Surface3),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxHeight()
+                                            .fillMaxWidth((stat.count.toFloat() / maxCount).coerceIn(0.02f, 1f))
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(color),
+                                    )
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                Text(nf.format(stat.count), color = color, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -1022,6 +1080,17 @@ private fun MiniStat(modifier: Modifier, label: String, value: String, color: Co
             Text(label, color = TextSecondary, fontSize = 10.sp)
         }
     }
+}
+
+@Composable
+private fun blockReasonColor(facet: BlockReasonFacet): Color = when (facet) {
+    BlockReasonFacet.SOURCE -> Blue
+    BlockReasonFacet.THREAT_INTEL -> Red
+    BlockReasonFacet.CONTENT_CATEGORY -> Peach
+    BlockReasonFacet.USER_RULE -> Teal
+    BlockReasonFacet.REGEX -> Mauve
+    BlockReasonFacet.APP_POLICY -> Green
+    BlockReasonFacet.OTHER -> TextDim
 }
 
 @Composable

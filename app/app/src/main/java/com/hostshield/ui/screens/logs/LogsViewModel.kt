@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.model.AppDnsRule
+import com.hostshield.data.model.BlockReasonFacet
 import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
+import com.hostshield.data.model.blockReasonFacet
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.preferences.SavedDenseListFilter
 import com.hostshield.data.repository.HostShieldRepository
@@ -44,27 +46,30 @@ data class DedupedLogEntry(
     val decisionReason: String = "",
     val decisionSource: String = "",
     val matchedValue: String = "",
-    val decisionPrecedence: String = ""
+    val decisionPrecedence: String = "",
+    val reasonFacets: Set<BlockReasonFacet> = emptySet(),
 )
 
 private data class LogFilters(
     val query: String,
     val blocked: Boolean?,
     val queryType: String?,
-    val threatIntelOnly: Boolean
+    val threatIntelOnly: Boolean,
+    val reasonFacet: BlockReasonFacet?
 )
 
 private val THREAT_INTEL_DECISION_REASONS = setOf("threat_intel_domain", "threat_intel_ip")
 private const val LOGS_SAVED_FILTER_SCREEN = "logs"
 
 private fun LogFilters.isActive(): Boolean =
-    query.isNotBlank() || blocked != null || queryType != null || threatIntelOnly
+    query.isNotBlank() || blocked != null || queryType != null || threatIntelOnly || reasonFacet != null
 
 private fun LogFilters.describe(): String = buildList {
     if (query.isNotBlank()) add("\"${query.trim().take(18)}\"")
     blocked?.let { add(if (it) "Blocked" else "Allowed") }
     queryType?.let { add(it.uppercase()) }
     if (threatIntelOnly) add("Threat review")
+    reasonFacet?.let { add(it.label) }
 }.joinToString(" + ").ifBlank { "DNS filter" }
 
 private fun LogFilters.toPayload(): String = JSONObject()
@@ -72,6 +77,7 @@ private fun LogFilters.toPayload(): String = JSONObject()
     .put("blocked", blocked)
     .put("queryType", queryType)
     .put("threatIntelOnly", threatIntelOnly)
+    .put("reasonFacet", reasonFacet?.key ?: JSONObject.NULL)
     .toString()
 
 private fun logFiltersFromPayload(payload: String): LogFilters? = runCatching {
@@ -80,7 +86,8 @@ private fun logFiltersFromPayload(payload: String): LogFilters? = runCatching {
         query = json.optString("query"),
         blocked = if (json.has("blocked") && !json.isNull("blocked")) json.getBoolean("blocked") else null,
         queryType = json.optString("queryType").takeIf { it.isNotBlank() },
-        threatIntelOnly = json.optBoolean("threatIntelOnly", false)
+        threatIntelOnly = json.optBoolean("threatIntelOnly", false),
+        reasonFacet = if (json.isNull("reasonFacet")) null else BlockReasonFacet.fromKey(json.optString("reasonFacet"))
     )
 }.getOrNull()
 
@@ -116,6 +123,9 @@ class LogsViewModel @Inject constructor(
     private val _threatIntelOnly = MutableStateFlow(false)
     val threatIntelOnly = _threatIntelOnly.asStateFlow()
 
+    private val _reasonFacet = MutableStateFlow<BlockReasonFacet?>(null)
+    val reasonFacet = _reasonFacet.asStateFlow()
+
     // Authoritative set of blocked hostnames — loaded from DB + blocklist on init,
     // updated instantly on block/allow actions. Persists across sessions via DB.
     private val _blockedHostnames = MutableStateFlow<Set<String>>(emptySet())
@@ -131,9 +141,21 @@ class LogsViewModel @Inject constructor(
     val isLoading = _isLoading.asStateFlow()
 
     private val filters: Flow<LogFilters> =
-        combine(_searchQuery, _showBlocked, _queryTypeFilter, _threatIntelOnly) { query, blocked, queryType, threatIntelOnly ->
-            LogFilters(query, blocked, queryType, threatIntelOnly)
+        combine(_searchQuery, _showBlocked, _queryTypeFilter, _threatIntelOnly, _reasonFacet) {
+                query, blocked, queryType, threatIntelOnly, reasonFacet ->
+            LogFilters(query, blocked, queryType, threatIntelOnly, reasonFacet)
         }
+
+    val reasonFacetCounts: StateFlow<Map<BlockReasonFacet, Int>> = logs
+        .map { logList ->
+            logList.asSequence()
+                .filter { it.blocked && it.decisionReason.isNotBlank() }
+                .map { blockReasonFacet(it.decisionReason, it.decisionSource) }
+                .groupingBy { it }
+                .eachCount()
+        }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val deduped: StateFlow<List<DedupedLogEntry>> =
         combine(logs, _blockedHostnames, _allowedHostnames, filters) { logList, blockedSet, allowedSet, filterState ->
@@ -158,14 +180,20 @@ class LogsViewModel @Inject constructor(
                         decisionReason = latest?.decisionReason ?: "",
                         decisionSource = latest?.decisionSource ?: "",
                         matchedValue = latest?.matchedValue ?: "",
-                        decisionPrecedence = latest?.decisionPrecedence ?: ""
+                        decisionPrecedence = latest?.decisionPrecedence ?: "",
+                        reasonFacets = entries.asSequence()
+                            .filter { it.blocked && it.decisionReason.isNotBlank() }
+                            .map { blockReasonFacet(it.decisionReason, it.decisionSource) }
+                            .toSet(),
                     )
                 }
                 .filter { entry ->
                     (filterState.query.isBlank() || entry.hostname.contains(filterState.query, ignoreCase = true) || entry.appPackage.contains(filterState.query, ignoreCase = true)) &&
                     (filterState.blocked == null || entry.blocked == filterState.blocked) &&
                     (filterState.queryType == null || entry.queryType.equals(filterState.queryType, ignoreCase = true)) &&
-                    (!filterState.threatIntelOnly || entry.isThreatIntelBlock())
+                    (!filterState.threatIntelOnly || entry.isThreatIntelBlock()) &&
+                    (filterState.reasonFacet == null ||
+                        (entry.blocked && filterState.reasonFacet in entry.reasonFacets))
                 }
                 .sortedByDescending { it.latestTimestamp }
         }
@@ -241,11 +269,13 @@ class LogsViewModel @Inject constructor(
     fun setFilter(blocked: Boolean?) { _showBlocked.value = blocked }
     fun setQueryTypeFilter(type: String?) { _queryTypeFilter.value = type }
     fun setThreatIntelOnly(enabled: Boolean) { _threatIntelOnly.value = enabled }
+    fun setReasonFacet(facet: BlockReasonFacet?) { _reasonFacet.value = facet }
     fun clearFilters() {
         _searchQuery.value = ""
         _showBlocked.value = null
         _queryTypeFilter.value = null
         _threatIntelOnly.value = false
+        _reasonFacet.value = null
     }
 
     fun saveCurrentFilter() {
@@ -253,7 +283,8 @@ class LogsViewModel @Inject constructor(
             query = _searchQuery.value,
             blocked = _showBlocked.value,
             queryType = _queryTypeFilter.value,
-            threatIntelOnly = _threatIntelOnly.value
+            threatIntelOnly = _threatIntelOnly.value,
+            reasonFacet = _reasonFacet.value,
         )
         if (!current.isActive()) return
         viewModelScope.launch {
@@ -271,6 +302,7 @@ class LogsViewModel @Inject constructor(
             _showBlocked.value = saved.blocked
             _queryTypeFilter.value = saved.queryType
             _threatIntelOnly.value = saved.threatIntelOnly
+            _reasonFacet.value = saved.reasonFacet
         }
     }
 

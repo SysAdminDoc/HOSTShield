@@ -74,7 +74,8 @@ class RulesViewModelTest {
     @Test
     fun `addRule invokes repository with correct UserRule`() = runTest {
         val vm = createViewModel()
-        vm.addRule("Ads.Example.COM", RuleType.BLOCK, comment = "test rule")
+        val expiresAt = System.currentTimeMillis() + 60_000L
+        vm.addRule("Ads.Example.COM", RuleType.BLOCK, comment = "test rule", expiresAt = expiresAt)
         advanceUntilIdle()
 
         coVerify {
@@ -82,6 +83,7 @@ class RulesViewModelTest {
                 it.hostname == "ads.example.com" &&
                     it.type == RuleType.BLOCK &&
                     it.comment == "test rule" &&
+                    it.expiresAt == expiresAt &&
                     !it.isWildcard &&
                     !it.isRegex
             })

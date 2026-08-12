@@ -48,6 +48,17 @@ import com.hostshield.ui.components.HostShieldScreenHeader
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
 import com.hostshield.util.BackupRestoreUtil
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+private val RULE_EXPIRY_OPTIONS = listOf(
+    0L to "Never",
+    60 * 60 * 1000L to "1 hour",
+    24 * 60 * 60 * 1000L to "1 day",
+    7 * 24 * 60 * 60 * 1000L to "7 days",
+    30 * 24 * 60 * 60 * 1000L to "30 days",
+)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -204,8 +215,8 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
     if (showAddDialog) {
         AddRuleDialog(
             onDismiss = { showAddDialog = false },
-            onAdd = { host, type, redir, comment, isRegex ->
-                viewModel.addRule(host, type, redir, comment, isRegex)
+            onAdd = { host, type, redir, comment, isRegex, expiresAt ->
+                viewModel.addRule(host, type, redir, comment, isRegex, expiresAt)
                 showAddDialog = false
             }
         )
@@ -280,6 +291,15 @@ private fun RuleItem(rule: UserRule, onToggle: (Boolean) -> Unit, onDelete: () -
                 }
                 if (rule.comment.isNotEmpty()) {
                     Text(rule.comment, color = TextDim, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                if (rule.expiresAt > 0L) {
+                    val expired = rule.expiresAt <= System.currentTimeMillis()
+                    Text(
+                        if (expired) "Expired" else "Expires ${formatRuleExpiry(rule.expiresAt)}",
+                        color = if (expired) Red else Yellow,
+                        fontSize = 10.sp,
+                        maxLines = 1,
+                    )
                 }
             }
             IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
@@ -380,12 +400,16 @@ private fun AppRuleItem(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, String, String, Boolean) -> Unit) {
+private fun AddRuleDialog(
+    onDismiss: () -> Unit,
+    onAdd: (String, RuleType, String, String, Boolean, Long) -> Unit,
+) {
     var hostname by rememberSaveable { mutableStateOf("") }
     var type by rememberSaveable { mutableStateOf(RuleType.BLOCK) }
     var redirectIp by rememberSaveable { mutableStateOf("") }
     var comment by rememberSaveable { mutableStateOf("") }
     var isRegex by rememberSaveable { mutableStateOf(false) }
+    var expiryDurationMs by rememberSaveable { mutableStateOf(0L) }
     var regexError by remember { mutableStateOf<String?>(null) }
     val redirectError = remember(type, redirectIp) {
         when {
@@ -480,13 +504,32 @@ private fun AddRuleDialog(onDismiss: () -> Unit, onAdd: (String, RuleType, Strin
                     modifier = Modifier.fillMaxWidth(),
                     colors = fieldColors()
                 )
+                Text("Expiry", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    RULE_EXPIRY_OPTIONS.forEach { (durationMs, label) ->
+                        HostShieldFilterChip(
+                            label = label,
+                            selected = expiryDurationMs == durationMs,
+                            onClick = { expiryDurationMs = durationMs },
+                            accent = Yellow,
+                            semanticsLabel = "Rule expiry $label",
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
                     if (canSubmit) {
-                        onAdd(hostname, type, redirectIp, comment, isRegex)
+                        val expiresAt = expiryDurationMs
+                            .takeIf { it > 0L }
+                            ?.let { System.currentTimeMillis() + it }
+                            ?: 0L
+                        onAdd(hostname, type, redirectIp, comment, isRegex, expiresAt)
                     }
                 },
                 enabled = canSubmit,
@@ -512,6 +555,14 @@ private fun validateRegexPattern(pattern: String): String? =
     } catch (_: Exception) {
         "Invalid regex pattern."
     }
+
+private fun formatRuleExpiry(expiresAt: Long): String = try {
+    Instant.ofEpochMilli(expiresAt)
+        .atZone(ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofPattern("MMM d, h:mm a"))
+} catch (_: Exception) {
+    "soon"
+}
 
 @Composable
 private fun ruleColor(type: RuleType?): Color = when (type) {

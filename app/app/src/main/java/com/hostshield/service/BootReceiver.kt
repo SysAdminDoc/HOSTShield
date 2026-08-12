@@ -54,6 +54,7 @@ class BootReceiver : BroadcastReceiver() {
                 SourceHealthWorker.schedule(context, wifiOnly)
                 LogCleanupWorker.schedule(context)
                 ProfileScheduleWorker.schedule(context)
+                RuleExpiryWorker.schedule(context)
                 // Re-register the blocking schedule after a restore onto a fresh
                 // install: WorkManager persistence only covers the install that
                 // enqueued the worker, and restoreBackup() can land

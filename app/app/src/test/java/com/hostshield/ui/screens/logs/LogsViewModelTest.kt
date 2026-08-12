@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostshield.data.database.AppDnsRuleDao
+import com.hostshield.data.model.BlockReasonFacet
 import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
@@ -147,6 +148,7 @@ class LogsViewModelTest {
         vm.setFilter(true)
         vm.setQueryTypeFilter("AAAA")
         vm.setThreatIntelOnly(true)
+        vm.setReasonFacet(BlockReasonFacet.THREAT_INTEL)
         vm.saveCurrentFilter()
         advanceUntilIdle()
 
@@ -158,7 +160,8 @@ class LogsViewModelTest {
                     it.contains("\"query\":\"ads\"") &&
                         it.contains("\"blocked\":true") &&
                         it.contains("\"queryType\":\"AAAA\"") &&
-                        it.contains("\"threatIntelOnly\":true")
+                        it.contains("\"threatIntelOnly\":true") &&
+                        it.contains("\"reasonFacet\":\"threat_intel\"")
                 }
             )
         }
@@ -168,6 +171,7 @@ class LogsViewModelTest {
         assertNull(vm.showBlocked.value)
         assertNull(vm.queryTypeFilter.value)
         assertFalse(vm.threatIntelOnly.value)
+        assertNull(vm.reasonFacet.value)
 
         vm.applySavedFilter(
             SavedDenseListFilter(
@@ -182,11 +186,38 @@ class LogsViewModelTest {
         assertEquals(true, vm.showBlocked.value)
         assertEquals("AAAA", vm.queryTypeFilter.value)
         assertTrue(vm.threatIntelOnly.value)
+        assertNull(vm.reasonFacet.value)
 
         vm.clearSavedFilters()
         advanceUntilIdle()
 
         coVerify { uiPreferences.clearDenseListFilters("logs") }
+    }
+
+    @Test
+    fun `reason facet filter keeps domains with matching blocked provenance`() = runTest {
+        val vm = createViewModel()
+        vm.deduped.test {
+            assertEquals(emptyList<String>(), awaitItem().map { it.hostname })
+            logsFlow.value = listOf(
+                DnsLogEntry(
+                    hostname = "feed.example",
+                    blocked = true,
+                    decisionReason = "threat_intel_domain",
+                    decisionSource = "URLhaus",
+                ),
+                DnsLogEntry(
+                    hostname = "list.example",
+                    blocked = true,
+                    decisionReason = "source_list",
+                    decisionSource = "AdGuard",
+                ),
+            )
+            vm.setReasonFacet(BlockReasonFacet.THREAT_INTEL)
+
+            assertEquals(listOf("feed.example"), awaitItem().map { it.hostname })
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test

@@ -85,17 +85,17 @@ interface UserRuleDao {
     @Query("SELECT * FROM user_rules ORDER BY type, hostname")
     suspend fun getAllRulesList(): List<UserRule>
 
-    @Query("SELECT * FROM user_rules WHERE type = :type AND enabled = 1")
-    suspend fun getEnabledByType(type: RuleType): List<UserRule>
+    @Query("SELECT * FROM user_rules WHERE type = :type AND enabled = 1 AND (expires_at = 0 OR expires_at > :now)")
+    suspend fun getEnabledByType(type: RuleType, now: Long): List<UserRule>
 
     @Query("SELECT * FROM user_rules WHERE type = :type")
     fun getByType(type: RuleType): Flow<List<UserRule>>
 
-    @Query("SELECT * FROM user_rules WHERE is_wildcard = 1 AND enabled = 1")
-    suspend fun getEnabledWildcards(): List<UserRule>
+    @Query("SELECT * FROM user_rules WHERE is_wildcard = 1 AND enabled = 1 AND (expires_at = 0 OR expires_at > :now)")
+    suspend fun getEnabledWildcards(now: Long): List<UserRule>
 
-    @Query("SELECT * FROM user_rules WHERE is_regex = 1 AND enabled = 1")
-    suspend fun getEnabledRegexRules(): List<UserRule>
+    @Query("SELECT * FROM user_rules WHERE is_regex = 1 AND enabled = 1 AND (expires_at = 0 OR expires_at > :now)")
+    suspend fun getEnabledRegexRules(now: Long): List<UserRule>
 
     @Query("SELECT * FROM user_rules WHERE hostname LIKE '%' || :query || '%' ESCAPE '\'")
     fun search(query: String): Flow<List<UserRule>>
@@ -120,6 +120,9 @@ interface UserRuleDao {
 
     @Query("UPDATE user_rules SET enabled = :enabled WHERE id = :id")
     suspend fun setEnabled(id: Long, enabled: Boolean)
+
+    @Query("UPDATE user_rules SET enabled = 0 WHERE enabled = 1 AND expires_at > 0 AND expires_at <= :now")
+    suspend fun disableExpired(now: Long): Int
 
     @Query("SELECT EXISTS(SELECT 1 FROM user_rules WHERE hostname = :hostname)")
     suspend fun exists(hostname: String): Boolean
@@ -268,6 +271,16 @@ interface DnsLogDao {
         GROUP BY query_type ORDER BY cnt DESC LIMIT :limit
     """)
     fun getQueryTypeDistribution(since: Long, limit: Int = 10): Flow<List<QueryTypeStat>>
+
+    /** Blocked-query counts grouped by raw provenance for reason facets/charts. */
+    @Query("""
+        SELECT decision_reason, decision_source, COUNT(*) as cnt
+        FROM dns_logs
+        WHERE blocked = 1 AND timestamp > :since AND decision_reason != ''
+        GROUP BY decision_reason, decision_source
+        ORDER BY cnt DESC
+    """)
+    fun getBlockReasonCounts(since: Long): Flow<List<DecisionReasonCount>>
 
     /** Average DNS response time per hour (for latency chart). */
     @Query("""
@@ -667,6 +680,12 @@ data class ThreatIntelDailyImpact(
     val day: String,
     @ColumnInfo(name = "feed_name") val feedName: String,
     val cnt: Int
+)
+
+data class DecisionReasonCount(
+    @ColumnInfo(name = "decision_reason") val reason: String,
+    @ColumnInfo(name = "decision_source") val source: String,
+    val cnt: Int,
 )
 
 @Dao

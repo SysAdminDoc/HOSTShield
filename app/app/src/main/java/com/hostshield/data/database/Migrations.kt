@@ -25,6 +25,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - v18: Added dns_logs(app_package, hostname) index for app-domain aggregation
  * - v19: Add Spotify Ads built-in source and clear disabled-source health errors
  * - v20: Move Spotify Ads to the HostShield-maintained blocklist
+ * - v21: Add optional expiry timestamps to user rules
  */
 object Migrations {
 
@@ -431,6 +432,13 @@ object Migrations {
         }
     }
 
+    val MIGRATION_20_21 = object : Migration(20, 21) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE user_rules ADD COLUMN expires_at INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_user_rules_expires_at ON user_rules (expires_at)")
+        }
+    }
+
     /** All migrations in order. Pass to Room.databaseBuilder().addMigrations(). */
     val ALL = arrayOf(
         MIGRATION_1_2,
@@ -451,6 +459,7 @@ object Migrations {
         MIGRATION_16_17,
         MIGRATION_17_18,
         MIGRATION_18_19,
-        MIGRATION_19_20
+        MIGRATION_19_20,
+        MIGRATION_20_21
     )
 }

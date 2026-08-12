@@ -10,6 +10,8 @@ import com.hostshield.data.database.ThreatIntelTopDomain
 import com.hostshield.data.database.TopApp
 import com.hostshield.data.database.TopHostname
 import com.hostshield.data.model.BlockStats
+import com.hostshield.data.model.BlockReasonFacet
+import com.hostshield.data.model.blockReasonFacet
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.service.ThreatIntelManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +29,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class BlockReasonSummary(
+    val facet: BlockReasonFacet,
+    val count: Int,
+)
+
 data class StatsUiState(
     val totalBlocked: Int = 0,
     val totalQueries: Int = 0,
@@ -41,6 +48,7 @@ data class StatsUiState(
     val dailyTrend: List<com.hostshield.data.database.DailyBreakdown> = emptyList(),
     val hourlyLatency: List<com.hostshield.data.database.HourlyLatency> = emptyList(),
     val queryTypeDistribution: List<com.hostshield.data.database.QueryTypeStat> = emptyList(),
+    val blockReasonStats: List<BlockReasonSummary> = emptyList(),
     // DNS Cache stats
     val cacheSize: Int = 0,
     val cacheHitRate: Float = 0f,
@@ -230,6 +238,13 @@ class StatsViewModel @Inject constructor(
             }
         }
         windowedCollect({ repository.getQueryTypeDistribution(it.weekStart) }) { d -> _uiState.update { it.copy(queryTypeDistribution = d) } }
+        windowedCollect({ repository.getBlockReasonCounts(it.weekStart) }) { rows ->
+            val grouped = rows
+                .groupBy { blockReasonFacet(it.reason, it.source) }
+                .map { (facet, values) -> BlockReasonSummary(facet, values.sumOf { it.cnt }) }
+                .sortedByDescending { it.count }
+            _uiState.update { it.copy(blockReasonStats = grouped) }
+        }
         windowedCollect({ repository.getThreatIntelFeedImpact(it.last24hStart, it.weekStart) }) { impact -> _uiState.update { it.copy(threatIntelFeedImpact = impact) } }
         windowedCollect({ repository.getThreatIntelTopDomains(it.weekStart) }) { domains -> _uiState.update { it.copy(threatIntelTopDomains = domains) } }
         windowedCollect({ repository.getThreatIntelTopApps(it.weekStart) }) { apps -> _uiState.update { it.copy(threatIntelTopApps = apps) } }

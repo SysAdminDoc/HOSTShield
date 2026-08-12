@@ -177,6 +177,7 @@ class BackupRestoreUtil @Inject constructor(
                 put("redirect_ip", rule.redirectIp)
                 put("enabled", rule.enabled)
                 put("comment", rule.comment)
+                put("expires_at", rule.expiresAt)
                 put("is_wildcard", rule.isWildcard)
                 put("is_regex", rule.isRegex)
             })
@@ -428,6 +429,7 @@ class BackupRestoreUtil @Inject constructor(
                     redirectIp = if (type == RuleType.REDIRECT) redirectIp else "",
                     enabled = obj.optBoolean("enabled", true),
                     comment = boundedText(obj.optString("comment", ""), 500),
+                    expiresAt = obj.optLong("expires_at", 0L).coerceAtLeast(0L),
                     isWildcard = isWildcard && !isRegex,
                     isRegex = isRegex
                 ))

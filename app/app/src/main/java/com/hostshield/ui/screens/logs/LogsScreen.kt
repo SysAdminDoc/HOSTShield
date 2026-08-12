@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hostshield.data.model.BlockReasonFacet
 import com.hostshield.ui.accessibility.accessibilityAction
 import com.hostshield.ui.accessibility.accessibilityHeading
 import com.hostshield.ui.accessibility.accessibilityToggle
@@ -61,6 +62,8 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val blockedFilter by viewModel.showBlocked.collectAsStateWithLifecycle()
     val threatIntelOnly by viewModel.threatIntelOnly.collectAsStateWithLifecycle()
+    val selectedReasonFacet by viewModel.reasonFacet.collectAsStateWithLifecycle()
+    val reasonFacetCounts by viewModel.reasonFacetCounts.collectAsStateWithLifecycle()
     val pinnedSet by viewModel.pinnedDomains.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -253,11 +256,26 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
                     semanticsLabel = "$label DNS query type filter",
                 )
             }
+            BlockReasonFacet.entries
+                .filter { (reasonFacetCounts[it] ?: 0) > 0 }
+                .forEach { facet ->
+                    val count = reasonFacetCounts[facet] ?: 0
+                    HostShieldFilterChip(
+                        label = "${facet.label} ($count)",
+                        selected = selectedReasonFacet == facet,
+                        onClick = {
+                            viewModel.setReasonFacet(if (selectedReasonFacet == facet) null else facet)
+                        },
+                        accent = blockReasonFacetColor(facet),
+                        semanticsLabel = "${facet.label} DNS block reason filter",
+                    )
+                }
         }
 
         Spacer(Modifier.height(8.dp))
 
-        val hasActiveFilters = query.isNotBlank() || blockedFilter != null || queryTypeFilter != null || threatIntelOnly
+        val hasActiveFilters = query.isNotBlank() || blockedFilter != null || queryTypeFilter != null ||
+            threatIntelOnly || selectedReasonFacet != null
         if (hasActiveFilters || savedFilters.isNotEmpty()) {
             HostShieldSavedFilterBar(
                 screen = "logs",
@@ -402,6 +420,17 @@ private fun LogFilter(label: String, selected: Boolean, accent: Color = Teal, on
         accent = accent,
         semanticsLabel = "$label DNS log filter",
     )
+}
+
+@Composable
+private fun blockReasonFacetColor(facet: BlockReasonFacet): Color = when (facet) {
+    BlockReasonFacet.SOURCE -> Blue
+    BlockReasonFacet.THREAT_INTEL -> Red
+    BlockReasonFacet.CONTENT_CATEGORY -> Peach
+    BlockReasonFacet.USER_RULE -> Teal
+    BlockReasonFacet.REGEX -> Mauve
+    BlockReasonFacet.APP_POLICY -> Green
+    BlockReasonFacet.OTHER -> TextDim
 }
 
 @Composable

@@ -146,7 +146,7 @@ class ImportExportUtilTest {
     @Test
     fun `rules JSON round trip preserves exact wildcard regex and IPv6 redirect rules`() = runBlocking {
         val original = listOf(
-            UserRule(hostname = "ads.example.com", type = RuleType.BLOCK),
+            UserRule(hostname = "ads.example.com", type = RuleType.BLOCK, comment = "temporary", expiresAt = 1_800_000_000_000L),
             UserRule(hostname = "*.wild.example", type = RuleType.BLOCK, isWildcard = true),
             UserRule(hostname = """^ad[0-9]+\.example\.com$""", type = RuleType.BLOCK, isRegex = true),
             UserRule(hostname = "v4.example.com", type = RuleType.REDIRECT, redirectIp = "10.1.2.3"),
@@ -162,6 +162,8 @@ class ImportExportUtilTest {
         assertEquals("""^ad[0-9]+\.example\.com$""", regex.hostname)
         assertFalse("a regex rule is not also a wildcard", regex.isWildcard)
         assertTrue("wildcard rule survives", all.any { it.isWildcard && it.hostname == "*.wild.example" })
+        assertEquals(1_800_000_000_000L, all.single { it.hostname == "ads.example.com" }.expiresAt)
+        assertEquals("temporary", all.single { it.hostname == "ads.example.com" }.comment)
         assertTrue("IPv6 redirect survives", all.any { it.redirectIp == "fd00::5" })
         assertTrue("IPv4 redirect survives", all.any { it.redirectIp == "10.1.2.3" })
     }
