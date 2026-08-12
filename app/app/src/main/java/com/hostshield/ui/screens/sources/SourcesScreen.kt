@@ -610,6 +610,26 @@ private fun SourceItem(
                         }
                     }
                 }
+                if (source.health == SourceHealth.OK && source.lastError.isNotBlank()) {
+                    Spacer(Modifier.height(7.dp))
+                    Row(verticalAlignment = Alignment.Top) {
+                        Icon(
+                            Icons.Filled.Info,
+                            contentDescription = null,
+                            tint = Yellow.copy(alpha = 0.8f),
+                            modifier = Modifier.size(13.dp).padding(top = 1.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            stringResource(R.string.sources_parse_diagnostics, source.lastError),
+                            color = Yellow.copy(alpha = 0.85f),
+                            fontSize = 10.sp,
+                            lineHeight = 14.sp,
+                            maxLines = 4,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
                 if (source.hasActiveHealthFailure()) {
                     Spacer(Modifier.height(7.dp))
                     Row(verticalAlignment = Alignment.Top) {

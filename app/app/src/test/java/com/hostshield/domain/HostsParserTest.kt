@@ -142,6 +142,32 @@ class HostsParserTest {
     }
 
     @Test
+    fun `parseForBlocking keeps app scoped block and allow rules out of global sets`() {
+        val result = HostsParser.parseForBlocking(
+            """
+                [Adblock Plus]
+                ||ads.example^${'$'}app=com.example.app
+                @@||ads.example^${'$'}app=~com.other.app
+                ||typed.example^${'$'}dnstype=AAAA,app=com.example.app
+            """.trimIndent()
+        )
+
+        assertTrue(result.blockDomains.isEmpty())
+        assertTrue(result.wildcardBlockDomains.isEmpty())
+        assertEquals(3, result.appScopedRules.size)
+        assertTrue(result.appScopedRules.any {
+            it.domain == "ads.example" && it.packageName == "com.example.app" && !it.isException
+        })
+        assertTrue(result.appScopedRules.any {
+            it.domain == "ads.example" && it.packageName == "com.other.app" && it.packageNegated && it.isException
+        })
+        assertTrue(result.appScopedRules.any {
+            it.domain == "typed.example" && it.dnsTypes == setOf(28)
+        })
+        assertTrue(result.parseWarning.contains("Applied 3 app-scoped AdGuard rule(s)"))
+    }
+
+    @Test
     fun `important block outranks non-important allow in the same source`() {
         val content = """
             [Adblock Plus]

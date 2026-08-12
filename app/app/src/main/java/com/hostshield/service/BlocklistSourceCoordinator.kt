@@ -10,6 +10,7 @@ import com.hostshield.data.source.SourceDownloader
 import com.hostshield.data.source.sourceHttpStatus
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.domain.DnsTypeRule
+import com.hostshield.domain.ScopedAppDnsRule
 import com.hostshield.domain.ScopedDenyAllowRule
 import com.hostshield.domain.parser.HostsParser
 import javax.inject.Inject
@@ -23,6 +24,7 @@ data class BlocklistSourceSnapshot(
     val sourceWildcardBlocks: Set<String>,
     val sourceWildcardAllows: Set<String>,
     val dnsTypeRules: List<DnsTypeRule>,
+    val appScopedRules: List<ScopedAppDnsRule> = emptyList(),
     val scopedDenyAllowRules: List<ScopedDenyAllowRule> = emptyList(),
     val exactBlockOrigins: Map<String, String>,
     val wildcardBlockOrigins: Map<String, String>,
@@ -61,6 +63,7 @@ class BlocklistSourceCoordinator @Inject constructor(
     private val downloader: SourceDownloader,
     private val blocklistHolder: BlocklistHolder,
     private val dohBypassUpdater: DohBypassUpdater,
+    private val appDnsRuleEngine: AppDnsRuleEngine,
 ) {
     // Serializes rebuilds: VPN startup, the periodic worker, the profile
     // scheduler, and manual Home applies can all call rebuildBlocklistHolder
@@ -76,6 +79,7 @@ class BlocklistSourceCoordinator @Inject constructor(
         val wildcardBlocks: Set<String>,
         val wildcardAllows: Set<String>,
         val dnsTypeRules: List<DnsTypeRule>,
+        val appScopedRules: List<ScopedAppDnsRule>,
         val scopedDenyAllowRules: List<ScopedDenyAllowRule>,
     )
     // In-memory carry-forward so a single source failing a rebuild doesn't drop
@@ -114,6 +118,7 @@ class BlocklistSourceCoordinator @Inject constructor(
         val sourceWildcardBlocks = mutableSetOf<String>()
         val sourceWildcardAllows = mutableSetOf<String>()
         val dnsTypeRules = mutableListOf<DnsTypeRule>()
+        val appScopedRules = mutableListOf<ScopedAppDnsRule>()
         val scopedDenyAllowRules = mutableListOf<ScopedDenyAllowRule>()
         val exactBlockOrigins = mutableMapOf<String, String>()
         val wildcardBlockOrigins = mutableMapOf<String, String>()
@@ -142,6 +147,7 @@ class BlocklistSourceCoordinator @Inject constructor(
                 }
                 sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                 dnsTypeRules.addAll(normalizedDnsTypes)
+                appScopedRules.addAll(parsed.appScopedRules.map { it.normalized(source.label) })
                 scopedDenyAllowRules.addAll(normalizedScopedDenyAllows)
                 // Remember this good parse so a later failure can carry it forward.
                 lastGoodBlockSources[source.id] = CachedBlockSource(
@@ -150,6 +156,7 @@ class BlocklistSourceCoordinator @Inject constructor(
                     wildcardBlocks = parsed.wildcardBlockDomains,
                     wildcardAllows = parsed.wildcardAllowDomains,
                     dnsTypeRules = normalizedDnsTypes,
+                    appScopedRules = parsed.appScopedRules.map { it.normalized(source.label) },
                     scopedDenyAllowRules = normalizedScopedDenyAllows,
                 )
                 persistSuccessfulDownload(source, dl, parsed.entryCount, parsed.parseWarning)
@@ -167,6 +174,7 @@ class BlocklistSourceCoordinator @Inject constructor(
                     }
                     sourceWildcardAllows.addAll(cached.wildcardAllows)
                     dnsTypeRules.addAll(cached.dnsTypeRules)
+                    appScopedRules.addAll(cached.appScopedRules)
                     scopedDenyAllowRules.addAll(cached.scopedDenyAllowRules)
                 }
                 val err = result.exceptionOrNull()
@@ -187,6 +195,7 @@ class BlocklistSourceCoordinator @Inject constructor(
                 sourceExactAllows.addAll(parsed.allowDomains)
                 sourceWildcardAllows.addAll(parsed.wildcardAllowDomains)
                 dnsTypeRules.addAll(parsed.dnsTypeAllowRules.map { it.normalized(source.label) })
+                appScopedRules.addAll(parsed.appScopedRules.map { it.normalized(source.label) })
                 persistSuccessfulDownload(source, dl, parsed.entryCount, parsed.parseWarning)
             } else {
                 val err = result.exceptionOrNull()
@@ -204,6 +213,7 @@ class BlocklistSourceCoordinator @Inject constructor(
             sourceWildcardBlocks = sourceWildcardBlocks,
             sourceWildcardAllows = sourceWildcardAllows,
             dnsTypeRules = dnsTypeRules,
+            appScopedRules = appScopedRules,
             scopedDenyAllowRules = scopedDenyAllowRules,
             exactBlockOrigins = exactBlockOrigins,
             wildcardBlockOrigins = wildcardBlockOrigins,
@@ -308,6 +318,7 @@ class BlocklistSourceCoordinator @Inject constructor(
             scopedDenyAllowRules = scopedDenyAllowRules,
             sourceWildcardBlockOriginLabels = snapshot.wildcardBlockOriginLabels,
         )
+        appDnsRuleEngine.replaceSourceRules(snapshot.appScopedRules)
 
         return@withLock BlocklistRebuildResult(
             domainCount = allDomains.size + sourceWildcardBlocks.size,

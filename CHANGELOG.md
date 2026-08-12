@@ -18,6 +18,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 - Consolidated the root README and changelog as the canonical documentation;
   legacy app-directory paths now point to them and the release gate no longer
   maintains duplicate-content checks.
+- Enforced valid `$app=<package>` source rules per querying package, including
+  negated scopes, while keeping `$client`/`$ctag` rules safely skipped and
+  surfacing applied/skipped scoped-rule counts in Sources.
 
 ## [v6.9.68] - 2026-08-11
 

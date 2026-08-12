@@ -27,6 +27,7 @@ class BlocklistSourceCoordinatorTest {
     private lateinit var downloader: SourceDownloader
     private lateinit var blocklistHolder: BlocklistHolder
     private lateinit var dohBypassUpdater: DohBypassUpdater
+    private lateinit var appDnsRuleEngine: AppDnsRuleEngine
     private lateinit var coordinator: BlocklistSourceCoordinator
 
     @Before
@@ -35,11 +36,13 @@ class BlocklistSourceCoordinatorTest {
         downloader = mockk()
         blocklistHolder = BlocklistHolder()
         dohBypassUpdater = mockk(relaxed = true)
+        appDnsRuleEngine = mockk(relaxed = true)
         coordinator = BlocklistSourceCoordinator(
             repository,
             downloader,
             blocklistHolder,
             dohBypassUpdater,
+            appDnsRuleEngine,
         )
 
         coEvery { repository.updateSource(any()) } just Runs
@@ -211,7 +214,7 @@ class BlocklistSourceCoordinatorTest {
     }
 
     @Test
-    fun `scoped AdGuard source rules stay skipped and persist parse warning`() = runTest {
+    fun `app scoped rules are applied and unsupported scopes persist parse warning`() = runTest {
         val source = HostSource(
             id = 11,
             url = "https://example.com/adguard.txt",
@@ -240,10 +243,13 @@ class BlocklistSourceCoordinatorTest {
         val snapshot = coordinator.downloadEnabledSourcesForFullSnapshot()
 
         assertEquals(setOf("global.example"), snapshot.sourceWildcardBlocks)
+        assertEquals(1, snapshot.appScopedRules.size)
+        assertEquals("com.example", snapshot.appScopedRules.single().packageName)
         assertFalse(snapshot.sourceWildcardBlocks.contains("scoped.example"))
         assertFalse(snapshot.sourceWildcardBlocks.contains("client.example"))
         val warning = parseWarnings.single()
-        assertTrue(warning.contains("Skipped 2 scoped AdGuard rule(s)"))
+        assertTrue(warning.contains("Applied 1 app-scoped AdGuard rule(s)"))
+        assertTrue(warning.contains("Skipped 1 scoped AdGuard rule(s)"))
         assertTrue(warning.contains("instead of applying them globally"))
     }
 

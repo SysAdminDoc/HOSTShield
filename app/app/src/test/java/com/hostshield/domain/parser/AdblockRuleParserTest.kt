@@ -10,9 +10,10 @@ import org.junit.Test
 class AdblockRuleParserTest {
 
     @Test
-    fun `scoped app rule is skipped`() {
+    fun `scoped app rule is parsed without globalizing it`() {
         val rule = AdblockRuleParser.parseLine("||tracker.com^\$app=com.example")
-        assertNull("Rule with \$app= must be skipped", rule)
+        assertNotNull(rule)
+        assertEquals(AdblockRuleParser.AppScope("com.example"), rule!!.appScope)
     }
 
     @Test
@@ -28,15 +29,25 @@ class AdblockRuleParserTest {
     }
 
     @Test
-    fun `scoped app rule with important is still skipped`() {
+    fun `scoped app rule with important keeps its scope`() {
         val rule = AdblockRuleParser.parseLine("||tracker.com^\$important,app=com.example")
-        assertNull("Rule with \$app= must be skipped even with \$important", rule)
+        assertNotNull(rule)
+        assertTrue(rule!!.isImportant)
+        assertEquals("com.example", rule.appScope?.packageName)
     }
 
     @Test
-    fun `negated app scope is skipped`() {
+    fun `negated app scope is parsed`() {
         val rule = AdblockRuleParser.parseLine("||tracker.com^\$app=~com.example")
-        assertNull("Rule with negated \$app= must be skipped", rule)
+        assertNotNull(rule)
+        assertEquals(AdblockRuleParser.AppScope("com.example", negated = true), rule!!.appScope)
+    }
+
+    @Test
+    fun `invalid app package is rejected`() {
+        assertNull(AdblockRuleParser.parseLine("||tracker.com^\$app=not-a-package"))
+        assertNull(AdblockRuleParser.parseLine("||tracker.com^\$app=com.example|com.other"))
+        assertNull(AdblockRuleParser.parseLine("||tracker.com^\$app=com.example,denyallow=good.example"))
     }
 
     @Test
@@ -64,14 +75,18 @@ class AdblockRuleParserTest {
             ||important-scoped.com^${'$'}important,app=com.example
         """.trimIndent()
         val result = AdblockRuleParser.parse(content)
-        assertEquals(2, result.blockRules.size)
-        assertEquals(4, result.scopedModifierSkipped)
-        assertEquals(4, result.diagnostics.size)
+        assertEquals(4, result.blockRules.size)
+        assertEquals(2, result.scopedModifierSkipped)
+        assertEquals(2, result.diagnostics.size)
         assertEquals("unsupported_scoped_modifier", result.diagnostics.first().reason)
-        assertEquals("app", result.diagnostics.first().modifier)
+        assertEquals("client", result.diagnostics.first().modifier)
         assertTrue(result.diagnostics.first().message.contains("instead of applying it globally"))
         assertTrue(result.blockRules.any { it.domain == "tracker.com" })
         assertTrue(result.blockRules.any { it.domain == "normal.com" })
+        assertEquals(
+            setOf("com.example"),
+            result.blockRules.filter { it.appScope != null }.map { it.appScope!!.packageName }.toSet()
+        )
     }
 
     @Test

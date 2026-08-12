@@ -1108,7 +1108,7 @@ class DnsVpnService : VpnService() {
         }
 
         if (app.first.isNotEmpty()) {
-            val ruleAction = appDnsRuleEngine.checkDomain(app.first, domain)
+            val ruleAction = appDnsRuleEngine.checkDomain(app.first, domain, qtypeNum)
             if (ruleAction == AppDnsRuleEngine.RuleAction.BLOCK) {
                 PrivacyLog.d(TAG, "APP-RULE blocked $domain for ${app.second}")
                 logAsync(domain, true, app, qtype, explicitDecision(

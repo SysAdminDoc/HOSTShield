@@ -16,6 +16,8 @@ package com.hostshield.domain.parser
  *   ||example.com^$dnstype=~A  — block for all types except A
  *   ||example.com^$badfilter   — disable any matching rule
  *   ||example.com^$denyallow=good.com — block all except good.com
+ *   ||example.com^$app=com.example.app — block only for that Android package
+ *   ||example.com^$app=~com.example.app — block for every other package
  *   ||example.com^$dnsrewrite=NXDOMAIN — rewrite as NXDOMAIN (→ block)
  *   ||example.com^$dnsrewrite=1.2.3.4 — rewrite to IP (→ redirect rule)
  *   /regex/                    — regex block rule
@@ -36,6 +38,12 @@ package com.hostshield.domain.parser
  */
 object AdblockRuleParser {
 
+    /** A validated Android package scope from an `$app=` modifier. */
+    data class AppScope(
+        val packageName: String,
+        val negated: Boolean = false,
+    )
+
     /**
      * Parsed DNS filtering rule.
      *
@@ -46,6 +54,7 @@ object AdblockRuleParser {
      * @param isRegex True if this is a /regex/ pattern
      * @param dnsTypes Allowed/denied DNS types (null = all types). Negated types prefixed with ~
      * @param denyAllowDomains Domains excepted from this blocking rule ($denyallow)
+     * @param appScope Optional Android package scope from `$app=`.
      */
     data class DnsRule(
         val domain: String,
@@ -58,7 +67,8 @@ object AdblockRuleParser {
         val dnsTypes: Set<Int>? = null,          // null = all types
         val dnsTypesNegated: Boolean = false,    // true = block all EXCEPT these types
         val denyAllowDomains: Set<String>? = null, // $denyallow exception domains
-        val redirectIp: String? = null           // non-null when parsed from $dnsrewrite=<IP>
+        val redirectIp: String? = null,          // non-null when parsed from $dnsrewrite=<IP>
+        val appScope: AppScope? = null           // non-null when parsed from $app=<package>
     ) {
         /**
          * Priority level for rule ordering (higher = takes precedence).
@@ -93,21 +103,21 @@ object AdblockRuleParser {
          * Excludes explicit *.domain wildcards, regex, $dnstype-filtered, and redirect rules.
          */
         val exactBlockDomains: Set<String> get() =
-            blockRules.filter { !it.isWildcard && !it.isRegex && it.dnsTypes == null && it.redirectIp == null }
+            blockRules.filter { it.appScope == null && !it.isWildcard && !it.isRegex && it.dnsTypes == null && it.redirectIp == null }
                 .map { it.domain }.toSet()
 
         /** All allow domains for subtraction from blocklist. */
         val exactAllowDomains: Set<String> get() =
-            allowRules.filter { !it.isWildcard && !it.isRegex }
+            allowRules.filter { it.appScope == null && !it.isWildcard && !it.isRegex }
                 .map { it.domain }.toSet()
 
         /** Explicit wildcard block rules (*.domain patterns only). */
         val wildcardBlockRules: List<DnsRule> get() =
-            blockRules.filter { it.isWildcard }
+            blockRules.filter { it.appScope == null && it.isWildcard }
 
         /** Explicit wildcard allow rules. */
         val wildcardAllowRules: List<DnsRule> get() =
-            allowRules.filter { it.isWildcard }
+            allowRules.filter { it.appScope == null && it.isWildcard }
 
         /** Redirect rules parsed from $dnsrewrite=<IP> modifiers. */
         val redirectRules: List<DnsRule> get() =
@@ -304,6 +314,7 @@ object AdblockRuleParser {
         var dnsTypesNegated = false
         var denyAllowDomains: MutableSet<String>? = null
         var redirectIpValue: String? = null
+        var appScope: AppScope? = null
 
         if (modifiers.isNotEmpty()) {
             for (mod in modifiers.split(',')) {
@@ -344,7 +355,16 @@ object AdblockRuleParser {
                         m.startsWith("domain=") -> {
                         return null
                     }
-                    m.startsWith("app=") || m.startsWith("client=") || m.startsWith("ctag=") -> {
+                    m.startsWith("app=", ignoreCase = true) -> {
+                        val rawPackage = m.substringAfter('=').trim()
+                        val negated = rawPackage.startsWith('~')
+                        val packageName = if (negated) rawPackage.removePrefix("~").trim() else rawPackage
+                        if (rawPackage.contains('|') || !ANDROID_PACKAGE_PATTERN.matches(packageName)) {
+                            return null
+                        }
+                        appScope = AppScope(packageName = packageName, negated = negated)
+                    }
+                    m.startsWith("client=", ignoreCase = true) || m.startsWith("ctag=", ignoreCase = true) -> {
                         return null
                     }
                     // Any other modifier is NOT DNS-supported (e.g. $removeparam,
@@ -358,6 +378,11 @@ object AdblockRuleParser {
             }
         }
 
+        // The app engine currently enforces domain and DNS-type decisions, but
+        // cannot safely reproduce denyallow ownership or IP rewrites. Reject
+        // those combinations instead of partially applying them.
+        if (appScope != null && (denyAllowDomains != null || redirectIpValue != null)) return null
+
         return DnsRule(
             domain = asciiDomain,
             isException = isException,
@@ -368,7 +393,8 @@ object AdblockRuleParser {
             dnsTypes = dnsTypes,
             dnsTypesNegated = dnsTypesNegated,
             denyAllowDomains = denyAllowDomains,
-            redirectIp = redirectIpValue
+            redirectIp = redirectIpValue,
+            appScope = appScope
         )
     }
 
@@ -493,6 +519,7 @@ object AdblockRuleParser {
         "ip6-localhost", "ip6-loopback")
     private val IPV4_PATTERN = Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$""")
     private val IPV6_PATTERN = Regex("""^[0-9a-fA-F:]+$""")
+    private val ANDROID_PACKAGE_PATTERN = Regex("""^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$""")
     private val NULL_IPS = setOf("0.0.0.0", "::", "::0", "0:0:0:0:0:0:0:0")
     private val WHITESPACE_PATTERN = Regex("""\s+""")
 

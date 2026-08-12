@@ -3,6 +3,7 @@ package com.hostshield.domain.parser
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.model.UserRule
 import com.hostshield.domain.DnsTypeRule
+import com.hostshield.domain.ScopedAppDnsRule
 import com.hostshield.domain.ScopedDenyAllowRule
 
 // Multi-format parser for hosts, domains-only, and adblock syntax
@@ -31,22 +32,24 @@ object HostsParser {
         val wildcardAllowDomains: Set<String> = emptySet(),
         val dnsTypeRules: List<DnsTypeRule> = emptyList(),
         val scopedDenyAllowRules: List<ScopedDenyAllowRule> = emptyList(),
+        val appScopedRules: List<ScopedAppDnsRule> = emptyList(),
         val parseDiagnostics: List<AdblockRuleParser.ParseDiagnostic> = emptyList()
     ) {
         val entryCount: Int get() = blockDomains.size + wildcardBlockDomains.size +
-            dnsTypeRules.count { !it.allow }
-        val parseWarning: String get() = parseDiagnostics.toParseWarning()
+            dnsTypeRules.count { !it.allow } + appScopedRules.size
+        val parseWarning: String get() = parseDiagnostics.toParseWarning(appScopedRules.size)
     }
 
     data class AllowlistParseResult(
         val allowDomains: Set<String>,
         val wildcardAllowDomains: Set<String> = emptySet(),
         val dnsTypeAllowRules: List<DnsTypeRule> = emptyList(),
+        val appScopedRules: List<ScopedAppDnsRule> = emptyList(),
         val parseDiagnostics: List<AdblockRuleParser.ParseDiagnostic> = emptyList()
     ) {
         val entryCount: Int get() = allowDomains.size + wildcardAllowDomains.size +
-            dnsTypeAllowRules.size
-        val parseWarning: String get() = parseDiagnostics.toParseWarning()
+            dnsTypeAllowRules.size + appScopedRules.size
+        val parseWarning: String get() = parseDiagnostics.toParseWarning(appScopedRules.size)
     }
 
     private val WHITESPACE_REGEX = Regex("""\s+""")
@@ -136,16 +139,21 @@ object HostsParser {
         val wildcardAllowDomains = mutableSetOf<String>()
         val dnsTypeRules = mutableListOf<DnsTypeRule>()
         val scopedDenyAllowRules = mutableListOf<ScopedDenyAllowRule>()
+        val appScopedRules = mutableListOf<ScopedAppDnsRule>()
 
         // Domains an $important block rule protects: a non-important allow in the
         // same source must not override them (AdGuard priority: ||x^$important
         // outranks @@||x^). An @@...$important allow still wins.
         val importantBlockDomains = parsed.blockRules
-            .filter { it.isImportant && it.dnsTypes == null && it.redirectIp == null && it.domain.isNotBlank() }
+            .filter { it.appScope == null && it.isImportant && it.dnsTypes == null && it.redirectIp == null && it.domain.isNotBlank() }
             .map { it.domain }
             .toSet()
 
         parsed.blockRules.forEach { rule ->
+            if (rule.appScope != null) {
+                appScopedRules += rule.toScopedAppDnsRule()
+                return@forEach
+            }
             if (rule.isRegex || rule.redirectIp != null || rule.domain.isBlank()) return@forEach
 
             if (rule.dnsTypes != null) {
@@ -176,6 +184,10 @@ object HostsParser {
         }
 
         parsed.allowRules.forEach { rule ->
+            if (rule.appScope != null) {
+                appScopedRules += rule.toScopedAppDnsRule()
+                return@forEach
+            }
             if (rule.isRegex || rule.domain.isBlank()) return@forEach
             if (rule.dnsTypes != null) {
                 dnsTypeRules.add(rule.toDnsTypeRule(allow = true))
@@ -198,6 +210,7 @@ object HostsParser {
             wildcardAllowDomains = wildcardAllowDomains,
             dnsTypeRules = dnsTypeRules,
             scopedDenyAllowRules = scopedDenyAllowRules,
+            appScopedRules = appScopedRules,
             parseDiagnostics = parsed.diagnostics
         )
     }
@@ -237,6 +250,7 @@ object HostsParser {
             allowDomains = parsed.allowDomains,
             wildcardAllowDomains = parsed.wildcardAllowDomains,
             dnsTypeAllowRules = parsed.dnsTypeRules.filter { it.allow },
+            appScopedRules = parsed.appScopedRules.filter { it.isException },
             parseDiagnostics = parsed.parseDiagnostics
         )
     }
@@ -249,6 +263,20 @@ object HostsParser {
             allow = allow,
             matchesSubdomains = matchesSubdomains || isWildcard
         ).normalized()
+
+    private fun AdblockRuleParser.DnsRule.toScopedAppDnsRule(): ScopedAppDnsRule {
+        val scope = requireNotNull(appScope)
+        return ScopedAppDnsRule(
+            domain = domain,
+            packageName = scope.packageName,
+            packageNegated = scope.negated,
+            isException = isException,
+            isWildcard = isWildcard,
+            matchesSubdomains = matchesSubdomains,
+            dnsTypes = dnsTypes,
+            dnsTypesNegated = dnsTypesNegated,
+        ).normalized()
+    }
 
     private fun AdblockRuleParser.DnsRule.toScopedDenyAllowRule(
         allowedDomain: String
@@ -271,7 +299,7 @@ object HostsParser {
         val result = AdblockRuleParser.parse(content)
         val hosts = mutableSetOf<ParsedHost>()
         for (rule in result.blockRules) {
-            if (!rule.isRegex && !rule.isWildcard && rule.dnsTypes == null && rule.redirectIp == null && rule.domain.isNotEmpty()) {
+            if (rule.appScope == null && !rule.isRegex && !rule.isWildcard && rule.dnsTypes == null && rule.redirectIp == null && rule.domain.isNotEmpty()) {
                 hosts.add(ParsedHost(rule.domain))
             }
         }
@@ -312,6 +340,7 @@ object HostsParser {
                 // all-qtype exact block for the apex only.
                 val adblockRule = AdblockRuleParser.parseLine(line)
                 if (adblockRule != null &&
+                    adblockRule.appScope == null &&
                     !adblockRule.isException &&
                     !adblockRule.isRegex &&
                     !adblockRule.isWildcard &&
@@ -385,12 +414,15 @@ object HostsParser {
     private fun isValidDomain(s: String): Boolean =
         s.length in 3..253 && s.contains('.') && DOMAIN_REGEX.matches(s)
 
-    private fun List<AdblockRuleParser.ParseDiagnostic>.toParseWarning(): String {
+    private fun List<AdblockRuleParser.ParseDiagnostic>.toParseWarning(appScopedApplied: Int = 0): String {
         val scoped = count { it.reason == "unsupported_scoped_modifier" }
         val unsupported = count { it.reason == "unsupported_modifier" }
         val parts = mutableListOf<String>()
+        if (appScopedApplied > 0) {
+            parts.add("Applied $appScopedApplied app-scoped AdGuard rule(s) for per-app DNS policy.")
+        }
         if (scoped > 0) {
-            parts.add("Skipped $scoped scoped AdGuard rule(s) with app/client/ctag modifiers; HostShield rejected them instead of applying them globally.")
+            parts.add("Skipped $scoped scoped AdGuard rule(s) with unsupported or invalid app/client/ctag modifiers; HostShield rejected them instead of applying them globally.")
         }
         if (unsupported > 0) {
             parts.add("Skipped $unsupported rule(s) with browser-only modifiers (e.g. \$removeparam/\$redirect/\$csp) instead of applying them as whole-domain DNS blocks.")

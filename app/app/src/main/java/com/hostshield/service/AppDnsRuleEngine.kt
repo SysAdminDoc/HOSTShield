@@ -4,6 +4,7 @@ import android.util.Log
 import com.hostshield.util.PrivacyLog
 import com.hostshield.data.database.AppDnsRuleDao
 import com.hostshield.data.model.AppDnsRule
+import com.hostshield.domain.ScopedAppDnsRule
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -40,12 +41,21 @@ class AppDnsRuleEngine @Inject constructor(
         val domainPattern: String,   // original pattern as entered by user
         val suffix: String,          // ".facebook.com" for wildcard, or exact domain
         val isWildcard: Boolean,
-        val action: RuleAction
+        val matchesSubdomains: Boolean,
+        val action: RuleAction,
+        val packageName: String? = null,
+        val packageNegated: Boolean = false,
+        val dnsTypes: Set<Int>? = null,
+        val dnsTypesNegated: Boolean = false,
     )
 
     // packageName -> list of compiled rules  (hot-path reads, rare writes)
     @Volatile
     private var ruleCache: Map<String, List<CompiledRule>> = emptyMap()
+
+    /** Source-delivered `$app=` rules, replaced atomically after each rebuild. */
+    @Volatile
+    private var sourceRuleCache: List<CompiledRule> = emptyList()
 
     // ──────────────────────────────────────────────────────────────
     // Public API
@@ -73,28 +83,56 @@ class AppDnsRuleEngine @Inject constructor(
         }
     }
 
+    /** Replace source-delivered scoped rules without disturbing user rules. */
+    fun replaceSourceRules(rules: List<ScopedAppDnsRule>) {
+        sourceRuleCache = rules
+            .map { it.normalized() }
+            .filter { it.domain.isNotBlank() && it.packageName.isNotBlank() }
+            .map(::compileSource)
+    }
+
     /**
      * Check whether [domain] should be blocked or allowed for [packageName].
      *
      * @return [RuleAction.BLOCK] or [RuleAction.ALLOW] if a matching rule exists,
      *         or `null` if no per-app rule applies (use default behavior).
      */
-    fun checkDomain(packageName: String, domain: String): RuleAction? {
-        val rules = ruleCache[packageName] ?: return null
+    fun checkDomain(packageName: String, domain: String, queryType: Int = 0): RuleAction? {
         val normalised = domain.lowercase()
 
         var hasBlock = false
 
-        for (rule in rules) {
-            if (matches(rule, normalised)) {
-                // Allow takes precedence — return immediately
-                if (rule.action == RuleAction.ALLOW) return RuleAction.ALLOW
-                hasBlock = true
+        fun consider(rule: CompiledRule): RuleAction? {
+            if (rule.packageName != null &&
+                (if (rule.packageNegated) packageName == rule.packageName else packageName != rule.packageName)
+            ) return null
+            if (rule.dnsTypes != null) {
+                if (queryType <= 0) return null
+                val typeMatches = if (rule.dnsTypesNegated) {
+                    queryType !in rule.dnsTypes
+                } else {
+                    queryType in rule.dnsTypes
+                }
+                if (!typeMatches) return null
             }
+            if (!matches(rule, normalised)) return null
+            if (rule.action == RuleAction.ALLOW) return RuleAction.ALLOW
+            hasBlock = true
+            return null
+        }
+
+        ruleCache[packageName].orEmpty().forEach { rule ->
+            if (consider(rule) == RuleAction.ALLOW) return RuleAction.ALLOW
+        }
+        sourceRuleCache.forEach { rule ->
+            if (consider(rule) == RuleAction.ALLOW) return RuleAction.ALLOW
         }
 
         return if (hasBlock) RuleAction.BLOCK else null
     }
+
+    /** Returns the number of source rules currently active in the hot-path cache. */
+    fun getSourceRuleCount(): Int = sourceRuleCache.size
 
     /**
      * Convenience: returns `true` when the domain should be blocked for this app.
@@ -143,6 +181,7 @@ class AppDnsRuleEngine @Inject constructor(
                 domainPattern = pattern,
                 suffix = suffix,         // e.g. ".facebook.com"
                 isWildcard = true,
+                matchesSubdomains = true,
                 action = action
             )
         } else {
@@ -150,18 +189,36 @@ class AppDnsRuleEngine @Inject constructor(
                 domainPattern = pattern,
                 suffix = pattern,
                 isWildcard = false,
+                matchesSubdomains = false,
                 action = action
             )
         }
     }
 
+    private fun compileSource(rule: ScopedAppDnsRule): CompiledRule {
+        val pattern = rule.domain.lowercase().trim()
+        val isWildcard = rule.isWildcard
+        return CompiledRule(
+            domainPattern = pattern,
+            suffix = if (isWildcard) ".${pattern.removePrefix(".")}" else pattern,
+            isWildcard = isWildcard,
+            matchesSubdomains = rule.matchesSubdomains || isWildcard,
+            action = if (rule.isException) RuleAction.ALLOW else RuleAction.BLOCK,
+            packageName = rule.packageName,
+            packageNegated = rule.packageNegated,
+            dnsTypes = rule.dnsTypes,
+            dnsTypesNegated = rule.dnsTypesNegated,
+        )
+    }
+
     private fun matches(rule: CompiledRule, domain: String): Boolean {
-        return if (rule.isWildcard) {
+        return if (rule.matchesSubdomains) {
             // *.facebook.com matches:
             //   facebook.com          (bare domain)
             //   sub.facebook.com      (single sub)
             //   deep.sub.facebook.com (nested subs)
-            domain.endsWith(rule.suffix) || domain == rule.suffix.removePrefix(".")
+            val base = rule.suffix.removePrefix(".")
+            domain.endsWith(".$base") || domain == base
         } else {
             domain == rule.suffix
         }
