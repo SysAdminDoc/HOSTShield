@@ -346,6 +346,156 @@ class DnsVpnService : VpnService() {
         )
     }
 
+    private val dnsQueryProcessor by lazy {
+        DnsQueryProcessor(
+            appDnsRuleEngine = appDnsRuleEngine,
+            safeSearchEnforcer = safeSearchEnforcer,
+            contentFilterManager = contentFilterManager,
+            parentalControlManager = parentalControlManager,
+            threatIntelManager = threatIntelManager,
+            tlsFingerprinter = tlsFingerprinter,
+            dnsCache = dnsCache,
+            host = object : DnsQueryProcessor.Host {
+                override val dnsOnlyMode: Boolean
+                    get() = this@DnsVpnService.dnsOnlyMode
+                override val blockedApps: Set<String>
+                    get() = this@DnsVpnService.blockedApps
+                override val contextRules: Map<String, com.hostshield.data.model.FirewallRule>
+                    get() = this@DnsVpnService.contextRules
+                override val safeSearchEnabled: Boolean
+                    get() = this@DnsVpnService.safeSearchEnabled
+                override val contentFilterCategories: Set<ContentCategory>
+                    get() = this@DnsVpnService.contentFilterCategories
+                override val threatIntelEnabled: Boolean
+                    get() = this@DnsVpnService.threatIntelEnabled
+
+                override fun resolveApp(
+                    packet: ByteArray,
+                    headerOffset: Int,
+                    isV6: Boolean,
+                ): Pair<String, String> = if (isV6) {
+                    this@DnsVpnService.resolveAppV6(packet, headerOffset)
+                } else {
+                    this@DnsVpnService.resolveApp(packet, headerOffset)
+                }
+
+                override fun findUidByDnsCorrelation(domain: String): Int =
+                    this@DnsVpnService.findUidByDnsCorrelation(domain)
+
+                override fun resolvePkg(uid: Int): Pair<String, String> =
+                    this@DnsVpnService.resolvePkg(uid)
+
+                override fun shouldBlockByContext(
+                    rule: com.hostshield.data.model.FirewallRule,
+                    packageName: String,
+                ): Boolean = this@DnsVpnService.shouldBlockByContext(rule, packageName)
+
+                override fun domainDecision(domain: String, queryType: Int?): BlockDecision =
+                    this@DnsVpnService.domainDecision(domain, queryType)
+
+                override fun log(
+                    domain: String,
+                    blocked: Boolean,
+                    app: Pair<String, String>,
+                    qtype: String,
+                    decision: BlockDecision?,
+                ) = this@DnsVpnService.logAsync(domain, blocked, app, qtype, decision)
+
+                override fun logRich(
+                    domain: String,
+                    blocked: Boolean,
+                    app: Pair<String, String>,
+                    qtype: String,
+                    trackerCategory: String,
+                    trackerOwner: String,
+                    decision: BlockDecision?,
+                ) = this@DnsVpnService.logAsyncRich(
+                    domain = domain,
+                    blocked = blocked,
+                    app = app,
+                    qtype = qtype,
+                    trackerCategory = trackerCategory,
+                    trackerOwner = trackerOwner,
+                    decision = decision,
+                )
+
+                override suspend fun sendBlockResponse(
+                    dns: ByteArray,
+                    packet: ByteArray,
+                    headerOffset: Int,
+                    isV6: Boolean,
+                    qtype: String,
+                    reason: String,
+                ) = this@DnsVpnService.sendBlockResponse(
+                    dns, packet, headerOffset, isV6, qtype, reason,
+                )
+
+                override fun wrapAndSend(
+                    packet: ByteArray,
+                    headerOffset: Int,
+                    isV6: Boolean,
+                    dns: ByteArray,
+                ) = this@DnsVpnService.wrapAndSend(packet, headerOffset, isV6, dns)
+
+                override fun launchWork(block: suspend () -> Unit) {
+                    serviceScope.launch { block() }
+                }
+
+                override suspend fun forwardEncrypted(
+                    dns: ByteArray,
+                    domain: String,
+                    packet: ByteArray,
+                    headerOffset: Int,
+                    app: Pair<String, String>,
+                    isV6: Boolean,
+                    skipThreatIntelChecks: Boolean,
+                ) = this@DnsVpnService.forwardEncrypted(
+                    dns = dns,
+                    domain = domain,
+                    orig = packet,
+                    ihl = if (isV6) 0 else headerOffset,
+                    app = app,
+                    wrapV6 = isV6,
+                    v6Hdr = headerOffset,
+                    skipThreatIntelChecks = skipThreatIntelChecks,
+                )
+
+                override suspend fun postForwardChecks(
+                    response: ByteArray,
+                    dns: ByteArray,
+                    domain: String,
+                    app: Pair<String, String>,
+                    latencyMs: Int,
+                    upstreamServer: String,
+                    skipThreatIntelChecks: Boolean,
+                    isFromCache: Boolean,
+                ): PostForwardResult = this@DnsVpnService.postForwardChecks(
+                    respBytes = response,
+                    dns = dns,
+                    domain = domain,
+                    app = app,
+                    latencyMs = latencyMs,
+                    upstreamServer = upstreamServer,
+                    skipThreatIntelChecks = skipThreatIntelChecks,
+                    isFromCache = isFromCache,
+                )
+
+                override suspend fun refreshDnsCacheOnly(
+                    dns: ByteArray,
+                    domain: String,
+                    app: Pair<String, String>,
+                    skipThreatIntelChecks: Boolean,
+                ) = this@DnsVpnService.refreshDnsCacheOnly(
+                    dns, domain, app, skipThreatIntelChecks,
+                )
+
+                override fun sendToTun(packet: ByteArray) = this@DnsVpnService.sendToTun(packet)
+                override fun incrementBlocked() { blockedCount.incrementAndGet() }
+                override fun incrementAllowed() { allowedCount.incrementAndGet() }
+            },
+        )
+    }
+
     // VPN Stability tracking
     private val fdErrorCount = java.util.concurrent.atomic.AtomicInteger(0)
     private val rebuildCount = java.util.concurrent.atomic.AtomicInteger(0)
@@ -1022,14 +1172,14 @@ class DnsVpnService : VpnService() {
                     val ipVer = (packet[0].toInt() and 0xF0) shr 4
                     when (ipVer) {
                         4 -> {
-                            if (isIpv4UdpDns(packet, length)) processDnsPacket(packet, length, isV6 = false)
-                            else if (isIpv4TcpDns(packet, length)) processTcpDns(packet, length, isV6 = false)
-                            else tryTlsFingerprintPacket(packet, length, isV6 = false)
+                            if (isIpv4UdpDns(packet, length)) dnsQueryProcessor.processDnsPacket(packet, length, isV6 = false)
+                            else if (isIpv4TcpDns(packet, length)) dnsQueryProcessor.processTcpDns(packet, length, isV6 = false)
+                            else dnsQueryProcessor.tryTlsFingerprintPacket(packet, length, isV6 = false)
                         }
                         6 -> {
-                            if (isIpv6UdpDns(packet, length)) processDnsPacket(packet, length, isV6 = true)
-                            else if (isIpv6TcpDns(packet, length)) processTcpDns(packet, length, isV6 = true)
-                            else tryTlsFingerprintPacket(packet, length, isV6 = true)
+                            if (isIpv6UdpDns(packet, length)) dnsQueryProcessor.processDnsPacket(packet, length, isV6 = true)
+                            else if (isIpv6TcpDns(packet, length)) dnsQueryProcessor.processTcpDns(packet, length, isV6 = true)
+                            else dnsQueryProcessor.tryTlsFingerprintPacket(packet, length, isV6 = true)
                         }
                     }
 
@@ -1062,229 +1212,6 @@ class DnsVpnService : VpnService() {
             restartVpn()
         }
     }
-
-    private suspend fun processDnsPacket(packet: ByteArray, length: Int, isV6: Boolean) {
-        val headerOffset = if (isV6) 40 else (packet[0].toInt() and 0x0F) * 4
-        val dns = if (isV6) extractDnsPayloadV6(packet, length, headerOffset)
-                  else extractDnsPayload(packet, length, headerOffset)
-        dns ?: return
-        val domain = parseDnsQueryDomain(dns) ?: return
-        val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-        val qtype = DnsPacketBuilder.queryTypeLabel(qtypeNum)
-        var app = if (isV6) resolveAppV6(packet, headerOffset) else resolveApp(packet, headerOffset)
-
-        if (app.first.isEmpty()) {
-            val heuristicUid = findUidByDnsCorrelation(domain)
-            if (heuristicUid > 0) app = resolvePkg(heuristicUid)
-        }
-
-        if (!dnsOnlyMode && app.first.isNotEmpty() && app.first in blockedApps) {
-            logAsync(domain, true, app, qtype, explicitDecision(
-                blocked = true,
-                reason = "app_firewall",
-                source = "Per-app DNS firewall",
-                matchedValue = app.first,
-                precedence = "per-app firewall runs before DNS policy"
-            ))
-            sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "app_firewall")
-            return
-        }
-
-        if (!dnsOnlyMode && app.first.isNotEmpty()) {
-            val ctxRule = contextRules[app.first]
-            if (ctxRule != null && shouldBlockByContext(ctxRule, app.first)) {
-                logAsync(domain, true, app, qtype, explicitDecision(
-                    blocked = true,
-                    reason = "context_firewall",
-                    source = "Context-aware firewall",
-                    matchedValue = app.first,
-                    precedence = "context firewall runs before DNS policy"
-                ))
-                sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "context_firewall")
-                return
-            }
-        }
-
-        if (safeSearchEnabled && safeSearchEnforcer.isSafeSearchDomain(domain)) {
-            val safeResp = safeSearchEnforcer.buildSafeResponse(dns, domain)
-            if (safeResp != null) {
-                PrivacyLog.d(TAG, "SAFE-SEARCH $domain")
-                logAsync(domain, false, app, qtype, explicitDecision(
-                    blocked = false,
-                    reason = "safe_search",
-                    source = "Safe Search enforcer",
-                    matchedValue = domain,
-                    precedence = "safe-search rewrite runs before blocklist lookup"
-                ))
-                wrapAndSend(packet, headerOffset, isV6, safeResp)
-                allowedCount.incrementAndGet()
-                return
-            }
-        }
-
-        if (app.first.isNotEmpty()) {
-            val ruleAction = appDnsRuleEngine.checkDomain(app.first, domain, qtypeNum)
-            if (ruleAction == AppDnsRuleEngine.RuleAction.BLOCK) {
-                PrivacyLog.d(TAG, "APP-RULE blocked $domain for ${app.second}")
-                logAsync(domain, true, app, qtype, explicitDecision(
-                    blocked = true,
-                    reason = "app_rule_block",
-                    source = "Per-app DNS rule",
-                    matchedValue = app.first,
-                    precedence = "per-app block rule runs before shared blocklist"
-                ))
-                sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "app_rule")
-                return
-            }
-            if (ruleAction == AppDnsRuleEngine.RuleAction.ALLOW) {
-                PrivacyLog.d(TAG, "APP-RULE allowed $domain for ${app.second}")
-                logAsync(domain, false, app, qtype, explicitDecision(
-                    blocked = false,
-                    reason = "app_rule_allow",
-                    source = "Per-app DNS rule",
-                    matchedValue = app.first,
-                    precedence = "per-app allow rule skips shared blocklist and threat intel for this app"
-                ))
-                val pCopy = packet.copyOf(length)
-                serviceScope.launch {
-                    forwardEncrypted(
-                        dns,
-                        domain,
-                        pCopy,
-                        if (isV6) 0 else headerOffset,
-                        app,
-                        isV6,
-                        headerOffset,
-                        skipThreatIntelChecks = true
-                    )
-                }
-                allowedCount.incrementAndGet()
-                return
-            }
-        }
-
-        if (contentFilterCategories.isNotEmpty() && contentFilterManager.isBlocked(domain, contentFilterCategories)) {
-            val cat = contentFilterManager.lookupCategory(domain)?.displayName ?: "Unknown"
-            PrivacyLog.d(TAG, "CONTENT-FILTER blocked $domain ($qtype) category=$cat")
-            logAsyncRich(domain, true, app, qtype,
-                trackerCategory = "ContentFilter:$cat",
-                decision = explicitDecision(
-                    blocked = true,
-                    reason = "content_filter",
-                    source = cat,
-                    matchedValue = domain,
-                    precedence = "content category policy runs before shared blocklist"
-                ))
-            sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "content_filter")
-            return
-        }
-
-        if (parentalControlManager.shouldBlock(domain)) {
-            val cat = contentFilterManager.lookupCategory(domain)?.displayName ?: "Unknown"
-            PrivacyLog.d(TAG, "PARENTAL blocked $domain ($qtype) category=$cat profile=${parentalControlManager.currentProfile.name}")
-            logAsyncRich(domain, true, app, qtype,
-                trackerCategory = "Parental:$cat",
-                decision = explicitDecision(
-                    blocked = true,
-                    reason = "parental_control",
-                    source = parentalControlManager.currentProfile.name,
-                    matchedValue = cat,
-                    precedence = "parental profile runs before shared blocklist"
-                ))
-            sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "parental_control")
-            return
-        }
-
-        val blockDecision = domainDecision(domain, qtypeNum)
-        val blocked = blockDecision.blocked
-        val skipThreatIntelChecks = blockDecision.skipsThreatIntelChecks()
-
-        if (!blocked && threatIntelEnabled && !skipThreatIntelChecks) {
-            val threat = threatIntelManager.isDomainMalicious(domain)
-            if (threat != null) {
-                PrivacyLog.i(TAG, "THREAT-INTEL blocked domain: $domain (${threat.feedName})")
-                logAsync(domain, true, app, qtype, explicitDecision(
-                    blocked = true,
-                    reason = "threat_intel_domain",
-                    source = threat.feedName,
-                    matchedValue = domain,
-                    precedence = "threat intel runs after blocklist miss"
-                ))
-                sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "threat_intel")
-                return
-            }
-        }
-
-        if (blocked) {
-            logAsync(domain, true, app, qtype, blockDecision)
-            PrivacyLog.d(TAG, "BLOCKED $domain ($qtype) [${app.second.ifEmpty { "system" }}]")
-            sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "blocklist")
-        } else {
-            val qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-            val txId = if (dns.size >= 2) byteArrayOf(dns[0], dns[1]) else byteArrayOf(0, 0)
-            val cacheResult = dnsCache.get(domain, qtypeNum, txId)
-            if (cacheResult != null) {
-                if (!cacheResult.isStale) {
-                    PrivacyLog.d(TAG, "CACHE HIT $domain ($qtype)")
-                    val pfResult = postForwardChecks(
-                        cacheResult.response,
-                        dns,
-                        domain,
-                        app,
-                        latencyMs = 0,
-                        upstreamServer = "DNS cache",
-                        skipThreatIntelChecks = skipThreatIntelChecks,
-                        isFromCache = true
-                    )
-                    if (pfResult.blocked) {
-                        if (pfResult.blockResponse != null) wrapAndSend(packet, headerOffset, isV6, pfResult.blockResponse)
-                        return
-                    }
-                    wrapAndSend(packet, headerOffset, isV6, cacheResult.response)
-                    allowedCount.incrementAndGet()
-                    if (cacheResult.needsPrefetch) {
-                        serviceScope.launch {
-                            try {
-                                refreshDnsCacheOnly(dns, domain, app, skipThreatIntelChecks)
-                            } catch (e: Exception) { PrivacyLog.d(TAG, "Prefetch failed for $domain: ${e.message}") }
-                        }
-                    }
-                    return
-                } else {
-                    PrivacyLog.d(TAG, "SERVE-STALE $domain ($qtype) — refreshing in background")
-                    val pfResult = postForwardChecks(
-                        cacheResult.response,
-                        dns,
-                        domain,
-                        app,
-                        latencyMs = 0,
-                        upstreamServer = "DNS stale cache",
-                        skipThreatIntelChecks = skipThreatIntelChecks,
-                        isFromCache = true
-                    )
-                    if (pfResult.blocked) {
-                        if (pfResult.blockResponse != null) wrapAndSend(packet, headerOffset, isV6, pfResult.blockResponse)
-                        return
-                    }
-                    wrapAndSend(packet, headerOffset, isV6, cacheResult.response)
-                    allowedCount.incrementAndGet()
-                    serviceScope.launch {
-                        try {
-                            refreshDnsCacheOnly(dns, domain, app, skipThreatIntelChecks)
-                        } catch (e: Exception) { PrivacyLog.d(TAG, "Stale refresh failed for $domain: ${e.message}") }
-                    }
-                    return
-                }
-            }
-
-            PrivacyLog.d(TAG, "ALLOWED $domain ($qtype)")
-            val pCopy = packet.copyOf(length)
-            serviceScope.launch { forwardEncrypted(dns, domain, pCopy, if (isV6) 0 else headerOffset, app, isV6, headerOffset, skipThreatIntelChecks) }
-            allowedCount.incrementAndGet()
-        }
-    }
-
-    @Suppress("UNUSED") // removed — unified into processDnsPacket
 
     /**
      * Send a block response (NXDOMAIN, 0.0.0.0/::, or REFUSED) for a DNS packet.
@@ -1474,9 +1401,19 @@ class DnsVpnService : VpnService() {
         precedence: String = ""
     ): BlockDecision = BlockDecision(blocked, reason, source, matchedValue, precedence)
 
-    private fun isDomainBlocked(domain: String, queryType: Int? = null): Boolean {
-        return domainDecision(domain, queryType).blocked
-    }
+    /** Check if a context-aware firewall rule should block this app right now. */
+    private fun shouldBlockByContext(
+        rule: com.hostshield.data.model.FirewallRule,
+        packageName: String,
+    ): Boolean = ContextFirewallPolicy.shouldBlock(
+        blockScreenOff = rule.blockScreenOff,
+        blockBackground = rule.blockBackground,
+        blockMetered = rule.blockMetered,
+        packageName = packageName,
+        isScreenOn = ContextState.isScreenOn,
+        foregroundPackage = ContextState.foregroundPackage,
+        isMetered = ContextState.isMetered,
+    )
 
     // ── Packet Parsing (delegated to PacketClassifier & DnsPacketParser) ───
 
@@ -1484,134 +1421,14 @@ class DnsVpnService : VpnService() {
     private fun isIpv6UdpDns(p: ByteArray, len: Int) = PacketClassifier.isIpv6UdpDns(p, len)
     private fun isIpv6TcpDns(p: ByteArray, len: Int) = PacketClassifier.isIpv6TcpDns(p, len)
 
-    // ── TCP DNS (RFC 7766) ───────────────────────────────────
-
     private fun isIpv4TcpDns(p: ByteArray, len: Int) = PacketClassifier.isIpv4TcpDns(p, len)
-
-    /**
-     * Handle IPv4 TCP DNS packets (RFC 7766).
-     *
-     * TCP DNS is used by some resolvers for large responses and zone transfers.
-     * Full TCP state machine handling is complex (NetGuard does it in native C).
-     * We take a pragmatic approach:
-     *
-     * - SYN packets: Send RST to reject the connection immediately. If the SYN
-     *   carries a DNS payload, check it against the blocklist first.
-     * - Data packets with parseable DNS: Check against blocklist. If blocked,
-     *   send RST. If allowed, drop — app times out and retries via UDP.
-     * - Data packets with unparseable DNS (EDNS, zone transfers, fragmented):
-     *   Drop silently. Sending RST here would break legitimate TCP DNS for
-     *   allowed domains.
-     *
-     * This prevents TCP DNS bypass of blocking without implementing a full
-     * TCP state machine. Allowed TCP DNS queries fall back to UDP on timeout
-     * (standard DNS client behavior per RFC 7766 §6.2.2).
-     */
-    private suspend fun processTcpDns(packet: ByteArray, length: Int, isV6: Boolean) {
-        val headerOffset = if (isV6) 40 else (packet[0].toInt() and 0x0F) * 4
-        val tcpOff = headerOffset
-        if (length < tcpOff + 20) return
-
-        val dataOff = ((packet[tcpOff + 12].toInt() and 0xF0) shr 4) * 4
-        val tcpFlags = packet[tcpOff + 13].toInt() and 0xFF
-        if ((tcpFlags and 0x04) != 0) return // RST — don't respond
-
-        val payloadStart = tcpOff + dataOff
-        val payloadLen = length - payloadStart
-
-        val isSyn = (tcpFlags and 0x02) != 0
-        var hostname: String? = null
-        var qtypeNum: Int? = null
-        if (payloadLen > 14) {
-            val dnsLen = ((packet[payloadStart].toInt() and 0xFF) shl 8) or
-                (packet[payloadStart + 1].toInt() and 0xFF)
-            if (dnsLen in 12..4096 && payloadStart + 2 + dnsLen <= length) {
-                val dns = packet.copyOfRange(payloadStart + 2, payloadStart + 2 + dnsLen)
-                hostname = parseDnsQueryDomain(dns)
-                qtypeNum = DnsPacketBuilder.parseQueryType(dns)
-            }
-        }
-
-        if (hostname == null && !isSyn) return
-
-        val blocked = if (hostname != null) isDomainBlocked(hostname, qtypeNum) else true
-
-        if (blocked) {
-            // Trim to the captured length: the shared MTU-sized read buffer would
-            // otherwise inflate the payload term in the RST ACK computation,
-            // producing an out-of-window RST the client TCP stack ignores.
-            val trimmed = packet.copyOf(length)
-            val rst = if (isV6) buildTcpRstV6(trimmed) else buildTcpRst(trimmed, headerOffset)
-            rst ?: return
-            sendToTun(rst)
-            blockedCount.incrementAndGet()
-            if (hostname != null) {
-                PrivacyLog.d(TAG, "TCP-DNS BLOCKED (RST) $hostname")
-                logAsync(hostname, true, "" to "", "TCP")
-            }
-        } else {
-            if (hostname != null) PrivacyLog.d(TAG, "TCP-DNS allowed (drop→UDP fallback) $hostname")
-        }
-    }
-
-    // ── TLS Fingerprinting (v6.2) ──────────────────────────────
-
-    private fun tryTlsFingerprintPacket(packet: ByteArray, length: Int, isV6: Boolean) {
-        val minSize = if (isV6) 80 else 60
-        if (length < minSize) return
-        val headerOffset = if (isV6) 40 else (packet[0].toInt() and 0x0F) * 4
-        val protocol = if (isV6) packet[6].toInt() and 0xFF else packet[9].toInt() and 0xFF
-        if (protocol != 6) return
-        val tcpOff = headerOffset
-        if (length < tcpOff + 20) return
-        val dataOff = ((packet[tcpOff + 12].toInt() and 0xF0) shr 4) * 4
-        val payloadStart = tcpOff + dataOff
-        val payloadLen = length - payloadStart
-        if (payloadLen < 6) return
-        if (!tlsFingerprinter.isClientHello(packet, payloadStart, payloadLen)) return
-        val fp = tlsFingerprinter.fingerprint(packet, payloadStart, payloadLen) ?: return
-        val app = if (isV6) resolveAppV6(packet, headerOffset) else resolveApp(packet, headerOffset)
-        tlsFingerprinter.record(app.first, app.second, fp)
-        PrivacyLog.d(TAG, "TLS-FP ${app.second.ifEmpty { "unknown" }}: JA3=${fp.ja3} JA4=${fp.ja4} SNI=${fp.sni ?: "-"}")
-    }
-
-    // ── TCP RST Building (delegated to TcpRstBuilder) ──────
-
-    private fun buildTcpRstV6(orig: ByteArray) = TcpRstBuilder.buildTcpRstV6(orig)
-    private fun buildTcpRst(orig: ByteArray, ihl: Int) = TcpRstBuilder.buildTcpRst(orig, ihl)
-
-    /** Check if a context-aware firewall rule should block this app right now. */
-    private fun shouldBlockByContext(rule: com.hostshield.data.model.FirewallRule, pkg: String): Boolean =
-        ContextFirewallPolicy.shouldBlock(
-            blockScreenOff = rule.blockScreenOff,
-            blockBackground = rule.blockBackground,
-            blockMetered = rule.blockMetered,
-            packageName = pkg,
-            isScreenOn = ContextState.isScreenOn,
-            foregroundPackage = ContextState.foregroundPackage,
-            isMetered = ContextState.isMetered,
-        )
-
     // ── DNS Parsing & Response (delegated to DnsPacketParser) ──
 
-    private fun extractDnsPayload(p: ByteArray, len: Int, ihl: Int) = DnsPacketParser.extractDnsPayload(p, len, ihl)
-    private fun extractDnsPayloadV6(p: ByteArray, len: Int, hdr: Int) = DnsPacketParser.extractDnsPayloadV6(p, len, hdr)
-    private fun parseDnsQueryDomain(dns: ByteArray) = DnsPacketParser.parseDnsQueryDomain(dns)
     private fun parseDnsQueryType(dns: ByteArray) = DnsPacketParser.parseDnsQueryType(dns)
     private fun wrapResponseV4(orig: ByteArray, ihl: Int, dns: ByteArray) = DnsPacketParser.wrapResponseV4(orig, ihl, dns)
     private fun wrapResponseV6(orig: ByteArray, hdr: Int, dns: ByteArray) = DnsPacketParser.wrapResponseV6(orig, hdr, dns)
 
     // ── DNS Forwarding ───────────────────────────────────────
-
-    /**
-     * Result of [postForwardChecks]: either the response was blocked (CNAME cloak or
-     * threat-intel) or it is clean and should be forwarded to the client.
-     *
-     * @property blocked `true` when the response triggered a block rule.
-     * @property blockResponse the DNS block-response bytes to send back, or `null` when
-     *           [buildBlockResponse] returned `null` (caller should skip sending).
-     */
-    private data class PostForwardResult(val blocked: Boolean, val blockResponse: ByteArray? = null)
 
     /**
      * Shared post-forward checks: CNAME cloaking detection + threat intelligence IP lookup.

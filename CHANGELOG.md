@@ -26,6 +26,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 - Added a guided “What broke?” app diagnosis flow that groups recent blocked
   domains by package, shows the matching decision sources, and creates revocable
   per-app allow rules from Apps; Rules now lists and controls those rules.
+- Decomposed the VPN service into testable DNS query-processing, upstream
+  forwarding, logging, blocklist, recovery, and notification components while
+  preserving API-37 packet-loop behavior.
 
 ## [v6.9.68] - 2026-08-11
 
