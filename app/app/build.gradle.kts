@@ -280,6 +280,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.test.uiautomator)
+    androidTestImplementation(libs.androidx.work.testing)
     androidTestImplementation(composeBom)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(serializationBom)

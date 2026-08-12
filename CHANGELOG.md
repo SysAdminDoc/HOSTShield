@@ -32,6 +32,10 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 - Completed API-37 connected top-flow coverage for VPN lifecycle, backup
   encryption/import, diagnostic and PCAP artifacts, process persistence, RTL
   layout safety, and full/Play package-visibility variants.
+- Added an API-37 foreground-service caller matrix covering boot restore,
+  WorkManager resumes, automation, Quick Settings, direct VPN starts, and
+  root/DNS proxy promotion. The connected record includes service types,
+  preference transitions, cleanup behavior, and `FGS_INTRODUCE_TIME_LIMITS`.
 
 ## [v6.9.68] - 2026-08-11
 
