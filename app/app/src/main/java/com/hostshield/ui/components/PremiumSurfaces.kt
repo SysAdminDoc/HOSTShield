@@ -237,7 +237,7 @@ fun HostShieldFilterChip(
         color = animatedBg,
         border = BorderStroke(1.dp, animatedBorder),
         modifier = modifier
-            .heightIn(min = 44.dp)
+            .heightIn(min = 48.dp)
             .semantics {
                 role = Role.Tab
                 contentDescription = semanticsLabel
@@ -287,7 +287,7 @@ fun HostShieldInlineAction(
         color = if (enabled) accent.copy(alpha = 0.11f) else Surface2.copy(alpha = 0.34f),
         border = BorderStroke(1.dp, if (enabled) accent.copy(alpha = 0.16f) else Surface3.copy(alpha = 0.30f)),
         modifier = modifier
-            .heightIn(min = 40.dp)
+            .heightIn(min = 48.dp)
             .semantics {
                 role = Role.Button
                 contentDescription = label
@@ -346,10 +346,11 @@ fun <T> HostShieldSegmentedTabs(
                     onClick = { onSelected(option.value) },
                     modifier = Modifier
                         .weight(1f)
-                        .heightIn(min = 38.dp)
+                        .heightIn(min = 48.dp)
                         .semantics {
                             role = Role.Button
                             contentDescription = "$semanticsLabel: ${option.label}${if (isSelected) ", selected" else ""}"
+                            stateDescription = if (isSelected) "Selected" else "Not selected"
                         },
                     shape = RoundedCornerShape(8.dp),
                     color = if (isSelected) option.accent.copy(alpha = 0.16f) else Color.Transparent,
@@ -502,7 +503,7 @@ fun HostShieldStatusBanner(
                         shape = RoundedCornerShape(8.dp),
                         color = accent.copy(alpha = 0.14f),
                         modifier = Modifier
-                            .heightIn(min = 44.dp)
+                            .heightIn(min = 48.dp)
                             .semantics {
                                 role = Role.Button
                                 contentDescription = actionLabel
@@ -667,7 +668,7 @@ fun HostShieldEmptyState(
                         color = accent.copy(alpha = 0.16f),
                         border = BorderStroke(1.dp, accent.copy(alpha = 0.22f)),
                         modifier = Modifier
-                            .heightIn(min = 44.dp)
+                            .heightIn(min = 48.dp)
                             .semantics {
                                 role = Role.Button
                                 contentDescription = primaryActionLabel
@@ -688,7 +689,7 @@ fun HostShieldEmptyState(
                             color = Surface2.copy(alpha = 0.86f),
                             border = BorderStroke(1.dp, Surface3.copy(alpha = 0.48f)),
                             modifier = Modifier
-                                .heightIn(min = 44.dp)
+                                .heightIn(min = 48.dp)
                                 .semantics {
                                     role = Role.Button
                                     contentDescription = secondaryActionLabel

@@ -45,6 +45,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
   explicitly covering API 36 while retaining API-37 coverage; release checks
   and connected tests now enumerate every built-in DoH/DoT hostname and smoke
   resolve a pinned provider.
+- Added connected accessibility regression gates for navigation, home, and
+  reusable top-flow surfaces, covering labels, state descriptions, live regions,
+  actions, and 48dp touch targets.
 
 ## [v6.9.68] - 2026-08-11
 

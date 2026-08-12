@@ -151,7 +151,7 @@ private fun DenseJumpAction(
         color = Surface2.copy(alpha = 0.72f),
         border = BorderStroke(1.dp, Surface3.copy(alpha = 0.42f)),
         modifier = Modifier
-            .heightIn(min = 44.dp)
+            .heightIn(min = 48.dp)
             .testTag(testTag)
             .semantics {
                 role = Role.Button

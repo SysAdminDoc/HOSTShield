@@ -188,7 +188,9 @@ fun HomeStatsSection(
                             onClick = { onToggleCategory(cat, !allEnabled) },
                             shape = RoundedCornerShape(8.dp),
                             color = if (allEnabled) color.copy(alpha = 0.12f) else Surface2,
-                            modifier = Modifier.accessibilitySelection(
+                            modifier = Modifier
+                                .heightIn(min = 48.dp)
+                                .accessibilitySelection(
                                 pluralStringResource(
                                     R.plurals.home_source_category_a11y,
                                     total,
@@ -234,7 +236,10 @@ fun HomeStatsSection(
                 Spacer(Modifier.height(8.dp))
                 topApps.forEachIndexed { idx, (pkg, label, count) ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 3.dp)
+                            .heightIn(min = 48.dp)
                             .accessibilityAction(
                                 stringResource(
                                     R.string.home_dns_queries_by_app,
