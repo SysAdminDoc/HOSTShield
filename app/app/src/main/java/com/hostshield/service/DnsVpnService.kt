@@ -1,9 +1,6 @@
 package com.hostshield.service
 
 import android.app.AlarmManager
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -21,18 +18,14 @@ import android.system.Os
 import android.system.OsConstants
 import android.system.StructPollfd
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import com.hostshield.MainActivity
 import com.hostshield.data.database.BlockStatsDao
 import com.hostshield.data.database.DnsLogDao
-import com.hostshield.data.model.BlockStats
 import com.hostshield.data.model.DnsLogEntry
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlockDecision
 import com.hostshield.domain.BlocklistHolder
-import com.hostshield.util.Android16VpnRecoveryDetector
 import com.hostshield.util.DiagnosticEventStore
 import com.hostshield.util.DiagnosticEventType
 import com.hostshield.util.PrivacyLog
@@ -151,13 +144,11 @@ class DnsVpnService : VpnService() {
         @Volatile var currentBlockedCount: Int = 0
             private set
 
-        private val vpnRecoveryAdvisoryState =
-            kotlinx.coroutines.flow.MutableStateFlow<VpnRecoveryAdvisory?>(null)
         val vpnRecoveryAdvisory: kotlinx.coroutines.flow.StateFlow<VpnRecoveryAdvisory?> =
-            vpnRecoveryAdvisoryState
+            VpnRecoveryMonitor.advisory
 
         fun dismissVpnRecoveryAdvisory() {
-            vpnRecoveryAdvisoryState.value = null
+            VpnRecoveryMonitor.dismiss()
         }
 
         // VPN interface
@@ -283,29 +274,65 @@ class DnsVpnService : VpnService() {
     @Volatile private var networkLost = false             // true after onLost() fires
     private val NETWORK_RESTART_COOLDOWN_MS = 5000L      // ignore events within 5s of start
 
-    // Batch DNS log buffer — flushes every 2s or at 500 entries.
-    // Bounded to 5000 entries to prevent OOM under extreme query volume.
-    private val logBuffer = java.util.concurrent.LinkedBlockingQueue<DnsLogEntry>(5000)
-    @Volatile private var logFlushJob: Job? = null
     private var loggingEnabled = true  // read from prefs at startVpn()
 
     // DNS Response Cache — LRU with TTL-aware expiration
     private val dnsCache = DnsCache(maxEntries = 2000, maxNegativeEntries = 500)
     private val dnsQueryDeduplicator = DnsQueryDeduplicator<UpstreamResolveResult>()
 
-    // Stats accumulator — AtomicInteger for thread-safe increment from packet thread
-    private val pendingBlockedStats = java.util.concurrent.atomic.AtomicInteger(0)
-    private val pendingAllowedStats = java.util.concurrent.atomic.AtomicInteger(0)
+    private val dnsLogManager by lazy {
+        DnsLogManager(
+            dnsLogDao = dnsLogDao,
+            blockStatsDao = blockStatsDao,
+            dnsDiskCache = dnsDiskCache,
+            networkTrackerDb = networkTrackerDb,
+            connectionTracker = connectionTracker,
+            dnsCache = dnsCache,
+            loggingEnabled = { loggingEnabled },
+            emitLiveQuery = { liveQueriesFlow.tryEmit(it) },
+            publishCacheStats = { currentCacheStats = it },
+            publishDroppedQueries = { currentDroppedQueries = it },
+        )
+    }
+
+    private val blocklistManager by lazy {
+        BlocklistManager(sourceCoordinator, sourceFailureNotifier, ::recordEvent)
+    }
+
+    private val vpnNotificationController by lazy {
+        VpnNotificationController(
+            service = this,
+            isPaused = { isPaused },
+            transportLabel = {
+                when {
+                    useWireGuard -> "WG"
+                    useDoQ -> "DoQ"
+                    useDoT -> "DoT"
+                    useDoH -> "DoH"
+                    else -> ""
+                }
+            },
+            dnsTrapEnabled = { dnsTrapEnabled },
+            publishBlockedCount = { currentBlockedCount = it },
+        )
+    }
+
+    private val vpnRecoveryMonitor by lazy {
+        VpnRecoveryMonitor(
+            service = this,
+            vpnRunning = { isRunning },
+            tunFdValid = { vpnInterface?.fileDescriptor?.valid() == true },
+            vpnEstablishedAt = { vpnEstablishedAt },
+            inboundPacketCount = { tunInboundPacketCount.get() },
+        )
+    }
 
     // VPN Stability tracking
-    private val droppedQueries = java.util.concurrent.atomic.AtomicInteger(0)
-    private val totalQueriesCount = java.util.concurrent.atomic.AtomicInteger(0)
     private val fdErrorCount = java.util.concurrent.atomic.AtomicInteger(0)
     private val rebuildCount = java.util.concurrent.atomic.AtomicInteger(0)
     private val tunInboundPacketCount = AtomicLong(0L)
     private var vpnStartTime = 0L
     @Volatile private var stabilityFlushJob: Job? = null
-    @Volatile private var vpnRecoveryMonitorJob: Job? = null
     @Volatile private var tunnelHeartbeatJob: Job? = null
     @Volatile private var contextStateJob: Job? = null
 
@@ -315,7 +342,7 @@ class DnsVpnService : VpnService() {
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
+        vpnNotificationController.createChannels()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -399,7 +426,7 @@ class DnsVpnService : VpnService() {
             }
             ACTION_START -> {
                 ServiceCompat.startForeground(
-                    this, NOTIFICATION_ID, buildNotification(0),
+                    this, NOTIFICATION_ID, vpnNotificationController.build(0),
                     ProtectionForegroundServiceTypes.runtimeType()
                 )
                 serviceScope.launch { startVpn() }
@@ -408,7 +435,7 @@ class DnsVpnService : VpnService() {
                 // Null intent = system restarted us after process death (START_STICKY).
                 // Re-promote to foreground and restart the VPN if prefs say we should be on.
                 ServiceCompat.startForeground(
-                    this, NOTIFICATION_ID, buildNotification(0),
+                    this, NOTIFICATION_ID, vpnNotificationController.build(0),
                     ProtectionForegroundServiceTypes.runtimeType()
                 )
                 serviceScope.launch {
@@ -482,7 +509,8 @@ class DnsVpnService : VpnService() {
         blockNotificationService.stop()
         cancelWatchdog()
         cancelTunnelHeartbeat()
-        cancelVpnRecoveryMonitor()
+        vpnRecoveryMonitor.cancel()
+        dnsLogManager.cancel()
         unregisterNetworkCallback()
         serviceScope.cancel()
         super.onDestroy()
@@ -504,7 +532,7 @@ class DnsVpnService : VpnService() {
             currentBlockedCount = 0
             allowedCount.set(0)
             tunInboundPacketCount.set(0L)
-            vpnRecoveryAdvisoryState.value = null
+            vpnRecoveryMonitor.cancel()
 
             excludedApps = prefs.excludedApps.first()
             blockedApps = prefs.blockedApps.first()
@@ -574,7 +602,7 @@ class DnsVpnService : VpnService() {
             val customDns = prefs.getUpstreamDnsList()
             upstreamDnsServers = if (customDns.isNotEmpty()) customDns else UPSTREAM_DNS.toList()
 
-            if (blocklist.domainCount == 0) rebuildBlocklist()
+            if (blocklist.domainCount == 0) blocklistManager.rebuild()
 
             // v6.0: Warm threat intelligence cache from disk
             try {
@@ -704,8 +732,8 @@ class DnsVpnService : VpnService() {
             isRunning = true
             blockNotificationService.start()
             dnsAnswerCache.clear()
-            droppedQueries.set(0)
-            totalQueriesCount.set(0)
+            dnsLogManager.droppedQueries.set(0)
+            dnsLogManager.totalQueriesCount.set(0)
             clearCacheCallback = {
                 dnsCache.clear()
                 // v5.0: Also clear persistent disk cache
@@ -713,12 +741,12 @@ class DnsVpnService : VpnService() {
             }
             serviceScope.launch { writeLoop() }
             serviceScope.launch { packetLoop() }
-            startLogFlusher()
+            dnsLogManager.start(serviceScope)
             startStabilityFlusher()
             registerNetworkCallback()
             scheduleWatchdog()
             startTunnelHeartbeat()
-            startVpnRecoveryMonitor()
+            vpnRecoveryMonitor.start(serviceScope)
             startDnsConfigObserver()
 
             // Captive portal handling
@@ -770,7 +798,7 @@ class DnsVpnService : VpnService() {
                     "uptime_ms" to if (vpnStartTime > 0) System.currentTimeMillis() - vpnStartTime else 0L,
                     "blocked" to blockedCount.get(),
                     "allowed" to allowedCount.get(),
-                    "dropped" to droppedQueries.get(),
+                    "dropped" to dnsLogManager.droppedQueries.get(),
                     "fd_errors" to fdErrorCount.get()
                 )
             )
@@ -784,11 +812,11 @@ class DnsVpnService : VpnService() {
         shutdownPipeRead = null; shutdownPipeWrite = null
         cancelWatchdog()
         cancelTunnelHeartbeat()
-        cancelVpnRecoveryMonitor()
+        vpnRecoveryMonitor.cancel()
         unregisterNetworkCallback()
         dnsConfigJob?.cancel(); dnsConfigJob = null
         filterConfigJob?.cancel(); filterConfigJob = null
-        logFlushJob?.cancel(); logFlushJob = null
+        dnsLogManager.cancel()
         stabilityFlushJob?.cancel(); stabilityFlushJob = null
         // Disconnect WireGuard proxy if active
         try { if (useWireGuard) wireGuardProxy.disconnect() } catch (_: Exception) { }
@@ -805,13 +833,12 @@ class DnsVpnService : VpnService() {
         // the main thread from ACTION_STOP/onRevoke. teardownScope outlives
         // serviceScope, so the flush is not cancelled before it completes. The final
         // stopForeground/stopSelf happens after the flush (or its 3s timeout).
-        val pending = logBuffer.size
+        val pending = dnsLogManager.pendingEntries
         teardownScope.launch {
             try {
                 withTimeoutOrNull(3000L) {
                     if (pending > 0) Log.i(TAG, "Flushing $pending remaining log entries on stop")
-                    flushLogBuffer()
-                    flushStats()
+                    dnsLogManager.flushForShutdown()
                     flushStability()
                 } ?: Log.w(TAG, "Final log flush timed out after 3s — some entries may be lost")
             } catch (e: Exception) {
@@ -838,13 +865,13 @@ class DnsVpnService : VpnService() {
             shutdownPipeRead = null; shutdownPipeWrite = null
             cancelWatchdog()
             cancelTunnelHeartbeat()
-            cancelVpnRecoveryMonitor()
+            vpnRecoveryMonitor.cancel()
             dnsConfigJob?.cancel(); dnsConfigJob = null
             filterConfigJob?.cancel(); filterConfigJob = null
             unregisterNetworkCallback()
             // Flush buffered logs before restart — don't lose entries
-            logFlushJob?.cancel(); logFlushJob = null
-            try { flushLogBuffer(); flushStats() } catch (_: Exception) { }
+            dnsLogManager.cancel()
+            try { dnsLogManager.flushForShutdown() } catch (_: Exception) { }
             try { writeChannel.close() } catch (_: Exception) { }
             try { vpnInterface?.close() } catch (_: Exception) { }
             vpnInterface = null
@@ -922,35 +949,6 @@ class DnsVpnService : VpnService() {
 
     // ── Blocklist ────────────────────────────────────────────
 
-    private suspend fun rebuildBlocklist() {
-        try {
-            val rebuild = sourceCoordinator.rebuildBlocklistHolder()
-            val failedSources = rebuild.snapshot.failedSources
-            failedSources.forEach { notice ->
-                recordEvent(
-                    DiagnosticEventType.SOURCE_DOWNLOAD_FAILED,
-                    "Source download failed during VPN blocklist rebuild",
-                    mapOf(
-                        "source" to notice.url,
-                        "error" to notice.error,
-                        "http_status" to notice.httpStatus,
-                        "failures" to notice.consecutiveFailures
-                    )
-                )
-            }
-            sourceFailureNotifier.notifyFailures(failedSources)
-            recordEvent(
-                DiagnosticEventType.BLOCKLIST_SWAP,
-                "Blocklist snapshot swapped",
-                mapOf(
-                    "domains" to rebuild.domainCount,
-                    "source" to "vpn_rebuild",
-                    "downloaded_sources" to rebuild.snapshot.downloadedSourceCount
-                )
-            )
-        } catch (e: Exception) { Log.w(TAG, "Blocklist rebuild failed: ${e.message}") }
-    }
-
     // ── Packet Processing ────────────────────────────────────
 
     /**
@@ -999,9 +997,7 @@ class DnsVpnService : VpnService() {
                     val length = Os.read(vpnFd, packet, 0, packet.size)
                     if (length <= 0) continue
                     tunInboundPacketCount.incrementAndGet()
-                    if (vpnRecoveryAdvisoryState.value != null) {
-                        vpnRecoveryAdvisoryState.value = null
-                    }
+                    vpnRecoveryMonitor.onInboundPacket()
                     count++
 
                     val ipVer = (packet[0].toInt() and 0xF0) shr 4
@@ -1316,7 +1312,7 @@ class DnsVpnService : VpnService() {
         qtype: String,
         decision: BlockDecision? = null
     ) {
-        logAsyncRich(domain, blocked, app, qtype, decision = decision)
+        dnsLogManager.record(domain, blocked, app, qtype, decision = decision)
     }
 
     /** Rich log entry with CNAME chain, resolved IPs, latency, and upstream server. */
@@ -1327,98 +1323,19 @@ class DnsVpnService : VpnService() {
         trackerCategory: String = "", trackerOwner: String = "",
         decision: BlockDecision? = null
     ) {
-        // Always count stats even if logging disabled
-        if (blocked) pendingBlockedStats.incrementAndGet() else pendingAllowedStats.incrementAndGet()
-
-        // v6.0: Network-based tracker detection — enrich log with tracker info
-        var tCat = trackerCategory
-        var tOwner = trackerOwner
-        if (tCat.isEmpty()) {
-            val tracker = networkTrackerDb.lookup(domain)
-            if (tracker != null) {
-                tCat = tracker.category
-                tOwner = tracker.owner
-            }
-        }
-
-        val entry = DnsLogEntry(
-            hostname = domain, blocked = blocked,
-            appPackage = app.first, appLabel = app.second, queryType = qtype,
-            cnameChain = cnameChain, resolvedIps = resolvedIps,
-            responseTimeMs = responseTimeMs, upstreamServer = upstreamServer,
-            trackerCategory = tCat, trackerOwner = tOwner,
-            decisionReason = decision?.reason.orEmpty(),
-            decisionSource = decision?.source.orEmpty(),
-            matchedValue = decision?.matchedValue.orEmpty(),
-            decisionPrecedence = decision?.precedence.orEmpty()
-        )
-
-        // v6.2: Track connection in ring buffer for per-app analytics
-        connectionTracker.recordConnection(
-            packageName = app.first,
-            appLabel = app.second,
+        dnsLogManager.record(
             domain = domain,
-            queryType = qtype,
-            resolvedIps = resolvedIps.split(",").filter { it.isNotBlank() },
             blocked = blocked,
+            app = app,
+            qtype = qtype,
+            cnameChain = cnameChain,
+            resolvedIps = resolvedIps,
             responseTimeMs = responseTimeMs,
             upstreamServer = upstreamServer,
+            trackerCategory = trackerCategory,
+            trackerOwner = trackerOwner,
+            decision = decision,
         )
-
-        // Emit to live query stream (non-blocking, drops oldest if full)
-        liveQueriesFlow.tryEmit(entry)
-        totalQueriesCount.incrementAndGet()
-
-        if (!loggingEnabled) return
-        if (!logBuffer.offer(entry)) {
-            // Buffer full — drop entry and track it
-            droppedQueries.incrementAndGet()
-        }
-    }
-
-    /** Batch-flush DNS log buffer to Room. 10-50x faster than individual inserts. */
-    private suspend fun flushLogBuffer() {
-        val batch = mutableListOf<DnsLogEntry>()
-        while (true) {
-            val entry = logBuffer.poll() ?: break
-            batch.add(entry)
-            if (batch.size >= 500) {
-                try {
-                    dnsLogDao.insertAll(batch.toList())  // immutable snapshot
-                } catch (e: Exception) {
-                    Log.e(TAG, "Batch insert failed (${batch.size} entries): ${e.message}", e)
-                }
-                batch.clear()
-            }
-        }
-        if (batch.isNotEmpty()) {
-            try {
-                dnsLogDao.insertAll(batch.toList())
-            } catch (e: Exception) {
-                Log.e(TAG, "Batch insert failed (${batch.size} entries): ${e.message}", e)
-            }
-        }
-    }
-
-    /** Flush accumulated stats to Room. Uses getAndSet(0) for atomic drain. */
-    private suspend fun flushStats() {
-        val blocked = pendingBlockedStats.getAndSet(0)
-        val allowed = pendingAllowedStats.getAndSet(0)
-        if (blocked == 0 && allowed == 0) return
-        try {
-            val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-            val e = blockStatsDao.getStatsByDate(today) ?: BlockStats(date = today)
-            blockStatsDao.upsert(e.copy(
-                blockedCount = e.blockedCount + blocked,
-                allowedCount = e.allowedCount + allowed,
-                totalQueries = e.totalQueries + blocked + allowed
-            ))
-        } catch (e: Exception) {
-            Log.e(TAG, "Stats flush failed: ${e.message}", e)
-            // Put stats back so they aren't lost
-            pendingBlockedStats.addAndGet(blocked)
-            pendingAllowedStats.addAndGet(allowed)
-        }
     }
 
     /**
@@ -1451,47 +1368,10 @@ class DnsVpnService : VpnService() {
         }
     }
 
-    /** Periodic log flusher — every 2 seconds. Crash-resistant: catches per-cycle errors. */
-    private fun startLogFlusher() {
-        logFlushJob?.cancel()
-        logFlushJob = serviceScope.launch {
-            Log.i(TAG, "Log flusher started (logging=${loggingEnabled})")
-            var diskPersistCounter = 0
-            while (isActive) {
-                delay(2000)
-                try {
-                    val bufSize = logBuffer.size
-                    if (bufSize > 0) {
-                        flushLogBuffer()
-                        Log.d(TAG, "Flushed $bufSize log entries to DB")
-                    }
-                    flushStats()
-                    // Publish cache stats + dropped count for UI
-                    currentCacheStats = dnsCache.getStats()
-                    currentDroppedQueries = droppedQueries.get()
-
-                    // v5.0: Persist DNS cache to disk every ~60s (30 cycles * 2s)
-                    diskPersistCounter++
-                    if (diskPersistCounter >= 30) {
-                        diskPersistCounter = 0
-                        val entries = dnsCache.exportForDisk()
-                        if (entries.isNotEmpty()) {
-                            dnsDiskCache.persistBatch(entries)
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Catch per-cycle so the flusher never dies permanently
-                    Log.e(TAG, "Log flush cycle error: ${e.message}", e)
-                }
-            }
-            Log.w(TAG, "Log flusher stopped (isActive=false)")
-        }
-    }
-
     /** Flush VPN stability metrics to Room. */
     private suspend fun flushStability() {
-        val dropped = droppedQueries.getAndSet(0)
-        val queries = totalQueriesCount.getAndSet(0)
+        val dropped = dnsLogManager.droppedQueries.getAndSet(0)
+        val queries = dnsLogManager.totalQueriesCount.getAndSet(0)
         val rebuilds = rebuildCount.getAndSet(0)
         val errors = fdErrorCount.getAndSet(0)
         try {
@@ -1515,8 +1395,8 @@ class DnsVpnService : VpnService() {
             // Reset start time for next interval
             vpnStartTime = System.currentTimeMillis()
         } catch (e: Exception) {
-            droppedQueries.addAndGet(dropped)
-            totalQueriesCount.addAndGet(queries)
+            dnsLogManager.droppedQueries.addAndGet(dropped)
+            dnsLogManager.totalQueriesCount.addAndGet(queries)
             rebuildCount.addAndGet(rebuilds)
             fdErrorCount.addAndGet(errors)
             Log.e(TAG, "Stability flush failed: ${e.message}")
@@ -1536,7 +1416,7 @@ class DnsVpnService : VpnService() {
 
     private fun sendToTun(packet: ByteArray) {
         val result = writeChannel.trySend(packet)
-        if (result.isFailure) droppedQueries.incrementAndGet()
+        if (result.isFailure) dnsLogManager.droppedQueries.incrementAndGet()
     }
 
     private suspend fun writeLoop() = withContext(Dispatchers.IO) {
@@ -2554,70 +2434,7 @@ class DnsVpnService : VpnService() {
         Log.w(TAG, obj.toString())
     }
 
-    private fun startVpnRecoveryMonitor() {
-        vpnRecoveryMonitorJob?.cancel()
-        vpnRecoveryMonitorJob = serviceScope.launch(Dispatchers.IO) {
-            while (isActive && isRunning) {
-                delay(30_000L)
-                evaluateVpnRecoveryAdvisory()
-            }
-        }
-    }
-
-    private fun cancelVpnRecoveryMonitor() {
-        vpnRecoveryMonitorJob?.cancel()
-        vpnRecoveryMonitorJob = null
-        vpnRecoveryAdvisoryState.value = null
-    }
-
-    private fun evaluateVpnRecoveryAdvisory() {
-        val snapshot = Android16VpnRecoveryDetector.Snapshot(
-            sdkInt = Build.VERSION.SDK_INT,
-            vpnRunning = isRunning,
-            alwaysOn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                try { isAlwaysOn() } catch (_: Exception) { false }
-            } else {
-                false
-            },
-            lockdownEnabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                try { isLockdownEnabled() } catch (_: Exception) { false }
-            } else {
-                false
-            },
-            tunFdValid = vpnInterface?.fileDescriptor?.valid() == true,
-            hasValidatedPhysicalNetwork = hasValidatedPhysicalNetwork(),
-            elapsedSinceVpnStartMs = SystemClock.elapsedRealtime() - vpnEstablishedAt,
-            inboundPacketCount = tunInboundPacketCount.get()
-        )
-
-        if (Android16VpnRecoveryDetector.shouldShowRecoveryAdvisory(snapshot)) {
-            if (vpnRecoveryAdvisoryState.value == null) {
-                vpnRecoveryAdvisoryState.value = VpnRecoveryAdvisory(
-                    title = "Restart device to recover VPN",
-                    message = "Android 16 always-on lockdown is active, but HostShield has not received tunnel traffic since startup. This can happen after system updates; a device restart usually restores the VPN stack.",
-                    detectedAtMillis = System.currentTimeMillis()
-                )
-                Log.w(TAG, "Android 16 VPN recovery advisory raised: $snapshot")
-            }
-        } else if (snapshot.inboundPacketCount > 0L && vpnRecoveryAdvisoryState.value != null) {
-            vpnRecoveryAdvisoryState.value = null
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun hasValidatedPhysicalNetwork(): Boolean {
-        val cm = getSystemService(ConnectivityManager::class.java) ?: return false
-        return cm.allNetworks.any { network ->
-            val caps = cm.getNetworkCapabilities(network) ?: return@any false
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) &&
-                !caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
-        }
-    }
-
     // ── Stats ────────────────────────────────────────────────
-
-    // Stats are now batched via flushStats() called by startLogFlusher()
 
     // ── Notifications ────────────────────────────────────────
 
@@ -2636,63 +2453,5 @@ class DnsVpnService : VpnService() {
         }
     }
 
-    private fun createNotificationChannel() {
-        val nm = getSystemService(NotificationManager::class.java)
-        NotificationChannel(CHANNEL_ID, "HostShield VPN", NotificationManager.IMPORTANCE_LOW).apply {
-            description = "VPN blocking status"; setShowBadge(false)
-        }.let { nm.createNotificationChannel(it) }
-        NotificationChannel(ALERT_CHANNEL_ID, "HostShield Alerts", NotificationManager.IMPORTANCE_DEFAULT).apply {
-            description = "Source health and system alerts"
-        }.let { nm.createNotificationChannel(it) }
-    }
-
-    private fun makePausePendingIntent(minutes: Int, requestCode: Int): PendingIntent =
-        PendingIntent.getService(this, requestCode,
-            Intent(this, DnsVpnService::class.java).apply {
-                action = ACTION_PAUSE; putExtra("pause_minutes", minutes)
-            },
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-
-    private fun buildNotification(blocked: Int): Notification {
-        val ci = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val si = PendingIntent.getService(this, 1,
-            Intent(this, DnsVpnService::class.java).apply { action = ACTION_STOP },
-            PendingIntent.FLAG_IMMUTABLE)
-
-        val title = if (isPaused) "HostShield Paused" else "HostShield Active"
-        val sub = buildString {
-            if (isPaused) append("Blocking paused")
-            else {
-                append(if (blocked > 0) "$blocked blocked" else "DNS filtering active")
-                if (useWireGuard) append(" | WG")
-                else if (useDoQ) append(" | DoQ")
-                else if (useDoT) append(" | DoT")
-                else if (useDoH) append(" | DoH")
-                if (dnsTrapEnabled) append(" | Trap")
-            }
-        }
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(title).setContentText(sub)
-            .setSmallIcon(com.hostshield.R.drawable.ic_shield).setOngoing(true)
-            .setContentIntent(ci)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-
-        if (isPaused) {
-            builder.addAction(0, "Resume", makePausePendingIntent(0, 5))
-        } else {
-            // Max 3 actions: Pause 5m, Pause 30m, Stop
-            builder.addAction(0, "Pause 5m", makePausePendingIntent(5, 2))
-            builder.addAction(0, "Pause 30m", makePausePendingIntent(30, 3))
-        }
-        builder.addAction(0, "Stop", si)
-
-        return builder.build()
-    }
-
-    private fun updateNotification(blocked: Int) {
-        currentBlockedCount = blocked
-        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification(blocked))
-    }
+    private fun updateNotification(blocked: Int) = vpnNotificationController.update(blocked)
 }
