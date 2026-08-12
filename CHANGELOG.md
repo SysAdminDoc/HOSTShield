@@ -29,6 +29,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 - Decomposed the VPN service into testable DNS query-processing, upstream
   forwarding, logging, blocklist, recovery, and notification components while
   preserving API-37 packet-loop behavior.
+- Completed API-37 connected top-flow coverage for VPN lifecycle, backup
+  encryption/import, diagnostic and PCAP artifacts, process persistence, RTL
+  layout safety, and full/Play package-visibility variants.
 
 ## [v6.9.68] - 2026-08-11
 
