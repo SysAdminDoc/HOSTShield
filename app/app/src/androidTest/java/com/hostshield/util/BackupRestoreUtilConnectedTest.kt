@@ -128,7 +128,10 @@ class BackupRestoreUtilConnectedTest {
         assertTrue(prefs.parentalEnabled.first())
         assertEquals("TEEN", prefs.parentalAgeProfile.first())
         assertTrue(prefs.wireGuardEnabled.first())
-        assertEquals("wg.example.com:51820", prefs.wireGuardEndpoint.first())
+        // WireGuard endpoints live in the secure store and are intentionally
+        // omitted from plaintext backups. Encrypted exports restore them only
+        // when the caller has successfully authenticated the payload.
+        assertEquals("", prefs.wireGuardEndpoint.first())
         assertEquals("10.8.0.2", prefs.wireGuardDnsIp.first())
         assertEquals("blue", prefs.accentColor.first())
         assertTrue(prefs.highContrastAmoled.first())
@@ -145,6 +148,12 @@ class BackupRestoreUtilConnectedTest {
         assertEquals("sync-user", prefs.webdavUsername.first())
         assertEquals("https://rules.example.com/a.txt,https://rules.example.com/b.txt", prefs.ruleSyncUrls.first())
         assertEquals(setOf("com.example.firewalled"), prefs.blockedApps.first())
+
+        prefs.setWireGuardEndpoint("wg.example.com:51820")
+        val encryptedJson = backupUtil(sourceDb).createBackup(includeSecrets = true)
+        overwritePreferences()
+        backupUtil(restoreDb).restoreBackup(encryptedJson, allowSecrets = true)
+        assertEquals("wg.example.com:51820", prefs.wireGuardEndpoint.first())
     }
 
     private fun newDatabase(): HostShieldDatabase =
