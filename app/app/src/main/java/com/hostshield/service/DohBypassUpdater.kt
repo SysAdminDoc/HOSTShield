@@ -21,7 +21,7 @@ import javax.inject.Singleton
  * Update flow:
  * 1. Fetch JSON from configured URL (default: HostShield GitHub repo)
  * 2. Verify schema, payload hash, rollback version, and app-pinned signature
- * 3. Store verified domains in DataStore preferences
+ * 3. Store verified domains and optional signed IP sets in DataStore preferences
  * 4. Next blocklist reload merges remote domains into trie
  */
 @Singleton
@@ -40,7 +40,8 @@ class DohBypassUpdater @Inject constructor(
         val version: Int = 0,
         val updated: String = "",
         val domains: Set<String> = emptySet(),
-        val wildcards: Set<String> = emptySet()
+        val wildcards: Set<String> = emptySet(),
+        val ipSets: DnsTrapIpSets? = null
     )
 
     /**
@@ -81,12 +82,18 @@ class DohBypassUpdater @Inject constructor(
                 version = verified.version,
                 updated = verified.updated,
                 domains = verified.domains,
-                wildcards = verified.wildcards
+                wildcards = verified.wildcards,
+                ipSets = verified.ipSets
             )
             prefs.setRemoteDohBypassList(
                 list.domains.joinToString(","),
                 list.wildcards.joinToString(","),
-                list.version
+                list.version,
+                dnsTrapIpv4 = list.ipSets?.dnsTrapIpv4?.joinToString(",") ?: "",
+                dnsTrapIpv6 = list.ipSets?.dnsTrapIpv6?.joinToString(",") ?: "",
+                dohBypassIpv4 = list.ipSets?.dohBypassIpv4?.joinToString(",") ?: "",
+                dohBypassIpv6 = list.ipSets?.dohBypassIpv6?.joinToString(",") ?: "",
+                ipSetsSigned = list.ipSets != null
             )
             Log.i(
                 TAG,
@@ -107,10 +114,21 @@ class DohBypassUpdater @Inject constructor(
         val domains = prefs.getRemoteDohDomains()
         val wildcards = prefs.getRemoteDohWildcards()
         val version = prefs.getRemoteDohVersion()
+        val ipSets = if (prefs.getRemoteDohIpSetsSigned()) {
+            DnsTrapIpSets(
+                dnsTrapIpv4 = normalizeCachedIpSet(prefs.getRemoteDohDnsTrapIpv4(), ipv6 = false),
+                dnsTrapIpv6 = normalizeCachedIpSet(prefs.getRemoteDohDnsTrapIpv6(), ipv6 = true),
+                dohBypassIpv4 = normalizeCachedIpSet(prefs.getRemoteDohBypassIpv4(), ipv6 = false),
+                dohBypassIpv6 = normalizeCachedIpSet(prefs.getRemoteDohBypassIpv6(), ipv6 = true)
+            ).takeIf { it.isComplete }
+        } else {
+            null
+        }
         return RemoteList(
             version = version,
             domains = normalizeCachedSet(domains),
-            wildcards = normalizeCachedSet(wildcards)
+            wildcards = normalizeCachedSet(wildcards),
+            ipSets = ipSets
         )
     }
 
@@ -145,5 +163,19 @@ class DohBypassUpdater @Inject constructor(
             .map { it.trim().lowercase() }
             .filter { it.isNotBlank() && it.contains('.') && !it.contains(' ') }
             .toSet()
+    }
+
+    private fun normalizeCachedIpSet(value: String, ipv6: Boolean): Set<String> {
+        if (value.isBlank()) return emptySet()
+        return value.split(",").mapNotNull { raw ->
+            val candidate = raw.trim()
+            if (candidate.isBlank() || (":" in candidate) != ipv6) return@mapNotNull null
+            runCatching {
+                VpnRouteCanonicalizer.canonicalize(
+                    candidate,
+                    if (ipv6) 128 else 32
+                ).address
+            }.getOrNull()
+        }.toSet()
     }
 }

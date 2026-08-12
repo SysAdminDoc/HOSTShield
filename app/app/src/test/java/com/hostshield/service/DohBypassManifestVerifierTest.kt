@@ -81,6 +81,29 @@ class DohBypassManifestVerifierTest {
         assertThat(first).contains("wildcards=a.example,b.example")
     }
 
+    @Test
+    fun `schema two canonical payload binds both IP families to the signature`() {
+        val payload = DohBypassManifestVerifier.canonicalPayload(
+            version = 2,
+            updated = "2026-08-12",
+            createdAt = "2026-08-12T00:00:00Z",
+            domains = setOf("doh.example"),
+            wildcards = setOf("example.com"),
+            ipSets = DnsTrapIpSets(
+                dnsTrapIpv4 = setOf("8.8.8.8"),
+                dnsTrapIpv6 = setOf("2001:4860:4860:0:0:0:0:8888"),
+                dohBypassIpv4 = setOf("1.1.1.1"),
+                dohBypassIpv6 = setOf("2606:4700:4700:0:0:0:0:1111")
+            ),
+            schema = DohBypassManifestVerifier.IP_SET_SCHEMA_VERSION
+        )
+
+        assertThat(payload).contains("schema=2")
+        assertThat(payload).contains("dns_trap_ipv4=8.8.8.8")
+        assertThat(payload).contains("dns_trap_ipv6=2001:4860:4860:0:0:0:0:8888")
+        assertThat(payload).contains("doh_bypass_ipv6=2606:4700:4700:0:0:0:0:1111")
+    }
+
     private fun committedManifest(): String {
         return listOf(
             File("../../doh-bypass-list.json"),

@@ -130,7 +130,7 @@ Bug reports and feature requests are read and acted on — [open an issue](https
 | **Configurable TTL** | 60s minimum floor, 24h maximum ceiling. SOA-derived TTL for NXDOMAIN negative caching |
 | **Block Response Types** | NXDOMAIN (with SOA), Null IP (0.0.0.0/::), or REFUSED — configurable per preference |
 | **Regex & Wildcard Rules** | Block/allow domains by regex pattern (capped at 500 chars, ReDoS-safe) or wildcard (`*.example.com`) |
-| **DoH Bypass Prevention** | Blocks 65+ known DoH provider domains + wildcard patterns. Remote updates are signature-verified before local policy changes |
+| **DoH Bypass Prevention** | Blocks 65+ known DoH provider domains + wildcard patterns, with dual-stack DNS/DoH trap routes. Remote domain/IP updates are signature-verified before local policy changes |
 
 ### Encrypted DNS
 

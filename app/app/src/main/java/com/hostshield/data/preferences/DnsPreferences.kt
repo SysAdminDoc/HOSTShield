@@ -27,6 +27,11 @@ class DnsPreferences @Inject constructor(
         val REMOTE_DOH_DOMAINS = stringPreferencesKey("remote_doh_domains")
         val REMOTE_DOH_WILDCARDS = stringPreferencesKey("remote_doh_wildcards")
         val REMOTE_DOH_VERSION = intPreferencesKey("remote_doh_version")
+        val REMOTE_DOH_DNS_TRAP_IPV4 = stringPreferencesKey("remote_doh_dns_trap_ipv4")
+        val REMOTE_DOH_DNS_TRAP_IPV6 = stringPreferencesKey("remote_doh_dns_trap_ipv6")
+        val REMOTE_DOH_BYPASS_IPV4 = stringPreferencesKey("remote_doh_bypass_ipv4")
+        val REMOTE_DOH_BYPASS_IPV6 = stringPreferencesKey("remote_doh_bypass_ipv6")
+        val REMOTE_DOH_IP_SETS_SIGNED = booleanPreferencesKey("remote_doh_ip_sets_signed")
         val CNAME_CLOAK_DOMAINS = stringPreferencesKey("cname_cloak_domains")
         val DNS_LOGGING = booleanPreferencesKey("dns_logging")
         val LOG_RETENTION_DAYS = intPreferencesKey("log_retention_days")
@@ -68,14 +73,38 @@ class DnsPreferences @Inject constructor(
     }
 
     // Remote DoH bypass
-    suspend fun setRemoteDohBypassList(domains: String, wildcards: String, version: Int) = ds.edit {
+    suspend fun setRemoteDohBypassList(
+        domains: String,
+        wildcards: String,
+        version: Int,
+        dnsTrapIpv4: String = "",
+        dnsTrapIpv6: String = "",
+        dohBypassIpv4: String = "",
+        dohBypassIpv6: String = "",
+        ipSetsSigned: Boolean = false
+    ) = ds.edit {
         it[Keys.REMOTE_DOH_DOMAINS] = domains
         it[Keys.REMOTE_DOH_WILDCARDS] = wildcards
         it[Keys.REMOTE_DOH_VERSION] = version
+        it[Keys.REMOTE_DOH_DNS_TRAP_IPV4] = dnsTrapIpv4
+        it[Keys.REMOTE_DOH_DNS_TRAP_IPV6] = dnsTrapIpv6
+        it[Keys.REMOTE_DOH_BYPASS_IPV4] = dohBypassIpv4
+        it[Keys.REMOTE_DOH_BYPASS_IPV6] = dohBypassIpv6
+        it[Keys.REMOTE_DOH_IP_SETS_SIGNED] = ipSetsSigned
     }
     suspend fun getRemoteDohDomains(): String = ds.data.map { it[Keys.REMOTE_DOH_DOMAINS] ?: "" }.first()
     suspend fun getRemoteDohWildcards(): String = ds.data.map { it[Keys.REMOTE_DOH_WILDCARDS] ?: "" }.first()
     suspend fun getRemoteDohVersion(): Int = ds.data.map { it[Keys.REMOTE_DOH_VERSION] ?: 0 }.first()
+    suspend fun getRemoteDohDnsTrapIpv4(): String =
+        ds.data.map { it[Keys.REMOTE_DOH_DNS_TRAP_IPV4] ?: "" }.first()
+    suspend fun getRemoteDohDnsTrapIpv6(): String =
+        ds.data.map { it[Keys.REMOTE_DOH_DNS_TRAP_IPV6] ?: "" }.first()
+    suspend fun getRemoteDohBypassIpv4(): String =
+        ds.data.map { it[Keys.REMOTE_DOH_BYPASS_IPV4] ?: "" }.first()
+    suspend fun getRemoteDohBypassIpv6(): String =
+        ds.data.map { it[Keys.REMOTE_DOH_BYPASS_IPV6] ?: "" }.first()
+    suspend fun getRemoteDohIpSetsSigned(): Boolean =
+        ds.data.map { it[Keys.REMOTE_DOH_IP_SETS_SIGNED] ?: false }.first()
 
     // CNAME cloak
     suspend fun setCnameCloakDomains(domains: String) = ds.edit { it[Keys.CNAME_CLOAK_DOMAINS] = domains }

@@ -10,6 +10,9 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
   the matching local mirror.
 - Release documentation checks now enumerate active catalog/Kotlin source URLs
   and verify each with an HTTP GET, with an explicit offline opt-out.
+- Added IPv6 DNS/DoH trap routing and signed-manifest v2 IP-set parsing with a
+  compiled fallback; the existing signed v1 manifest continues using that
+  fallback until its credential-gated refresh is published.
 
 ## [v6.9.68] - 2026-08-11
 

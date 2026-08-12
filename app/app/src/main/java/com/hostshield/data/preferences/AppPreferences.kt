@@ -139,11 +139,33 @@ class AppPreferences @Inject constructor(
     // (already delegated above)
 
     // ── Remote DoH Bypass List ──────────────────────────────
-    suspend fun setRemoteDohBypassList(domains: String, wildcards: String, version: Int) =
-        dns.setRemoteDohBypassList(domains, wildcards, version)
+    suspend fun setRemoteDohBypassList(
+        domains: String,
+        wildcards: String,
+        version: Int,
+        dnsTrapIpv4: String = "",
+        dnsTrapIpv6: String = "",
+        dohBypassIpv4: String = "",
+        dohBypassIpv6: String = "",
+        ipSetsSigned: Boolean = false
+    ) = dns.setRemoteDohBypassList(
+        domains,
+        wildcards,
+        version,
+        dnsTrapIpv4,
+        dnsTrapIpv6,
+        dohBypassIpv4,
+        dohBypassIpv6,
+        ipSetsSigned
+    )
     suspend fun getRemoteDohDomains(): String = dns.getRemoteDohDomains()
     suspend fun getRemoteDohWildcards(): String = dns.getRemoteDohWildcards()
     suspend fun getRemoteDohVersion(): Int = dns.getRemoteDohVersion()
+    suspend fun getRemoteDohDnsTrapIpv4(): String = dns.getRemoteDohDnsTrapIpv4()
+    suspend fun getRemoteDohDnsTrapIpv6(): String = dns.getRemoteDohDnsTrapIpv6()
+    suspend fun getRemoteDohBypassIpv4(): String = dns.getRemoteDohBypassIpv4()
+    suspend fun getRemoteDohBypassIpv6(): String = dns.getRemoteDohBypassIpv6()
+    suspend fun getRemoteDohIpSetsSigned(): Boolean = dns.getRemoteDohIpSetsSigned()
 
     // ── CNAME Cloak Database ──────────────────────────────────
     suspend fun setCnameCloakDomains(domains: String) = dns.setCnameCloakDomains(domains)

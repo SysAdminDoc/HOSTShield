@@ -251,6 +251,23 @@ function Test-DohBypassDomain {
     return $candidate -match '^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])$'
 }
 
+function ConvertTo-CanonicalIp {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    $parsed = [System.Net.IPAddress]::Parse($Value.Trim())
+    $bytes = $parsed.GetAddressBytes()
+    if ($bytes.Length -eq 4) {
+        return $parsed.ToString()
+    }
+    if ($bytes.Length -ne 16) {
+        throw "Unsupported IP address family."
+    }
+    $groups = for ($index = 0; $index -lt 16; $index += 2) {
+        '{0:x}' -f (($bytes[$index] -shl 8) -bor $bytes[$index + 1])
+    }
+    return $groups -join ":"
+}
+
 function Get-Sha256Hex {
     param([Parameter(Mandatory = $true)][string]$Text)
 
@@ -264,7 +281,12 @@ function Get-DohBypassCanonicalPayload {
         [Parameter(Mandatory = $true)][string]$Updated,
         [Parameter(Mandatory = $true)][string]$CreatedAt,
         [Parameter(Mandatory = $true)][string[]]$Domains,
-        [Parameter(Mandatory = $true)][string[]]$Wildcards
+        [Parameter(Mandatory = $true)][string[]]$Wildcards,
+        [int]$Schema = 1,
+        [string[]]$DnsTrapIpv4 = @(),
+        [string[]]$DnsTrapIpv6 = @(),
+        [string[]]$DohBypassIpv4 = @(),
+        [string[]]$DohBypassIpv6 = @()
     )
 
     [string[]]$domainArray = @($Domains)
@@ -274,7 +296,22 @@ function Get-DohBypassCanonicalPayload {
 
     $sortedDomains = $domainArray -join ","
     $sortedWildcards = $wildcardArray -join ","
-    return "schema=1`nversion=$Version`nupdated=$Updated`ncreated_at=$CreatedAt`ndomains=$sortedDomains`nwildcards=$sortedWildcards"
+    $payload = "schema=$Schema`nversion=$Version`nupdated=$Updated`ncreated_at=$CreatedAt`ndomains=$sortedDomains`nwildcards=$sortedWildcards"
+    if ($Schema -eq 2) {
+        $ipSets = @(
+            @($DnsTrapIpv4),
+            @($DnsTrapIpv6),
+            @($DohBypassIpv4),
+            @($DohBypassIpv6)
+        )
+        $ipSetNames = @("dns_trap_ipv4", "dns_trap_ipv6", "doh_bypass_ipv4", "doh_bypass_ipv6")
+        for ($index = 0; $index -lt $ipSets.Count; $index++) {
+            [string[]]$sortedIps = @($ipSets[$index])
+            [Array]::Sort($sortedIps, [StringComparer]::Ordinal)
+            $payload += "`n$($ipSetNames[$index])=$($sortedIps -join ',')"
+        }
+    }
+    return $payload
 }
 
 $dohBypassManifest = "doh-bypass-list.json"
@@ -305,8 +342,8 @@ if (-not (Test-RepoFile $dohBypassManifest)) {
 
     if ($null -ne $manifest) {
         [int]$manifestSchema = 0
-        if (-not [int]::TryParse([string]$manifest.schema, [ref]$manifestSchema) -or $manifestSchema -ne 1) {
-            $failures.Add("$dohBypassManifest must contain integer schema 1.")
+        if (-not [int]::TryParse([string]$manifest.schema, [ref]$manifestSchema) -or $manifestSchema -notin @(1, 2)) {
+            $failures.Add("$dohBypassManifest must contain integer schema 1 or 2.")
         }
 
         [int]$manifestVersion = 0
@@ -366,57 +403,115 @@ if (-not (Test-RepoFile $dohBypassManifest)) {
             }
         }
 
-        $canonicalPayload = Get-DohBypassCanonicalPayload `
-            -Version $manifestVersion `
-            -Updated ([string]$manifest.updated).Trim() `
-            -CreatedAt $createdAt `
-            -Domains $normalizedDomains.ToArray() `
-            -Wildcards $normalizedWildcards.ToArray()
-        $payloadHash = Get-Sha256Hex $canonicalPayload
-        if (([string]$manifest.payload_sha256).Trim().ToLowerInvariant() -ne $payloadHash) {
-            $failures.Add("$dohBypassManifest payload_sha256 does not match canonical payload.")
+        $normalizedIpSets = @{}
+        if ($manifestSchema -eq 2) {
+            $ipSetDefinitions = @{
+                "dns_trap_ipv4" = $false
+                "dns_trap_ipv6" = $true
+                "doh_bypass_ipv4" = $false
+                "doh_bypass_ipv6" = $true
+            }
+            $ipCount = 0
+            foreach ($ipSetName in $ipSetDefinitions.Keys) {
+                $rawIpSet = if ($null -ne $manifest.$ipSetName) { @($manifest.$ipSetName) } else { @() }
+                $seenIps = New-Object System.Collections.Generic.HashSet[string]
+                $normalizedIps = New-Object System.Collections.Generic.List[string]
+                if ($rawIpSet.Count -eq 0) {
+                    $failures.Add("$dohBypassManifest schema 2 requires a non-empty $ipSetName array.")
+                }
+                foreach ($rawIp in $rawIpSet) {
+                    try {
+                        $candidate = ([string]$rawIp).Trim()
+                        $canonicalIp = ConvertTo-CanonicalIp $candidate
+                        $isIpv6 = $canonicalIp.Contains(":")
+                        if ($isIpv6 -ne [bool]$ipSetDefinitions[$ipSetName]) {
+                            throw "wrong address family"
+                        }
+                        if (-not $seenIps.Add($canonicalIp)) {
+                            throw "duplicate address"
+                        }
+                        $normalizedIps.Add($canonicalIp)
+                        $ipCount++
+                    } catch {
+                        $failures.Add("$dohBypassManifest contains invalid $ipSetName entry '$rawIp': $($_.Exception.Message)")
+                    }
+                }
+                $normalizedIpSets[$ipSetName] = $normalizedIps.ToArray()
+            }
+            if ($ipCount -gt 128) {
+                $failures.Add("$dohBypassManifest has $ipCount IPs; the verifier caps schema 2 at 128.")
+            }
+        }
+
+        $canonicalPayload = $null
+        if ($manifestSchema -in @(1, 2)) {
+            $canonicalParams = @{
+                Version = $manifestVersion
+                Updated = ([string]$manifest.updated).Trim()
+                CreatedAt = $createdAt
+                Domains = $normalizedDomains.ToArray()
+                Wildcards = $normalizedWildcards.ToArray()
+                Schema = $manifestSchema
+            }
+            if ($manifestSchema -eq 2) {
+                $canonicalParams.DnsTrapIpv4 = $normalizedIpSets["dns_trap_ipv4"]
+                $canonicalParams.DnsTrapIpv6 = $normalizedIpSets["dns_trap_ipv6"]
+                $canonicalParams.DohBypassIpv4 = $normalizedIpSets["doh_bypass_ipv4"]
+                $canonicalParams.DohBypassIpv6 = $normalizedIpSets["doh_bypass_ipv6"]
+            }
+            $canonicalPayload = Get-DohBypassCanonicalPayload @canonicalParams
+        }
+        if ($null -ne $canonicalPayload) {
+            $payloadHash = Get-Sha256Hex $canonicalPayload
+            if (([string]$manifest.payload_sha256).Trim().ToLowerInvariant() -ne $payloadHash) {
+                $failures.Add("$dohBypassManifest payload_sha256 does not match canonical payload.")
+            }
         }
 
         $signature = $manifest.signature
         if ($null -eq $signature) {
             $failures.Add("$dohBypassManifest must contain a signature object.")
         } else {
-            if ([string]$signature.algorithm -ne "SHA256withRSA") {
-                $failures.Add("$dohBypassManifest signature algorithm must be SHA256withRSA.")
-            }
-            if ([string]$signature.key_id -ne "hostshield-release-rsa-v1") {
-                $failures.Add("$dohBypassManifest signature key_id must be hostshield-release-rsa-v1.")
-            }
-
-            $dohVerifierPath = "app/app/src/main/java/com/hostshield/service/DohBypassManifestVerifier.kt"
-            if (-not (Test-RepoFile $dohVerifierPath)) {
-                $failures.Add("Missing DoH bypass manifest verifier: $dohVerifierPath")
+            if ($null -eq $canonicalPayload) {
+                $failures.Add("$dohBypassManifest signature cannot be verified without a supported canonical schema.")
             } else {
-                $dohVerifier = Read-RepoFile $dohVerifierPath
-                $certMatch = [regex]::Match(
-                    $dohVerifier,
-                    'PINNED_CERTIFICATE_BASE64\s*=\s*"([^"]+)"'
-                )
-                if (-not $certMatch.Success) {
-                    $failures.Add("$dohVerifierPath must contain PINNED_CERTIFICATE_BASE64.")
+                if ([string]$signature.algorithm -ne "SHA256withRSA") {
+                    $failures.Add("$dohBypassManifest signature algorithm must be SHA256withRSA.")
+                }
+                if ([string]$signature.key_id -ne "hostshield-release-rsa-v1") {
+                    $failures.Add("$dohBypassManifest signature key_id must be hostshield-release-rsa-v1.")
+                }
+
+                $dohVerifierPath = "app/app/src/main/java/com/hostshield/service/DohBypassManifestVerifier.kt"
+                if (-not (Test-RepoFile $dohVerifierPath)) {
+                    $failures.Add("Missing DoH bypass manifest verifier: $dohVerifierPath")
                 } else {
-                    try {
-                        $certBytes = [Convert]::FromBase64String($certMatch.Groups[1].Value)
-                        $cert = [Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes)
-                        $rsa = [Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($cert)
-                        $signatureBytes = [Convert]::FromBase64String([string]$signature.value)
-                        $payloadBytes = [Text.Encoding]::UTF8.GetBytes($canonicalPayload)
-                        $isValid = $rsa.VerifyData(
-                            $payloadBytes,
-                            $signatureBytes,
-                            [Security.Cryptography.HashAlgorithmName]::SHA256,
-                            [Security.Cryptography.RSASignaturePadding]::Pkcs1
-                        )
-                        if (-not $isValid) {
-                            $failures.Add("$dohBypassManifest signature verification failed.")
+                    $dohVerifier = Read-RepoFile $dohVerifierPath
+                    $certMatch = [regex]::Match(
+                        $dohVerifier,
+                        'PINNED_CERTIFICATE_BASE64\s*=\s*"([^"]+)"'
+                    )
+                    if (-not $certMatch.Success) {
+                        $failures.Add("$dohVerifierPath must contain PINNED_CERTIFICATE_BASE64.")
+                    } else {
+                        try {
+                            $certBytes = [Convert]::FromBase64String($certMatch.Groups[1].Value)
+                            $cert = [Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes)
+                            $rsa = [Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($cert)
+                            $signatureBytes = [Convert]::FromBase64String([string]$signature.value)
+                            $payloadBytes = [Text.Encoding]::UTF8.GetBytes($canonicalPayload)
+                            $isValid = $rsa.VerifyData(
+                                $payloadBytes,
+                                $signatureBytes,
+                                [Security.Cryptography.HashAlgorithmName]::SHA256,
+                                [Security.Cryptography.RSASignaturePadding]::Pkcs1
+                            )
+                            if (-not $isValid) {
+                                $failures.Add("$dohBypassManifest signature verification failed.")
+                            }
+                        } catch {
+                            $failures.Add("$dohBypassManifest signature could not be verified: $($_.Exception.Message)")
                         }
-                    } catch {
-                        $failures.Add("$dohBypassManifest signature could not be verified: $($_.Exception.Message)")
                     }
                 }
             }

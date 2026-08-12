@@ -79,7 +79,7 @@ internal fun BlockDecision.skipsThreatIntelChecks(): Boolean =
 // - Virtual DNS servers use RFC 5737 TEST-NET addresses (192.0.2.x,
 //   198.51.100.x, 203.0.113.x) with automatic fallback if a prefix
 //   conflicts with an active network route.
-// - Only /32 routes for each virtual DNS address, so ONLY DNS packets
+// - Only host routes (/32 IPv4, /128 IPv6) for virtual DNS/trap addresses, so ONLY DNS packets
 //   traverse the TUN. All other traffic bypasses the VPN entirely.
 // - Packet loop uses Os.poll() to multiplex the TUN fd with a shutdown
 //   pipe, avoiding blocking reads that miss events.
@@ -176,59 +176,16 @@ class DnsVpnService : VpnService() {
 
         // Real upstream DNS (for forwarding allowed queries)
         private val UPSTREAM_DNS = arrayOf("8.8.8.8", "1.1.1.1")
-        // DNS Trap: well-known public DNS IPs that apps hardcode.
-        // Routing these through VPN ensures queries to them get filtered.
-        private val DNS_TRAP_IPS = arrayOf(
-            "8.8.8.8", "8.8.4.4",               // Google
-            "1.1.1.1", "1.0.0.1",               // Cloudflare
-            "9.9.9.9", "149.112.112.112",        // Quad9
-            "208.67.222.222", "208.67.220.220",  // OpenDNS
-            "94.140.14.14", "94.140.15.15",      // AdGuard
-            "76.76.2.0", "76.76.10.0",           // ControlD
-            "185.228.168.9", "185.228.169.9",    // CleanBrowsing
-            "194.242.2.2", "194.242.2.3",        // Mullvad
-        )
 
         // DoT (DNS-over-TLS) trap: these IPs also run on port 853.
         // We route them through VPN and drop non-port-53 traffic,
         // forcing apps to fall back to port 53 where we can filter.
-        // Note: The DNS_TRAP_IPS already route port 53 traffic. This
+        // Note: The signed DNS-trap set already routes port 53 traffic. This
         // list is for hostname-based routing of additional DoT endpoints.
         private val DOT_TRAP_IPS = arrayOf(
             "dns.google",          // 8.8.8.8, 8.8.4.4
             "1dot1dot1dot1.cloudflare-dns.com", // 1.1.1.1
             "dns.quad9.net",       // 9.9.9.9
-        )
-
-        // Known DoH provider IPs. When DoH bypass prevention is on, we
-        // route these through TUN and drop HTTPS (port 443) traffic so
-        // apps can't use DoH to bypass DNS filtering.
-        //
-        // IMPORTANT: These IPs change periodically as CDNs rotate addresses.
-        // This list is a best-effort snapshot. Domain-level blocking in
-        // BlocklistHolder's dohBypassDomains is the primary defense;
-        // IP blocking is a supplementary layer.
-        private val DOH_BYPASS_IPS = arrayOf(
-            // Cloudflare DoH (cloudflare-dns.com, 1.1.1.1)
-            "104.16.248.249", "104.16.249.249",
-            "172.64.36.1", "172.64.36.2",
-            // Google DoH (dns.google)
-            "142.250.80.14", "142.251.1.100",
-            "8.8.8.8", "8.8.4.4",               // dns.google resolves to these too
-            // Quad9 DoH (dns.quad9.net)
-            "9.9.9.11", "149.112.112.11",
-            // AdGuard DoH (dns.adguard-dns.com)
-            "94.140.14.140", "94.140.14.141",
-            // NextDNS DoH (dns.nextdns.io) — Anycast
-            "45.90.28.0", "45.90.30.0",
-            // OpenDNS DoH (doh.opendns.com)
-            "146.112.41.2", "146.112.41.3",
-            // CleanBrowsing DoH
-            "185.228.168.168", "185.228.169.168",
-            // Mullvad DoH (dns.mullvad.net)
-            "194.242.2.2", "194.242.2.3",
-            // ControlD DoH (freedns.controld.com)
-            "76.76.2.11", "76.76.10.11",
         )
 
     }
@@ -596,6 +553,8 @@ class DnsVpnService : VpnService() {
             dnsTrapEnabled = prefs.dnsTrapEnabled.first()
             threatIntelEnabled = prefs.threatIntelEnabled.first()
             dnsOnlyMode = prefs.dnsOnlyMode.first()
+            val activeTrapIpSets = dohBypassUpdater.getCached().ipSets
+                ?: DnsTrapIpSets.FALLBACK
             safeSearchEnabled = prefs.safeSearchEnabled.first()
             // Pre-warm and keep safe-search endpoints resolved off the packet
             // loop — a cold cache there blocks the single TUN thread on a
@@ -663,8 +622,10 @@ class DnsVpnService : VpnService() {
                 Log.e(TAG, "addAddress(IPv4) rejected: ${e.message}")
                 stopVpn(); return
             }
+            var ipv6VpnAvailable = false
             try {
                 builder.addAddress(VPN_ADDRESS6, 120)
+                ipv6VpnAvailable = true
             } catch (e: IllegalArgumentException) {
                 Log.w(TAG, "addAddress(IPv6) rejected by OEM, continuing v4-only: ${e.message}")
             }
@@ -695,21 +656,23 @@ class DnsVpnService : VpnService() {
                 stopVpn(); return
             }
 
-            // IPv6 virtual DNS
-            builder.addDnsServer(VDNS6_PRIMARY)
-            builder.addCanonicalRoute(VDNS6_PRIMARY, 128)
+            // IPv6 virtual DNS. Do not add an IPv6 route when the OEM rejected
+            // the IPv6 tunnel address; doing so can make establish() fail.
+            if (ipv6VpnAvailable) {
+                builder.addDnsServer(VDNS6_PRIMARY)
+                builder.addCanonicalRoute(VDNS6_PRIMARY, 128)
+            }
 
             // DNS Trap: route well-known public DNS through TUN
             // v6.0: Skip trap routes in DNS-only mode for lower battery (~0.5%)
             if (dnsTrapEnabled && !dnsOnlyMode) {
-                for (ip in DNS_TRAP_IPS) {
-                    try { builder.addCanonicalRoute(ip, 32) } catch (_: Exception) { }
-                }
-                // Route known DoH provider IPs too -- we'll drop port 443
-                // traffic to these IPs so apps can't bypass DNS filtering
-                // via DNS-over-HTTPS to hardcoded resolver IPs.
-                for (ip in DOH_BYPASS_IPS) {
-                    try { builder.addCanonicalRoute(ip, 32) } catch (_: Exception) { }
+                // Signed manifest v2 IPs replace the fallback as a complete
+                // set; older manifests and corrupt caches use the APK set.
+                for (route in DnsTrapRoutePlanner.routeTargets(
+                    activeTrapIpSets,
+                    ipv6VpnAvailable
+                )) {
+                    try { builder.addRoute(route.address, route.prefixLength) } catch (_: Exception) { }
                 }
             }
 
@@ -773,7 +736,9 @@ class DnsVpnService : VpnService() {
                 "upstream=${upstreamDnsServers.joinToString(",")}, " +
                 "vdns=$vdns4Primary/$vdns4Secondary, " +
                 "blockResponse=$blockResponseType, " +
-                "trap=${dnsTrapEnabled && !dnsOnlyMode} (${DNS_TRAP_IPS.size}+${DOH_BYPASS_IPS.size} IPs), " +
+                    "trap=${dnsTrapEnabled && !dnsOnlyMode} (" +
+                        "${activeTrapIpSets.dnsTrapIpv4.size + activeTrapIpSets.dnsTrapIpv6.size}+" +
+                        "${activeTrapIpSets.dohBypassIpv4.size + activeTrapIpSets.dohBypassIpv6.size} IPs), " +
                 "dnsOnly=$dnsOnlyMode, " +
                 "excluded=${excludedApps.size}, firewalled=${if (dnsOnlyMode) "off(dns-only)" else "${blockedApps.size}"}")
             recordEvent(
