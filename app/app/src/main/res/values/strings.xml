@@ -79,6 +79,25 @@
     <string name="action_restore">Restore</string>
     <string name="action_back">Back</string>
 
+    <!-- Blocked-domain notification actions -->
+    <string name="notification_blocked_title">Blocked: %1$s</string>
+    <string name="notification_blocked_body">Blocked by %1$s (%2$s). Choose an action or view why.</string>
+    <string name="notification_blocked_reason_default">HostShield blocklist</string>
+    <string name="notification_allow_once">Allow once</string>
+    <string name="notification_allow_10_minutes">Allow 10 min</string>
+    <string name="notification_allow_always">Always allow</string>
+    <string name="notification_why">Why?</string>
+    <string name="notification_block_channel">Blocked domains</string>
+    <string name="notification_block_channel_description">Optional actions for blocked DNS domains</string>
+    <string name="notification_pin_title">PIN required</string>
+    <string name="notification_pin_message">Enter the parental-control PIN to allow %1$s.</string>
+    <string name="notification_pin_wrong">Incorrect PIN</string>
+    <plurals name="notification_pin_locked">
+        <item quantity="one">Too many attempts. Try again in %1$d second.</item>
+        <item quantity="other">Too many attempts. Try again in %1$d seconds.</item>
+    </plurals>
+    <string name="notification_pin_no_pin">A parental-control PIN is required for this action.</string>
+
     <!-- Common labels -->
     <string name="label_version">Version</string>
     <string name="label_root">Root</string>
@@ -110,6 +129,8 @@
     <string name="settings_scheduled_blocking_sub">Auto-enable/disable at set times</string>
     <string name="settings_dns_logging">DNS logging</string>
     <string name="settings_dns_logging_sub">Record DNS queries for stats</string>
+    <string name="settings_blocked_domain_notifications">Blocked-domain actions</string>
+    <string name="settings_blocked_domain_notifications_sub">Show optional notifications with allow and reason actions</string>
     <string name="settings_online_ip_lookup">Online IP lookup</string>
     <string name="settings_online_ip_lookup_sub">Look up IP location and ASN via ipapi.co (sends resolved IPs to a third party)</string>
     <string name="settings_auto_update">Auto-update blocklists</string>

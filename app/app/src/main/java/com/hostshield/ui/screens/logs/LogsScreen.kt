@@ -6,6 +6,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,8 +27,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -54,6 +58,7 @@ import com.hostshield.util.GeoIpLookup
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.delay
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -87,7 +92,16 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
     val blockedCount by viewModel.blockedCount.collectAsStateWithLifecycle()
     val threatReviewCount by viewModel.threatReviewCount.collectAsStateWithLifecycle()
     val savedFilters by viewModel.savedFilters.collectAsStateWithLifecycle()
+    val notificationPinRequest by viewModel.notificationPinRequest.collectAsStateWithLifecycle()
     val backAction = onBack
+
+    LaunchedEffect(viewModel.notificationTarget, deduped) {
+        if (viewModel.notificationTarget.isNotBlank() && selectedEntry == null) {
+            deduped.firstOrNull {
+                it.hostname.equals(viewModel.notificationTarget, ignoreCase = true)
+            }?.let { selectedEntry = it }
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(Black)) {
         // Header
@@ -407,6 +421,62 @@ fun LogsScreen(viewModel: LogsViewModel = hiltViewModel(), onBack: (() -> Unit)?
             confirmLabel = "Clear logs",
             onConfirm = { viewModel.clearLogs() },
             onDismiss = { showClearLogsDialog = false },
+        )
+    }
+
+    notificationPinRequest?.let { request ->
+        var pin by remember(request.action, request.hostname) { mutableStateOf("") }
+        var remainingMs by remember(request.lockoutMs) { mutableLongStateOf(request.lockoutMs) }
+        LaunchedEffect(request.lockoutMs) {
+            if (request.lockoutMs <= 0L) {
+                remainingMs = 0L
+            } else {
+                val deadline = System.currentTimeMillis() + request.lockoutMs
+                while (true) {
+                    remainingMs = (deadline - System.currentTimeMillis()).coerceAtLeast(0L)
+                    if (remainingMs == 0L) break
+                    delay(250L)
+                }
+            }
+        }
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissNotificationPin() },
+            title = { Text(stringResource(com.hostshield.R.string.notification_pin_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        stringResource(com.hostshield.R.string.notification_pin_message, request.hostname),
+                        color = TextSecondary,
+                    )
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = { value ->
+                            pin = value.filter(Char::isDigit).take(4)
+                        },
+                        label = { Text("4-digit PIN") },
+                        singleLine = true,
+                        isError = request.error != null,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    )
+                    request.error?.let { error ->
+                        Text(error, color = Red, fontSize = 12.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.submitNotificationPin(pin) },
+                    enabled = pin.length == 4 && remainingMs == 0L,
+                ) {
+                    Text("Allow", color = if (pin.length == 4 && remainingMs == 0L) Teal else TextDim)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissNotificationPin() }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            },
         )
     }
 }

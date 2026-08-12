@@ -30,6 +30,7 @@ class UiPreferences @Inject constructor(
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val SHOW_NOTIFICATION = booleanPreferencesKey("show_notification")
+        val BLOCKED_DOMAIN_NOTIFICATIONS = booleanPreferencesKey("blocked_domain_notifications")
         val PINNED_DOMAINS = stringPreferencesKey("pinned_domains")
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
         val SAVED_DENSE_LIST_FILTERS = stringPreferencesKey("saved_dense_list_filters")
@@ -49,6 +50,11 @@ class UiPreferences @Inject constructor(
 
     val showNotification: Flow<Boolean> = ds.data.map { it[Keys.SHOW_NOTIFICATION] ?: true }
     suspend fun setShowNotification(show: Boolean) = ds.edit { it[Keys.SHOW_NOTIFICATION] = show }
+
+    val blockedDomainNotifications: Flow<Boolean> =
+        ds.data.map { it[Keys.BLOCKED_DOMAIN_NOTIFICATIONS] ?: false }
+    suspend fun setBlockedDomainNotifications(enabled: Boolean) =
+        ds.edit { it[Keys.BLOCKED_DOMAIN_NOTIFICATIONS] = enabled }
 
     val pinnedDomains: Flow<Set<String>> = ds.data.map {
         (it[Keys.PINNED_DOMAINS] ?: "").split(",").filter { s -> s.isNotBlank() }.toSet()

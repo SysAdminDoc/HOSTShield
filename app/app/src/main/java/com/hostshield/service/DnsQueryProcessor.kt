@@ -3,6 +3,7 @@ package com.hostshield.service
 import android.util.Log
 import com.hostshield.data.model.FirewallRule
 import com.hostshield.domain.BlockDecision
+import com.hostshield.domain.OneShotAllowStore
 import com.hostshield.util.PrivacyLog
 import com.hostshield.util.TlsFingerprinter
 
@@ -150,6 +151,34 @@ internal class DnsQueryProcessor(
                 host.sendBlockResponse(dns, packet, headerOffset, isV6, qtype, "context_firewall")
                 return
             }
+        }
+
+        // Notification "Allow once" is deliberately checked after app-level
+        // firewall rules, but before content/parental/shared DNS policy. This
+        // lets the PIN-gated user action authorize exactly one query without
+        // weakening an app firewall or creating a persistent rule.
+        if (OneShotAllowStore.consume(domain)) {
+            host.log(domain, false, app, qtype, decision(
+                blocked = false,
+                reason = "notification_allow_once",
+                source = "Blocked-domain notification",
+                matchedValue = domain,
+                precedence = "one-shot user action overrides DNS policy for one query",
+            ))
+            val packetCopy = packet.copyOf(length)
+            host.launchWork {
+                host.forwardEncrypted(
+                    dns = dns,
+                    domain = domain,
+                    packet = packetCopy,
+                    headerOffset = headerOffset,
+                    app = app,
+                    isV6 = isV6,
+                    skipThreatIntelChecks = true,
+                )
+            }
+            host.incrementAllowed()
+            return
         }
 
         if (host.safeSearchEnabled && safeSearchEnforcer.isSafeSearchDomain(domain)) {

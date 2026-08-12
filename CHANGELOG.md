@@ -5,6 +5,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 
 ## [Unreleased]
 
+- Added opt-in blocked-domain notifications with one-shot, ten-minute, and
+  persistent allow actions, source-aware log deep links, and parental-control
+  PIN gating.
 - Replaced the 12 dead HaGeZi gallery and allowlist URLs with HostShield-hosted
   ABP snapshots, and migrate existing subscriptions from every retired URL to
   the matching local mirror.

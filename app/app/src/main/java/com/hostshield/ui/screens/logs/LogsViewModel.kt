@@ -16,10 +16,13 @@ import com.hostshield.data.preferences.SavedDenseListFilter
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.data.database.AppDnsRuleDao
 import com.hostshield.domain.BlocklistHolder
+import com.hostshield.domain.OneShotAllowStore
 import com.hostshield.util.GeoIpLookup
 import com.hostshield.util.PrivacyLog
 import com.hostshield.util.RootUtil
 import com.hostshield.service.AppDnsRuleEngine
+import com.hostshield.service.BlockNotificationActions
+import com.hostshield.service.ParentalControlManager
 import com.hostshield.service.TemporaryAllowWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -48,6 +51,13 @@ data class DedupedLogEntry(
     val matchedValue: String = "",
     val decisionPrecedence: String = "",
     val reasonFacets: Set<BlockReasonFacet> = emptySet(),
+)
+
+data class NotificationPinRequest(
+    val action: String,
+    val hostname: String,
+    val error: String? = null,
+    val lockoutMs: Long = 0L,
 )
 
 private data class LogFilters(
@@ -101,6 +111,7 @@ class LogsViewModel @Inject constructor(
     private val geoIpLookup: GeoIpLookup,
     private val appDnsRuleDao: AppDnsRuleDao,
     private val appDnsRuleEngine: AppDnsRuleEngine,
+    private val parentalControlManager: ParentalControlManager,
     savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
     val logs: StateFlow<List<DnsLogEntry>> = repository.getRecentLogs(2000)
@@ -109,6 +120,16 @@ class LogsViewModel @Inject constructor(
     // Seed search from the Home search suggestion nav arg ("logs?query=…").
     private val _searchQuery = MutableStateFlow(savedStateHandle.get<String>("query").orEmpty())
     val searchQuery = _searchQuery.asStateFlow()
+    private val notificationAction = savedStateHandle.get<String>("notificationAction").orEmpty()
+    private val notificationSource = savedStateHandle.get<String>("notificationSource").orEmpty()
+    private val notificationReason = savedStateHandle.get<String>("notificationReason").orEmpty()
+    val notificationTarget: String = savedStateHandle.get<String>("notificationHost")
+        ?.trim()
+        ?.lowercase()
+        ?.removeSuffix(".")
+        .orEmpty()
+    private val _notificationPinRequest = MutableStateFlow<NotificationPinRequest?>(null)
+    val notificationPinRequest: StateFlow<NotificationPinRequest?> = _notificationPinRequest.asStateFlow()
     private val _searchHistory = MutableStateFlow<List<String>>(emptyList())
     val searchHistory = _searchHistory.asStateFlow()
     val savedFilters: StateFlow<List<SavedDenseListFilter>> = prefs.ui
@@ -164,7 +185,19 @@ class LogsViewModel @Inject constructor(
                 .map { (hostname, entries) ->
                     val isBlocked = hostname !in allowedSet &&
                         (hostname in blockedSet || entries.any { it.blocked })
-                    val latest = entries.maxByOrNull { it.timestamp }
+                    val notificationLatest = if (
+                        notificationAction.isNotBlank() && hostname == notificationTarget
+                    ) {
+                        entries.asSequence()
+                            .filter {
+                                (notificationSource.isBlank() || it.decisionSource == notificationSource) &&
+                                    (notificationReason.isBlank() || it.decisionReason == notificationReason)
+                            }
+                            .maxByOrNull { it.timestamp }
+                    } else {
+                        null
+                    }
+                    val latest = notificationLatest ?: entries.maxByOrNull { it.timestamp }
                     DedupedLogEntry(
                         hostname = hostname,
                         blocked = isBlocked,
@@ -226,6 +259,76 @@ class LogsViewModel @Inject constructor(
 
     init {
         loadBlockedState()
+        prepareNotificationAction(savedStateHandle)
+    }
+
+    private fun prepareNotificationAction(savedStateHandle: androidx.lifecycle.SavedStateHandle) {
+        if (!BlockNotificationActions.isAllow(notificationAction) || notificationTarget.isBlank()) return
+        if (savedStateHandle.get<Boolean>("notificationActionHandled") == true) return
+        // A route may be recreated after rotation. Mark it before doing any
+        // work so an Always/Once action cannot be replayed by a new ViewModel.
+        savedStateHandle["notificationActionHandled"] = true
+        viewModelScope.launch(Dispatchers.IO) {
+            if (prefs.parentalEnabled.first()) {
+                val pinSet = parentalControlManager.isPinSet()
+                _notificationPinRequest.value = NotificationPinRequest(
+                    action = notificationAction,
+                    hostname = notificationTarget,
+                    error = if (pinSet) null else appContext.getString(
+                        com.hostshield.R.string.notification_pin_no_pin,
+                    ),
+                )
+            } else {
+                executeNotificationAction(notificationAction, notificationTarget)
+            }
+        }
+    }
+
+    fun submitNotificationPin(pin: String) {
+        val request = _notificationPinRequest.value ?: return
+        if (request.lockoutMs > 0L || pin.length != 4) return
+        viewModelScope.launch(Dispatchers.IO) {
+            when (val result = parentalControlManager.verifyPinDetailed(pin)) {
+                ParentalControlManager.PinResult.Success -> {
+                    _notificationPinRequest.value = null
+                    executeNotificationAction(request.action, request.hostname)
+                }
+                ParentalControlManager.PinResult.Wrong -> {
+                    _notificationPinRequest.value = request.copy(
+                        error = appContext.getString(com.hostshield.R.string.notification_pin_wrong),
+                        lockoutMs = 0L,
+                    )
+                }
+                is ParentalControlManager.PinResult.LockedOut -> {
+                    val seconds = (result.retryAfterMs / 1000L).coerceAtLeast(1L).toInt()
+                    _notificationPinRequest.value = request.copy(
+                        error = appContext.resources.getQuantityString(
+                            com.hostshield.R.plurals.notification_pin_locked,
+                            seconds,
+                            seconds,
+                        ),
+                        lockoutMs = result.retryAfterMs,
+                    )
+                }
+                ParentalControlManager.PinResult.NoPin -> {
+                    _notificationPinRequest.value = request.copy(
+                        error = appContext.getString(com.hostshield.R.string.notification_pin_no_pin),
+                    )
+                }
+            }
+        }
+    }
+
+    fun dismissNotificationPin() {
+        _notificationPinRequest.value = null
+    }
+
+    private fun executeNotificationAction(action: String, hostname: String) {
+        when (action) {
+            BlockNotificationActions.ALLOW_ONCE -> OneShotAllowStore.grant(hostname)
+            BlockNotificationActions.ALLOW_10_MINUTES -> temporaryAllow(hostname, 10)
+            BlockNotificationActions.ALLOW_ALWAYS -> allowDomain(hostname)
+        }
     }
 
     /**

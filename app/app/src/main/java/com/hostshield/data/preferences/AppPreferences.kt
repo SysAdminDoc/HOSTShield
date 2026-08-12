@@ -99,6 +99,9 @@ class AppPreferences @Inject constructor(
     val showNotification: Flow<Boolean> get() = ui.showNotification
     suspend fun setShowNotification(show: Boolean) = ui.setShowNotification(show)
 
+    val blockedDomainNotifications: Flow<Boolean> get() = ui.blockedDomainNotifications
+    suspend fun setBlockedDomainNotifications(enabled: Boolean) = ui.setBlockedDomainNotifications(enabled)
+
     // ── DoH ──────────────────────────────────────────────────
     val dohEnabled: Flow<Boolean> get() = dns.dohEnabled
     suspend fun setDohEnabled(enabled: Boolean) = dns.setDohEnabled(enabled)

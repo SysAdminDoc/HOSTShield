@@ -783,16 +783,33 @@ class BlocklistHolder @Inject constructor() {
         val snap = snapshot
         decisionCache[cacheKey]?.let { cached ->
             if (cached.snapshot === snap) {
-                return cached.decision
+                return consumeOneShotAllowIfEligible(lower, cached.decision)
             }
             decisionCache.remove(cacheKey)
         }
 
         val result = decideInternal(lower, snap, effectiveQueryType)
-        if (snapshot === snap) {
-            decisionCache[cacheKey] = CachedDecision(snap, result)
+        val effectiveResult = consumeOneShotAllowIfEligible(lower, result)
+        if (snapshot === snap && effectiveResult.reason != "notification_allow_once") {
+            decisionCache[cacheKey] = CachedDecision(snap, effectiveResult)
         }
-        return result
+        return effectiveResult
+    }
+
+    private fun consumeOneShotAllowIfEligible(
+        hostname: String,
+        decision: BlockDecision,
+    ): BlockDecision {
+        if (!decision.blocked || decision.reason == "doh_bypass" || !OneShotAllowStore.consume(hostname)) {
+            return decision
+        }
+        return BlockDecision(
+            blocked = false,
+            reason = "notification_allow_once",
+            source = "Blocked-domain notification",
+            matchedValue = hostname,
+            precedence = "one-shot user action overrides the matching block for one DNS query",
+        )
     }
 
     /** Check if a resolved IP address is in the IP blocklist. */

@@ -178,6 +178,7 @@ data class SettingsUiState(
     val logRetentionDays: Int = 7,
     val connectionLogRetentionDays: Int = 3,
     val showNotification: Boolean = true,
+    val blockedDomainNotifications: Boolean = false,
     val dohEnabled: Boolean = false,
     val dohProvider: String = "cloudflare",
     /** Built-in DoH certificate pin lifecycle warning (null = current). */
@@ -288,6 +289,12 @@ class SettingsViewModel @Inject constructor(
                         localWebserver = p.localWebserver
                     )
                 }
+            }
+        }
+
+        viewModelScope.launch {
+            prefs.blockedDomainNotifications.collect { enabled ->
+                _uiState.update { it.copy(blockedDomainNotifications = enabled) }
             }
         }
 
@@ -693,6 +700,9 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setDnsLogging(v: Boolean) { viewModelScope.launch { prefs.setDnsLogging(v) } }
+    fun setBlockedDomainNotifications(v: Boolean) {
+        viewModelScope.launch { prefs.setBlockedDomainNotifications(v) }
+    }
     fun setDohEnabled(v: Boolean) { viewModelScope.launch { prefs.setDohEnabled(v) } }
     fun setOnlineGeoIpEnabled(v: Boolean) { viewModelScope.launch { prefs.setOnlineGeoIpEnabled(v) } }
 

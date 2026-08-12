@@ -337,6 +337,21 @@ class BlocklistHolderTest {
     }
 
     @Test
+    fun `one shot notification allow overrides one block decision but not DoH guard`() {
+        holder.update(setOf("ads.example.com"), emptyList())
+        OneShotAllowStore.grant("ADS.EXAMPLE.COM")
+
+        val allowed = holder.decide("ads.example.com")
+        assertFalse(allowed.blocked)
+        assertEquals("notification_allow_once", allowed.reason)
+        assertTrue(holder.decide("ads.example.com").blocked)
+
+        OneShotAllowStore.grant("dns.google")
+        assertEquals("doh_bypass", holder.decide("dns.google").reason)
+        assertTrue(OneShotAllowStore.consume("dns.google"))
+    }
+
+    @Test
     fun `preview export includes effective exact and source wildcard entries`() {
         holder.update(
             newDomains = setOf("ads.example.com"),

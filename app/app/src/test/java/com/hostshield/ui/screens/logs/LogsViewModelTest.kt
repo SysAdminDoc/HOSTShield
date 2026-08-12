@@ -15,6 +15,7 @@ import com.hostshield.data.preferences.UiPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.service.AppDnsRuleEngine
+import com.hostshield.service.ParentalControlManager
 import com.hostshield.util.GeoIpLookup
 import com.hostshield.util.RootUtil
 import io.mockk.*
@@ -41,6 +42,7 @@ class LogsViewModelTest {
     private lateinit var geoIpLookup: GeoIpLookup
     private lateinit var appDnsRuleDao: AppDnsRuleDao
     private lateinit var appDnsRuleEngine: AppDnsRuleEngine
+    private lateinit var parentalControlManager: ParentalControlManager
     private val logsFlow = MutableStateFlow<List<DnsLogEntry>>(emptyList())
     private val createdViewModels = mutableListOf<ViewModel>()
 
@@ -56,6 +58,7 @@ class LogsViewModelTest {
         geoIpLookup = mockk(relaxed = true)
         appDnsRuleDao = mockk(relaxed = true, relaxUnitFun = true)
         appDnsRuleEngine = mockk(relaxed = true, relaxUnitFun = true)
+        parentalControlManager = mockk(relaxed = true, relaxUnitFun = true)
 
         every { repository.getRecentLogs(any()) } returns logsFlow
         coEvery { repository.getEnabledRulesByType(RuleType.BLOCK) } returns emptyList()
@@ -63,6 +66,7 @@ class LogsViewModelTest {
         every { prefs.pinnedDomains } returns flowOf(emptySet())
         every { prefs.ui } returns uiPreferences
         every { uiPreferences.savedDenseListFilters(any()) } returns flowOf(emptyList())
+        every { prefs.parentalEnabled } returns flowOf(false)
     }
 
     @After
@@ -83,6 +87,7 @@ class LogsViewModelTest {
         geoIpLookup = geoIpLookup,
         appDnsRuleDao = appDnsRuleDao,
         appDnsRuleEngine = appDnsRuleEngine,
+        parentalControlManager = parentalControlManager,
         savedStateHandle = savedStateHandle
     ).also { createdViewModels += it }
 

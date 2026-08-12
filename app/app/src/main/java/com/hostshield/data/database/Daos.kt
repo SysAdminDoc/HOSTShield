@@ -139,6 +139,14 @@ interface DnsLogDao {
     @Query("SELECT * FROM dns_logs WHERE blocked = 1 ORDER BY timestamp DESC LIMIT :limit")
     fun getBlockedLogs(limit: Int = 500): Flow<List<DnsLogEntry>>
 
+    /** Highest blocked-log ID currently present, used to detect new rows without replaying history. */
+    @Query("SELECT MAX(id) FROM dns_logs WHERE blocked = 1")
+    suspend fun getLatestBlockedLogId(): Long?
+
+    /** Blocked rows inserted after [afterId], in insertion order for notification processing. */
+    @Query("SELECT * FROM dns_logs WHERE blocked = 1 AND id > :afterId ORDER BY id ASC LIMIT :limit")
+    suspend fun getBlockedLogsAfterId(afterId: Long, limit: Int = 50): List<DnsLogEntry>
+
     @Query("SELECT * FROM dns_logs WHERE hostname LIKE '%' || :query || '%' ESCAPE '\' ORDER BY timestamp DESC LIMIT :limit")
     fun searchLogs(query: String, limit: Int = 200): Flow<List<DnsLogEntry>>
 

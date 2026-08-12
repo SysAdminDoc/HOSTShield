@@ -458,6 +458,13 @@ fun SettingsScreen(
 
         // Hosts Configuration
         SettingsSection(stringResource(R.string.section_configuration), Icons.Filled.Tune, Yellow) {
+            SettingsToggle(
+                stringResource(R.string.settings_blocked_domain_notifications),
+                stringResource(R.string.settings_blocked_domain_notifications_sub),
+                Icons.Filled.NotificationsActive,
+                state.blockedDomainNotifications,
+            ) { viewModel.setBlockedDomainNotifications(it) }
+            Spacer(Modifier.height(4.dp))
             SettingsToggle(stringResource(R.string.settings_dns_logging), stringResource(R.string.settings_dns_logging_sub), Icons.Filled.Analytics, state.dnsLogging) {
                 viewModel.setDnsLogging(it)
             }

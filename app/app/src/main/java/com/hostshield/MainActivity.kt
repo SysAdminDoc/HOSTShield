@@ -3,6 +3,7 @@ package com.hostshield
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.util.Log
 import android.net.VpnService
 import android.os.Build
@@ -38,6 +39,7 @@ import androidx.navigation.compose.*
 import com.hostshield.data.model.BlockMethod
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.service.BlockingScheduleWorker
+import com.hostshield.service.BlockNotificationActions
 import com.hostshield.service.DnsProxyService
 import com.hostshield.service.DnsVpnService
 import com.hostshield.service.HostShieldWidgetProvider
@@ -79,6 +81,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var prefs: AppPreferences
     @Inject lateinit var rootUtil: RootUtil
     @Inject lateinit var privateDnsDetector: com.hostshield.util.PrivateDnsDetector
+    @Inject lateinit var blockNotificationTokenStore: com.hostshield.service.BlockNotificationTokenStore
 
     // VPN permission result callback — stored so HomeViewModel can be notified
     private var vpnPermissionCallback: ((Boolean) -> Unit)? = null
@@ -148,9 +151,10 @@ class MainActivity : ComponentActivity() {
             Intent.ACTION_VIEW -> {
                 // Handle hostshield:// deep links
                 // hostshield://logs, hostshield://stats, hostshield://settings, hostshield://sources
-                val path = intent.data?.host ?: intent.data?.path?.removePrefix("/") ?: ""
+                val data = intent.data
+                val path = data?.host ?: data?.path?.removePrefix("/") ?: ""
                 pendingDeepLink = when (path.lowercase()) {
-                    "logs" -> SubScreen.LOGS
+                    "logs" -> notificationLogsRoute(data) ?: SubScreen.LOGS
                     "stats" -> Screen.Stats.route
                     "settings" -> Screen.Settings.route
                     "sources" -> Screen.Sources.route
@@ -161,6 +165,37 @@ class MainActivity : ComponentActivity() {
                     else -> null
                 }
             }
+        }
+    }
+
+    /** Converts a signed notification URI into the optional Logs action route. */
+    private fun notificationLogsRoute(data: Uri?): String? {
+        val uri = data ?: return null
+        val action = uri.getQueryParameter("action")
+        val hostname = uri.getQueryParameter("hostname")?.trim().orEmpty()
+        val token = uri.getQueryParameter("token")
+        if (!BlockNotificationActions.isKnown(action) || hostname.isBlank()) return null
+        if (!blockNotificationTokenStore.consume(
+                token = token,
+                action = action,
+                hostname = hostname,
+                source = uri.getQueryParameter("source"),
+                reason = uri.getQueryParameter("reason"),
+            )
+        ) return null
+
+        return buildString {
+            append(SubScreen.LOGS)
+            append("?query=")
+            append(Uri.encode(hostname))
+            append("&notificationAction=")
+            append(Uri.encode(action.orEmpty()))
+            append("&notificationHost=")
+            append(Uri.encode(hostname))
+            append("&notificationSource=")
+            append(Uri.encode(uri.getQueryParameter("source").orEmpty()))
+            append("&notificationReason=")
+            append(Uri.encode(uri.getQueryParameter("reason").orEmpty()))
         }
     }
 
@@ -499,8 +534,16 @@ private fun HostShieldMainApp(activity: MainActivity) {
                 HostsDiffScreen(onBack = { navController.popBackStack() })
             }
             composable(
-                "${SubScreen.LOGS}?query={query}",
-                arguments = listOf(androidx.navigation.navArgument("query") { defaultValue = "" })
+                "${SubScreen.LOGS}?query={query}&notificationAction={notificationAction}" +
+                    "&notificationHost={notificationHost}&notificationSource={notificationSource}" +
+                    "&notificationReason={notificationReason}",
+                arguments = listOf(
+                    androidx.navigation.navArgument("query") { defaultValue = "" },
+                    androidx.navigation.navArgument("notificationAction") { defaultValue = "" },
+                    androidx.navigation.navArgument("notificationHost") { defaultValue = "" },
+                    androidx.navigation.navArgument("notificationSource") { defaultValue = "" },
+                    androidx.navigation.navArgument("notificationReason") { defaultValue = "" },
+                )
             ) {
                 LogsScreen(onBack = { navController.popBackStack() })
             }
