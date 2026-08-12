@@ -277,6 +277,8 @@ cd C:\Users\--\repos\HostShield
 
 # Release doc/provenance checks
 powershell -ExecutionPolicy Bypass -File .\tools\check-release-docs.ps1
+# Offline syntax/docs-only run (skips remote source GET liveness checks):
+powershell -ExecutionPolicy Bypass -File .\tools\check-release-docs.ps1 -SkipRemoteUrlLiveness
 powershell -ExecutionPolicy Bypass -File .\tools\check-cronet-posture.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\run-protection-resilience-matrix.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1

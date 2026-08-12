@@ -18,7 +18,7 @@ private const val SPOTIFY_ADS_DESCRIPTION =
 private const val HOSTSHIELD_BLOCKLIST_BASE_URL =
     "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/"
 internal const val HAGEZI_REFERRAL_ALLOWLIST_SOURCE_URL =
-    HOSTSHIELD_BLOCKLIST_BASE_URL + "HaGeZi-ReferralAllowlist.txt"
+    "https://raw.githubusercontent.com/SysAdminDoc/HostShield/main/blocklists/HaGeZi-ReferralAllowlist.txt"
 
 internal val HAGEZI_SOURCE_URL_MIGRATIONS = mapOf(
     "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/light.txt" to

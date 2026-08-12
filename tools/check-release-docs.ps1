@@ -1,7 +1,11 @@
 [CmdletBinding()]
-param()
+param(
+    [switch]$SkipRemoteUrlLiveness
+)
 
 $ErrorActionPreference = "Stop"
+
+Add-Type -AssemblyName System.Net.Http
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path (Join-Path $scriptRoot "..")
@@ -14,6 +18,64 @@ function Read-RepoFile {
 function Test-RepoFile {
     param([Parameter(Mandatory = $true)][string]$Path)
     return Test-Path -LiteralPath (Join-Path $repoRoot $Path)
+}
+
+function Get-JsonRemoteUrls {
+    param(
+        [Parameter(Mandatory = $true)][string]$Json,
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    try {
+        $convertFromJsonParams = @{ ErrorAction = "Stop" }
+        if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey("DateKind")) {
+            $convertFromJsonParams.DateKind = "String"
+        }
+        $catalog = $Json | ConvertFrom-Json @convertFromJsonParams
+    } catch {
+        $failures.Add("$Path is not valid JSON: $($_.Exception.Message)")
+        return @()
+    }
+
+    $urls = [System.Collections.Generic.List[string]]::new()
+    foreach ($category in @($catalog)) {
+        foreach ($entry in @($category.lists)) {
+            $url = ([string]$entry.url).Trim()
+            if ([string]::IsNullOrWhiteSpace($url)) {
+                $failures.Add("$Path contains a list entry without a URL.")
+            } elseif ($url -notmatch '^https://') {
+                $failures.Add("$Path contains a non-HTTPS remote URL: $url")
+            } else {
+                $urls.Add($url)
+            }
+        }
+    }
+    return $urls.ToArray()
+}
+
+function Get-KotlinRemoteUrls {
+    param(
+        [Parameter(Mandatory = $true)][string]$Source,
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    $urls = [System.Collections.Generic.List[string]]::new()
+    $patterns = @(
+        '(?m)^\s*(?:(?:private|internal|public|protected)\s+)*(?:const\s+)?val\s+\w*(?:URL|Url)\w*\s*=\s*"(?<url>https?://[^"]+)"',
+        '(?m)^\s*url\s*=\s*"(?<url>https?://[^"]+)"'
+    )
+    foreach ($pattern in $patterns) {
+        foreach ($match in [regex]::Matches($Source, $pattern)) {
+            $url = $match.Groups["url"].Value.Trim()
+            if (-not $url.EndsWith('/')) {
+                $urls.Add($url)
+            }
+        }
+    }
+    if ($urls.Count -eq 0) {
+        $failures.Add("$Path did not expose any active HTTPS source URL declarations.")
+    }
+    return $urls.ToArray()
 }
 
 $appBuild = Read-RepoFile "app/app/build.gradle.kts"
@@ -97,6 +159,76 @@ $docs = @{
 }
 
 $failures = New-Object System.Collections.Generic.List[string]
+
+$remoteUrlSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$curatedBlocklistsPath = "app/app/src/main/assets/curated_blocklists.json"
+if (-not (Test-RepoFile $curatedBlocklistsPath)) {
+    $failures.Add("Missing curated blocklist catalog: $curatedBlocklistsPath")
+} else {
+    foreach ($url in @(Get-JsonRemoteUrls (Read-RepoFile $curatedBlocklistsPath) $curatedBlocklistsPath)) {
+        $remoteUrlSet.Add($url) | Out-Null
+    }
+}
+
+$remoteSourceKotlinPaths = @(
+    "app/app/src/main/java/com/hostshield/data/repository/SourceRepository.kt",
+    "app/app/src/main/java/com/hostshield/service/ThreatIntelManager.kt",
+    "app/app/src/main/java/com/hostshield/service/CnameCloakUpdater.kt",
+    "app/app/src/main/java/com/hostshield/service/DohBypassUpdater.kt"
+)
+foreach ($sourcePath in $remoteSourceKotlinPaths) {
+    if (-not (Test-RepoFile $sourcePath)) {
+        $failures.Add("Missing Kotlin remote source declaration file: $sourcePath")
+        continue
+    }
+    foreach ($url in @(Get-KotlinRemoteUrls (Read-RepoFile $sourcePath) $sourcePath)) {
+        if ($url -notmatch '^https://') {
+            $failures.Add("$sourcePath contains a non-HTTPS remote URL: $url")
+        } else {
+            $remoteUrlSet.Add($url) | Out-Null
+        }
+    }
+}
+
+if ($SkipRemoteUrlLiveness) {
+    Write-Warning "Skipping GET-based remote URL liveness checks by request (-SkipRemoteUrlLiveness)."
+} else {
+    $httpClient = [System.Net.Http.HttpClient]::new()
+    $httpClient.Timeout = [TimeSpan]::FromSeconds(30)
+    $remoteUrlFailures = 0
+    try {
+        foreach ($url in @($remoteUrlSet | Sort-Object)) {
+            $request = $null
+            $response = $null
+            try {
+                $request = [System.Net.Http.HttpRequestMessage]::new([System.Net.Http.HttpMethod]::Get, $url)
+                $request.Headers.UserAgent.ParseAdd("HostShield-release-check/1.0")
+                $response = $httpClient.SendAsync(
+                    $request,
+                    [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead
+                ).GetAwaiter().GetResult()
+                $statusCode = [int]$response.StatusCode
+                if ($statusCode -ne 200) {
+                    $remoteUrlFailures++
+                    $failures.Add("Remote source URL returned HTTP ${statusCode}: $url")
+                }
+            } catch {
+                $remoteUrlFailures++
+                $failures.Add("Remote source URL GET failed: $url ($($_.Exception.Message))")
+            } finally {
+                if ($null -ne $response) {
+                    $response.Dispose()
+                }
+                if ($null -ne $request) {
+                    $request.Dispose()
+                }
+            }
+        }
+    } finally {
+        $httpClient.Dispose()
+    }
+    Write-Host "Checked $($remoteUrlSet.Count) remote source URLs with HTTP GET; $remoteUrlFailures failed."
+}
 
 $workflowsDir = Join-Path $repoRoot ".github/workflows"
 if (Test-Path -LiteralPath $workflowsDir) {

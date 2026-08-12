@@ -8,6 +8,8 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - Replaced the 12 dead HaGeZi gallery and allowlist URLs with HostShield-hosted
   ABP snapshots, and migrate existing subscriptions from every retired URL to
   the matching local mirror.
+- Release documentation checks now enumerate active catalog/Kotlin source URLs
+  and verify each with an HTTP GET, with an explicit offline opt-out.
 
 ## [v6.9.68] - 2026-08-11
 
