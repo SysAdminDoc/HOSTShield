@@ -1,5 +1,6 @@
 package com.hostshield.service
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,12 +8,14 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import com.hostshield.MainActivity
 import com.hostshield.R
 import com.hostshield.data.preferences.AppPreferences
@@ -45,12 +48,32 @@ class LocalDnsServerService : Service() {
             allowExternalClients: Boolean,
             caller: String = "LocalDnsServerService.start"
         ): Boolean {
+            if (!hasLocalNetworkPermission(context, port)) {
+                Log.w(TAG, "LAN DNS start blocked: ACCESS_LOCAL_NETWORK is not granted for UDP $port")
+                return false
+            }
             val intent = Intent(context, LocalDnsServerService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_PORT, port)
                 putExtra(EXTRA_ALLOW_EXTERNAL_CLIENTS, allowExternalClients)
             }
             return ProtectionServiceStarter.startForegroundService(context, intent, caller)
+        }
+
+        @Suppress("InlinedApi")
+        internal fun hasLocalNetworkPermission(context: Context, listenPort: Int): Boolean {
+            if (!localDnsRequiresLocalNetworkPermission(
+                    platformSdk = Build.VERSION.SDK_INT,
+                    targetSdk = context.applicationInfo.targetSdkVersion,
+                    listenPort = listenPort
+                )
+            ) {
+                return true
+            }
+            return ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_LOCAL_NETWORK
+            ) == PackageManager.PERMISSION_GRANTED
         }
 
         fun stop(context: Context, persistDisabled: Boolean = true) {
@@ -125,6 +148,23 @@ class LocalDnsServerService : Service() {
         val allowExternalClients = intent
             ?.getBooleanExtra(EXTRA_ALLOW_EXTERNAL_CLIENTS, false)
             ?: prefs.lanDnsAllowExternalClients.first()
+
+        if (!hasLocalNetworkPermission(this, requestedPort)) {
+            prefs.setLanDnsEnabled(false)
+            diagnosticEvents.recordBlocking(
+                DiagnosticEventType.FOREGROUND_SERVICE_START_FAILED,
+                "LAN DNS local-network permission was not granted",
+                mapOf(
+                    "port" to requestedPort,
+                    "platform_sdk" to Build.VERSION.SDK_INT,
+                    "target_sdk" to applicationInfo.targetSdkVersion
+                )
+            )
+            Log.w(TAG, "LAN DNS service stopped because ACCESS_LOCAL_NETWORK is not granted")
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
 
         val startedPort = localDnsServer.start(
             listenPort = requestedPort,

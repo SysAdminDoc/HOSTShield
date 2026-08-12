@@ -545,6 +545,17 @@ class SettingsViewModel @Inject constructor(
     }
     fun refreshBattery() { checkBattery() }
 
+    fun refreshLanDnsPermission() {
+        val state = _uiState.value
+        if (state.lanDnsEnabled && !LocalDnsServerService.hasLocalNetworkPermission(getApplication(), state.lanDnsPort)) {
+            viewModelScope.launch {
+                prefs.setLanDnsEnabled(false)
+                LocalDnsServerService.stop(getApplication())
+                refreshLocalDnsStatus("Android revoked local-network permission; LAN DNS is off")
+            }
+        }
+    }
+
     private fun observeLocalDnsStatus() {
         viewModelScope.launch {
             // Only poll while the LAN DNS server is enabled — otherwise this woke
@@ -598,6 +609,13 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun reportLanDnsPermissionDenied() {
+        viewModelScope.launch {
+            prefs.setLanDnsEnabled(false)
+            refreshLocalDnsStatus("Android denied local-network permission; LAN DNS remains off")
+        }
+    }
+
     fun setLanDnsPort(value: String) {
         val parsedPort = parseSupportedLocalDnsPort(value)
         if (parsedPort == null) {
@@ -629,6 +647,9 @@ class SettingsViewModel @Inject constructor(
             allowExternalClients,
             "SettingsViewModel.restartLanDns"
         )
+        if (!started && !LocalDnsServerService.hasLocalNetworkPermission(getApplication(), port)) {
+            prefs.setLanDnsEnabled(false)
+        }
         refreshLocalDnsStatus(
             if (started) "Restarting LAN DNS server..." else "LAN DNS service restart was denied by Android"
         )

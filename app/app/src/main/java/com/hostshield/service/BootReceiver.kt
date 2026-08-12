@@ -65,8 +65,12 @@ class BootReceiver : BroadcastReceiver() {
                 if (lanDnsEnabled) {
                     val port = prefs.lanDnsPort.first()
                     val allowExternalClients = prefs.lanDnsAllowExternalClients.first()
-                    if (LocalDnsServerService.start(context, port, allowExternalClients, "BootReceiver")) {
+                    val started = LocalDnsServerService.start(context, port, allowExternalClients, "BootReceiver")
+                    if (started) {
                         Log.i("BootReceiver", "LAN DNS service restarted")
+                    } else if (!LocalDnsServerService.hasLocalNetworkPermission(context, port)) {
+                        prefs.setLanDnsEnabled(false)
+                        Log.w("BootReceiver", "LAN DNS disabled because ACCESS_LOCAL_NETWORK is not granted")
                     }
                 }
 

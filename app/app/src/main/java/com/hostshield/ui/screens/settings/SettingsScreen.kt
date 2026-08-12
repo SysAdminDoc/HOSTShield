@@ -1,13 +1,18 @@
 package com.hostshield.ui.screens.settings
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.net.toUri
 import android.provider.Browser
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -57,6 +62,7 @@ import com.hostshield.ui.components.HostShieldScreenHeader
 import com.hostshield.ui.components.HostShieldStatusBanner
 import com.hostshield.ui.screens.home.GlassCard
 import com.hostshield.ui.theme.*
+import com.hostshield.service.localDnsRequiresLocalNetworkPermission
 
 internal const val HOSTSHIELD_GITHUB_REPOSITORY_URL = "https://github.com/SysAdminDoc/HostShield"
 
@@ -74,6 +80,7 @@ internal fun openHostShieldGitHubRepository(context: Context): Boolean =
         false
     }
 
+@Suppress("InlinedApi")
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
@@ -102,9 +109,43 @@ fun SettingsScreen(
     val githubUnavailableMessage = stringResource(R.string.settings_github_unavailable)
     val noBrowserMessage = stringResource(R.string.settings_no_browser_available)
 
+    var pendingLanDnsEnable by rememberSaveable { mutableStateOf(false) }
+    val localNetworkPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (pendingLanDnsEnable) {
+            pendingLanDnsEnable = false
+            if (granted) viewModel.setLanDnsEnabled(true)
+            else viewModel.reportLanDnsPermissionDenied()
+        }
+    }
+
+    val onLanDnsEnabledChange: (Boolean) -> Unit = { enabled ->
+        if (!enabled) {
+            viewModel.setLanDnsEnabled(false)
+        } else {
+            val requiresPermission = localDnsRequiresLocalNetworkPermission(
+                platformSdk = Build.VERSION.SDK_INT,
+                targetSdk = context.applicationInfo.targetSdkVersion,
+                listenPort = state.lanDnsPort
+            )
+            val permissionGranted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_LOCAL_NETWORK
+            ) == PackageManager.PERMISSION_GRANTED
+            if (requiresPermission && !permissionGranted) {
+                pendingLanDnsEnable = true
+                localNetworkPermissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+            } else {
+                viewModel.setLanDnsEnabled(true)
+            }
+        }
+    }
+
     // Re-check battery status when returning from system settings
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.refreshBattery()
+        viewModel.refreshLanDnsPermission()
     }
 
     val plaintextBackupLauncher = rememberLauncherForActivityResult(
@@ -254,7 +295,7 @@ fun SettingsScreen(
             lanDnsQueriesHandled = state.lanDnsQueriesHandled,
             lanDnsQueriesBlocked = state.lanDnsQueriesBlocked,
             lanDnsStatusMessage = state.lanDnsStatusMessage,
-            onLanDnsEnabledChange = { viewModel.setLanDnsEnabled(it) },
+            onLanDnsEnabledChange = onLanDnsEnabledChange,
             onLanDnsPortChange = { viewModel.setLanDnsPort(it) },
             onLanDnsAllowExternalClientsChange = { viewModel.setLanDnsAllowExternalClients(it) },
             pcapExport = state.pcapExport,

@@ -205,7 +205,7 @@
     <string name="lan_dns_apply_port">Apply LAN DNS port</string>
     <string name="lan_dns_allow_external">Allow public-source clients</string>
     <string name="lan_dns_allow_external_sub">Off rejects public IP clients; loopback, private LAN, link-local, and ULA stay allowed</string>
-    <string name="lan_dns_permission_note">Android 17+ local-network permission is declared for non-:53 LAN access readiness. Keep this off unless other devices are explicitly configured to use this phone as DNS.</string>
+    <string name="lan_dns_permission_note">On Android 17+ target-SDK-37 builds, enabling a non-53 LAN port opens the Nearby devices permission prompt. DNS traffic to port 53 is exempt; the default 5353 port therefore requires approval.</string>
 
     <!-- PCAP export -->
     <string name="pcap_generating">Generating PCAP…</string>

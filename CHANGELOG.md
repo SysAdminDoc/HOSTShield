@@ -51,6 +51,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 - Audited Android 17 local-network socket paths, documented loopback and DNS
   port-53 exemptions, and added an API-37 connected contract for the manifest
   declaration and non-53 LAN policy.
+- Wired the LAN DNS runtime permission flow for future target SDK 37 builds,
+  including denial/revocation cleanup, boot-restore fail-closed behavior, and a
+  service-side check before binding a non-53 listener.
 
 ## [v6.9.68] - 2026-08-11
 
