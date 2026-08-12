@@ -141,9 +141,9 @@ class TopFlowComposeTest {
 
     @After
     fun closeScenario() {
-        scenario?.close()
+        scenario?.let { closeActivityScenario(it) }
         scenario = null
-        componentScenario?.close()
+        componentScenario?.let { closeActivityScenario(it) }
         componentScenario = null
         stopVpnAndWait()
         File(context.cacheDir, "exports").deleteRecursively()
@@ -153,6 +153,20 @@ class TopFlowComposeTest {
                 .executeShellCommand("settings put global animator_duration_scale ${if (scale == "null") "1" else scale}")
             originalAnimatorScale = null
         }
+    }
+
+    private fun closeActivityScenario(activityScenario: ActivityScenario<*>) {
+        // Android 17 can leave a test-only ComponentActivity in PAUSED while
+        // the instrumentation runner is transitioning between parallel test
+        // activities. Ask the activity to finish first, then make close() best
+        // effort so a teardown race cannot turn a completed UI assertion into
+        // a false test failure.
+        runCatching {
+            activityScenario.onActivity { activity ->
+                activity.finishAndRemoveTask()
+            }
+        }
+        runCatching { activityScenario.close() }
     }
 
     @Test

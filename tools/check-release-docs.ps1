@@ -89,6 +89,8 @@ $appManifest = Read-RepoFile "app/app/src/main/AndroidManifest.xml"
 $fgsTypeHelper = Read-RepoFile "app/app/src/main/java/com/hostshield/service/ProtectionForegroundServiceTypes.kt"
 $workManagerAudit = Read-RepoFile "docs/WORKMANAGER_AUDIT.md"
 $dohResolver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DohResolver.kt"
+$dotResolver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DotResolver.kt"
+$networkSecurityConfig = Read-RepoFile "app/app/src/main/res/xml/network_security_config.xml"
 $dnsVpnService = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DnsVpnService.kt"
 $doh3Resolver = Read-RepoFile "app/app/src/main/java/com/hostshield/service/Doh3Resolver.kt"
 $dnsSettingsSection = Read-RepoFile "app/app/src/main/java/com/hostshield/ui/screens/settings/DnsSettingsSection.kt"
@@ -550,6 +552,27 @@ if (-not (Test-RepoFile $osvAllowlistPath)) {
 }
 
 $dohPinManifest = Read-RepoFile "app/app/src/main/java/com/hostshield/service/DohPinManifest.kt"
+
+if ($networkSecurityConfig -notmatch '<certificateTransparency\s+enabled="true"\s*/>') {
+    $failures.Add("network_security_config.xml must explicitly enable Certificate Transparency for Android 16/API 36.")
+}
+
+$ctHosts = New-Object System.Collections.Generic.HashSet[string]([StringComparer]::OrdinalIgnoreCase)
+foreach ($match in [regex]::Matches($dohResolver, 'https://[^"\s]+/dns-query",\s*"([^"]+)"')) {
+    [void]$ctHosts.Add($match.Groups[1].Value)
+}
+foreach ($match in [regex]::Matches($dotResolver, 'Provider\("([^"]+)",\s*"[^"]+"\)')) {
+    [void]$ctHosts.Add($match.Groups[1].Value)
+}
+foreach ($match in [regex]::Matches($dohPinManifest, 'hostname\s*=\s*"([^"]+)"')) {
+    [void]$ctHosts.Add($match.Groups[1].Value)
+}
+foreach ($hostname in $ctHosts) {
+    $domainPattern = '<domain[^>]*>\s*' + [regex]::Escape($hostname) + '\s*</domain>'
+    if ($networkSecurityConfig -notmatch $domainPattern) {
+        $failures.Add("network_security_config.xml does not cover encrypted-DNS hostname $hostname with an explicit domain rule.")
+    }
+}
 
 $pinReviewDates = [regex]::Matches($dohPinManifest, 'reviewAfter\s*=\s*"(\d{4}-\d{2}-\d{2})"')
 $pinExpiryDates = [regex]::Matches($dohPinManifest, 'expiresAfter\s*=\s*"(\d{4}-\d{2}-\d{2})"')

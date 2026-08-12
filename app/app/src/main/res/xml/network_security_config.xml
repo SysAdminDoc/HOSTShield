@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <base-config cleartextTrafficPermitted="false">
+        <!-- Android 16 (API 36) requires an explicit opt-in; Android 17
+             enables CT by default. Keep this global so custom encrypted-DNS
+             endpoints receive the same policy as built-in pinned providers. -->
+        <certificateTransparency enabled="true" />
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>

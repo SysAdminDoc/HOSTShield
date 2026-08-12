@@ -141,6 +141,7 @@ Bug reports and feature requests are read and acted on — [open an issue](https
 | **DNS-over-QUIC (DoQ)** | Debug-only experimental simplified engine, not a full QUIC/TLS 1.3 stack. Release builds hide the control and force DoQ off; pinned DoH/DoT remain the production encrypted-DNS path |
 | **DNS-over-WireGuard** | Debug-only experimental DNS-only engine, not a full WireGuard tunnel. Release builds hide the control and force WireGuard DNS off; pinned DoH/DoT remain the production encrypted-DNS path |
 | **Certificate Pinning** | Fail-closed SHA-256 pin validation per provider from a versioned local manifest with primary/backup pins and review/expiry diagnostics |
+| **Certificate Transparency** | Global CT enforcement for encrypted-DNS TLS on Android 16/API 36 and Android 17/API 37, including custom resolver hosts |
 | **Smart Latency Failover** | EMA-based latency tracking per provider, auto-selects fastest, falls back through all on failure |
 | **DNS Trap** | Routes hardcoded DNS IPs (8.8.8.8, 1.1.1.1, etc.) through VPN tunnel to prevent bypass |
 | **LAN DNS Server** | Default-off Settings gate runs UDP DNS serving on an unprivileged port (5353 by default) as a foreground service; private LAN clients are allowed by default and public-source clients require an explicit toggle |

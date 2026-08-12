@@ -39,6 +39,10 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 - Refreshed Android 16+ VPN recovery validation for the current API 36/37
   platforms, recording bounded zero-inbound observation evidence and adding
   update/recovery options to the connected resilience matrix.
+- Enabled global Certificate Transparency enforcement for encrypted-DNS TLS,
+  explicitly covering API 36 while retaining API-37 coverage; release checks
+  and connected tests now enumerate every built-in DoH/DoT hostname and smoke
+  resolve a pinned provider.
 
 ## [v6.9.68] - 2026-08-11
 
