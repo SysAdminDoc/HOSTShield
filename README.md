@@ -3,7 +3,7 @@
 ![Version](https://img.shields.io/badge/version-6.9.68-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.4-7F52FF?logo=kotlin&logoColor=white)
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active-success)
 
@@ -355,7 +355,7 @@ Public actions are protected by HostShield's signature-level automation permissi
 
 | Component | Technology |
 |-----------|-----------|
-| Language | Kotlin 2.3 |
+| Language | Kotlin 2.4.10 |
 | UI | Jetpack Compose + Material 3 |
 | DI | Hilt (Dagger) |
 | Database | Room (11 entities, explicit v1-v20 migrations) |
