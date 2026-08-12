@@ -196,6 +196,7 @@ fun SettingsScreen(
 
         DnsSettingsSection(
             dohEnabled = state.dohEnabled,
+            dohPinWarning = state.dohPinWarning,
             onDohEnabledChange = { viewModel.setDohEnabled(it) },
             dohProvider = state.dohProvider,
             onDohProviderChange = { viewModel.setDohProvider(it) },

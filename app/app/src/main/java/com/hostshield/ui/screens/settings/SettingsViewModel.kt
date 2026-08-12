@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.hostshield.data.model.RuleType
 import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
+import com.hostshield.service.DohPinFreshnessMonitor
 import com.hostshield.service.HostsUpdateWorker
 import com.hostshield.service.LocalDnsServer
 import com.hostshield.service.LocalDnsServerService
@@ -179,6 +180,8 @@ data class SettingsUiState(
     val showNotification: Boolean = true,
     val dohEnabled: Boolean = false,
     val dohProvider: String = "cloudflare",
+    /** Built-in DoH certificate pin lifecycle warning (null = current). */
+    val dohPinWarning: DohPinFreshnessMonitor.Warning? = null,
     val dnsTrapEnabled: Boolean = true,
     /** Block response type: "nxdomain", "zero_ip", "refused" */
     val blockResponseType: String = "nxdomain",
@@ -249,7 +252,8 @@ class SettingsViewModel @Inject constructor(
     private val diagnosticExporter: DiagnosticPackageGenerator,
     private val diagnosticEvents: DiagnosticEventStore,
     private val firewallRuleDao: com.hostshield.data.database.FirewallRuleDao,
-    private val localDnsServer: LocalDnsServer
+    private val localDnsServer: LocalDnsServer,
+    private val dohPinFreshnessMonitor: DohPinFreshnessMonitor
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -258,6 +262,7 @@ class SettingsViewModel @Inject constructor(
     init {
         observePrefs()
         loadSystemInfo()
+        checkDohPinFreshness()
         checkBattery()
         // Auto-check for updates when settings screen opens (silent, no error display)
         autoCheckForUpdate()
@@ -529,6 +534,10 @@ class SettingsViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun checkDohPinFreshness() {
+        _uiState.update { it.copy(dohPinWarning = dohPinFreshnessMonitor.currentWarning()) }
     }
 
     fun requestBatteryExemption(activityContext: android.content.Context): Boolean {

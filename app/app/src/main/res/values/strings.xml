@@ -351,6 +351,10 @@
     <string name="warning_private_dns_title">Private DNS Active</string>
     <string name="warning_private_dns_message">Tap to open Network settings and set Private DNS to \"Off\"</string>
     <string name="warning_private_dns_dismiss">Dismiss Private DNS warning</string>
+    <string name="warning_doh_pin_review_title">Encrypted DNS Pins Need Review</string>
+    <string name="warning_doh_pin_review_message">Certificate pins for %1$s are due for review after %2$s. Encrypted DNS may stop working if the provider rotates its certificates.</string>
+    <string name="warning_doh_pin_expired_title">Encrypted DNS Pins Expired</string>
+    <string name="warning_doh_pin_expired_message">Certificate pins for %1$s expired after %2$s. Encrypted DNS is blocked until the pins are updated.</string>
     <string name="warning_battery_title">Battery Optimization</string>
     <string name="warning_battery_message">Tap to allow HostShield to run in the background</string>
     <string name="warning_battery_a11y">Battery optimization may interrupt protection. Open battery exemption settings.</string>

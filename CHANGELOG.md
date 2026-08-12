@@ -13,6 +13,8 @@ release notes per version live in [`app/CHANGELOG.md`](app/CHANGELOG.md).
 - Added IPv6 DNS/DoH trap routing and signed-manifest v2 IP-set parsing with a
   compiled fallback; the existing signed v1 manifest continues using that
   fallback until its credential-gated refresh is published.
+- Added runtime Home and DNS Settings warnings for DoH/DoT certificate-pin review
+  and expiry, backed by an injectable clock and provider/date-specific messages.
 
 ## [v6.9.68] - 2026-08-11
 

@@ -160,6 +160,7 @@ fun HomeScreen(
         // Warning banners, feature pills, live rates
         HomeWarningsSection(
             privateDnsWarning = state.privateDnsWarning,
+            dohPinWarning = state.dohPinWarning,
             privateDnsSettingsIntent = try { viewModel.getPrivateDnsSettingsIntent() } catch (_: Exception) { null },
             onDismissPrivateDns = { viewModel.dismissPrivateDnsWarning() },
             batteryWarning = state.batteryWarning,

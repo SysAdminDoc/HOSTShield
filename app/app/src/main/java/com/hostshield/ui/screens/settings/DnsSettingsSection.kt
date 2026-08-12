@@ -17,8 +17,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.hostshield.BuildConfig
 import com.hostshield.R
+import com.hostshield.service.DohPinFreshnessMonitor
 import com.hostshield.util.ExperimentalEngineDisclosure
 import com.hostshield.util.WireGuardKeyPolicy
+import com.hostshield.ui.components.DohPinWarningCard
 import com.hostshield.ui.theme.*
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -64,9 +66,14 @@ fun DnsSettingsSection(
     onEdeEnabledChange: (Boolean) -> Unit,
     onClearDnsCache: () -> Unit,
     onNavigateToDnsBenchmark: () -> Unit,
-    onNavigateToDnsLeakTest: () -> Unit
+    onNavigateToDnsLeakTest: () -> Unit,
+    dohPinWarning: DohPinFreshnessMonitor.Warning? = null
 ) {
     SettingsSection(stringResource(R.string.dns_section_title), Icons.Filled.Dns, Blue) {
+        dohPinWarning?.let {
+            DohPinWarningCard(warning = it)
+            Spacer(Modifier.height(8.dp))
+        }
         SettingsToggle(stringResource(R.string.dns_over_https), stringResource(R.string.dns_over_https_sub), Icons.Filled.Lock, dohEnabled) {
             onDohEnabledChange(it)
         }

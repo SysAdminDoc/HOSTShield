@@ -25,7 +25,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hostshield.data.model.BlockMethod
+import com.hostshield.service.DohPinFreshnessMonitor
 import com.hostshield.service.VpnRecoveryAdvisory
+import com.hostshield.ui.components.DohPinWarningCard
 import com.hostshield.ui.theme.*
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -63,7 +65,8 @@ fun HomeWarningsSection(
     blocksPerMinute: Int,
     avgLatencyMs: Int,
     latencySparkline: List<Int>,
-    context: Context
+    context: Context,
+    dohPinWarning: DohPinFreshnessMonitor.Warning? = null
 ) {
     // Private DNS warning banner
     privateDnsWarning?.let {
@@ -118,6 +121,14 @@ fun HomeWarningsSection(
                 }
             }
         }
+    }
+
+    dohPinWarning?.let {
+        Spacer(Modifier.height(8.dp))
+        DohPinWarningCard(
+            warning = it,
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
     }
 
     // Battery optimization warning banner

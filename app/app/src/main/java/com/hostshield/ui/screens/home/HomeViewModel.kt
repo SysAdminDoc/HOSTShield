@@ -15,6 +15,7 @@ import com.hostshield.data.preferences.AppPreferences
 import com.hostshield.data.repository.HostShieldRepository
 import com.hostshield.domain.BlocklistHolder
 import com.hostshield.service.DnsVpnService
+import com.hostshield.service.DohPinFreshnessMonitor
 import com.hostshield.service.HostShieldWidgetProvider
 import com.hostshield.service.HostsUpdateWorker
 import com.hostshield.service.IptablesManager
@@ -59,6 +60,8 @@ data class HomeUiState(
     val snackbarMessage: String? = null,
     /** Private DNS warning (null = no warning). */
     val privateDnsWarning: String? = null,
+    /** Built-in DoH certificate pin lifecycle warning (null = current). */
+    val dohPinWarning: DohPinFreshnessMonitor.Warning? = null,
     /** DNS trap enabled (catches hardcoded DNS servers). */
     val dnsTrapEnabled: Boolean = true,
     /** DoH enabled. */
@@ -118,6 +121,7 @@ class HomeViewModel @Inject constructor(
     private val dnsLogDao: DnsLogDao,
     private val connectionLogDao: ConnectionLogDao,
     private val privacyScorer: PrivacyScorer,
+    private val dohPinFreshnessMonitor: DohPinFreshnessMonitor,
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -156,6 +160,7 @@ class HomeViewModel @Inject constructor(
         seedDefaults()
         scheduleAutoUpdate()
         checkPrivateDns()
+        checkDohPinFreshness()
         checkBattery()
         observeVpnRecoveryAdvisory()
         checkPrivateSpace()
@@ -279,6 +284,10 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun checkDohPinFreshness() {
+        _uiState.update { it.copy(dohPinWarning = dohPinFreshnessMonitor.currentWarning()) }
+    }
+
     private fun checkBattery() {
         viewModelScope.launch(Dispatchers.IO) {
             val status = batteryUtil.check()
@@ -367,6 +376,7 @@ class HomeViewModel @Inject constructor(
                 else -> null
             }
             _uiState.update { it.copy(privateDnsWarning = dnsWarning) }
+            checkDohPinFreshness()
         }
     }
 
