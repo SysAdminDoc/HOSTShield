@@ -314,7 +314,20 @@ Default: system DNS. Configure custom upstream DNS servers (comma-separated) in 
 
 ### LAN DNS Server
 
-Settings includes an explicit default-off LAN DNS server gate for advanced local-network setups. When enabled, HostShield starts a foreground service that serves UDP DNS on port 5353 by default, rejects public-source clients unless explicitly allowed, and keeps API 37 `ACCESS_LOCAL_NETWORK` permission readiness declared for Android 17+ non-:53 LAN access.
+Settings includes an explicit default-off LAN DNS server gate for advanced local-network setups. When enabled, HostShield starts a foreground service that serves UDP DNS on port 5353 by default, rejects public-source clients unless explicitly allowed, and requests Android 17 `ACCESS_LOCAL_NETWORK` before a target-SDK-37 build serves a non-53 port. The manifest declaration is already present while the app remains target SDK 36.
+
+The Android 17 socket audit covers these paths:
+
+| Path | Network boundary | API 37 treatment |
+|---|---|---|
+| `LocalDnsServerService` → `LocalDnsServer` | Wildcard UDP listener on the configured unprivileged port (1024–65535; 5353 by default) | Runtime `ACCESS_LOCAL_NETWORK` is required for target SDK 37+; the service and boot restore fail closed if it is not granted |
+| `DnsProxyService` | Loopback-only UDP listener on `127.0.0.1:5353` | Not LAN access |
+| `RootDnsLogger` | Loopback-only UDP listeners on `127.0.0.1` and `::1` | Not LAN access |
+| `DnsForwarder`, `DnsProxyService`, `RootDnsLogger`, `DnsVpnService`, `DnsBenchmark`, and `LocalDnsServer` upstream forwarding | DNS traffic to port 53 | Covered by Android's local-network DNS port-53 exemption |
+| DoH/DoT/DoQ, leak tests, and update/download clients | Fixed public or user-approved Internet endpoints | Not LAN access; DoQ and WireGuard remain debug-only |
+| `WireGuardProxy` | Debug-only configurable peer endpoint, potentially private and non-53 | Release builds force this path off; a future target-SDK-37 debug-network pass must request permission before using a private-LAN endpoint |
+
+Port 53 is intentionally not an available local listener because Android apps cannot bind privileged ports without elevated privileges; the exemption applies to DNS traffic addressed to port 53. See [Android's local network permission guidance](https://developer.android.com/privacy-and-security/local-network-permission) for the platform rules.
 
 ### Block Response Type
 

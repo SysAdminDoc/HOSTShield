@@ -48,6 +48,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 - Added connected accessibility regression gates for navigation, home, and
   reusable top-flow surfaces, covering labels, state descriptions, live regions,
   actions, and 48dp touch targets.
+- Audited Android 17 local-network socket paths, documented loopback and DNS
+  port-53 exemptions, and added an API-37 connected contract for the manifest
+  declaration and non-53 LAN policy.
 
 ## [v6.9.68] - 2026-08-11
 
