@@ -54,6 +54,9 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 - Wired the LAN DNS runtime permission flow for future target SDK 37 builds,
   including denial/revocation cleanup, boot-restore fail-closed behavior, and a
   service-side check before binding a non-53 listener.
+- Completed the Android 17 compatibility batch: target SDK 37, Tink 1.23.0,
+  org.json 20260719, and UI Automator 2.4.0; Core 1.19.0, serialization 1.11.0,
+  and Vico 3.2.3 were already at their current stable versions.
 
 ## [v6.9.68] - 2026-08-11
 

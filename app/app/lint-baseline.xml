@@ -2,17 +2,6 @@
 <issues format="6" by="lint 9.3.1" type="baseline" client="gradle" dependencies="false" name="AGP (9.3.1)" variant="all" version="9.3.1">
 
     <issue
-        id="OldTargetApi"
-        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details."
-        errorLine1="        targetSdk = 36"
-        errorLine2="        ~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="39"
-            column="9"/>
-    </issue>
-
-    <issue
         id="BatteryLife"
         message="Use of `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` violates the Play Store Content Policy regarding acceptable use cases, as described in https://developer.android.com/training/monitoring-device-state/doze-standby.html"
         errorLine1="        return Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {"
@@ -30,7 +19,7 @@
         errorLine2="        ^">
         <location
             file="src/main/AndroidManifest.xml"
-            line="66"
+            line="64"
             column="9"/>
     </issue>
 
@@ -41,7 +30,7 @@
         errorLine2="        ^">
         <location
             file="src/main/AndroidManifest.xml"
-            line="76"
+            line="74"
             column="9"/>
     </issue>
 
@@ -52,7 +41,7 @@
         errorLine2="        ^">
         <location
             file="src/main/AndroidManifest.xml"
-            line="81"
+            line="79"
             column="9"/>
     </issue>
 
@@ -65,39 +54,6 @@
             file="$HOME/repos/HostShield/app/gradle/wrapper/gradle-wrapper.properties"
             line="4"
             column="17"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlin.plugin.compose than 2.3.21 is available: 2.4.10"
-        errorLine1="kotlin = &quot;2.3.21&quot;"
-        errorLine2="         ~~~~~~~~">
-        <location
-            file="$HOME/repos/HostShield/app/gradle/libs.versions.toml"
-            line="3"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of com.google.crypto.tink:tink-android than 1.22.0 is available: 1.23.0"
-        errorLine1="tink = &quot;1.22.0&quot;"
-        errorLine2="       ~~~~~~~~">
-        <location
-            file="$HOME/repos/HostShield/app/gradle/libs.versions.toml"
-            line="20"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.json:json than 20260522 is available: 20260719"
-        errorLine1="json = &quot;20260522&quot;"
-        errorLine2="       ~~~~~~~~~~">
-        <location
-            file="$HOME/repos/HostShield/app/gradle/libs.versions.toml"
-            line="34"
-            column="8"/>
     </issue>
 
     <issue

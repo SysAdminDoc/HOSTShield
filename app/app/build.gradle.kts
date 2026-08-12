@@ -36,7 +36,7 @@ android {
     defaultConfig {
         applicationId = "com.hostshield"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 150
         versionName = "6.9.68"
 

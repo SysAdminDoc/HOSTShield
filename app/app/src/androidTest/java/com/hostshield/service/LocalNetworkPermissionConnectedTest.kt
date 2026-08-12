@@ -5,6 +5,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.core.content.ContextCompat
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -19,6 +21,7 @@ class LocalNetworkPermissionConnectedTest {
         assumeTrue("ACCESS_LOCAL_NETWORK starts on API 37", Build.VERSION.SDK_INT >= 37)
 
         val context = InstrumentationRegistry.getInstrumentation().targetContext
+        assertEquals(37, context.applicationInfo.targetSdkVersion)
         val packageInfo = context.packageManager.getPackageInfo(
             context.packageName,
             PackageManager.GET_PERMISSIONS
@@ -43,6 +46,17 @@ class LocalNetworkPermissionConnectedTest {
                 targetSdk = 37,
                 listenPort = LOCAL_DNS_DEFAULT_PORT
             )
+        )
+        assertTrue(
+            "Port-53 DNS remains allowed by the service guard",
+            LocalDnsServerService.hasLocalNetworkPermission(context, 53)
+        )
+        assertEquals(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_LOCAL_NETWORK
+            ) == PackageManager.PERMISSION_GRANTED,
+            LocalDnsServerService.hasLocalNetworkPermission(context, LOCAL_DNS_DEFAULT_PORT)
         )
     }
 }

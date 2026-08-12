@@ -314,7 +314,7 @@ Default: system DNS. Configure custom upstream DNS servers (comma-separated) in 
 
 ### LAN DNS Server
 
-Settings includes an explicit default-off LAN DNS server gate for advanced local-network setups. When enabled, HostShield starts a foreground service that serves UDP DNS on port 5353 by default, rejects public-source clients unless explicitly allowed, and requests Android 17 `ACCESS_LOCAL_NETWORK` before a target-SDK-37 build serves a non-53 port. The manifest declaration is already present while the app remains target SDK 36.
+Settings includes an explicit default-off LAN DNS server gate for advanced local-network setups. When enabled, HostShield starts a foreground service that serves UDP DNS on port 5353 by default, rejects public-source clients unless explicitly allowed, and requests Android 17 `ACCESS_LOCAL_NETWORK` before serving a non-53 port. The current build targets SDK 37.
 
 The Android 17 socket audit covers these paths:
 
@@ -377,7 +377,7 @@ Public actions are protected by HostShield's signature-level automation permissi
 | Networking | OkHttp 5 (source downloads, pinned DoH resolver) |
 | Root | libsu (topjohnwu) |
 | GeoIP | Bounded ipapi.co lookup with in-memory cache and exponential backoff |
-| Build | Gradle KTS, version catalog, AGP 9.3, KSP, Android SDK 37 compile / targetSdk 36, minSdk 26 |
+| Build | Gradle KTS, version catalog, AGP 9.3, KSP, Android SDK 37 compile / targetSdk 37, minSdk 26 |
 
 ---
 
