@@ -1,6 +1,6 @@
 # HostShield
 
-![Version](https://img.shields.io/badge/version-6.9.68-blue)
+![Version](https://img.shields.io/badge/version-6.9.69-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Android%208+-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4-7F52FF?logo=kotlin&logoColor=white)
@@ -31,7 +31,7 @@
    the previous app data.
 2. Download the newest `HostShield-v*-full-release.apk` asset from
    [Releases](https://github.com/SysAdminDoc/HostShield/releases).
-3. Install and launch — the onboarding wizard guides you through setup.
+3. Install and launch: the onboarding wizard guides you through setup.
 4. Choose **VPN mode** (no root) or **Root mode** (better battery life), then
    enable blocking.
 
@@ -82,7 +82,7 @@ Add HostShield in [Obtainium](https://github.com/ImranR98/Obtainium) with:
 **The idea.** Good network-level ad, tracker, and malware blocking on Android has
 always meant choosing one tool and giving something up: AdAway needs root, DNS66
 is unmaintained, NetGuard is firewall-first, and RethinkDNS is VPN-only. HostShield
-started as an attempt to stop choosing — to put the strongest ideas from each of
+started as an attempt to stop choosing: to put the strongest ideas from each of
 those projects behind one dual-mode engine (no-root VPN *and* rooted iptables),
 with encrypted DNS, a per-app firewall, and honest, local-only diagnostics in the
 same app.
@@ -102,16 +102,16 @@ same app.
 **Who builds it.** HostShield is developed and maintained by
 [@SysAdminDoc](https://github.com/SysAdminDoc), an independent developer with a
 systems-administration background, not a company or a funded team. That means
-releases ship when they're ready and there is no roadmap driven by monetization —
+releases ship when they're ready and there is no roadmap driven by monetization :
 but it also means the project lives or dies on the maintainer's own continued use.
 
 **Will it be abandonware in six months?** The honest answer: it's an independent
-project, so no guarantee can be absolute. What can be said is concrete — the app
+project, so no guarantee can be absolute. What can be said is concrete: the app
 is actively developed (see the [changelog](CHANGELOG.md) and the release
 cadence above), it's the maintainer's daily driver, and every release is
 open-source under GPL-3.0. If development ever stops, the code, build scripts, and
 signing story are all in this repository, so anyone can fork and keep it alive.
-Bug reports and feature requests are read and acted on — [open an issue](https://github.com/SysAdminDoc/HostShield/issues).
+Bug reports and feature requests are read and acted on: [open an issue](https://github.com/SysAdminDoc/HostShield/issues).
 
 ---
 
@@ -122,13 +122,13 @@ Bug reports and feature requests are read and acted on — [open an issue](https
 | Feature | Description |
 |---------|-------------|
 | **Bloom + Trie + Hash Set Lookup** | Snapshot-local Bloom pre-check fast-rejects cold negative domains, O(1) hash set handles exact matches, and O(m) reversed-label trie handles wildcard policy. 200K+ domains. |
-| **Filter Decision Cache** | LRU cache (8K entries) for `isBlocked()` results — skips trie entirely for hot domains |
+| **Filter Decision Cache** | LRU cache (8K entries) for `isBlocked()` results: skips trie entirely for hot domains |
 | **CNAME Cloaking Detection** | Inspects full CNAME chains + SVCB/HTTPS records (TYPE 64/65). Checks against main blocklist + dedicated AdGuard/NextDNS CNAME cloak databases |
 | **DNS Response Cache** | 2000-entry LRU with serve-stale (RFC 8767), negative caching (RFC 2308), SERVFAIL caching (RFC 9520), Unbound-style prefetching, and in-flight query coalescing |
 | **Serve-Stale (RFC 8767)** | Returns expired cache entries during WiFi/cellular transitions. 3-day stale window, 30s stale TTL. Background refresh on stale serve |
 | **Cache Prefetching** | When TTL < 10% remaining and domain queried 3+ times, serves from cache and refreshes in background. Near-zero latency for popular domains |
 | **Configurable TTL** | 60s minimum floor, 24h maximum ceiling. SOA-derived TTL for NXDOMAIN negative caching |
-| **Block Response Types** | NXDOMAIN (with SOA), Null IP (0.0.0.0/::), or REFUSED — configurable per preference |
+| **Block Response Types** | NXDOMAIN (with SOA), Null IP (0.0.0.0/::), or REFUSED: configurable per preference |
 | **Regex & Wildcard Rules** | Block/allow domains by regex pattern (capped at 500 chars, ReDoS-safe) or wildcard (`*.example.com`) |
 | **DoH Bypass Prevention** | Blocks 65+ known DoH provider domains + wildcard patterns, with dual-stack DNS/DoH trap routes. Remote domain/IP updates are signature-verified before local policy changes |
 
@@ -242,7 +242,7 @@ Bug reports and feature requests are read and acted on — [open an issue](https
 
 | Feature | Description |
 |---------|-------------|
-| **15 Content Categories** | Gaming, Streaming, Social Media, News, Shopping, Dating, Gambling, Adult, VPN/Proxy, Malware, and more — toggleable per category |
+| **15 Content Categories** | Gaming, Streaming, Social Media, News, Shopping, Dating, Gambling, Adult, VPN/Proxy, Malware, and more: toggleable per category |
 | **Parental Controls** | 3 age profiles (Child, Teen, Adult) with automatic category blocking per profile |
 | **PIN Lock** | Argon2id PIN lock protects parental control settings from bypass and forces legacy SHA-256 hashes through an upgrade prompt |
 | **DNS Proxy Mode** | No-VPN, no-root DNS blocking via local proxy (tri-mode: VPN / Root / Proxy) |
@@ -266,7 +266,7 @@ Bug reports and feature requests are read and acted on — [open an issue](https
 # Prerequisites: JDK 17+, Android SDK 37
 cd C:\Users\--\repos\HostShield
 
-# Full flavor — GitHub/F-Droid release (root features, QUERY_ALL_PACKAGES)
+# Full flavor: GitHub/F-Droid release (root features, QUERY_ALL_PACKAGES)
 .\app\gradlew.bat -p app :app:assembleFullRelease    # Signed release
 .\app\gradlew.bat -p app :app:assembleFullDebug      # Debug build
 
@@ -320,7 +320,7 @@ The Android 17 socket audit covers these paths:
 
 | Path | Network boundary | API 37 treatment |
 |---|---|---|
-| `LocalDnsServerService` → `LocalDnsServer` | Wildcard UDP listener on the configured unprivileged port (1024–65535; 5353 by default) | Runtime `ACCESS_LOCAL_NETWORK` is required for target SDK 37+; the service and boot restore fail closed if it is not granted |
+| `LocalDnsServerService` → `LocalDnsServer` | Wildcard UDP listener on the configured unprivileged port (1024 to 65535; 5353 by default) | Runtime `ACCESS_LOCAL_NETWORK` is required for target SDK 37+; the service and boot restore fail closed if it is not granted |
 | `DnsProxyService` | Loopback-only UDP listener on `127.0.0.1:5353` | Not LAN access |
 | `RootDnsLogger` | Loopback-only UDP listeners on `127.0.0.1` and `::1` | Not LAN access |
 | `DnsForwarder`, `DnsProxyService`, `RootDnsLogger`, `DnsVpnService`, `DnsBenchmark`, and `LocalDnsServer` upstream forwarding | DNS traffic to port 53 | Covered by Android's local-network DNS port-53 exemption |
@@ -332,9 +332,9 @@ Port 53 is intentionally not an available local listener because Android apps ca
 ### Block Response Type
 
 Choose how blocked domains are handled:
-- **NXDOMAIN** (default) — domain doesn't exist, includes SOA for negative caching
-- **Null IP** — returns 0.0.0.0 (A) or :: (AAAA), connection fails immediately
-- **REFUSED** — DNS server refuses the query
+- **NXDOMAIN** (default): domain doesn't exist, includes SOA for negative caching
+- **Null IP**: returns 0.0.0.0 (A) or :: (AAAA), connection fails immediately
+- **REFUSED**: DNS server refuses the query
 
 ### Automation API
 
@@ -391,7 +391,7 @@ app/src/main/java/com/hostshield/
 │   ├── preferences/   # DataStore preferences (AppPreferences)
 │   ├── repository/    # HostShieldRepository
 │   └── source/        # SourceDownloader
-├── di/                # Hilt modules (DatabaseModule — DB + OkHttpClient singleton)
+├── di/                # Hilt modules (DatabaseModule: DB + OkHttpClient singleton)
 ├── domain/
 │   ├── BlocklistHolder.kt    # Trie + hash set + regex + wildcard engine
 │   └── parser/
@@ -458,7 +458,7 @@ Root mode: zero battery overhead, requires rooted device with Magisk, KernelSU, 
 Magisk, KernelSU, and APatch are supported when HostShield has root permission. Magisk 26+ firewall commands use libsu's mount-master shell. KernelSU and APatch use the default `su` shell; hosts-file editing needs an active systemless hosts module such as bindhosts because those frameworks do not ship built-in systemless hosts. HostShield detects Magisk `hosts`, bindhosts, and the KernelSU systemless-hosts module paths under `/data/adb/modules/` when present. Without one, root DNS and firewall rules can still work through iptables, but direct hosts-file edits may fail on read-only `/system`.
 
 **Why does it use a VPN?**
-Entirely local — no traffic goes to a remote server. The VPN tunnel intercepts DNS queries on the device and filters them locally. Standard technique used by NetGuard, RethinkDNS, Blokada, and DNS66.
+Entirely local: no traffic goes to a remote server. The VPN tunnel intercepts DNS queries on the device and filters them locally. Standard technique used by NetGuard, RethinkDNS, Blokada, and DNS66.
 
 **How is this different from AdAway?**
 CNAME cloaking detection (including SVCB/HTTPS records), serve-stale DNS cache (RFC 8767), fail-closed DoH with certificate pinning and selected-provider preference, per-app iptables firewall, live query streaming, 7-day trend charts, query anomaly detection, rate-limited GeoIP lookup, tracker SDK scanning, DNS leak test, automation API, and a modern Material 3 Compose UI.
@@ -467,7 +467,7 @@ CNAME cloaking detection (including SVCB/HTTPS records), serve-stale DNS cache (
 HostShield focuses on local DNS blocking with a curated gallery of 45+ blocklists. It has a dual-mode architecture (VPN + root) while RethinkDNS is VPN-only. HostShield includes an iptables-based per-app firewall for rooted devices, tracker SDK scanning, and hosts file diffing.
 
 **Does it work with other VPNs?**
-In VPN mode: no — Android only allows one VPN at a time. In root mode: yes — iptables rules work alongside any VPN.
+In VPN mode: no: Android only allows one VPN at a time. In root mode: yes: iptables rules work alongside any VPN.
 
 **VPN coexistence guides:**
 
@@ -506,6 +506,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
+| **6.9.69** | New adaptive launcher artwork with Android 13 themed-icon support. |
 | **6.9.68** | Audit drain: context-firewall background rules, working block redirect targets, a pre-API-34 shortcut-toggle bypass, denyallow/Mullvad filtering scope, and release gates that verify what they claim. |
 | **6.9.67** | Roadmap drain: encrypted-only backup secrets with real schema-v2 roundtrips, retained diagnostic/PCAP artifacts with test seams, and malformed threat-feed health accounting. |
 | **6.9.66** | Roadmap drain: scoped `$denyallow` semantics, pre-34 automation attribution, fresh stats widgets, validated redirect targets, and debug WireGuard key configuration. |

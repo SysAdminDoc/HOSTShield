@@ -3,7 +3,9 @@
 All notable changes to HostShield are documented in this canonical changelog.
 The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 
-## [Unreleased]
+## [v6.9.69]: 2026-08-29
+
+- New app icon: adaptive, themed (monochrome) and legacy variants regenerated from the 2026-08 icon set.
 
 - Added opt-in blocked-domain notifications with one-shot, ten-minute, and
   persistent allow actions, source-aware log deep links, and parental-control
@@ -67,12 +69,12 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
   and optional expiry now round-trip through backup/JSON and expire via a
   persistent WorkManager reconciliation.
 
-## [v6.9.68] - 2026-08-11
+## [v6.9.68]: 2026-08-11
 
-Audit drain — 40 verified findings from the 2026-08-11 deep audit, across
+Audit drain: 40 verified findings from the 2026-08-11 deep audit, across
 correctness, security, release gating, UX, accessibility, and test quality.
 
-### Fixed - correctness
+### Fixed: correctness
 - Per-app firewall rules with "block in background" blocked their app 100% of
   the time: the foreground-app tracker was never called, so the comparison
   always saw an empty value. The VPN now samples the foreground app while such a
@@ -100,7 +102,7 @@ correctness, security, release gating, UX, accessibility, and test quality.
   as zero rules with no error.
 - Log/rule/firewall search escapes `%` and `_`.
 
-### Fixed - security
+### Fixed: security
 - On Android 8-13 any app could flip protection by sending SHORTCUT_TOGGLE with
   a host-less referrer. Referrer is caller-supplied there, so the toggle now
   requires a tap below API 34; API 34+ keeps the authoritative caller check.
@@ -110,10 +112,10 @@ correctness, security, release gating, UX, accessibility, and test quality.
   shared cache, and PCAP cleanup sweeps every export mode.
 - Debug-signed release artifacts carry a `-debugsigned` version suffix.
 
-### Fixed - release gating
+### Fixed: release gating
 - Added the missing store changelogs for 6.9.66 and 6.9.67; the release-doc gate
   had been failing since the 6.9.66 bump.
-- The gate derived nothing about migrations - it required the literal string
+- The gate derived nothing about migrations: it required the literal string
   "v1-v15" while the database was at v20, so correcting the docs would have
   failed it. The range now comes from the tracked schemas, and the WorkManager
   audit is checked for completeness against the workers in the tree.
@@ -123,7 +125,7 @@ correctness, security, release gating, UX, accessibility, and test quality.
   recording "unavailable" and exiting 0.
 - `docs/` is actually shipped; the `!docs/` negation was a no-op.
 
-### Fixed - UX, theming, accessibility
+### Fixed: UX, theming, accessibility
 - Settings and Add Source no longer discard typed input on rotation, and the DNS
   cache row updates live instead of freezing.
 - Light mode no longer shows a black window background; charts re-tint on accent
@@ -136,17 +138,17 @@ correctness, security, release gating, UX, accessibility, and test quality.
 
 ### Testing
 - 642 unit tests (was 566). Added probe-verified regression coverage for the two
-  historical P0 sites - the DoH bounded-body read and the iptables script
-  ordering - plus the fail-closed encrypted-DNS invariant, pause auto-resume
+  historical P0 sites: the DoH bounded-body read and the iptables script
+  ordering: plus the fail-closed encrypted-DNS invariant, pause auto-resume
   protection-state truth, temporary-allow precedence, RFC 2308 MINIMUM=0, and
   threat-intel CIDR boundaries.
 - Removed 14 tests that asserted against values built inside the test and passed
   with the code under test deleted, and one that made a live network request to
   ipapi.co on every run.
 
-## [v6.9.67] - 2026-08-09
+## [v6.9.67]: 2026-08-09
 
-Roadmap drain — completed the local backup/export and threat-intelligence
+Roadmap drain: completed the local backup/export and threat-intelligence
 health work that remained actionable without device-gated or product decisions.
 
 - Backups now use schema v2, roundtrip current Room and preference state through
@@ -156,22 +158,22 @@ health work that remained actionable without device-gated or product decisions.
 - Threat-feed parser drift is counted and surfaced as degraded health, retained
   feed metrics survive refresh failures, and diagnostics include the summary.
 
-## [v6.9.66] - 2026-08-03
+## [v6.9.66]: 2026-08-03
 
-Deep audit wave 3 — ~35 verified fixes in the surfaces earlier passes skipped:
+Deep audit wave 3: ~35 verified fixes in the surfaces earlier passes skipped:
 background workers, root-mode lifecycle, widget/tile/notification wiring, and
 secondary screens.
 
-### Fixed — protection-state truth
+### Fixed: protection-state truth
 - Pause auto-resume and scheduled blocking no longer mark protection enabled
   when the foreground-service start was denied (Android 12+ background
   restriction): the pref flips only after a successful start and the worker
   retries with backoff. Previously the UI, tile, and widget claimed "Protected"
-  with nothing running — and the schedule worker then skipped the whole window.
+  with nothing running: and the schedule worker then skipped the whole window.
 - The blocking-schedule worker is re-registered at boot and app start when the
   schedule pref is enabled, covering backups restored onto fresh installs.
 - The widget's Enable/Disable button now actually toggles protection (its
-  intent extra was never read by anything — the button just opened the app).
+  intent extra was never read by anything: the button just opened the app).
   It handles VPN-consent absence and start denial by opening the in-app flow.
 - The Quick Settings tile checks for VPN consent before claiming ACTIVE, only
   persists the enabled pref on a successful start, and (as a passive tile) now
@@ -179,7 +181,7 @@ secondary screens.
 - `establish()` failure and system VPN revocation reset the enabled pref and
   widget instead of leaving every surface claiming protection.
 
-### Fixed — root mode
+### Fixed: root mode
 - A stop during root-mode setup could install the iptables NAT redirect AFTER
   teardown ran, blackholing all device DNS to a dead loopback port until
   reboot. Sessions now carry a generation counter enforced inside the iptables
@@ -187,24 +189,24 @@ secondary screens.
 - A quick root-mode stop/start no longer permanently destroys the user's saved
   Private DNS (DoT) setting.
 - Removed the TCP/53 DNAT redirect: the local proxy is UDP-only, so it
-  blackholed every TCP DNS connection — including the standard TCP retry after
+  blackholed every TCP DNS connection: including the standard TCP retry after
   a truncated UDP answer. UDP relay buffers grew from 1500 to 4096 bytes so
   large EDNS answers are no longer silently corrupted.
 - Proxy-mode stop dropped up to 5000 buffered log rows (the final flush was
   cancelled before it ran) and a quick stop/start left a zombie foreground
   service on a cancelled scope; both fixed.
 - Connection logging no longer stacks a duplicate iptables LOG rule per start
-  or destroys the device-wide kernel ring buffer (`dmesg -C`) — the replay is
+  or destroys the device-wide kernel ring buffer (`dmesg -C`): the replay is
   discarded with a settle window and rules are removed on stop.
 
-### Fixed — data and stats integrity
+### Fixed: data and stats integrity
 - Live query-rate pills, the latency sparkline, and query-anomaly detection
   were permanently dead: the backing flow was shared `WhileSubscribed` but only
   ever polled, so it never started. Now shared eagerly.
 - The Home "domains blocked" tile no longer snaps back to a stale count every
   time any unrelated setting changes.
 - Hourly activity and latency charts drew hours 22-23 past the clipped canvas
-  edge — evening activity was invisible.
+  edge: evening activity was invisible.
 - SAF exports and backups truncate on overwrite ("wt"), so writing a smaller
   file over a larger one can no longer leave a corrupt, unrestorable document.
 - Add-rule classifies wildcards after trimming; a pasted leading space
@@ -214,39 +216,39 @@ secondary screens.
 - Overnight blocking profiles ("Fri 22:00-06:00") no longer tear down at
   midnight when the following day isn't scheduled.
 
-### Fixed — filtering semantics
+### Fixed: filtering semantics
 - Adblock `$denyallow` exceptions now remain attached to their owning source
   rule, so they cannot bypass exact, more-specific wildcard, or other-source
   blocks; source-impact previews use the same scoped decision path.
 
-### Fixed — automation audit attribution
+### Fixed: automation audit attribution
 - On Android versions before API 34, automation audit entries now record the
   sender as unknown instead of misattributing it to HostShield's own UID, and
   rate limiting is scoped to the action when the platform cannot expose a UID.
 
-### Fixed — background stats
+### Fixed: background stats
 - The stats widget now refreshes its blocked/query totals from the DNS-log DAO
   during widget updates, including the local midnight rollover, without
   requiring the app to be opened first.
 
-### Added — redirect targets
+### Added: redirect targets
 - Settings now exposes validated IPv4 and IPv6 redirect-target fields, while
   preserving the blocking-safe `0.0.0.0` and `::` defaults.
 
-### Added — WireGuard configuration
+### Added: WireGuard configuration
 - Debug builds now expose validated private, peer-public, and optional
   preshared-key fields for the experimental DNS tunnel; private and preshared
   values continue to use secure storage and are masked by default.
 
-### Fixed — WebDAV
+### Fixed: WebDAV
 - Root directory listings always parsed as empty (an `endsWith("")` check ate
   every entry), so "Test connection" always reported no remote files and
   uploads seemed to vanish. Covered by new Robolectric regression tests.
 - "Upload backup now" executed with the saved server settings while enabling
-  itself from the typed fields — a fresh setup errored with a valid URL on
+  itself from the typed fields: a fresh setup errored with a valid URL on
   screen, and an edited URL silently uploaded to the previously-saved server.
 
-### Fixed — UX, performance, theming
+### Fixed: UX, performance, theming
 - Safe Search no longer performs a blocking system-resolver lookup on the VPN
   packet-loop thread (which stalled all device DNS on slow networks); endpoints
   are pre-warmed and refreshed in the background.
@@ -254,7 +256,7 @@ secondary screens.
   wiping every app's rules; the firewall search field appears on all three tabs
   (Network/Context were silently filtered by an invisible query).
 - Scheduled Blocking start/end times are finally editable (Material 3 time
-  pickers) — previously only a backup restore could change the 22:00-07:00
+  pickers): previously only a backup restore could change the 22:00-07:00
   defaults.
 - Hosts editor confirms before Reload discards unsaved edits; the Apps screen
   handles system back like its header arrow; block-alert notifications open the
@@ -267,7 +269,7 @@ secondary screens.
   mode; widget text comes from string resources with human mode labels instead
   of raw `ROOT_HOSTS` enum constants; "WiFi" unified to "Wi-Fi".
 
-## [v6.9.64] - 2026-07-28
+## [v6.9.64]: 2026-07-28
 
 ### Added
 - README "Background & Support" section covering the project's motivation,
@@ -286,7 +288,7 @@ secondary screens.
   and widget cleanup (`settings_include_ipv6*`, `settings_show_notification*`,
   `widget_label_*`, `widget_percent_blocked`), clearing the lint warnings.
 
-## [v6.9.63] - 2026-07-28
+## [v6.9.63]: 2026-07-28
 
 ### Changed
 - Removed dead UI/util code: the unused ShieldAnimation and AnimatedLogFeed
@@ -426,7 +428,7 @@ secondary screens.
   anything but an exact block). On expiry the domain reverts to its
   source-defined status instead of being stamped as a permanent user block, and
   the holder mutation runs off the main thread.
-- Encrypted backups created on v6.3.0–v6.4.0 (PBKDF2 at 100k iterations) decrypt
+- Encrypted backups created on v6.3.0 to v6.4.0 (PBKDF2 at 100k iterations) decrypt
   again: version-1 payloads now fall back to the legacy iteration count when the
   current one fails, so the correct passphrase recovers the data. A wrong
   passphrase still fails.
@@ -458,7 +460,7 @@ secondary screens.
 - Blocklist preservation now keys off block sources specifically: a lone
   allowlist source downloading successfully while every block source fails no
   longer swaps in an empty blocklist. The live snapshot is preserved.
-- The hosts editor now honors the write result — a failed root write shows the
+- The hosts editor now honors the write result: a failed root write shows the
   error banner and keeps the Save action instead of falsely reporting "saved",
   and a failed read shows a retry surface instead of a blank editor that could
   overwrite the real hosts file on save.
@@ -477,7 +479,7 @@ secondary screens.
 - The home "Domains Blocked" tile now follows the live source count down when a
   source is disabled instead of sticking at the previous maximum.
 
-## [v6.9.62] - 2026-07-28
+## [v6.9.62]: 2026-07-28
 
 ### Added
 - Forked the Spotify Ads hosts list into HostShield with its upstream MIT
@@ -503,7 +505,7 @@ secondary screens.
 - The v6.9.62 GitHub APK continues the v6.9.61 Android debug-certificate
   lineage and installs in place over v6.9.61.
 
-## [v6.9.61] - 2026-07-28
+## [v6.9.61]: 2026-07-28
 
 ### Added
 - Added Spotify Ads as an optional built-in ADS source. It is disabled by
@@ -531,7 +533,7 @@ secondary screens.
   needed, uninstall v6.9.16 or earlier, then install v6.9.61. The uninstall
   clears the previous app data.
 
-## [v6.9.60] - 2026-07-22
+## [v6.9.60]: 2026-07-22
 
 ### Added
 - Blocking profiles now apply their per-profile `source_ids`: activating a
@@ -540,7 +542,7 @@ secondary screens.
 - Settings controls for blocklist auto-update + interval, Wi-Fi-only updates,
   the ongoing protection notification, and DNS-log retention (previously
   collected in state with working setters but no UI).
-- PCAP connection-log export emits IPv6 packets — v6 destinations were dropped.
+- PCAP connection-log export emits IPv6 packets: v6 destinations were dropped.
 
 ### Fixed
 - Threat-intel partial refresh carries forward a failed feed's last-good
@@ -554,10 +556,10 @@ secondary screens.
 
 ### Security
 - The exported launcher `SHORTCUT_TOGGLE` action is honored only when the launch
-  is system-delivered or comes from the app/a system launcher — a third-party
+  is system-delivered or comes from the app/a system launcher: a third-party
   app can no longer toggle protection.
 
-## [v6.9.59] - 2026-07-22
+## [v6.9.59]: 2026-07-22
 
 ### Fixed (deep engineering + security + UX audit)
 - **Per-app firewall never applied**: `IptablesManager` split the apply script so
@@ -569,7 +571,7 @@ secondary screens.
   mode now returns SERVFAIL (fail-closed), and its receive buffers grew 512->4096
   bytes so EDNS answers are no longer truncated.
 - **IPv6 DNS broken**: `wrapResponseV6` emitted a zero UDP checksum, which
-  receivers must discard — the mandatory checksum is now computed.
+  receivers must discard: the mandatory checksum is now computed.
 - **Offline refresh emptied the blocklist**: `BlocklistSourceCoordinator` now
   preserves the live snapshot when every enabled source fails to download, and
   persists source metadata via targeted column updates that no longer clobber
@@ -586,7 +588,7 @@ secondary screens.
   round-trip, sources/profiles de-duplicate, restored redirect IPs are
   validated, and the hosts `.bak` backup is no longer clobbered on re-apply.
 - **Privacy scoring**: the permission dimension was dead (masking with
-  `PackageManager.PERMISSION_GRANTED`, which is 0) — now uses
+  `PackageManager.PERMISSION_GRANTED`, which is 0): now uses
   `REQUESTED_PERMISSION_GRANTED`.
 - **Workers/preferences**: automation double-`finish()` crash, missing
   DNS_PROXY dispatch in scheduled blocking, pause/resume re-enabling disabled
@@ -661,13 +663,13 @@ secondary screens.
   domain and resolved-IP checks, so false-positive recovery does not require
   disabling malware feeds.
 
-## [v6.9.58] - 2026-07-05
+## [v6.9.58]: 2026-07-05
 
 ### Added
 - Logs, Sources, Apps, and Firewall dense lists now expose persisted saved filters, filtered empty states, and accessible top/middle/end jump controls for large local datasets.
 - Added JVM coverage for saved dense-list filter save/apply/clear behavior and large-font Compose coverage for the shared dense-list controls.
 
-## [v6.9.57] - 2026-07-01
+## [v6.9.57]: 2026-07-01
 
 ### Fixed
 - AdGuard `$dnstype=` block and allow rules now persist through source rebuilds
@@ -676,7 +678,7 @@ secondary screens.
   types into blocklist evaluation, enforcing A, AAAA, and negated type rules
   without globalizing scoped rules.
 
-## [v6.9.56] - 2026-07-01
+## [v6.9.56]: 2026-07-01
 
 ### Fixed
 - Release builds now document DoQ and WireGuard DNS as debug-only experimental
@@ -685,7 +687,7 @@ secondary screens.
 - Release documentation checks now verify the Settings and VPN debug gates and
   reject release-effective claims for experimental DNS transports.
 
-## [v6.9.55] - 2026-07-01
+## [v6.9.55]: 2026-07-01
 
 ### Changed
 - Removed current Local DNS Server / "Portable Pi-hole" feature claims from the
@@ -694,7 +696,7 @@ secondary screens.
 - Release documentation checks now fail if current release docs reintroduce the
   unwired Local DNS Server claim.
 
-## [v6.9.54] - 2026-06-30
+## [v6.9.54]: 2026-06-30
 
 ### Fixed
 - Periodic, scheduled-profile, and VPN startup blocklist rebuilds now use one
@@ -704,7 +706,7 @@ secondary screens.
   Last-Modified values, byte sizes, last-success timestamps, health state, and
   entry deltas consistently across rebuild paths.
 
-## [v6.9.53] - 2026-06-27
+## [v6.9.53]: 2026-06-27
 
 ### Added
 - DNS cache misses now use an in-flight single-flight coordinator keyed by
@@ -721,7 +723,7 @@ secondary screens.
 - Gradle/Kotlin build heap settings now match the current release compile
   footprint so local release artifact builds do not crash the daemon.
 
-## [v6.9.52] - 2026-06-20
+## [v6.9.52]: 2026-06-20
 
 ### Fixed
 - Dynamic color (Material You) now derives custom palette tokens from the
@@ -734,7 +736,7 @@ secondary screens.
 - DoT resolver now tries all configured providers on failure instead of
   giving up after the primary, matching DoH's multi-provider failover.
 
-## [v6.9.51] - 2026-06-20
+## [v6.9.51]: 2026-06-20
 
 ### Security
 - `DnsVpnService`: added missing `@Volatile` to `useWireGuard`,
@@ -745,13 +747,13 @@ secondary screens.
   configured for a provider, matching the DoH pinning behavior.
 
 ### Fixed
-- Light mode was completely broken across all 30 screens — each used
+- Light mode was completely broken across all 30 screens: each used
   hardcoded `Color.Black` (#000000) instead of the theme-aware palette
   `Black` which maps to light gray in light mode.
 - High-contrast AMOLED toggle is now hidden in light mode since it only
   affects dark palette variants.
 
-## [v6.9.50] - 2026-06-20
+## [v6.9.50]: 2026-06-20
 
 ### Added
 - Tracker company attribution view showing top tracking companies by blocked
@@ -761,7 +763,7 @@ secondary screens.
   preferences readiness.
 - VPN coexistence guide for Tailscale, Mullvad, and WireGuard in README FAQ.
 
-## [v6.9.49] - 2026-06-20
+## [v6.9.49]: 2026-06-20
 
 ### Added
 - Light theme option with Dark/Light/System mode selector in Settings.
@@ -774,7 +776,7 @@ secondary screens.
 - Extracted ViewModels from 6 large screen files (Stats, Logs, Sources,
   Firewall, DnsTools, Rules) into dedicated ViewModel files for testability.
 
-## [v6.9.48] - 2026-06-19
+## [v6.9.48]: 2026-06-19
 
 ### Added
 - Dynamic Color / Material You theme support on Android 12+ (opt-in in
@@ -792,7 +794,7 @@ secondary screens.
 - Enabled predictive back gesture support (`enableOnBackInvokedCallback`) for
   Android 14+ system back animations.
 
-## [v6.9.47] - 2026-06-19
+## [v6.9.47]: 2026-06-19
 
 ### Security
 - WebDAV sync now requires HTTPS URLs consistently in the UI and service layer,
@@ -805,7 +807,7 @@ secondary screens.
 - Import paths now normalize and reject malformed allowlist, AdAway redirect,
   and Pi-hole exact-domain entries before they can pollute local rule state.
 
-## [v6.9.46] - 2026-06-19
+## [v6.9.46]: 2026-06-19
 
 ### Changed
 - Extended premium UI polish across diagnostics, firewall, parental controls,
@@ -813,76 +815,76 @@ secondary screens.
   activity with shared headers, calmer state feedback, and clearer empty
   guidance.
 
-## [v6.9.45] - 2026-06-19
+## [v6.9.45]: 2026-06-19
 
 ### Changed
 - Refined secondary Android UI surfaces with shared back headers, segmented
   controls, responsive empty/loading states, and smoother app-exclusion loading.
 
-## [v6.9.44] - 2026-06-18
+## [v6.9.44]: 2026-06-18
 
 ### Changed
 - Launcher icon resources now live in the unqualified adaptive-icon directory
   and include a monochrome layer for Android themed icons.
 
-## [v6.9.43] - 2026-06-18
+## [v6.9.43]: 2026-06-18
 
 ### Changed
 - Widget secondary labels now use at least 11sp text for better launcher
   readability and accessibility.
 
-## [v6.9.42] - 2026-06-18
+## [v6.9.42]: 2026-06-18
 
 ### Fixed
 - Firewalled-app count labels now use Android plural resources, so single-app
   and multi-app summaries read correctly.
 
-## [v6.9.41] - 2026-06-18
+## [v6.9.41]: 2026-06-18
 
 ### Security
 - Hardened the WebRTC leak-test WebView by disabling file/content access,
   blocking navigation, bounding bridge payloads, parsing JSON safely, and
   removing the JavaScript bridge after each probe.
 
-## [v6.9.40] - 2026-06-18
+## [v6.9.40]: 2026-06-18
 
 ### Fixed
 - Widget metadata now keeps Android 12+ target-cell sizing in `xml-v31`
   resources while the base widget definitions stay valid for API 26-30.
 
-## [v6.9.39] - 2026-06-18
+## [v6.9.39]: 2026-06-18
 
 ### Fixed
 - Moved the API 27-only light-navigation-bar theme attribute out of the base
   API 26 resource set, removing the last baseline-suppressed `NewApi` finding.
 
-## [v6.9.38] - 2026-06-18
+## [v6.9.38]: 2026-06-18
 
 ### Fixed
 - Older Android releases now skip API 29-only VPN status and Quick Settings
   subtitle calls instead of relying on exception handling around unavailable
   platform methods.
 
-## [v6.9.37] - 2026-06-18
+## [v6.9.37]: 2026-06-18
 
 ### Changed
 - Updated the lint-reported stable Compose BOM and Tink refreshes while
   keeping Lifecycle pinned to the current compile SDK line.
 
-## [v6.9.36] - 2026-06-18
+## [v6.9.36]: 2026-06-18
 
 ### Changed
 - Home stats and source-management labels now use the existing Android string
   resources instead of hardcoded Compose text, keeping the UI localization
   surface complete and lint-cleaner.
 
-## [v6.9.35] - 2026-06-18
+## [v6.9.35]: 2026-06-18
 
 ### Fixed
 - Dropped-query warnings now use Android plural resources, so single-query and
   multi-query buffer-overflow messages are grammatically correct and lint-safe.
 
-## [v6.9.34] - 2026-06-18
+## [v6.9.34]: 2026-06-18
 
 ### Fixed
 - Room enum converter fallbacks now emit bounded warning logs when corrupted
@@ -893,7 +895,7 @@ secondary screens.
 - Added converter fallback coverage for blank, lowercase, and long corrupted
   enum values.
 
-## [v6.9.33] - 2026-06-18
+## [v6.9.33]: 2026-06-18
 
 ### Performance
 - Added Room schema version 18 with a covering `dns_logs(app_package, hostname)`
@@ -903,7 +905,7 @@ secondary screens.
 - Extended the Android migration test fixture to assert the new index exists
   after every supported historical migration path.
 
-## [v6.9.32] - 2026-06-18
+## [v6.9.32]: 2026-06-18
 
 ### Security
 - DNS cache hits, stale-cache responses, and encrypted fail-closed stale
@@ -915,21 +917,21 @@ secondary screens.
   and clearer domain/app scope labels; app-scoped threat allows suppress
   threat-intel checks only for that allowed app/domain pair.
 
-## [v6.9.31] - 2026-06-18
+## [v6.9.31]: 2026-06-18
 
 ### Changed
 - Settings exports now share one destination artifact model for generated
   content and cached files, including correct filenames, MIME types, privacy
   copy, Save As support for diagnostic ZIPs, and tested file/content streaming.
 
-## [v6.9.30] - 2026-06-17
+## [v6.9.30]: 2026-06-17
 
 ### Security
 - Local DNS server abuse controls now enforce a global per-window query budget
   alongside the existing per-client cap, preventing spoofed source rotation
   from bypassing LAN DNS throttling.
 
-## [v6.9.29] - 2026-06-17
+## [v6.9.29]: 2026-06-17
 
 ### Security
 - User-supplied blocklist regex matching now runs through a per-rule execution
@@ -939,7 +941,7 @@ secondary screens.
 - Blocklist decision-cache entries are tied to the snapshot that produced them,
   preventing stale cached decisions from surviving concurrent blocklist swaps.
 
-## [v6.9.26] - 2026-06-16
+## [v6.9.26]: 2026-06-16
 
 ### Changed
 - Added shared premium Compose primitives for screen headers, square icon
@@ -960,7 +962,7 @@ secondary screens.
 - Release-doc validation now checks the pinned OSV scanner action SHA plus
   version comment instead of the old mutable tag.
 
-## [v6.9.25] - 2026-06-16
+## [v6.9.25]: 2026-06-16
 
 ### Added
 - Search history now persists in backup schema v2 export/import.
@@ -974,7 +976,7 @@ secondary screens.
 - Widget `baselineAligned=false` for layout performance.
 - Annotated dead DoH3 branch with suppression for dead-code clarity.
 
-## [v6.9.24] - 2026-06-16
+## [v6.9.24]: 2026-06-16
 
 ### Changed
 - HomeViewModel: collapsed 9 preference observer coroutines into a single
@@ -984,12 +986,12 @@ secondary screens.
   UnnecessaryArrayInit, and ObsoleteSdkInt warnings fixed (14 fixes, baseline
   reduced from 72 to 58 warnings).
 
-## [v6.9.23] - 2026-06-16
+## [v6.9.23]: 2026-06-16
 
 ### Fixed
 - LocalDnsServer now fails closed when encrypted DNS (DoH/DoT) is configured
   but fails, returning SERVFAIL instead of silently falling back to plaintext
-  UDP — matching the VPN mode fail-closed policy.
+  UDP: matching the VPN mode fail-closed policy.
 - BlocklistHolder trie walk no longer breaks early on wildcardAllow, so a
   more-specific wildcardBlock at a deeper level correctly overrides a shallower
   wildcardAllow (most-specific-wins semantics).
@@ -1009,49 +1011,49 @@ secondary screens.
   `remember{}` to ViewModel `StateFlow`, eliminating main-thread recomposition
   cost for up to 2000 log entries.
 
-## [v6.9.22] - 2026-06-16
+## [v6.9.22]: 2026-06-16
 
 ### Added
 - Threat-intel blocked log details now include review actions to create a
   global domain allow rule or, when app attribution is available, an app-scoped
   DNS allow rule that recovers only the affected app/domain pair.
 
-## [v6.9.21] - 2026-06-16
+## [v6.9.21]: 2026-06-16
 
 ### Added
 - Stats now includes local threat-intel impact analytics with per-feed 24-hour
   and 7-day block counts, last matched time, top affected domains/apps, and a
   compact 7-day feed trend.
 
-## [v6.9.20] - 2026-06-16
+## [v6.9.20]: 2026-06-16
 
 ### Fixed
 - The main app scaffold now applies explicit system-bar window insets, keeping
   top-level and sub-screen content out from under Android 15+ status and
   navigation bars while preserving edge-to-edge rendering.
 
-## [v6.9.19] - 2026-06-16
+## [v6.9.19]: 2026-06-16
 
 ### Fixed
 - Theme palette tokens now resolve through a per-composition palette instead
   of mutating top-level global state, so high-contrast and accent variants can
   coexist safely in previews, widgets, and nested themed surfaces.
 
-## [v6.9.18] - 2026-06-16
+## [v6.9.18]: 2026-06-16
 
 ### Fixed
 - DNS log temporary-allow actions now schedule their re-block through
   WorkManager instead of a ViewModel coroutine delay, so process death and Doze
   no longer turn a temporary allow into a persistent bypass.
 
-## [v6.9.17] - 2026-06-16
+## [v6.9.17]: 2026-06-16
 
 ### Security
 - Legacy unsalted SHA-256 parental PIN hashes are now detected on app launch,
   force the parental-controls PIN upgrade flow, and are rewritten to the
   current KDF after successful PIN verification.
 
-## [v6.9.16] - 2026-06-15
+## [v6.9.16]: 2026-06-15
 
 ### Fixed
 - Periodic blocklist refresh no longer silently empties the blocklist when all
@@ -1094,7 +1096,7 @@ secondary screens.
 - Removed overly broad Compose R8 keep rules that prevented tree-shaking;
   Compose ships its own consumer ProGuard rules.
 
-## [v6.9.15] - 2026-06-15
+## [v6.9.15]: 2026-06-15
 
 ### Fixed
 - Blocklist Gallery now handles loading, unavailable, and empty states instead
@@ -1112,7 +1114,7 @@ secondary screens.
 - App privacy and content filter rows now truncate long labels/descriptions
   safely around badges, switches, and action buttons.
 
-## [v6.9.14] - 2026-06-15
+## [v6.9.14]: 2026-06-15
 
 ### Fixed
 - Home protection, DNS tools, DNS leak test, hosts editor/diff, firewall sync,
@@ -1131,7 +1133,7 @@ secondary screens.
 - Blocklist gallery add buttons now use larger touch targets, and gallery card
   labels/descriptions truncate safely on small screens.
 
-## [v6.9.13] - 2026-06-15
+## [v6.9.13]: 2026-06-15
 
 ### Fixed
 - Redirect custom rules now require a valid IPv4 or IPv6 target before they can
@@ -1153,7 +1155,7 @@ secondary screens.
 - Rule and source dialogs now provide clearer keyboard actions and validation
   feedback.
 
-## [v6.9.12] - 2026-06-15
+## [v6.9.12]: 2026-06-15
 
 ### Fixed
 - WebDAV credential saving no longer clears an existing saved password when the
@@ -1172,7 +1174,7 @@ secondary screens.
 - Added result-row semantics for rule-test outcomes and improved text-field
   labels/keyboard options in form-heavy polish screens.
 
-## [v6.9.11] - 2026-06-15
+## [v6.9.11]: 2026-06-15
 
 ### Fixed
 - DoH provider selection now honors the user-selected provider as the primary
@@ -1193,11 +1195,11 @@ secondary screens.
 - Updated current docs and metadata to match the live bounded ipapi.co GeoIP
   implementation.
 
-## [v6.9.10] - 2026-06-14
+## [v6.9.10]: 2026-06-14
 
 ### Fixed
 - **DNS-over-HTTPS now actually works (GitHub #1 root cause).** Two stacked bugs
-  made DoH fail for *every* provider, so the app silently fell back to plaintext —
+  made DoH fail for *every* provider, so the app silently fell back to plaintext :
   which is why enabling DoH still showed a plaintext resolver on leak tests:
   1. **Stale/incorrect certificate pins.** `DohPinManifest` pinned the wrong CAs
      entirely (e.g. DigiCert G2 for Cloudflare, which actually uses SSL.com), so
@@ -1212,8 +1214,8 @@ secondary screens.
   Verified on-device (Galaxy S22 Ultra, Android 16): queries now resolve via
   `DoH:CLOUDFLARE` instead of plaintext `8.8.8.8`.
 - **Encrypted DNS no longer leaks to plaintext (GitHub #1).** When DoH, DoT,
-  DoQ, or WireGuard is enabled, a resolver failure now fails closed — serving a
-  stale cached answer if available, otherwise returning SERVFAIL — instead of
+  DoQ, or WireGuard is enabled, a resolver failure now fails closed: serving a
+  stale cached answer if available, otherwise returning SERVFAIL: instead of
   silently falling back to plaintext UDP against the hardcoded public upstream
   (8.8.8.8/1.1.1.1). Previously an enabled-but-failing DoH provider (e.g. Quad9)
   would leak queries in the clear to Google, which is what `dnscheck.tools`
@@ -1232,13 +1234,13 @@ secondary screens.
 ### Internal
 - Added Android lint as a build gate (`lint {}` with `lint-baseline.xml` so only
   new issues fail) and a new `ci.yml` workflow that runs unit tests + lint on
-  every push to `main` and every pull request — previously CI ran only on
+  every push to `main` and every pull request: previously CI ran only on
   release tags.
 - Pinned compact number formatting in the Stats screen and Glance widget to
   `Locale.US` so query/percentage displays don't break under locales with
   comma decimal separators.
 
-## [v6.9.9] - 2026-06-14
+## [v6.9.9]: 2026-06-14
 
 ### UI
 - Replaced the launcher icon assets with the new HostShield shield artwork
@@ -1246,7 +1248,7 @@ secondary screens.
 - Enabled the built-in AdAway Default and StevenBlack Unified host sources by
   default, including a one-time upgrade migration for existing installs.
 
-## [v6.9.8] - 2026-06-14
+## [v6.9.8]: 2026-06-14
 
 ### UI
 - Removed the bottom Home dashboard "Root not detected" banner so non-root DNS
@@ -1256,13 +1258,13 @@ secondary screens.
 - Simplified the Sources header to show only the add-source button and removed
   the extra header shortcuts.
 
-## [v6.9.7] - 2026-06-14
+## [v6.9.7]: 2026-06-14
 
 ### UI
 - Added a clear rotating arc, trailing sweep, and breathing halo to the active
   protection orb so the dashboard visibly communicates that protection is running.
 
-## [v6.9.6] - 2026-06-14
+## [v6.9.6]: 2026-06-14
 
 ### UI
 - Live DNS activity rows now turn red when their hostname is manually blocked
@@ -1274,7 +1276,7 @@ secondary screens.
 - Reduced blocklist rebuild memory use by keeping exact domains in the hash-set
   fast path only, avoiding duplicate trie allocation on low-memory devices.
 
-## [v6.9.5] - 2026-06-14
+## [v6.9.5]: 2026-06-14
 
 ### UX
 - Deferred Android notification permission until the user activates protection,
@@ -1282,7 +1284,7 @@ secondary screens.
 - Tightened the DNS resolver onboarding selector so all resolver options remain
   visible with the fixed Continue action on tall phones.
 
-## [v6.9.4] - 2026-06-14
+## [v6.9.4]: 2026-06-14
 
 ### Security
 - Release artifact tasks now fail closed when signing credentials are missing;
@@ -1299,7 +1301,7 @@ secondary screens.
 - Expanded compact dismiss, delete, refresh, copy, and toggle controls across
   secondary screens to larger touch targets.
 
-## [v6.9.3] - 2026-06-13
+## [v6.9.3]: 2026-06-13
 
 ### Security
 - Added a threat-intel feed health dashboard to Stats with per-feed freshness,
@@ -1307,7 +1309,7 @@ secondary screens.
   manual refresh.
 - Added redacted threat-feed health summaries to diagnostic exports.
 
-## [v6.9.2] - 2026-06-13
+## [v6.9.2]: 2026-06-13
 
 ### Security
 - Removed the embedded Cronet dependency and disabled the DoH3 transport while
@@ -1318,7 +1320,7 @@ secondary screens.
 - Updated Cronet posture and release provenance tooling to treat the
   no-bundled-Cronet state as the passing security posture.
 
-## [v6.9.1] - 2026-06-13
+## [v6.9.1]: 2026-06-13
 
 ### UI
 - Enabled Android debug pseudolocales and added an RTL/pseudo-expanded Compose
@@ -1331,7 +1333,7 @@ secondary screens.
   preserving preview-and-apply behavior for rules, HTTPS sources, custom DNS,
   and enabled DoH settings.
 
-## [v6.7.0] - 2026-06-13
+## [v6.7.0]: 2026-06-13
 
 ### Platform
 - Bumped targetSdk from 35 to 36 (Android 16). The app already handles
@@ -1344,7 +1346,7 @@ secondary screens.
   quota (using WorkManager with proper backoff), exact alarm restrictions
   (only inexact alarms used).
 
-## [v6.6.9] - 2026-06-13
+## [v6.6.9]: 2026-06-13
 
 ### Security
 - Bounded VPN write-channel capacity to 512 packets with explicit overflow
@@ -1362,7 +1364,7 @@ secondary screens.
 - Unified project license on GPL-3.0. Removed the conflicting root MIT LICENSE
   and duplicate `app/LICENSE`, updated README badges and license sections.
 
-## [v6.6.8] - 2026-06-11
+## [v6.6.8]: 2026-06-11
 
 ### Security
 - Added bounded streaming reads for blocklist sources, remote rule sync, and
@@ -1402,7 +1404,7 @@ secondary screens.
 - Added QR decode safety caps for pasted payload size and decompressed JSON
   size, plus unit coverage for encode/decode/import planning.
 
-## [v6.6.7] - 2026-06-11
+## [v6.6.7]: 2026-06-11
 
 ### Safe Search
 - Made DNS-level Safe Search enforcement query-type-aware for A, AAAA, HTTPS,
@@ -1410,7 +1412,7 @@ secondary screens.
 - Added Google country/region domain coverage and canonical safe-endpoint
   resolution with bundled fallbacks.
 
-## [v6.6.6] - 2026-06-11
+## [v6.6.6]: 2026-06-11
 
 ### Security
 - Hardened the LAN Local DNS server against open-resolver abuse by rejecting
@@ -1418,7 +1420,7 @@ secondary screens.
   UDP answers with TC=1, and loading configured custom/DoT/DoH upstreams before
   plaintext fallback.
 
-## [v6.6.5] - 2026-06-11
+## [v6.6.5]: 2026-06-11
 
 ### Sync
 - Made periodic threat-intel and source-health refresh workers honor the
@@ -1426,14 +1428,14 @@ secondary screens.
 - Rescheduled existing periodic WorkManager registrations when the Wi-Fi-only
   setting changes so stale constraints are replaced.
 
-## [v6.6.4] - 2026-06-11
+## [v6.6.4]: 2026-06-11
 
 ### Threat Intel
 - Hardened compromised-IP feed parsing for whitespace-separated IPv4/CIDR
   tokens, invalid token rejection, duplicate suppression, and degraded partial
   refresh reporting.
 
-## [v6.6.3] - 2026-06-11
+## [v6.6.3]: 2026-06-11
 
 ### Release
 - Consolidated GitHub release gates so releases run documentation checks,
@@ -1453,7 +1455,7 @@ secondary screens.
   constructor-injected `@ApplicationContext` targets, and removed small Kotlin
   compiler warning sites found during the release build audit.
 
-## [v6.6.2] - 2026-06-11
+## [v6.6.2]: 2026-06-11
 
 ### Automation
 - Repaired the public automation API contract by documenting canonical
@@ -1464,13 +1466,13 @@ secondary screens.
   coverage for action/extra normalization.
 - Expanded release-doc checks so stale automation examples fail before release.
 
-## [v6.6.1] - 2026-06-11
+## [v6.6.1]: 2026-06-11
 
 ### Dependencies
 - Updated OkHttp from 5.3.2 to 5.4.0, matching the current Maven Central
   release and Square changelog baseline.
 
-## [v6.6.0] - 2026-06-11
+## [v6.6.0]: 2026-06-11
 
 ### Reliability
 - Moved long-running VPN/root/proxy protection services to Android
@@ -1489,7 +1491,7 @@ secondary screens.
   local `apksigner` verification select a valid Android Studio JBR when the
   shell has a stale `JAVA_HOME`.
 
-## [v6.5.9] - 2026-05-14
+## [v6.5.9]: 2026-05-14
 
 ### DNS
 - Corrected DNS stamp parsing to the current 8-byte property format and kept
@@ -1501,7 +1503,7 @@ secondary screens.
   target prefixes, IPv4-mapped/IPv6 target encoding, and invalid privacy
   collapses.
 
-## [v6.5.8] - 2026-05-14
+## [v6.5.8]: 2026-05-14
 
 ### DNS
 - Added a Cronet-backed DoH3 transport that sends DNS-over-HTTPS requests over
@@ -1511,7 +1513,7 @@ secondary screens.
 - Added DoH3 provider mapping, bounded response handling, QUIC hints, public
   key pinning, provider latency EMA, and query-log transport labels.
 
-## [v6.5.7] - 2026-05-14
+## [v6.5.7]: 2026-05-14
 
 ### Reliability
 - Added strict VPN route canonicalization before every `VpnService.Builder`
@@ -1522,7 +1524,7 @@ secondary screens.
 - Added focused JVM coverage for IPv4/IPv6 host-bit masking, non-byte-aligned
   prefixes, and invalid route input rejection.
 
-## [v6.5.6] - 2026-05-14
+## [v6.5.6]: 2026-05-14
 
 ### Reliability
 - Added a shared root-shell runner that detects Magisk 26+ and prefers libsu's
@@ -1533,7 +1535,7 @@ secondary screens.
   silently target the wrong namespace.
 - Added focused Magisk version parsing coverage for the mount-master decision.
 
-## [v6.5.5] - 2026-05-14
+## [v6.5.5]: 2026-05-14
 
 ### Reliability
 - Added shared TCP DNS fallback policy coverage for UDP responses with the
@@ -1543,7 +1545,7 @@ secondary screens.
   UDP forwarding so truncated IPv6 DNS answers are retried over TCP instead of
   being forwarded incomplete.
 
-## [v6.5.4] - 2026-05-14
+## [v6.5.4]: 2026-05-14
 
 ### Reliability
 - Added `BlocklistHolder.updateAsync()` so production blocklist rebuilds build
@@ -1554,7 +1556,7 @@ secondary screens.
 - Added concurrent-reader regression coverage around repeated async blocklist
   swaps.
 
-## [v6.5.3] - 2026-05-14
+## [v6.5.3]: 2026-05-14
 
 ### Reliability
 - Moved HostShield's long-running protection foreground services from
@@ -1566,7 +1568,7 @@ secondary screens.
 - Documented every WorkManager job and confirmed that immediate blocklist
   refresh uses expedited WorkManager with `RUN_AS_NON_EXPEDITED_WORK_REQUEST`.
 
-## [v6.5.2] - 2026-05-14
+## [v6.5.2]: 2026-05-14
 
 ### Reliability
 - Added Android 16 always-on VPN recovery detection for the post-update
@@ -1578,7 +1580,7 @@ secondary screens.
   always-on lockdown sessions with a valid TUN fd, validated physical network,
   two-minute observation window, and zero inbound packets.
 
-## [v6.5.1] - 2026-05-13
+## [v6.5.1]: 2026-05-13
 
 Premium product-polish pass focused on first-run trust, visual cohesion, action
 discoverability, and on-device layout correctness.
@@ -1611,14 +1613,14 @@ discoverability, and on-device layout correctness.
 - Built and installed the full debug APK on a connected Samsung SM-S938B.
 - Smoked onboarding, dashboard, sources, rules, stats, and settings on-device.
 
-## [v6.5.0] - 2026-05-13
+## [v6.5.0]: 2026-05-13
 
-Engineering hardening pass — focused on real correctness, security, and reliability
+Engineering hardening pass: focused on real correctness, security, and reliability
 issues found in a deep audit of the v6.4 codebase.
 
 ### Security
 - **Parental PIN: fail-closed + brute-force lockout.** `verifyPin` previously
-  returned `true` when no PIN was set — every PIN-gated action could be bypassed
+  returned `true` when no PIN was set: every PIN-gated action could be bypassed
   by clearing the stored hash. Now returns false unless `isPinSet()` is also
   true, with a new `verifyPinDetailed` returning `Success / Wrong / LockedOut /
   NoPin`. After 5 wrong attempts the caller is locked out for 30 s → 60 s →
@@ -1636,7 +1638,7 @@ issues found in a deep audit of the v6.4 codebase.
   `echo` for `printf`, and use token-aware line filtering on remove so entries
   with comments / tabs / multi-host lines are correctly removed.
 - **Device-transfer no longer leaks encrypted prefs.** `data_extraction_rules.xml`
-  now excludes `hostshield_secure_prefs` from `<device-transfer>` — the source
+  now excludes `hostshield_secure_prefs` from `<device-transfer>`: the source
   device's hardware-backed master key cannot unwrap on the destination, so
   copying the ciphertext only locks the user out.
 - **Widget receiver no longer launchable by third-party apps.** Removed
@@ -1650,7 +1652,7 @@ issues found in a deep audit of the v6.4 codebase.
 ### Correctness & reliability
 - **`ACTION_PAUSE > 10 s now works.** `AutomationReceiver` previously used
   `delay(N * 60_000L)` inside `goAsync()`, which Android killed after ~10 s.
-  Replaced with `PauseResumeWorker` (new) — WorkManager survives Doze, so
+  Replaced with `PauseResumeWorker` (new): WorkManager survives Doze, so
   user-requested pauses of any documented length (up to 24 h) resume reliably.
 - **TCP DNS fallback on TC=1 (RFC 7766 §6.2).** When the upstream UDP response
   has the TC (truncated) bit set, the VPN forwarder now retries the same query
@@ -1669,7 +1671,7 @@ issues found in a deep audit of the v6.4 codebase.
   a torn view that previously could mis-classify a domain mid-update.
 - **`BlocklistHolder` decision LRU is now actually LRU.** Replaced
   `ConcurrentHashMap` + random eviction with a synchronized
-  `LinkedHashMap(accessOrder=true)` and `removeEldestEntry` — fixes TOCTOU on
+  `LinkedHashMap(accessOrder=true)` and `removeEldestEntry`: fixes TOCTOU on
   the size check + random eviction order (was not actually evicting the LRU
   entries).
 - **`BlocklistHolder.removeDomain` no longer drops the count for never-added
@@ -1679,7 +1681,7 @@ issues found in a deep audit of the v6.4 codebase.
   endpoint can't OOM the VPN process. `SSLPeerUnverifiedException` is logged
   loudly so cert rotation failures are debuggable from `logcat` rather than
   silently failing closed. `failoverOrder` rotation (previously dead code) is
-  now wired up — providers move to the end after 3 consecutive failures.
+  now wired up: providers move to the end after 3 consecutive failures.
 - **`DotResolver` response cap raised from 4 096 to 65 535.** RFC 7858 allows
   the full 16-bit length-prefix range; the old cap silently dropped legitimate
   large DNSSEC responses.
@@ -1712,10 +1714,10 @@ issues found in a deep audit of the v6.4 codebase.
   on every Settings open; now throttled to once per process per 24 h.
 
 ### Docs
-- `CHANGELOG.md` repaired (was literal `## [v6.3.0] - %Y->-` placeholder).
+- `CHANGELOG.md` repaired (was literal `## [v6.3.0]: %Y->-` placeholder).
 - README version badge corrected (was `6.2.0` while build was `6.4.0`).
 
-## [v6.4.0] - 2026-03-27
+## [v6.4.0]: 2026-03-27
 
 See this changelog for the full v6.4.0 release notes.
 
@@ -1725,18 +1727,18 @@ See this changelog for the full v6.4.0 release notes.
 
 ## [v6.2.0]
 
-- Major release — encrypted DNS, content filtering, parental controls, threat
+- Major release: encrypted DNS, content filtering, parental controls, threat
   intel, 7 new screens.
 
 ## [v5.0.0]
 
-- Core engine upgrades — serve-stale DNS, hash set fast path, offline GeoIP.
+- Core engine upgrades: serve-stale DNS, hash set fast path, offline GeoIP.
 
 ## [v4.6.0]
 
 - Latency sparkline, source stats, search history, query type chart.
 
-## Roadmap archive — 2026-08-10 — ROADMAP.md
+## Roadmap archive: 2026-08-10: ROADMAP.md
 
 <details>
 <summary>Original roadmap snapshot</summary>
@@ -1760,7 +1762,7 @@ Research artifacts for this roadmap live in `.ai/research/2026-05-17/`.
 
 Release governance note: the project is licensed under GPL-3.0.
 
-## Autonomous Refresh - 2026-06-06
+## Autonomous Refresh: 2026-06-06
 
 This refresh resumed the existing roadmap instead of replacing it. Local
 inspection covered the repo root, recent git history, release docs,
@@ -1881,23 +1883,23 @@ Primary external evidence:
 - E105 HaGeZi DNS blocklists and Threat Intelligence Feed variants,
   https://github.com/hagezi/dns-blocklists
 
-## Audit Findings — 2026-07-22 (v6.9.59 deep audit)
+## Audit Findings: 2026-07-22 (v6.9.59 deep audit)
 
 The v6.9.59 pass fixed ~45 issues across correctness, security, UX, theming, and
 accessibility (see CHANGELOG). The items below were found but deferred because
 they need a device, a product decision, an external key, or an unreleased SDK.
 
-### P3 — Deferred correctness / coverage
+### P3: Deferred correctness / coverage
 
-## Audit Findings — 2026-07-28 (v6.9.63/6.9.64 passes)
+## Audit Findings: 2026-07-28 (v6.9.63/6.9.64 passes)
 
 The v6.9.63 deep pass fixed ~65 issues; the v6.9.64 pass added a README
 background/support section (issue #2) and two defensive hardenings (DoQ
 STREAM-frame bounds guard, HostsParser IP-classification parenthesization). No
-new actionable correctness/security findings surfaced — the codebase is
+new actionable correctness/security findings surfaced: the codebase is
 consistently well-hardened.
 
-## Audit Findings — 2026-07-28 (v6.9.65 pass, verified-unfixed)
+## Audit Findings: 2026-07-28 (v6.9.65 pass, verified-unfixed)
 
 The v6.9.65 pass fixed ~35 issues across workers, root-mode lifecycle, widgets/
 tile/notifications, and secondary screens (see CHANGELOG). The items below were
