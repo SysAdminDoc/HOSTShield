@@ -6,6 +6,8 @@ The `app/CHANGELOG.md` path is a compatibility pointer for older links.
 ## [v6.9.69]: 2026-08-29
 
 - New app icon: adaptive, themed (monochrome) and legacy variants regenerated from the 2026-08 icon set.
+- The manifest now uses the matching round launcher asset. Play-flavor lint also recognizes that its merged manifest removes broad package visibility.
+- Refreshed the research and roadmap files, removed completed release-signing blockers, and documented the production certificate that preserves update compatibility with v6.9.65.
 
 - Added opt-in blocked-domain notifications with one-shot, ten-minute, and
   persistent allow actions, source-aware log deep links, and parental-control

@@ -291,10 +291,10 @@ powershell -ExecutionPolicy Bypass -File .\tools\release-provenance.ps1
 ```
 
 **Signing**: Production-signed release artifacts require `KEYSTORE_FILE`,
-`STORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`. The v6.9.61 GitHub APK does
-not use a production signing key; Android's required APK certificate is the
-standard Android debug certificate. This certificate transition requires the
-one-time uninstall described above.
+`STORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`. Current releases use the
+HostShield certificate with SHA-256 fingerprint
+`811A9302984EC073B44B84B55DB959CA7D32C5CA75A4318C675BA7B065E3278B`,
+matching v6.9.65. The private key stays outside Git and is never attached to a release.
 
 **Release flow**: Builds, tests, release-doc checks, protection-resilience matrix capture, provenance generation, and GitHub Release uploads run locally on this workstation. The repository intentionally ships without GitHub Actions workflows.
 
@@ -506,7 +506,7 @@ VPN mode: ~1-3% battery/day (all traffic routed through local TUN interface). Ro
 
 | Version | Highlights |
 |---------|-----------|
-| **6.9.69** | New adaptive launcher artwork with Android 13 themed-icon support. |
+| **6.9.69** | New adaptive and round launcher artwork with Android 13 themed-icon support. |
 | **6.9.68** | Audit drain: context-firewall background rules, working block redirect targets, a pre-API-34 shortcut-toggle bypass, denyallow/Mullvad filtering scope, and release gates that verify what they claim. |
 | **6.9.67** | Roadmap drain: encrypted-only backup secrets with real schema-v2 roundtrips, retained diagnostic/PCAP artifacts with test seams, and malformed threat-feed health accounting. |
 | **6.9.66** | Roadmap drain: scoped `$denyallow` semantics, pre-34 automation attribution, fresh stats widgets, validated redirect targets, and debug WireGuard key configuration. |
